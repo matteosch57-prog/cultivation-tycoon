@@ -704,6 +704,87 @@ end
 -- of a flat green part. Measured 2026-10-21: FillCylinder snaps the surface to the 4-stud grid
 -- (only world y = +2 or -2 are reachable), so islands using terrain must stand at world y = 2
 -- and the fill is always centred at world y = -4 (height 4), which surfaces exactly at y = 2.
+local LAWN = Color3.fromHex("7DAA5C") -- the terrain LeafyGrass colour (Main setupLighting)
+local QI = Color3.fromHex("6FF2C8")
+
+-- The magic that holds an island up (owner 2026-10-21: "under it some magical aura like flying,
+-- cheap for performance"; research 2026-10-21_nature): a slow jade sigil turning under the
+-- bottom, qi motes rising along the underside, and spirit crystals jutting from the rock, each
+-- with a small real light (R3). Particle budget per island: sigil and ring Rate 0.3 x 8 s = 2-3
+-- live each, motes Rate 5 x 6 s = 30 live; no per-frame code.
+local function levitation(m, cf, radius, depth, rng)
+	local sigilAt = P(m, Vector3.new(1, 1, 1), cf * CFrame.new(0, -6 - depth - 4, 0), QI)
+	sigilAt.Transparency = 1
+	sigilAt.CanCollide = false
+	sigilAt.CanQuery = false
+	sigilAt.CanTouch = false
+	local sigil = Instance.new("ParticleEmitter")
+	sigil.Name = "Sigil"
+	sigil.Texture = "rbxasset://textures/particles/forcefield_vortex_main.dds"
+	sigil.Color = ColorSequence.new(QI, Color3.fromHex("B9FFF0"))
+	sigil.LightEmission = 1
+	sigil.LightInfluence = 0
+	sigil.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	sigil.EmissionDirection = Enum.NormalId.Top
+	sigil.Speed = NumberRange.new(0.01)
+	sigil.Size = NumberSequence.new(radius * 1.8)
+	sigil.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.12), NumberSequenceKeypoint.new(0.7, 0.12), NumberSequenceKeypoint.new(1, 1) })
+	sigil.Lifetime = NumberRange.new(8)
+	sigil.Rate = 0.3
+	sigil.RotSpeed = NumberRange.new(8)
+	sigil.Rotation = NumberRange.new(0, 360)
+	sigil.Parent = sigilAt
+	-- a second, wider ring turning the other way (owner 2026-10-21 picked the stronger aura)
+	local ring = sigil:Clone()
+	ring.Name = "Ring"
+	ring.Texture = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+	ring.Size = NumberSequence.new(radius * 2.4)
+	ring.RotSpeed = NumberRange.new(-6)
+	ring.Parent = sigilAt
+	-- motes rise from a box under the island and fade before the grass
+	local moteBox = P(m, Vector3.new(radius * 1.4, 1, radius * 1.4), cf * CFrame.new(0, -6 - depth * 0.8, 0), QI)
+	moteBox.Transparency = 1
+	moteBox.CanCollide = false
+	moteBox.CanQuery = false
+	moteBox.CanTouch = false
+	local motes = Instance.new("ParticleEmitter")
+	motes.Name = "QiMotes"
+	motes.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	motes.Color = ColorSequence.new(QI, Color3.new(1, 1, 1))
+	motes.LightEmission = 1
+	motes.LightInfluence = 0
+	motes.Shape = Enum.ParticleEmitterShape.Box
+	motes.EmissionDirection = Enum.NormalId.Top
+	motes.Speed = NumberRange.new(1.5, 3)
+	motes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 1.8), NumberSequenceKeypoint.new(1, 0) })
+	motes.Lifetime = NumberRange.new(5, 7)
+	motes.Rate = 5
+	motes.Parent = moteBox
+	-- spirit crystals jutting down and out of the rock
+	for i = 1, 6 do
+		local a = i / 6 * math.pi * 2 + rng:NextNumber(-0.3, 0.3)
+		-- on the rock's outer face at that depth (the underside narrows like the rings in island())
+		local d = rng:NextNumber(0.2, 0.45)
+		local r = radius * 0.95 * (1 - d) ^ 0.9 + 1
+		local base = cf * CFrame.new(math.cos(a) * r, -6 - depth * d, math.sin(a) * r)
+		local out = CFrame.Angles(0, -a, 0) * CFrame.Angles(0, 0, math.rad(-55)) -- leaning out and down
+		for c = 1, 3 do
+			local len = radius * rng:NextNumber(0.1, 0.16) * (c == 1 and 1.5 or 1) -- grows with the island
+			local w = len * 0.28
+			local crystal = P(m, Vector3.new(w, len, w), base * out * CFrame.Angles(rng:NextNumber(-0.4, 0.4), rng:NextNumber(0, 6), rng:NextNumber(-0.4, 0.4)) * CFrame.new(0, -len * 0.45, 0) * CFrame.Angles(0, math.rad(45), 0), QI:Lerp(Color3.new(1, 1, 1), c == 1 and 0.15 or 0), Enum.Material.Neon)
+			crystal.CastShadow = false
+			if c == 1 then
+				local light = Instance.new("PointLight")
+				light.Color = QI
+				light.Range = 20
+				light.Brightness = 1.6
+				light.Shadows = false
+				light.Parent = crystal
+			end
+		end
+	end
+end
+
 function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 	local rng = Random.new(seed or 5)
 	local m = Instance.new("Model")
@@ -725,7 +806,10 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		else
 			cylY(m, 2, l[3] * 2, at * CFrame.new(0, -1, 0), PAL.grass, Enum.Material.SmoothPlastic)
 		end
-		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -1.9, 0), PAL.grassDark, Enum.Material.SmoothPlastic)
+		-- the lawn runs right to the border (owner 2026-10-21): the lip is the lawn's own green, its
+		-- top just under the grass surface and the terrain's own material, so the edge reads as the same
+		-- ground (a SmoothPlastic lip read as a flat green ring round the lawn)
+		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -0.95, 0), useTerrain and LAWN or PAL.grass, useTerrain and Enum.Material.LeafyGrass or Enum.Material.SmoothPlastic)
 		cylY(m, 3, l[3] * 2 + 0.2, at * CFrame.new(0, -4, 0), PAL.dirt, Enum.Material.SmoothPlastic)
 	end
 	-- rock underside: rings of faceted chunks, narrowing and darkening with depth
@@ -777,6 +861,7 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 			end
 		end
 	end
+	levitation(m, cf, radius, depth, rng)
 	-- a lighter rock shelf right under the dirt band (gives the cliff a crisp top edge)
 	cylY(m, 1.6, radius * 1.92, cf * CFrame.new(0, -6.2, 0), Color3.fromHex("B8A48C"))
 	-- grass drips over the rim: tapered green tongues hanging down the dirt band
@@ -786,8 +871,12 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		local r = radius * rng:NextNumber(0.97, 1.02)
 		local len = rng:NextNumber(1.6, 3.8)
 		local at = cf * CFrame.new(math.cos(a) * r, -1.6 - len / 2, math.sin(a) * r) * CFrame.Angles(0, -a + math.pi / 2, 0)
-		P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, i % 3 == 0 and PAL.grass or PAL.grassDark)
-		P(m, Vector3.new(0.9, len * 0.5, 0.7), at * CFrame.new(0, -len * 0.55, 0), PAL.grassDark)
+		local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, i % 3 == 0 and 0 or 0.35))
+		local tip = P(m, Vector3.new(0.9, len * 0.5, 0.7), at * CFrame.new(0, -len * 0.55, 0), PAL.grassDark)
+		if useTerrain then -- the same grass as the lawn, not plastic tabs
+			drip.Material = Enum.Material.LeafyGrass
+			tip.Material = Enum.Material.LeafyGrass
+		end
 	end
 	-- dangling roots under the shelf
 	for i = 1, math.floor(radius / 8) do
