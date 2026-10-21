@@ -918,9 +918,24 @@ local function addDisciple(s, name, force)
 		table.insert(list, name)
 	end
 	table.sort(list, byBonus)
-	-- keep at most as many as the largest possible sect (benched ones beyond the slots)
-	while #list > Config.DISCIPLE_CAP do
-		table.remove(list)
+	-- keep at most as many as the largest possible sect (benched ones beyond the slots), dropping
+	-- the weakest UNBOUGHT one: a disciple paid for with Robux (data.boughtDisciples) never leaves,
+	-- even if that leaves the list over the cap
+	local paid = table.clone(s.data.boughtDisciples or {})
+	local keep = {}
+	for i, name in list do -- strongest first: the bought copies are the strongest of their name
+		if (paid[name] or 0) > 0 then
+			paid[name] -= 1
+			keep[i] = true
+		end
+	end
+	for i = #list, 1, -1 do
+		if #list <= Config.DISCIPLE_CAP then
+			break
+		end
+		if not keep[i] then
+			table.remove(list, i)
+		end
 	end
 	buildDisciples(s)
 	return kept

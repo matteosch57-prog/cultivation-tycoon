@@ -79,10 +79,11 @@ local function grantProduct(player, s, it)
 		d.boostUntil = math.max(now, d.boostUntil or 0) + Config.PILL_DURATION
 		api.notify:FireClient(player, "shopPill", Config.PILL_DURATION)
 	elseif it.rarity then
-		local kept = api.addDisciple(s, it.rarity)
-		-- bought disciples are permanent: a future reincarnation must keep these (D28)
+		-- bought disciples are permanent (D28): counted BEFORE seating, so the cap trim in
+		-- addDisciple can never drop the one just paid for; a reincarnation must keep them too
 		d.boughtDisciples = d.boughtDisciples or {}
 		d.boughtDisciples[it.rarity] = (d.boughtDisciples[it.rarity] or 0) + 1
+		local kept = api.addDisciple(s, it.rarity)
 		Telemetry.custom(player, "DiscipleBought", it.key, realm(s), Telemetry.minuteBucket(d.playSec or 0))
 		api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
 	elseif it.seconds then
