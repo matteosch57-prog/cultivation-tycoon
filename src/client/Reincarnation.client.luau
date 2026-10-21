@@ -18,7 +18,6 @@ local Sfx = require(Shared:WaitForChild("Sfx"))
 local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local JADE = Color3.fromHex("59D39F")
-local JADE_LIGHT = Color3.fromHex("C9FFE4")
 local GREY = Color3.fromHex("8C8296")
 local GO = Color3.fromHex("B06BFF")
 local CONFIRM = Color3.fromHex("FF8A5C")
@@ -99,14 +98,11 @@ local function refresh()
 	local gate = Config.REINC_REALM
 	local built = player:GetAttribute("Built") or 0
 	local total = #Config.PADS
-	local lives = player:GetAttribute("Lives") or 1
-	local karma = player:GetAttribute("Karma") or 0
 	local gain = player:GetAttribute("ReincKarma") or Config.karmaFor(gate, 0)
 	local now = player:GetAttribute("PastLives") or 1
 	local nextMult = player:GetAttribute("NextPastLives") or now
 	local ready = realm >= gate
 
-	ui.life.Text = string.format("Life %d     Karma %s", lives, commas(karma))
 	-- the road: realms 1..gate (a deeper realm shows as the gate dot plus "+N")
 	for _, c in ui.road:GetChildren() do
 		if c:IsA("Frame") then
@@ -125,27 +121,21 @@ local function refresh()
 	end
 	ui.deeper.Visible = realm > gate
 	ui.deeper.Text = "+" .. (realm - gate)
-	ui.where.Text = string.format("Realm %d: %s", realm, Config.realmName(realm))
 
-	-- NEXT step
+	-- NEXT step: one short line (owner: "too much text")
 	if ready then
 		ui.next.Text = "NEXT: Reincarnate"
-		ui.nextSub.Text = string.format("or break through to %s first for more karma", Config.realmName(realm + 1))
 	elseif built >= total then
-		ui.next.Text = "NEXT: Break through to " .. Config.realmName(realm + 1)
-		ui.nextSub.Text = "Step on the gold pad"
+		ui.next.Text = "NEXT: Break through"
 	else
-		ui.next.Text = "NEXT: Break through to " .. Config.realmName(realm + 1)
-		ui.nextSub.Text = string.format("Build %d more, then step on the gold pad", total - built)
+		ui.next.Text = string.format("NEXT: Build %d more", total - built)
 	end
 
-	-- what a new life keeps and gains
-	ui.gainHead.Text = ready and "A new life gives you" or string.format("At realm %d a new life gives you", gate)
+	-- what a new life gives: two numbers
 	local shownNext = ready and nextMult or math.max(nextMult, Config.pastLivesMult(gate))
-	ui.g1.Text = shownNext > now and string.format("Past Lives  %s  >  %s Qi forever", mult(now), mult(shownNext)) or string.format("Past Lives  %s Qi forever (go deeper to raise it)", mult(now))
-	ui.g2.Text = string.format("+%s Karma", commas(gain))
-	ui.g3.Text = Config.SWORN_BASE == 1 and "Your best disciple follows you" or string.format("Your %d best disciples follow you", Config.SWORN_BASE)
-	ui.g4.Text = "Buildings, Qi and realm start again"
+	ui.g1.Visible = shownNext > now
+	ui.g1.Text = mult(shownNext) .. " Qi"
+	ui.g2.Text = "+" .. commas(gain) .. " Karma"
 
 	-- the button
 	local armed = os.clock() < armedUntil
@@ -154,7 +144,7 @@ local function refresh()
 		ui.btnLabel.Text = string.format("Reach realm %d", gate)
 	elseif armed then
 		ui.btn.BackgroundColor3 = CONFIRM
-		ui.btnLabel.Text = "Tap again to confirm"
+		ui.btnLabel.Text = "Sure? Tap again"
 	else
 		ui.btn.BackgroundColor3 = GO
 		ui.btnLabel.Text = "Reincarnate"
@@ -191,25 +181,19 @@ local function build()
 	xBtn.Activated:Connect(function()
 		close()
 	end)
-	ui.life = text(body, "", px(15), JADE_LIGHT, { LayoutOrder = 2 })
 
 	local roadRow = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(roadRow, true, px(6))
 	ui.road = Toy.frame(roadRow, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	Toy.list(ui.road, true, 0)
 	ui.deeper = text(roadRow, "", px(18), GOLD, { LayoutOrder = 2 })
-	ui.where = text(body, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 4 })
 
-	Toy.frame(body, { Size = UDim2.fromOffset(1, px(2)), LayoutOrder = 5 })
-	ui.next = text(body, "", px(22), Color3.new(1, 1, 1), { LayoutOrder = 6 })
-	ui.nextSub = text(body, "", px(13), JADE_LIGHT, { LayoutOrder = 7 })
-
-	Toy.frame(body, { Size = UDim2.fromOffset(1, px(2)), LayoutOrder = 8 })
-	ui.gainHead = text(body, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 9 })
-	ui.g1 = text(body, "", px(15), GOLD, { LayoutOrder = 10 })
-	ui.g2 = text(body, "", px(15), Color3.fromHex("D9B8FF"), { LayoutOrder = 11 })
-	ui.g3 = text(body, "", px(13), Color3.fromHex("9FD0FF"), { LayoutOrder = 12 })
-	ui.g4 = text(body, "", px(12), Color3.fromHex("C8C0D0"), { LayoutOrder = 13 })
+	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 5 })
+	ui.next = text(body, "", px(24), Color3.new(1, 1, 1), { LayoutOrder = 6 })
+	local gains = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 9, Rotation = 1.5 })
+	Toy.list(gains, true, px(26))
+	ui.g1 = text(gains, "", px(22), GOLD, { LayoutOrder = 1 })
+	ui.g2 = text(gains, "", px(22), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
 
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(46)), GO, px(14))
