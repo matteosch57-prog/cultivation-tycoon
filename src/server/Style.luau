@@ -617,7 +617,19 @@ local function blob(parent, center, radius, colors, rng, count)
 	end
 end
 
+-- The leaf-card trees (Nature.luau) once their meshes and textures are uploaded; the part trees
+-- below until then. Required late: Nature needs the NatureKit folder beside this module.
+local TREE_KINDS = { "sakura", "sakura", "ginkgo", "sakura", "maple" }
+local function nature()
+	return require(script.Parent:WaitForChild("Nature"))
+end
+
+-- A broadleaf: mostly sakura, with gold ginkgo and red maple mixed in by seed.
 function Style.sakura(parent, cf, seed)
+	local kind = TREE_KINDS[math.floor(seed or 1) % #TREE_KINDS + 1]
+	if nature().ready(kind) then
+		return nature().tree(parent, cf, seed, kind)
+	end
 	local rng = Random.new(seed or 1)
 	local m = Instance.new("Model")
 	m.Name = "Sakura"
@@ -660,6 +672,9 @@ function Style.sakura(parent, cf, seed)
 end
 
 function Style.pine(parent, cf, seed, height)
+	if nature().ready("pine") then
+		return nature().pine(parent, cf, seed, height)
+	end
 	local rng = Random.new(seed or 2)
 	local h = height or 12
 	local m = Instance.new("Model")

@@ -5,6 +5,7 @@ local Style = require(script.Parent:WaitForChild("Style"))
 local Kit = require(script.Parent:WaitForChild("Kit"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
+local Nature = require(script.Parent:WaitForChild("Nature"))
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
 local SP = Style.PAL
 
@@ -172,8 +173,6 @@ end
 function Builders.garden(ctx, pad)
 	local x, z = pad.x, pad.z
 	local rng = Random.new(21)
-	local greens = { Color3.fromHex("5E9A4A"), Color3.fromHex("4C8A54"), Color3.fromHex("86B85A") }
-	local flowers = { Color3.fromHex("F4B6C2"), Color3.fromHex("FFF4D6"), Color3.fromHex("C9A0E8") }
 	for _, bz in { -3.5, 3.5 } do
 		-- raised bed with a timber kerb
 		part(ctx, Vector3.new(16, 0.9, 5.4), CFrame.new(x, 0.45, z + bz), SP.dirt)
@@ -185,12 +184,8 @@ function Builders.garden(ctx, pad)
 		end
 		for i = -3, 3 do
 			local px = x + i * 2.2 + rng:NextNumber(-0.3, 0.3)
-			local s = rng:NextNumber(1.2, 1.7)
-			part(ctx, Vector3.new(s, s * 0.8, s), CFrame.new(px, 1.3, z + bz) * CFrame.Angles(rng:NextNumber(0, 1), rng:NextNumber(0, 6), 0), greens[(i % 3) + 1])
-			if i % 2 == 0 then
-				local f = part(ctx, Vector3.new(0.6, 0.6, 0.6), CFrame.new(px, 2.1, z + bz + 0.2), flowers[(i // 2) % 3 + 1])
-				f.Shape = Enum.PartType.Ball
-			end
+			-- spirit lotuses with an emerald-cut gem (owner 2026-10-21, docs/art/mocks/nature_spirit_lotus.jpg)
+			Nature.lotus(ctx.folder, ctx.frame * CFrame.new(px, 0.9, z + bz), 44 + i + (bz > 0 and 7 or 0), 0.85)
 		end
 	end
 	-- stepping stones between the beds

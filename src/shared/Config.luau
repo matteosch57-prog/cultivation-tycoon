@@ -32,6 +32,10 @@ Config.HEALTH_PRESSURE_COOLDOWN = 60 -- s between DataStorePressure events of on
 Config.LOWPOLY_BALL = "rbxassetid://75794578549559"
 Config.LOWPOLY_CYLINDER = "rbxassetid://90367641492097"
 Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true parts
+-- Leaf-card tree canopies (src/server/Nature.luau, tools/nature_assets.py writes art/meshes/canopy_*.obj).
+-- The owner uploads them (R11); empty = not uploaded yet, the old part trees stay. The leaf textures
+-- live in src/server/NatureKit.model.json as SurfaceAppearances.
+Config.NATURE_MESH = { sakura = "", ginkgo = "", round = "", pine = "" }
 
 -- Realms: each breakthrough multiplies income and costs.
 Config.REALMS = {
