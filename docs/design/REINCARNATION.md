@@ -75,3 +75,5 @@ Hands built the breakthrough from the HUD (a wrong pad id and a call inside the 
 and the realm 6 line toasted. Particle clouds made on the server fill in over ~15 s on clients.
 The storm cloud never read right (two particle hazes, then solid puffs); owner picked lightning only (B). Captures: `realm6_void_clouds.jpg`,
 `realm10_all_looks.jpg`, `hands_next_card.jpg`.
+Lightning (pick B) checked in Studio Play 2026-10-21 by a temporary script push: a 48-segment bolt with
+branches struck behind the peak ~10 s after realm 9 (`realm9_lightning.jpg`, the bolt held for the shot).

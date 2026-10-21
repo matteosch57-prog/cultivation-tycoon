@@ -31,9 +31,10 @@ checked in Studio Play (ROADMAP).
   (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
   new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
 
-- **Endless progression (D29, D31, on integration):** reincarnation from realm 10, Past Lives,
-  karma and the Karma Shop are built and checked in Studio Play (mock save); Spirit Tide and playtime
-  gifts (D30) too. Left: per-realm visuals and the two later Karma Shop nodes (ROADMAP M3).
+- **Endless progression (D29, D31, D32, on integration):** reincarnation from realm 10, Past Lives,
+  karma, the 8-node Karma Shop (Rebirth Gate, Heavenly Hands included) and the realm 6 to 10+ looks
+  are built and checked in Studio Play (mock save); Spirit Tide and playtime gifts (D30) too. Left:
+  Matteo's look at the Karma Shop page with 8 tiles (not captured: it needs a tap).
 
 - **Economy** (D25, ECONOMY, research `2026-10-21_economy_math.md`): realms 2 to 5 are ~5 to 10 min
   laps, then each realm ~2 to 3x the last; a regular player (2 x 30 min a day) reaches realm 10 about
