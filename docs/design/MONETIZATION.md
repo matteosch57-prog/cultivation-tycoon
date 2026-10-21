@@ -44,7 +44,15 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
 - **Telemetry:** custom event `Shop` (open | prompt | bought | closed, source or item key, realm) and
   an IAP economy source for Qi packs. Funnel to read: opens by source, prompts per item, bought /
   prompts.
-- **Studio test:** `ServerStorage.DebugSet:Invoke(player, "pass", "x2")` owns a pass without buying.
+- **Studio test:** `ServerStorage.DebugSet:Invoke(player, "pass", "x2")` owns a pass without buying;
+  player attribute `HudDevice = "phone"` forces the two-page phone layout.
+- **Checked in Studio Play (2026-10-21, ids still 0):** the screen opens with both rows and every tile
+  reads "Soon"; pack tiles show the live amount; DebugSet passes: 2x Qi doubled the rate (1 to 2/s),
+  VIP raised the seats 5 to 6 and turned the arch name gold, Auto Orbs collected a fresh orb after
+  ~1.5 s; six purple pads stand around the cauldron with their cards (owned passes say "Owned");
+  `Shop` open event printed; no script errors. Not yet tested: a real prompt and ProcessReceipt (need
+  real ids: test with Studio's test purchase), the phone page flip. Captures:
+  `docs/art/captures/shop_screen_play.jpg`, `shop_hub_pads_play.jpg`.
 
 ## Price research (2026-10-21, Roblox's own pass / product listings)
 Auto-collect 175 to 350 (RT2 200, RT3 299, Mall 350, PS99 175); 2x income 299 to 600 (Brainrot 299,
