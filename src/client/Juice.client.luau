@@ -12,6 +12,7 @@ local player = Players.LocalPlayer
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local PerfMark = require(Shared:WaitForChild("PerfMark"))
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local sect = workspace:WaitForChild("Sect")
 
@@ -206,11 +207,16 @@ for _, d in sect:GetDescendants() do
 	end
 end
 RunService.RenderStepped:Connect(function()
+	local t0 = PerfMark.begin()
 	local t = os.clock()
+	local cam = workspace.CurrentCamera
 	for o, info in orbs do
-		local k = t - info.t0
-		o.CFrame = info.base * CFrame.new(0, math.sin(k * 2.2) * 0.6, 0) * CFrame.Angles(0, k * 1.5, 0)
+		if PerfMark.onScreen(cam, info.base.Position, 3) then -- nothing moves unseen
+			local k = t - info.t0
+			o.CFrame = info.base * CFrame.new(0, math.sin(k * 2.2) * 0.6, 0) * CFrame.Angles(0, k * 1.5, 0)
+		end
 	end
+	PerfMark.finish("orbs", t0)
 end)
 
 ---------------------------------------------------------------------------------------------

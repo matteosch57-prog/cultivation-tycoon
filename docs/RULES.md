@@ -26,3 +26,9 @@ Append only. Retire a rule by striking it through, never renumber. Cite by numbe
 - **R14** Separate project from Heavenly RNG and Gladiator RNG: own docs, vault folder and memory.
   It may port code patterns and cite lessons, never write status into their docs.
 - **R15** After two failed attempts at a visual, stop and bring it back to Mattéo.
+- **R16** Performance: new code follows TECH "Performance / Rules for new code" (small round parts
+  through `Style.P`, nothing per frame unseen, PerfMark on every frame job, write on change only,
+  measure on the phone with `/perf` before and after).
+- **R17** Data: one save in flight per player, fail closed on load (rejoin message, never a session
+  that cannot save), autosaves wait for budget and leave/close/receipts never do, constant-text
+  warns; MemoryStore and ordered stores follow TECH "Data" before their first use.

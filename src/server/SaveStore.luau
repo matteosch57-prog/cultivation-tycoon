@@ -15,8 +15,10 @@ local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Co
 
 local SaveStore = {}
 
+-- warn with constant text (the Error Report groups by string), the detail in a print
 local function log(event, userId, detail)
-	warn(string.format("[Tycoon][save] event=%s user=%d %s", event, userId, detail or ""))
+	warn("[Tycoon][save] " .. event)
+	print(string.format("[Tycoon][save] event=%s user=%d %s", event, userId, detail or ""))
 end
 
 -- Migration hook: every older record shape is lifted to DATA_VERSION here, one step at a time.
@@ -58,9 +60,9 @@ function SaveStore.newSessionId()
 	return HttpService:GenerateGUID(false)
 end
 
--- Takes the lock and returns (data or nil for a new player, true), or (nil, false) when the save
--- could not be read or stays locked: that session must never save. `stillHere()` stops the wait
--- early when the player leaves.
+-- Takes the lock and returns (data or nil for a new player, true), or (nil, false, reason) when the
+-- save could not be read ("error"), is newer than this server ("newer") or stays locked ("locked"):
+-- that session must never save (Main asks the player to rejoin). `stillHere()` stops the wait early.
 function SaveStore.load(store, userId, sessionId, stillHere)
 	local key = "u" .. userId
 	for wait = 1, Config.SAVE_LOCK_WAITS do
@@ -75,8 +77,8 @@ function SaveStore.load(store, userId, sessionId, stillHere)
 			end)
 		end)
 		if not ok then
-			log("load_failed", userId, "playing without saving this session")
-			return nil, false
+			log("load_failed", userId)
+			return nil, false, "error"
 		end
 		if record then
 			return record.data, true
@@ -88,18 +90,18 @@ function SaveStore.load(store, userId, sessionId, stillHere)
 		current = readOk and migrate(current) or nil
 		if current and current.v > Config.DATA_VERSION then
 			log("load_newer_version", userId, string.format("v=%d mine=%d", current.v, Config.DATA_VERSION))
-			return nil, false
+			return nil, false, "newer"
 		end
 		log("load_locked", userId, string.format("wait=%d/%d", wait, Config.SAVE_LOCK_WAITS))
 		if wait < Config.SAVE_LOCK_WAITS then
 			task.wait(Config.SAVE_LOCK_WAIT)
 			if not stillHere() then
-				return nil, false
+				return nil, false, "left"
 			end
 		end
 	end
-	log("load_lock_held", userId, "another session kept the lock; playing without saving")
-	return nil, false
+	log("load_lock_held", userId, "another session kept the lock")
+	return nil, false, "locked"
 end
 
 -- Writes data while this session still holds the lock; `release` drops the lock (leave, close).
