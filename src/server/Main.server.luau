@@ -332,7 +332,7 @@ local function publish(player)
 	player:SetAttribute("Realm", d.realm)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
 	player:SetAttribute("HasHall", d.owned.hall == true)
-	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.recruited))
+	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.realmRecruits or 0))
 	player:SetAttribute("Disciples", table.concat(d.disciples, ","))
 	player:SetAttribute("MaxDisciples", Config.maxDisciples(d.owned))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
@@ -620,6 +620,7 @@ refreshPads = function(player, s)
 			s.data.qi = 0
 			s.data.pillReady = false
 			s.data.pillTimer = 0
+			s.data.realmRecruits = 0
 			lightning(s)
 			rebuild(s)
 			refreshPads(player, s)
@@ -789,13 +790,14 @@ recruitFn.OnServerInvoke = function(player)
 	if not s.data.owned.hall then
 		return { ok = false, reason = "Build the Disciple Hall first" }
 	end
-	local cost = Config.recruitCost(s.data.realm, s.data.recruited)
+	local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
 	if s.data.qi < cost then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
 	s.data.qi -= cost
-	s.data.recruited += 1
+	s.data.recruited += 1 -- lifetime (telemetry)
+	s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
 	Telemetry.sink(player, s.data, cost, "recruit")
 	local r = roll()
 	local kept = true

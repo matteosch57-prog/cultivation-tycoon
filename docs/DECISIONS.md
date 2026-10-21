@@ -9,7 +9,10 @@ the log as a D-number.
 
 - **Q3** Realm pacing after the first breakthrough: today realms 2 and 3 go faster than realm 1
   (disciples carry over). Keep (rebirth games shorten runs) or raise the realm cost ratio
-  (sweep in `docs/research/2026-10-21_first_session_onboarding.md`).
+  (sweep in `docs/research/2026-10-21_first_session_onboarding.md`). Update: the whole-climb sim
+  (`docs/research/2026-10-21_economy_math.md`) shows realms 2 and 3 are short but realm 8+ each take
+  ~2.4x the last (realm 10 = a day of play). Branch `economy` restarts the recruit price each realm
+  and steps costs x4.5 after realm 5 (late realms ~1.3x the last); the owner keeps or reverts it.
 
 ## Log (all 2026-10-21, the first session)
 - **D1** Theme: cultivation. Compared against aquarium (an old leader, fading), pet shop (the live

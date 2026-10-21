@@ -65,7 +65,7 @@ def simulate(cfg, style, seed, until_realm=4, cap_s=12 * 3600, trace=False):
     rng = random.Random(seed)
     st = STYLES[style]
     pads = {p["id"]: p for p in cfg["pads"]}
-    realm, qi, owned, disciples, recruited = 1, 0.0, set(), [], 0
+    realm, qi, owned, disciples, recruited = 1, 0.0, set(), [], 0  # recruited = this realm (Q3)
     pill_timer, pill_ready, boost_left = 0.0, False, 0.0
     orb_timer, orbs = 0.0, 0
     walking, hits = None, {}
@@ -120,6 +120,7 @@ def simulate(cfg, style, seed, until_realm=4, cap_s=12 * 3600, trace=False):
             if qi >= bt:
                 qi -= bt
                 realm += 1
+                recruited = 0
                 owned, qi, pill_ready, pill_timer, boost_left = set(), 0.0, False, 0, 0
                 hits.setdefault("realm %d" % realm, t)
                 if realm >= until_realm:

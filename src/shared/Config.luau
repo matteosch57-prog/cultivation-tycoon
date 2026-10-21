@@ -32,7 +32,11 @@ Config.REALMS = {
 	"Soul Transformation",
 }
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
-Config.REALM_COST_MULT = 8 -- costs x8 per realm
+Config.REALM_COST_MULT = 8 -- costs x8 per realm up to REALM_COST_LATE_FROM
+-- after that costs step by REALM_COST_LATE: with disciples near their slot cap, a realm then takes
+-- ~1.5x the last instead of ~2.7x (no wall of days at realm 8+; research 2026-10-21_economy_math, Q3)
+Config.REALM_COST_LATE = 4.5
+Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
@@ -121,7 +125,7 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
-Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple ever recruited (this realm-scaled)
+Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, Q3)
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
@@ -144,15 +148,17 @@ function Config.realmName(realm)
 end
 
 function Config.costMult(realm)
-	return Config.REALM_COST_MULT ^ (realm - 1)
+	local early = math.min(realm, Config.REALM_COST_LATE_FROM) - 1
+	return Config.REALM_COST_MULT ^ early * Config.REALM_COST_LATE ^ math.max(0, realm - Config.REALM_COST_LATE_FROM)
 end
 
 function Config.incomeMult(realm)
 	return Config.REALM_INCOME_MULT ^ (realm - 1)
 end
 
-function Config.recruitCost(realm, recruited)
-	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruited * Config.RECRUIT_GROWTH))
+-- `recruits` = disciples recruited in the current realm (data.realmRecruits)
+function Config.recruitCost(realm, recruits)
+	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruits * Config.RECRUIT_GROWTH))
 end
 
 function Config.rarity(name)
