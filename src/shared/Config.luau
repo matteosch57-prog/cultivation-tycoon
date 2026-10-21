@@ -112,14 +112,49 @@ Config.GIFT_TIMES = { 300, 900, 1800 }
 Config.GIFT_VALUE = { 120, 300, 600 }
 Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
 
-function Config.maxDisciples(owned)
-	local n = Config.MAX_DISCIPLES
+-- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
+function Config.maxDisciples(owned, vip)
+	local n = Config.MAX_DISCIPLES + (vip and Config.VIP_SLOTS or 0)
 	for _, id in Config.SLOT_PADS do
 		if owned[id] then
 			n += 1
 		end
 	end
 	return n
+end
+
+-- Shop (docs/design/MONETIZATION.md, D17; screen = mock B, D24). The owner creates every pass and
+-- product and sets its price (R5): paste the ids here. id 0 = not created yet: the item shows
+-- "Soon" and never prompts. Prices are never written here: the client reads each one from
+-- MarketplaceService (regional pricing changes them per player).
+-- `seconds` (Qi packs) = seconds of the buyer's income (no tide, no pill, like gifts).
+Config.SHOP_PASSES = {
+	{ key = "x2", id = 0, name = "2x Qi", line = "Double income forever" },
+	{ key = "auto", id = 0, name = "Auto Orbs", line = "Orbs fly to you" },
+	{ key = "vip", id = 0, name = "VIP Sect", line = "+1 disciple, gold name" },
+}
+Config.SHOP_PRODUCTS = {
+	{ key = "pill", id = 0, name = "Instant Pill", line = "2x Qi for 60 s now" },
+	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
+	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
+	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
+}
+Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
+Config.VIP_SLOTS = 1
+Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
+-- World shop: purple pads in a ring around the hub cauldron (one per key, in this order)
+Config.SHOP_PADS = { "x2", "auto", "vip", "pill", "pack2", "pack3" }
+Config.SHOP_PAD_RADIUS = 18
+
+function Config.shopItem(key)
+	for _, list in { Config.SHOP_PASSES, Config.SHOP_PRODUCTS } do
+		for _, it in list do
+			if it.key == key then
+				return it, list == Config.SHOP_PASSES
+			end
+		end
+	end
+	return nil, false
 end
 
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.

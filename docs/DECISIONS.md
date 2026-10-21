@@ -66,3 +66,9 @@ the log as a D-number.
 - **D23** Studio Play uses a mock save by default (`MOCK_DATASTORE`, owner 2026-10-21: "why not using a mock data
   store like my other games"): every Play starts as a new player, so the first session (guide trail, funnel)
   is what a tester sees; the `_studio` store stays for save tests with the flag off. Gate = flag AND `IsStudio()`.
+- **D24** Shop = mock B (owner pick of A / B / C, `docs/art/mocks/shop_*_phone.jpg`) plus a world
+  shop of purple step-on pads around the hub cauldron (owner ask). The ring is on the hub because
+  every peak's ground is already planned for build pads. Prices come from Roblox at runtime, never
+  from code, because passes are regionally priced. The 2x Qi pass also doubles offline qi (economy
+  check: the three passes together give ~1.5 to 2x pace and skip no content). Design in
+  MONETIZATION "How the shop works".
