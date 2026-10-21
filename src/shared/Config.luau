@@ -305,7 +305,7 @@ Config.PALETTES = {
 -- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
-Config.REALM_STORM = Color3.fromRGB(70, 82, 112) -- realm 9+ storm cloud: slate blue (grey-brown read as a smudge)
+Config.REALM_STORM = Color3.fromRGB(70, 82, 112) -- realm 9+ storm cloud puffs: slate blue (owner pick A: solid puffs, not a particle haze)
 Config.REALM_FALL_ANGLE = 0.35 -- the realm 8 waterfall, front right (the first one is at the back left)
 Config.REALM_TINT = {
 	[6] = Color3.fromRGB(185, 166, 255), -- Void Refinement: violet

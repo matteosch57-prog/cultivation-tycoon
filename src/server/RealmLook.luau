@@ -64,6 +64,29 @@ local function rocks(parent, frame, radius, seed)
 	end
 end
 
+-- a solid storm cloud: a flat dark underside and a crown of slate puffs (owner pick A after a
+-- particle haze read as a smudge twice). ~8 Ball parts, only on realm 9+ peaks. The underside is the
+-- first part: RealmLook.client strikes from its centre, its width sets the bolt length.
+local function stormCloud(parent, cf, width, seed)
+	local rng = Random.new(seed)
+	local m = Instance.new("Model")
+	m.Name = "Storm"
+	local function puff(at, size, color)
+		local b = ghost(P(m, size, at, color, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+		b.CastShadow = false
+		return b
+	end
+	puff(cf, Vector3.new(width, width * 0.16, width * 0.55), Config.REALM_STORM)
+	for i = 1, 7 do
+		local u = (i - 1) / 6 * 2 - 1
+		local s = width * rng:NextNumber(0.28, 0.38) * (1 - math.abs(u) * 0.3)
+		local at = cf * CFrame.new(u * width * 0.36, s * 0.25 + (1 - math.abs(u)) * width * 0.08, rng:NextNumber(-0.1, 0.1) * width)
+		puff(at, Vector3.new(s, s * 0.8, s), Config.REALM_STORM:Lerp(Color3.fromRGB(150, 160, 190), 0.25 + (1 - math.abs(u)) * 0.2))
+	end
+	m.Parent = parent
+	return m
+end
+
 local function halo(parent, frame, tint)
 	local m = Instance.new("Model")
 	m.Name = "Halo"
@@ -128,8 +151,7 @@ function RealmLook.apply(plot)
 	end
 	if realm >= 9 then
 		-- the storm sits behind the hall so it never hides the peak from the entrance camera
-		local storm = tintedCloud(f, frame * CFrame.new(0, 58, -radius * 0.55), radius * 2, plot.index * 17, Config.REALM_STORM, 0.7)
-		storm.Name = "Storm"
+		stormCloud(f, frame * CFrame.new(0, 62, -radius * 0.55), radius * 1.3, plot.index * 17)
 		f:SetAttribute("Storm", true)
 	end
 	if realm >= 10 then
