@@ -36,18 +36,23 @@ local function rest(t, rot)
 	return rot
 end
 
--- two-handed overhead swing (hoe, pick): `up` = how high the tool goes, `bend` = the strike lean
-local function swing(p, up, bend)
+-- two-handed overhead swing (hoe, pick): `up` = how high the tool goes, `bend` = the strike lean,
+-- `tip` = the wrists on the blow, set so the tool's head lands on the soil or the rock
+local function swing(p, up, bend, tip)
 	local sh = key(p, { { 0, 30 }, { 0.42, up }, { 0.52, 18 }, { 0.8, 26 } })
 	local el = key(p, { { 0, 30 }, { 0.42, 25 }, { 0.52, 8 }, { 0.8, 25 } })
 	local w = key(p, { { 0, -10 }, { 0.42, 6 }, { 0.52, -bend }, { 0.8, -14 } })
+	-- the wrists tip the head of the tool down into the ground on the blow
+	local wr = key(p, { { 0, tip * 0.6 }, { 0.42, 5 }, { 0.52, tip }, { 0.8, tip * 0.8 } })
 	return {
 		Waist = A(w),
 		Neck = A(-w * 0.5 - 6),
 		RightShoulder = A(sh, 0, -14),
 		RightElbow = A(el),
-		LeftShoulder = A(sh - 6, 0, 18),
+		RightWrist = A(wr),
+		LeftShoulder = A(sh - 6, 0, 22),
 		LeftElbow = A(el + 10),
+		LeftWrist = A(wr),
 		LeftHip = A(12),
 		RightHip = A(-6),
 		LeftKnee = A(-14),
@@ -55,15 +60,20 @@ local function swing(p, up, bend)
 	}
 end
 
--- a forward sword cut with the left hand on guard; `turn` twists the body into it
-local function cut(p)
-	local sh = key(p, { { 0, 25 }, { 0.35, 155 }, { 0.48, 45 }, { 0.75, 30 } })
+-- a forward sword cut with the left hand on guard; `turn` twists the body into it. `stop` = the
+-- shoulder on the blow (low to cut the dummy, high where a partner's raised sword meets it) and
+-- `tip` the wrist then
+local function cut(p, stop, tip)
+	local sh = key(p, { { 0, 25 }, { 0.35, 155 }, { 0.48, stop }, { 0.75, 30 } })
+	-- the wrist levels the blade on the blow, so it cuts the dummy at chest height
+	local wr = key(p, { { 0, -20 }, { 0.35, 10 }, { 0.48, tip }, { 0.75, -30 } })
 	local sz = key(p, { { 0, 10 }, { 0.35, 35 }, { 0.48, -25 }, { 0.75, 5 } })
 	local turn = key(p, { { 0, 0 }, { 0.35, -18 }, { 0.48, 22 }, { 0.75, 5 } })
 	return {
 		Waist = A(-6, turn),
 		RightShoulder = A(sh, 0, sz),
 		RightElbow = A(15),
+		RightWrist = A(wr),
 		LeftShoulder = A(45, 0, 20),
 		LeftElbow = A(80),
 		LeftHip = A(22),
@@ -78,8 +88,9 @@ local function guard(p)
 	return {
 		Waist = A(lean),
 		Neck = A(-lean * 0.6),
-		RightShoulder = A(85, 0, -25),
-		RightElbow = A(55),
+		RightShoulder = A(20, 0, -40), -- found by a search: the blade rises 37 degrees across the
+		RightElbow = A(60), -- partner's blow and meets it at its height
+		RightWrist = A(-45),
 		LeftShoulder = A(30, 0, 15),
 		LeftElbow = A(70),
 		LeftHip = A(-14),
@@ -105,42 +116,42 @@ end
 local JOBS = {}
 
 function JOBS.farmer(_, t)
-	local cycle = 2.2
+	local cycle = 2.8
 	local n, p = math.floor(t / cycle), (t / cycle) % 1
 	if n % 6 == 5 then
 		return rest(t, {})
 	end
-	return swing(p, 150, 26)
+	return swing(p, 150, 26, -18)
 end
 
 function JOBS.miner(_, t)
-	local cycle = 1.6
+	local cycle = 2.2
 	local n, p = math.floor(t / cycle), (t / cycle) % 1
 	if n % 7 == 6 then
 		return rest(t, {})
 	end
-	return swing(p, 165, 32)
+	return swing(p, 165, 32, -28)
 end
 
 function JOBS.fighter(w, t)
 	if w.slot == 1 then -- the dummy
-		local cycle = 1.4
+		local cycle = 1.9
 		local n, p = math.floor(t / cycle), (t / cycle) % 1
 		if n % 8 == 7 then
 			return rest(t, {})
 		end
-		return cut(p)
+		return cut(p, 45, -45)
 	end
 	-- the sparring pair takes turns: slot 2 attacks in the first half, slot 3 in the second, and
 	-- every 5th exchange both bow (they share one clock, so they bow together)
-	local cycle = 2.8
+	local cycle = 3.4
 	local n, p = math.floor(t / cycle), (t / cycle) % 1
 	if n % 5 == 4 then
 		return bow(p)
 	end
 	local mine = w.slot == 2 and p < 0.5 or w.slot == 3 and p >= 0.5
 	local q = (p * 2) % 1
-	return mine and cut(q) or guard(q)
+	return mine and cut(q, 80, -70) or guard(q)
 end
 
 function JOBS.alchemist(_, t)
@@ -156,12 +167,13 @@ function JOBS.alchemist(_, t)
 			LeftShoulder = A(10 + 25 * u, 0, -8),
 		}
 	end
-	local f = math.sin(t / 0.7 * math.pi * 2)
+	-- fan the cauldron's belly, where the fire is, not the rim
+	local f = math.sin(t / 0.9 * math.pi * 2)
 	return {
-		Waist = A(-4 + 1.5 * math.sin(t)),
-		Neck = A(-8),
-		RightShoulder = A(55 + 6 * f, 0, -18 * f),
-		RightElbow = A(65),
+		Waist = A(-18 + 1.5 * math.sin(t)),
+		Neck = A(-6),
+		RightShoulder = A(14 + 8 * f, 0, -18 * f),
+		RightElbow = A(45),
 		RightWrist = A(0, 0, 20 * f),
 		LeftShoulder = A(10, 0, -6),
 		LeftElbow = A(20),

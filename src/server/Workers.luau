@@ -219,12 +219,13 @@ local function buildingFrame(plotFrame, pad, how)
 	return plotFrame * CFrame.new(pad.x, 0, pad.z)
 end
 
--- The ground under a spot: the building's floor or the island, found by a ray from above.
+-- The ground under a spot: the building's floor or the island, found by a ray from just above
+-- (5 studs: a ray from higher landed the alchemists on the pavilion roof).
 local function ground(pos, include)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = include
-	local hit = workspace:Raycast(pos + Vector3.new(0, 12, 0), Vector3.new(0, -30, 0), params)
+	local hit = workspace:Raycast(pos + Vector3.new(0, 5, 0), Vector3.new(0, -20, 0), params)
 	return hit and hit.Position.Y or pos.Y
 end
 
