@@ -1012,14 +1012,11 @@ local function reincarnate(player, s)
 	d.pillTimer = 0
 	d.boostUntil = 0
 	d.realmRecruits = 0
-	-- disciples bought in the Shop are permanent (data.shopBought counts them by item key) and
+	-- disciples bought in the Shop are permanent (data.boughtDisciples = { [rarity] = count }) and
 	-- do not use a sworn seat; then the SWORN_BASE strongest of the rest follow (list is sorted)
-	local bought = {} -- rarity name -> how many of the list are bought ones
-	for key, n in d.shopBought or {} do
-		local it = Config.shopItem(key)
-		if it and it.rarity then
-			bought[it.rarity] = (bought[it.rarity] or 0) + n
-		end
+	local bought = {} -- a copy: counted down as the bought ones are found in the list
+	for name, n in d.boughtDisciples or {} do
+		bought[name] = n
 	end
 	local kept, sworn = {}, 0
 	for _, name in d.disciples do
