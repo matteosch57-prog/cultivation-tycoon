@@ -63,3 +63,10 @@ Studio Play on integration (mock save), 2026-10-21: the chip reads "Rebirth 1/10
 realm 10; a reincarnation from realm 10 gave life 2, +10 karma, Past Lives x3 (rate x3), kept the
 strongest disciple (sworn) and the Shop-bought one, and a second call was refused. Captures:
 `docs/art/captures/reinc_screen_realm1.jpg`, `reinc_screen_realm10.jpg`, `reinc_screen_life2.jpg`.
+Studio Play on integration (mock save, camera only), 2026-10-21 evening: realms 6 to 10 build their
+looks (clouds, 6 rocks, second waterfall, storm, halo); a storm strikes about twice in 30 s; a
+reincarnation with Rebirth Gate 2 + Old Foundations landed at realm 5 with 27 / 27 built; Heavenly
+Hands built the breakthrough from the HUD (a wrong pad id and a call inside the cooldown were refused)
+and the realm 6 line toasted. Particle clouds made on the server fill in over ~15 s on clients.
+Open: the storm cloud reads as a grey smudge (owner's call, R15). Captures: `realm6_void_clouds.jpg`,
+`realm10_all_looks.jpg`, `hands_next_card.jpg`.
