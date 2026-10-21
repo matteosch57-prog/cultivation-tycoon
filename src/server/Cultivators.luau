@@ -3,8 +3,9 @@
 -- breathes them (CultivatorIdle.client.luau): no animation upload needed.
 -- Four looks (sword disciple, lotus maiden, pill monk, elder sage); the rarity picks the robe colour
 -- and the aura tier. Front faces -Z (LookVector). `cf` is the ground point under the cushion.
--- Auras are glowing objects only (particles, ForceField shells): no Light instances (RULES R3),
--- one emitter per figure at most so a full platform stays cheap on phones.
+-- Auras are layered glowing objects only (particles, beams, trails with built-in textures, so
+-- nothing to upload): no Light instances (RULES R3). One layer joins per rarity; rates stay low and the
+-- client switches the layers off beyond a short range, so a full platform stays cheap on phones.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
@@ -15,15 +16,22 @@ Cultivators.LOOKS = { "sword", "lotus", "monk", "elder" }
 
 local SKIN = Color3.fromRGB(238, 204, 176)
 local CUSHION = Color3.fromHex("B8352B"):Lerp(Color3.new(0, 0, 0), 0.3)
-local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+local TEX = "rbxasset://textures/particles/"
+local SPARKLE = TEX .. "sparkles_main.dds"
+local VORTEX = TEX .. "forcefield_vortex_main.dds"
+local RING = TEX .. "explosion01_shockwave_main.dds"
+local GLOW = TEX .. "forcefield_glow_main.dds"
+local WHITE = Color3.new(1, 1, 1)
 local SEAT = 1.8 -- cushion top above the ground
 
--- Catalog layered clothing (any experience may dress an NPC in it). Index = rarity tier 1..7:
--- white, green, blue, purple, gold, celestial teal, dao crimson; each tier lists its layers, robe
+-- Catalog layered clothing (any experience may dress an NPC in it). Index = rarity tier 1..9:
+-- white, green, blue, purple, gold, celestial teal, dao crimson, emperor red-gold, primordial white
+-- (its aura cycles every colour); each tier lists its layers, robe
 -- first. Creator: Lucky Koi unless noted. Checked as captures, since a dark robe hides the rarity.
 local SHIRT, DRESS, JACKET = Enum.AccessoryType.Shirt, Enum.AccessoryType.DressSkirt, Enum.AccessoryType.Jacket
 local AZURE = { 94369290663213, JACKET } -- Mint Blue Azure Breeze Hanfu (Japan Kimono)
 local RED_CLOAK = { 115620162427301, JACKET } -- Traditional Chinese Red Hanfu Cloak (RUYI)
+local WHITE_CLOAK = { 72012744074825, JACKET } -- Traditional Chinese White Hanfu Cloak (RUYI)
 local ROBES = {
 	male = {
 		{ { 79303524577143, SHIRT } }, -- Male Long Robe Hanfu-White
@@ -33,6 +41,8 @@ local ROBES = {
 		{ { 113946197012814, SHIRT } }, -- Male Wuxia Hanfu-Gold
 		{ AZURE },
 		{ { 131611803410283, SHIRT }, RED_CLOAK }, -- Male Long Robe Hanfu-Black Red under the red cloak
+		{ { 113946197012814, SHIRT }, RED_CLOAK }, -- Male Wuxia Hanfu-Gold under the red cloak
+		{ { 135966334457234, SHIRT }, WHITE_CLOAK }, -- Male Wuxia Hanfu-White Gold Dragon under the white cloak
 	},
 	female = {
 		{ { 12388422808, DRESS } }, -- White Cultivator's Robes (Nexus Exchange)
@@ -42,6 +52,8 @@ local ROBES = {
 		{ { 124671367097250, DRESS } }, -- Flowing Cloud Hanfu Robe-Gold
 		{ AZURE },
 		{ { 106614697052382, DRESS }, RED_CLOAK }, -- Empress Hanfu Robe - Garnet under the red cloak
+		{ { 72320280506296, DRESS } }, -- Chang'e's Moon Palace Flowing Hanfu-Amber
+		{ { 80805967098465, DRESS }, WHITE_CLOAK }, -- Chang'e's Moon Palace Flowing Hanfu-Creamy under the white cloak
 	},
 }
 
@@ -225,55 +237,177 @@ local function template(look, tier)
 	return m
 end
 
--- aura tiers: 1 none, 2 a small ground ring, 3 a wide ring + rising motes, 4 + halo, 5 + three qi orbs,
--- 6 + an outer ring and five orbs, 7 + a second halo and seven orbs
+local function seq(c)
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(WHITE, 0.6)) })
+end
+
+local function fade(peak)
+	return NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, peak), NumberSequenceKeypoint.new(0.75, peak), NumberSequenceKeypoint.new(1, 1) })
+end
+
+local function emitter(att, name, props)
+	local pe = Instance.new("ParticleEmitter")
+	pe.Name = name
+	pe.LightEmission = 1
+	pe.LightInfluence = 0
+	for k, v in props do
+		pe[k] = v
+	end
+	pe.Parent = att
+	return pe
+end
+
+local function attach(core, f, offset, name)
+	local a = Instance.new("Attachment")
+	a.Name = name
+	a.CFrame = core.CFrame:ToObjectSpace(f * offset)
+	a.Parent = core
+	return a
+end
+
+-- Aura layers, one more per rarity tier (research 2026-10-21: premium Roblox auras stack several
+-- soft layers at low rates, with colour that brightens toward white, rather than one loud effect):
+--   2 a turning qi sigil on the ground      3 rising motes             4 a halo ring behind the head
+--   5 three qi orbs with trails             6 a second, wider sigil     7 an outer halo ring
+--   8 a ring pulse on each breath           9 every colour in turn (client)
+-- Orbs: 3 / 5 / 7 / 7 / 9 from tier 5. Flames and beam ribbons were tried and dropped (2026-10-21):
+-- flames hid inside the avatar and the ribbons read as faint white arcs over the bright sky.
 local function aura(m, f, color, tier)
 	if tier < 2 then
 		return
 	end
+	local core = P(m, Vector3.new(3.4, 0.2, 3.4), f * CFrame.new(0, 1.2, 0), color)
+	core.Transparency = 1
+	core.Name = "Aura"
+	local ground = attach(core, f, CFrame.new(0, 0.15, 0), "Ground")
+	-- motes and flames rise from a ring around the figure: an emitter on an attachment emits from a
+	-- single point, inside the body, where the avatar hides every particle
+	local shell = P(m, Vector3.new(4.4, 0.2, 4.4), f * CFrame.new(0, 1.3, 0), color)
+	shell.Transparency = 1
+	shell.Name = "AuraShell"
+	emitter(ground, "Sigil", {
+		Texture = VORTEX,
+		Color = seq(color),
+		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+		EmissionDirection = Enum.NormalId.Top,
+		Speed = NumberRange.new(0.01),
+		Size = NumberSequence.new(4.6 + tier * 0.25),
+		Transparency = fade(0.15),
+		Lifetime = NumberRange.new(4),
+		Rate = 0.75,
+		RotSpeed = NumberRange.new(25),
+		Rotation = NumberRange.new(0, 360),
+		ZOffset = 0.5, -- toward the camera, so the floor never hides it
+	})
 	if tier >= 3 then
-		local core = P(m, Vector3.new(3.4, 0.2, 3.4), f * CFrame.new(0, 1.2, 0), color)
-		core.Transparency = 1
-		core.Name = "Aura"
-		local pe = Instance.new("ParticleEmitter")
-		pe.Texture = SPARKLE
-		pe.Color = ColorSequence.new(color)
-		pe.LightEmission = 1
-		pe.LightInfluence = 0
-		pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.5 + tier * 0.15), NumberSequenceKeypoint.new(1, 0) })
-		pe.Transparency = NumberSequence.new(0.15)
-		pe.Lifetime = NumberRange.new(2.5, 3.5)
-		pe.Speed = NumberRange.new(0.8, 1.4)
-		pe.Acceleration = Vector3.new(0, 0.4, 0)
-		pe.Rate = ({ 0, 0, 5, 7, 10, 12, 14 })[tier]
-		pe.SpreadAngle = Vector2.new(15, 15)
-		pe.Shape = Enum.ParticleEmitterShape.Disc
-		pe.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
-		pe.EmissionDirection = Enum.NormalId.Top
-		pe.Parent = core
-	end
-	local d = tier == 2 and 3.8 or 4.6
-	local ring = P(m, Vector3.new(0.1, d, d), f * CFrame.new(0, 1.32, 0) * CFrame.Angles(0, 0, math.pi / 2), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
-	ring.Name = "AuraRing"
-	if tier >= 6 then
-		local outer = P(m, Vector3.new(0.1, 6.4, 6.4), f * CFrame.new(0, 1.3, 0) * CFrame.Angles(0, 0, math.pi / 2), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
-		outer.Name = "AuraRing"
+		emitter(shell, "Motes", {
+			Texture = SPARKLE,
+			Color = seq(color),
+			Shape = Enum.ParticleEmitterShape.Cylinder,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+			EmissionDirection = Enum.NormalId.Top,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.35 + tier * 0.05), NumberSequenceKeypoint.new(1, 0) }),
+			Transparency = NumberSequence.new(0.1),
+			Lifetime = NumberRange.new(2.5, 3.5),
+			Speed = NumberRange.new(0.8, 1.4),
+			Drag = 0.6,
+			Acceleration = Vector3.new(0, 0.5, 0),
+			SpreadAngle = Vector2.new(15, 15),
+			Rate = 3 + tier,
+		})
 	end
 	if tier >= 4 then
-		local halo = P(m, Vector3.new(0.1, 3.4, 3.4), f * CFrame.new(0, 5.2, 0.7) * CFrame.Angles(0, math.pi / 2, 0), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
-		halo.Name = "Halo"
+		local head = attach(core, f, CFrame.new(0, 5.15, 0.75), "HaloAt")
+		emitter(head, "Halo", {
+			Texture = RING,
+			Color = seq(color),
+			LockedToPart = true,
+			Speed = NumberRange.new(0),
+			Size = NumberSequence.new(2.6),
+			Transparency = fade(0.25),
+			Lifetime = NumberRange.new(3),
+			Rate = 0.67,
+			ZOffset = -2,
+		})
+		emitter(head, "HaloGlow", {
+			Texture = GLOW,
+			Color = seq(color),
+			LockedToPart = true,
+			Speed = NumberRange.new(0),
+			Size = NumberSequence.new(2.2),
+			Transparency = fade(0.7),
+			Lifetime = NumberRange.new(3),
+			Rate = 0.67,
+			ZOffset = -2.5,
+		})
+	end
+	if tier >= 6 then
+		-- a second sigil turning the other way, a ring wider than the first
+		emitter(ground, "Sigil2", {
+			Texture = RING,
+			Color = seq(color),
+			Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+			EmissionDirection = Enum.NormalId.Top,
+			Speed = NumberRange.new(0.01),
+			Size = NumberSequence.new(7.5),
+			Transparency = fade(0.3),
+			Lifetime = NumberRange.new(4),
+			Rate = 0.75,
+			RotSpeed = NumberRange.new(-18),
+			Rotation = NumberRange.new(0, 360),
+			ZOffset = 0.5,
+		})
 	end
 	if tier >= 7 then
-		local halo = P(m, Vector3.new(0.1, 4.6, 4.6), f * CFrame.new(0, 5.2, 0.85) * CFrame.Angles(0, math.pi / 2, 0), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
-		halo.Name = "Halo"
+		-- an outer halo ring around the first
+		emitter(m.Aura.HaloAt, "Halo2", {
+			Texture = RING,
+			Color = seq(color),
+			LockedToPart = true,
+			Speed = NumberRange.new(0),
+			Size = NumberSequence.new(3.8),
+			Transparency = fade(0.45),
+			Lifetime = NumberRange.new(3),
+			Rate = 0.67,
+			RotSpeed = NumberRange.new(30),
+			ZOffset = -2,
+		})
+	end
+	if tier >= 8 then
+		emitter(ground, "Pulse", {
+			Texture = RING,
+			Color = seq(color),
+			Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+			EmissionDirection = Enum.NormalId.Top,
+			Speed = NumberRange.new(0.01),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 9) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) }),
+			Lifetime = NumberRange.new(1.6),
+			Rate = 0, -- the client emits one on each in-breath
+		})
 	end
 	if tier >= 5 then
-		local count = ({ 3, 5, 7 })[tier - 4]
+		local count = ({ 3, 5, 7, 7, 9 })[tier - 4]
 		for i = 0, count - 1 do
 			local a = math.rad(90 + i * 360 / count)
 			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 3.3 + (i % 2) * 0.5, math.sin(a) * 2.8), color, Enum.Material.Neon, Enum.PartType.Ball)
 			orb.Name = "QiOrb" -- chest height and clear of the head, so no orb crosses the face
+			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
+			t0.Position, t1.Position = Vector3.new(0, 0.15, 0), Vector3.new(0, -0.15, 0)
+			t0.Parent, t1.Parent = orb, orb
+			local trail = Instance.new("Trail")
+			trail.Attachment0, trail.Attachment1 = t0, t1
+			trail.Color = seq(color)
+			trail.LightEmission = 1
+			trail.Lifetime = 0.5
+			trail.Transparency = NumberSequence.new(0.3, 1)
+			trail.WidthScale = NumberSequence.new(1, 0)
+			trail.FaceCamera = true
+			trail.Parent = orb
 		end
+	end
+	if tier >= 9 then
+		m:SetAttribute("Prismatic", true)
 	end
 end
 

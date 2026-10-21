@@ -1,13 +1,15 @@
 -- Meditation idle for the seated cultivators (server: Cultivators.luau). The avatars are anchored
 -- in a cross-legged pose; here the upper body rises and leans with each slow breath and sways side to
--- side, the head drifts on its own rhythm, the aura ring and halo swell with the breath, the sparkles
--- puff out now and then, and the qi orbs circle and bob. Local only (nothing replicates), skipped
--- beyond FAR studs.
+-- side, the head drifts on its own rhythm, the motes puff out now and then, a ring pulses out on each
+-- in-breath (tier 8+), the qi orbs circle and bob, and the Primordial's aura runs through every
+-- colour. Local only (nothing replicates): the motion stops beyond FAR studs and the aura layers
+-- switch off beyond GLOW studs, which keeps a full platform cheap on phones.
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
 local TAG = "Cultivator"
 local FAR = 150
+local GLOW = 90
 local BREATH = 4.5 -- seconds per breath
 local SWAY = 7.3 -- seconds per side-to-side sway
 local NOD = 9.1 -- seconds per head drift
@@ -16,6 +18,17 @@ local HEADWEAR = { [Enum.AccessoryType.Hair] = true, [Enum.AccessoryType.Face] =
 
 local figures = {}
 
+-- every aura layer of a figure: particle emitters, ribbons and orb trails
+local function layersOf(m)
+	local list = {}
+	for _, d in m:GetDescendants() do
+		if d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") then
+			table.insert(list, d)
+		end
+	end
+	return list
+end
+
 local function add(m)
 	local avatar = m:WaitForChild("Avatar", 10)
 	local waist = avatar and avatar:WaitForChild("UpperTorso", 10)
@@ -23,7 +36,7 @@ local function add(m)
 	if not waist or not head or not m.Parent then
 		return
 	end
-	local f = { body = {}, bodyBase = {}, head = {}, headBase = {}, orbs = {}, orbBase = {}, swell = {}, phase = math.random() * 20 }
+	local f = { body = {}, bodyBase = {}, head = {}, headBase = {}, orbs = {}, orbBase = {}, phase = math.random() * 20 }
 	-- breathe about the bottom of the chest; the head turns about the neck
 	f.pivot = waist.CFrame * CFrame.new(0, -waist.Size.Y / 2, 0)
 	f.neck = f.pivot:ToObjectSpace(head.CFrame * CFrame.new(0, -head.Size.Y / 2, 0))
@@ -46,12 +59,14 @@ local function add(m)
 		if p.Name == "QiOrb" then
 			table.insert(f.orbs, p)
 			table.insert(f.orbBase, p.Position - f.centre)
-		elseif p.Name == "AuraRing" or p.Name == "Halo" then
-			table.insert(f.swell, { part = p, size = p.Size })
 		end
 	end
 	local aura = m:FindFirstChild("Aura")
-	f.emitter = aura and aura:FindFirstChildOfClass("ParticleEmitter")
+	f.motes = aura and aura:FindFirstChild("Motes", true)
+	f.pulse = aura and aura:FindFirstChild("Pulse", true)
+	f.layers = layersOf(m)
+	f.lit = true
+	f.prismatic = m:GetAttribute("Prismatic") == true
 	f.nextPuff = os.clock() + 4 + math.random() * 8
 	figures[m] = f
 end
@@ -77,9 +92,16 @@ RunService.RenderStepped:Connect(function()
 	local now = os.clock()
 	local parts, cfs = {}, {}
 	for m, f in figures do
+		local dist = (f.centre - eye).Magnitude
+		if m.Parent and (dist < GLOW) ~= f.lit then
+			f.lit = dist < GLOW
+			for _, l in f.layers do
+				l.Enabled = f.lit
+			end
+		end
 		if not m.Parent then
 			figures[m] = nil
-		elseif (f.centre - eye).Magnitude < FAR then
+		elseif dist < FAR then
 			local t = now + f.phase
 			local b = math.sin(t / BREATH * TAU)
 			local s = math.sin(t / SWAY * TAU)
@@ -102,14 +124,27 @@ RunService.RenderStepped:Connect(function()
 				table.insert(parts, orb)
 				table.insert(cfs, CFrame.new(f.centre + turn * f.orbBase[i] + Vector3.new(0, 0.25 * math.sin(now * 1.3 + i), 0)))
 			end
-			-- the aura swells with the in-breath
-			local k = 1 + 0.06 * (b + 1)
-			for _, w in f.swell do
-				w.part.Size = Vector3.new(w.size.X, w.size.Y * k, w.size.Z * k)
-			end
-			if f.emitter and now > f.nextPuff then
-				f.emitter:Emit(6)
-				f.nextPuff = now + 8 + math.random() * 6
+			if f.lit then
+				if f.motes and now > f.nextPuff then
+					f.motes:Emit(6)
+					f.nextPuff = now + 8 + math.random() * 6
+				end
+				-- one ring pulse at the top of each in-breath
+				if f.pulse and b > 0.97 and not f.pulsed then
+					f.pulse:Emit(1)
+				end
+				f.pulsed = b > 0.97
+				if f.prismatic and now > (f.nextHue or 0) then
+					f.nextHue = now + 0.1
+					local c = Color3.fromHSV((now * 0.08) % 1, 0.6, 1)
+					local cs = ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(Color3.new(1, 1, 1), 0.6)) })
+					for _, l in f.layers do
+						l.Color = cs
+					end
+					for _, orb in f.orbs do
+						orb.Color = c
+					end
+				end
 			end
 		end
 	end
