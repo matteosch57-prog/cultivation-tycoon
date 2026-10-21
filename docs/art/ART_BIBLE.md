@@ -54,14 +54,23 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
 - Buildings on the sides face the centre of the peak (`facingCentre` in Builders), never the void.
 
 ## Cultivators (disciples on the platform)
-- Built by `src/server/Cultivators.luau`; lineup mock [cultivators_lineup.jpg](mocks/cultivators_lineup.jpg).
-- Four looks cycled by slot: sword disciple (topknot, sword on the back), lotus maiden (long hair, twin
-  buns, flower), pill monk (shaved head, beads, gourd), elder sage (white beard, crown, horsetail whisk).
-- The rarity owns the colour: robe = the rarity colour toward cream; trim cream, silver at Core, gold at
-  Elder, cream on the gold Immortal robe.
+- Real R15 Roblox avatars built by `src/server/Cultivators.luau` from a HumanoidDescription: catalog
+  hanfu (layered clothing, which any experience may put on an NPC), hair and beard. Lineup mock
+  [cultivators_avatars.jpg](mocks/cultivators_avatars.jpg); the earlier part-built mock
+  [cultivators_lineup.jpg](mocks/cultivators_lineup.jpg) set the colour and aura rules.
+- Four looks cycled by slot: sword disciple (black ponytail), lotus maiden (buns with hairpins),
+  pill monk (shaved head), elder sage (white crown hair and beard).
+- The rarity owns the robe: white, green, blue, purple, gold. A dark robe hides the rarity, so every
+  robe is checked in a capture before it ships (the long robe green and blue read black).
 - Aura grows one step per rarity: Outer none, Inner a small ForceField ground ring, Core a wide ring and
-  rising sparkles, Elder adds a halo behind the head, Immortal adds three qi orbs. No Light instances
-  (R3) and one emitter per figure at most, so a full platform stays cheap on phones.
+  rising sparkles, Elder adds a halo behind the head, Immortal adds three circling qi orbs. No Light
+  instances (R3), at most one emitter per figure.
+- Pose and motion: the server poses the rig cross-legged through its joint graph and anchors it (new
+  rigs have AnimationConstraints, no Motor6D); `CultivatorIdle.client.luau` breathes the upper body and
+  circles the orbs locally within 150 studs. No animation upload. An uploaded meditation animation
+  (owner uploads, R5) would be the upgrade path.
+- Templates are built once per look and rarity per server, then cloned. If a catalog item is ever
+  taken down, that robe or hair goes missing until its id is replaced in `ROBES` / `LOOK`.
 
 ## Light (RULES R3)
 Scene light comes only from the sky or a visible lamp holding a real Light (stone lanterns, braziers,
