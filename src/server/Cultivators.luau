@@ -57,11 +57,18 @@ local ROBES = {
 	},
 }
 
+-- Roblox's own Man and Woman bodies (shaped limbs and hands, not the blocky default) and dynamic
+-- heads: a dynamic head has FaceControls, so the client can close the eyes in meditation, open them
+-- to look at a player and blink (research 2026-10-21: a blocky body with the classic smile decal is
+-- what reads cheap; a face that moves is what reads alive).
+local MAN = { Torso = 86500008, RightArm = 86500036, LeftArm = 86500054, LeftLeg = 86500064, RightLeg = 86500078 }
+local WOMAN = { Torso = 86499666, RightArm = 86499698, LeftArm = 86499716, LeftLeg = 86499753, RightLeg = 86499793 }
+
 local LOOK = {
-	sword = { robes = "male", hair = { 101082692371776 } }, -- Xianxia Low Ponytail - Black
-	lotus = { robes = "female", hair = { 113503254025840 } }, -- Hair buns with Hairpins - Black
-	monk = { robes = "male", hair = {}, hat = { 12136449552 } }, -- shaved head, a strategist's moustache so it reads as a face (Nexus Exchange)
-	elder = { robes = "male", hair = { 89557677054617 }, face = { 123149555491840 } }, -- Imperial Crown Hair-White, white beard
+	sword = { robes = "male", body = MAN, head = 10725826963, hair = { 101082692371776 } }, -- Man Face; Xianxia Low Ponytail - Black
+	lotus = { robes = "female", body = WOMAN, head = 10725626210, hair = { 113503254025840 } }, -- Woman Face; Hair buns with Hairpins - Black
+	monk = { robes = "male", body = MAN, head = 11180212350, hair = {} }, -- Classic Male Face, shaved head
+	elder = { robes = "male", body = MAN, head = 84767188836438, hair = { 89557677054617 }, face = { 123149555491840 } }, -- Old Man Jenkins; Imperial Crown Hair-White, white beard
 }
 
 -- joint rotations of the cross-legged pose, applied in each joint's parent attachment frame
@@ -114,6 +121,10 @@ local function describe(look, tier)
 	for _, k in { "HeadColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor", "TorsoColor" } do
 		d[k] = SKIN
 	end
+	for k, id in spec.body do
+		d[k] = id
+	end
+	d.Head = spec.head
 	-- one list for layered and rigid accessories (SetAccessories with `true` replaces both)
 	local list = {}
 	for i, layer in ROBES[spec.robes][tier] do
@@ -240,8 +251,16 @@ local function template(look, tier)
 	return m
 end
 
+-- Aura colour: the rarity hue pushed to full saturation, lightening only a little at the end. The
+-- first pass lerped 60% toward white and every aura read pale (owner 2026-10-21).
+local function vivid(c)
+	local h, sat, v = c:ToHSV()
+	return Color3.fromHSV(h, math.max(sat, 0.85), math.max(v, 0.9))
+end
+
 local function seq(c)
-	return ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(WHITE, 0.6)) })
+	c = vivid(c)
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(WHITE, 0.2)) })
 end
 
 local function fade(peak)
@@ -251,8 +270,10 @@ end
 local function emitter(att, name, props)
 	local pe = Instance.new("ParticleEmitter")
 	pe.Name = name
-	pe.LightEmission = 1
+	-- half additive: fully additive layers wash out to white over the pale floor and sky
+	pe.LightEmission = 0.45
 	pe.LightInfluence = 0
+	pe.Brightness = 2
 	for k, v in props do
 		pe[k] = v
 	end
@@ -295,7 +316,7 @@ local function aura(m, f, color, tier)
 		EmissionDirection = Enum.NormalId.Top,
 		Speed = NumberRange.new(0.01),
 		Size = NumberSequence.new(4.6 + tier * 0.25),
-		Transparency = fade(0.15),
+		Transparency = fade(0.05),
 		Lifetime = NumberRange.new(4),
 		Rate = 0.75,
 		RotSpeed = NumberRange.new(25),
@@ -393,7 +414,7 @@ local function aura(m, f, color, tier)
 		local count = ({ 3, 5, 7, 7, 9 })[tier - 4]
 		for i = 0, count - 1 do
 			local a = math.rad(90 + i * 360 / count)
-			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 3.3 + (i % 2) * 0.5, math.sin(a) * 2.8), color, Enum.Material.Neon, Enum.PartType.Ball)
+			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 3.3 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color), Enum.Material.Neon, Enum.PartType.Ball)
 			orb.Name = "QiOrb" -- chest height and clear of the head, so no orb crosses the face
 			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
 			t0.Position, t1.Position = Vector3.new(0, 0.15, 0), Vector3.new(0, -0.15, 0)
@@ -401,7 +422,7 @@ local function aura(m, f, color, tier)
 			local trail = Instance.new("Trail")
 			trail.Attachment0, trail.Attachment1 = t0, t1
 			trail.Color = seq(color)
-			trail.LightEmission = 1
+			trail.LightEmission = 0.6
 			trail.Lifetime = 0.5
 			trail.Transparency = NumberSequence.new(0.3, 1)
 			trail.WidthScale = NumberSequence.new(1, 0)
@@ -426,7 +447,8 @@ function Cultivators.build(parent, cf, look, rarity, rarities)
 	m.Name = "Cultivator_" .. look
 	m:SetAttribute("Look", look)
 	m:SetAttribute("Rarity", rarity.name)
-	P(m, Vector3.new(0.5, 3.2, 3.2), cf * CFrame.new(0, SEAT - 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2), CUSHION, nil, Enum.PartType.Cylinder).Name = "Cushion"
+	-- the cushion rests on the ground: the cultivator floats above it (client)
+	P(m, Vector3.new(0.5, 3.2, 3.2), cf * CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2), CUSHION, nil, Enum.PartType.Cylinder).Name = "Cushion"
 	aura(m, cf, rarity.color, tier)
 	m.Parent = parent
 	task.spawn(function()

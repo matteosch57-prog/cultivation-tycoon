@@ -58,6 +58,11 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
   hanfu (layered clothing, which any experience may put on an NPC), hair and beard. Lineup mock
   [cultivators_avatars.jpg](mocks/cultivators_avatars.jpg); the earlier part-built mock
   [cultivators_lineup.jpg](mocks/cultivators_lineup.jpg) set the colour and aura rules.
+- Bodies and faces: Roblox's own Man and Woman bodies (shaped limbs and hands) and dynamic heads (Man
+  Face, Woman Face, Classic Male Face, Old Man Jenkins). The blocky default body with the classic smile
+  decal read cheap; a dynamic head's FaceControls let the client close the eyes in meditation, open
+  them now and then and open them with a faint smile to watch a close player.
+  Capture: [cultivators_vivid.jpg](mocks/cultivators_vivid.jpg).
 - Four looks cycled by slot: sword disciple (black ponytail), lotus maiden (buns with hairpins),
   pill monk (shaved head with a strategist's moustache, since a bare default head read as a failed load),
   elder sage (white crown hair and beard).
@@ -65,7 +70,8 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
   crimson (robe under a red cloak), Heavenly Emperor red-gold, Primordial white under a white cloak. A
   dark robe hides the rarity, so every robe is checked in a capture before it ships (the long robe green
   and blue read black). Top tiers: [cultivators_premium_auras.jpg](mocks/cultivators_premium_auras.jpg).
-- Premium aura = several soft layers at low rates, colour brightening toward white, one layer more per
+- Premium aura = several soft layers at low rates, in the rarity hue pushed to full saturation
+  (lightening only 20% at the edge, half additive: fading 60% to white, fully additive, read pale), one layer more per
   rarity: Inner a turning qi sigil on the ground, Core rising motes, Elder a halo ring behind the head,
   Immortal qi orbs with trails, Celestial a second wider sigil, Dao Ancestor an outer halo, Heavenly
   Emperor a ring pulse on each breath, Primordial runs through every colour. Orbs 3 / 5 / 7 / 7 / 9 from
@@ -78,7 +84,7 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
 - Phone budget: aura layers switch off beyond 90 studs and motion stops beyond 150 (client).
 - Pose and motion: the server poses the rig cross-legged through its joint graph and anchors it (new
   rigs have AnimationConstraints, no Motor6D); `CultivatorIdle.client.luau` animates locally within 150
-  studs and only on screen: the whole figure floats 1.1 studs over its cushion and bobs (halo and orbs
+  studs and only on screen: the whole figure floats over its cushion, which rests on the ground, and bobs (halo and orbs
   float along), the head watches a player within 24 studs (up to 55 degrees) and otherwise glances aside
   now and then, breath (rise and lean), a slow side sway, a head drift on its own rhythm, a sparkle puff
   every 8 to 14 s, the ground pulse on each in-breath, orbs circling (alternate directions from

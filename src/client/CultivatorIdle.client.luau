@@ -2,7 +2,8 @@
 -- in a cross-legged pose; here the whole figure floats above its cushion and bobs, the upper body
 -- rises and leans with each slow breath and sways side to side, and the head lives on its own: it
 -- turns to watch a player who comes close, glances aside now and then, and drifts. The motes puff out
--- now and then, a ring pulses out on each in-breath (tier 8+), the qi orbs and halo float along, and
+-- now and then, the face (a dynamic head) meditates with closed eyes, blinks them open now and then
+-- and opens them with a faint smile to watch a close player, a ring pulses out on each in-breath (tier 8+), the qi orbs and halo float along, and
 -- the Primordial's aura runs through every colour. Local only (nothing replicates): the motion stops
 -- beyond FAR studs and the aura layers switch off beyond GLOW studs, which keeps phones cheap.
 local CollectionService = game:GetService("CollectionService")
@@ -83,6 +84,9 @@ local function add(m)
 	f.nextPuff = os.clock() + 4 + math.random() * 8
 	f.yaw, f.pitch = 0, 0
 	f.glance, f.nextGlance = 0, os.clock() + 3 + math.random() * 6
+	f.face = head:FindFirstChildOfClass("FaceControls")
+	f.eyes, f.smile = 1, 0
+	f.nextOpen = os.clock() + 2 + math.random() * 6
 	figures[m] = f
 end
 
@@ -156,6 +160,23 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 			f.yaw += (yaw - f.yaw) * ease
 			f.pitch += (pitch - f.pitch) * ease
+			-- eyes: closed in meditation, open for a moment now and then, wide open with a faint smile
+			-- while watching a player
+			if f.face then
+				local eyes, smile = 0.92, 0
+				if watching then
+					eyes, smile = 0, 0.35
+				elseif now > f.nextOpen then
+					eyes = 0.1
+					if now > f.nextOpen + 1.6 then
+						f.nextOpen = now + 5 + math.random() * 8
+					end
+				end
+				f.eyes += (eyes - f.eyes) * math.min(1, dt * 6)
+				f.smile += (smile - f.smile) * ease
+				f.face.LeftEyeClosed, f.face.RightEyeClosed = f.eyes, f.eyes
+				f.face.LeftLipCornerPuller, f.face.RightLipCornerPuller = f.smile, f.smile
+			end
 			local n = math.sin(t / NOD * TAU)
 			local neck = body * f.neck * CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
 			for i, p in f.head do
@@ -184,8 +205,8 @@ RunService.RenderStepped:Connect(function(dt)
 				f.pulsed = b > 0.97
 				if f.prismatic and now > (f.nextHue or 0) then
 					f.nextHue = now + 0.1
-					local c = Color3.fromHSV((now * 0.08) % 1, 0.6, 1)
-					local cs = ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(Color3.new(1, 1, 1), 0.6)) })
+					local c = Color3.fromHSV((now * 0.08) % 1, 0.9, 1)
+					local cs = ColorSequence.new({ ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c:Lerp(Color3.new(1, 1, 1), 0.2)) })
 					for _, l in f.layers do
 						l.Color = cs
 					end
