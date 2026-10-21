@@ -172,3 +172,11 @@ life, days to re-reach the old peak):
   724 (-30%); Heavenly Emperor 569 (-45%); Primordial 362 (-65%); the three top ones 270 (-74%). Owned
   from the start, Dao Ancestor and above flatten realms 1 to 6 to the walking floor, hence the realm
   gates and once-per-player limits built on branch shop (853aeff).
+
+## 10. Heavenly Altar rewards (added the same day)
+Per 10 minute round a player earns on average ~120 s of income: the winner 300 s (120 s when alone),
+each other fighter 60 s, so with four fighters (300 + 3 x 60) / 4 = 120, and a solo claimer 120. That
+is about +20% LIVE income (offline is untouched). Simulated as a live multiplier, regular player
+(2 x 30 min a day): realm 10 finished on day 17 instead of 18 (x1.2); even x1.5 only gives day 16.
+The altar is a fun bonus, not a pacing lever; a solo claim pays less so an empty server can't farm it.
+

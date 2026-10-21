@@ -51,6 +51,10 @@ Telemetry.EVENTS = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",
 	},
+	AltarRound = {
+		fields = { "claimed | faded", "players who stood on it (9 = 9+)", "winner's realm (realmBucket) or none" },
+		question = "Do players fight for the Heavenly Altar, how many per round, and who wins it?",
+	},
 	KarmaShop = {
 		fields = { "node key (Config.DAO)", "level bought", "life (lifeBucket)" },
 		question = "Which Karma Shop nodes do players buy first, and in which life?",
