@@ -330,4 +330,137 @@ function Builders.disciple(ctx, slot, rarity)
 	return m
 end
 
+---------------------------------------------------------------------------------------------
+-- District resources (option C, owner 2026-10-21; mock docs/art/mocks/district_resources.html):
+-- more copies of the fields' resources and five new types, each a compact plot. `local frame`
+-- = the plot's frame relative to the peak, turned to face the centre like the other buildings.
+local function plotFrame(ctx, pad)
+	return ctx.frame:ToObjectSpace(facingCentre(ctx, pad.x, pad.z))
+end
+
+function Builders.vein3(ctx, pad)
+	vein(ctx, pad.x, pad.z)
+end
+function Builders.garden2(ctx, pad)
+	Builders.garden(ctx, pad)
+end
+function Builders.garden3(ctx, pad)
+	Builders.garden(ctx, pad)
+end
+
+-- Spirit Tea Terrace: three stepped beds climbing away from the path, stone retaining walls, a
+-- row of leaf-card tea bushes on each step.
+local function tea(ctx, pad)
+	local f = plotFrame(ctx, pad)
+	for step = 0, 2 do
+		local z = 3 - step * 3
+		local h = 0.6 + step * 0.7
+		part(ctx, Vector3.new(11, h, 3.2), f * CFrame.new(0, h / 2, z), SP.dirt)
+		part(ctx, Vector3.new(11.4, h + 0.15, 0.5), f * CFrame.new(0, (h + 0.15) / 2, z + 1.7), SP.stone)
+		for i = -2, 2 do
+			local at = ctx.frame * f * CFrame.new(i * 2.1, h, z)
+			if Nature.ready("bush") then
+				Nature.bush(ctx.folder, at, 60 + step * 5 + i, 1.7)
+			else
+				part(ctx, Vector3.new(1.6, 1.2, 1.6), f * CFrame.new(i * 2.1, h + 0.6, z), Color3.fromHex("4E8F4A"))
+			end
+		end
+	end
+end
+Builders.tea1 = tea
+Builders.tea2 = tea
+
+-- Fire Lotus Pond: a small pond of amber water holding three flame-red lotuses with amber gems.
+local FIRE = { Color3.fromHex("E5492F"), Color3.fromHex("FFD38A") }
+local function fireLotus(ctx, pad)
+	local f = ctx.frame * plotFrame(ctx, pad)
+	Style.pond(ctx.folder, f, 5, Color3.fromHex("D9822B"))
+	for i = 0, 2 do
+		local a = i / 3 * math.pi * 2
+		Nature.lotus(ctx.folder, f * CFrame.new(math.cos(a) * 2.2, 0.55, math.sin(a) * 2.2), 70 + i, 0.75, Color3.fromHex("FFB347"), FIRE)
+	end
+end
+Builders.firelotus1 = fireLotus
+Builders.firelotus2 = fireLotus
+
+-- Jade Quarry: a stepped grey-green rock face cut into the ground, jade veins glowing in it (one
+-- real light), cut blocks stacked by a little wooden cart.
+local JADE = Color3.fromHex("43C78C")
+local function jade(ctx, pad)
+	local f = plotFrame(ctx, pad)
+	local rock = Color3.fromHex("8C9A8E")
+	for step = 0, 2 do
+		local w = 11 - step * 2.5
+		part(ctx, Vector3.new(w, 1.6 + step * 1.6, 3), f * CFrame.new(0, (1.6 + step * 1.6) / 2, -2 - step * 2.2), rock:Lerp(Color3.new(0, 0, 0), step * 0.08), Enum.Material.Slate)
+	end
+	glowPart(ctx, Vector3.new(0.9, 2.6, 0.9), f * CFrame.new(-2, 2.2, -1.2) * CFrame.Angles(0, 0.6, 0.35), JADE, 14)
+	part(ctx, Vector3.new(0.7, 1.8, 0.7), f * CFrame.new(1.8, 3.6, -3.4) * CFrame.Angles(0.2, 0.4, -0.3), JADE, Enum.Material.Neon)
+	part(ctx, Vector3.new(0.6, 1.4, 0.6), f * CFrame.new(3.2, 1.6, -1.6) * CFrame.Angles(0, 0, 0.5), JADE, Enum.Material.Neon)
+	-- cut blocks and the cart, in front of the face
+	for i = 0, 2 do
+		part(ctx, Vector3.new(1.2, 1.2, 1.2), f * CFrame.new(-3.6 + i * 1.3, 0.6, 2.4) * CFrame.Angles(0, i * 0.3, 0), JADE:Lerp(Color3.new(1, 1, 1), 0.25), Enum.Material.Marble)
+	end
+	part(ctx, Vector3.new(2.4, 1, 1.6), f * CFrame.new(2.6, 1, 2.6), SP.timber, Enum.Material.Wood)
+	for _, sx in { -1, 1 } do
+		cyl(ctx, 0.3, 1, f * CFrame.new(2.6 + sx * 0.9, 0.5, 3.5) * CFrame.Angles(math.pi / 2, 0, 0), SP.timberDark)
+	end
+end
+Builders.jade1 = jade
+Builders.jade2 = jade
+Builders.jade3 = jade
+
+-- Thunder Crystal: a tall violet crystal cluster on a stone plinth that holds a storm's charge;
+-- one real light and a few sparks crawling up it.
+local THUNDER = Color3.fromHex("9C7BFF")
+local function thunder(ctx, pad)
+	local f = plotFrame(ctx, pad)
+	cyl(ctx, 1, 7, f * CFrame.new(0, 0.5, 0), SP.stone)
+	cyl(ctx, 0.4, 5.6, f * CFrame.new(0, 1.2, 0), SP.stoneLight)
+	local core = glowPart(ctx, Vector3.new(1.4, 6, 1.4), f * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.rad(45), 0.08), THUNDER, 16)
+	for i = 0, 3 do
+		local a = i / 4 * math.pi * 2
+		part(ctx, Vector3.new(0.8, 3, 0.8), f * CFrame.new(math.cos(a) * 1.4, 2.6, math.sin(a) * 1.4) * CFrame.Angles(0, a, math.rad(25)) * CFrame.Angles(0, math.rad(45), 0), THUNDER:Lerp(Color3.new(1, 1, 1), 0.2), Enum.Material.Neon)
+	end
+	local at = Instance.new("Attachment")
+	at.Parent = core
+	local pe = Instance.new("ParticleEmitter") -- sparks: Rate 3 x 0.4 s, ~1 live
+	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	pe.Color = ColorSequence.new(Color3.fromHex("E3D9FF"), THUNDER)
+	pe.LightEmission = 1
+	pe.Size = NumberSequence.new(0.6, 0)
+	pe.Speed = NumberRange.new(4, 7)
+	pe.Lifetime = NumberRange.new(0.3, 0.5)
+	pe.SpreadAngle = Vector2.new(60, 60)
+	pe.Rate = 3
+	pe.Parent = at
+end
+Builders.thunder1 = thunder
+Builders.thunder2 = thunder
+
+-- Meditation Spring: a small steaming hot spring in a stone ring, with a stone lantern beside it.
+local function spring(ctx, pad)
+	local f = ctx.frame * plotFrame(ctx, pad)
+	local pond = Style.pond(ctx.folder, f, 3.6, Color3.fromHex("7FD3D9"))
+	local holder = Instance.new("Part")
+	holder.Anchored, holder.CanCollide, holder.CanQuery, holder.CanTouch = true, false, false, false
+	holder.Transparency = 1
+	holder.Size = Vector3.new(5, 0.2, 5)
+	holder.CFrame = f * CFrame.new(0, 0.7, 0)
+	holder.Parent = pond
+	local steam = Instance.new("ParticleEmitter") -- Rate 2 x 4 s, ~8 live
+	steam.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	steam.Color = ColorSequence.new(Color3.new(1, 1, 1))
+	steam.Size = NumberSequence.new(1.5, 4)
+	steam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.7), NumberSequenceKeypoint.new(1, 1) })
+	steam.Lifetime = NumberRange.new(3, 5)
+	steam.Speed = NumberRange.new(0.6, 1.2)
+	steam.Shape = Enum.ParticleEmitterShape.Box
+	steam.EmissionDirection = Enum.NormalId.Top
+	steam.Rate = 2
+	steam.Parent = holder
+	Style.lantern(ctx.folder, f * CFrame.new(4.6, 0, -2.6), 0.6)
+end
+Builders.spring1 = spring
+Builders.spring2 = spring
+
 return Builders

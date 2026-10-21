@@ -136,11 +136,11 @@ Config.PADS = {
 	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Main Hall level 3", district = "heart" },
 	{ id = "quarters1", name = "Disciple Quarters", cost = 5000, income = 5, unlock = 10, req = { "hall", "expand1" }, x = -54, z = -32, feature = "+1 disciple slot", district = "disciples" },
 	{ id = "expand1", name = "Expand the Peak", cost = 6000, income = 0, unlock = 11, req = {}, x = -14, z = 8, feature = "Your island grows" },
-	{ id = "bamboo", name = "Bamboo Grove", cost = 7500, income = 60, unlock = 12, req = { "expand1" }, x = -80, z = 0, district = "fields" },
+	{ id = "bamboo", name = "Bamboo Grove", cost = 7500, income = 60, unlock = 12, req = { "expand1" }, x = -84, z = -6, district = "fields" },
 	{ id = "training", name = "Training Ground", cost = 8500, income = 60, unlock = 12, req = { "expand1" }, x = 74, z = 8, district = "dao" },
 	{ id = "mainhall4", name = "Sect Palace", cost = 11000, income = 100, unlock = 13, req = { "mainhall3" }, x = 0, z = -30, feature = "Main Hall level 4", district = "heart" },
 	{ id = "bell", name = "Bell Tower", cost = 12000, income = 90, unlock = 14, req = { "expand2" }, x = 40, z = -74, district = "heart" },
-	{ id = "koi", name = "Koi Pond", cost = 13000, income = 90, unlock = 14, req = { "expand1" }, x = -74, z = 26, district = "fields" },
+	{ id = "koi", name = "Koi Pond", cost = 13000, income = 90, unlock = 14, req = { "expand1" }, x = -74, z = 14, district = "fields" },
 	{ id = "quarters2", name = "Grand Quarters", cost = 15000, income = 10, unlock = 15, req = { "quarters1", "expand1" }, x = -58, z = -62, feature = "+1 disciple slot", district = "disciples" },
 	{ id = "expand2", name = "Expand the Peak II", cost = 18000, income = 0, unlock = 16, req = { "expand1" }, x = 14, z = 8, feature = "Your island grows again" },
 	{ id = "pagoda1", name = "Pagoda", cost = 21000, income = 150, unlock = 17, req = { "expand2" }, x = 0, z = -60, district = "heart" },
@@ -148,17 +148,34 @@ Config.PADS = {
 	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = 64, z = -26, district = "dao" },
 	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 12, z = -66, district = "heart" },
 	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Main Hall final level", district = "heart" },
+	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
+	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
+	{ id = "vein3", name = "Third Spirit Vein", cost = 1800, income = 10, unlock = 7, req = { "vein2" }, x = -30, z = 10, district = "fields" },
+	{ id = "firelotus1", name = "Fire Lotus Pond", cost = 2000, income = 12, unlock = 7, req = { "furnace" }, x = 34, z = 40, district = "dao" },
+	{ id = "firelotus2", name = "Twin Fire Lotus", cost = 5500, income = 25, unlock = 10, req = { "firelotus1" }, x = 50, z = 14, district = "dao" },
+	{ id = "garden2", name = "Second Lotus Garden", cost = 8000, income = 35, unlock = 12, req = { "garden", "expand1" }, x = -40, z = 54, district = "fields" },
+	{ id = "tea1", name = "Spirit Tea Terrace", cost = 9500, income = 40, unlock = 13, req = { "expand1" }, x = -57, z = 33, district = "fields" },
+	{ id = "spring1", name = "Meditation Spring", cost = 10000, income = 42, unlock = 13, req = { "expand1" }, x = -80, z = -41, district = "disciples" },
+	{ id = "garden3", name = "Third Lotus Garden", cost = 12500, income = 50, unlock = 15, req = { "garden2" }, x = -60, z = 48, district = "fields" },
+	{ id = "tea2", name = "High Tea Terrace", cost = 14000, income = 55, unlock = 15, req = { "tea1" }, x = -73, z = 31, district = "fields" },
+	{ id = "spring2", name = "Twin Spring", cost = 16000, income = 62, unlock = 16, req = { "spring1" }, x = -80, z = -60, district = "disciples" },
+	{ id = "jade1", name = "Jade Quarry", cost = 20000, income = 80, unlock = 18, req = { "expand2" }, x = 62, z = 30, district = "dao" },
+	{ id = "thunder1", name = "Thunder Crystal", cost = 22000, income = 88, unlock = 19, req = { "expand2" }, x = 58, z = -50, district = "dao" },
+	{ id = "jade2", name = "Deep Jade Quarry", cost = 25000, income = 95, unlock = 20, req = { "jade1" }, x = 78, z = 28, district = "dao" },
+	{ id = "thunder2", name = "Storm Crystal", cost = 28000, income = 110, unlock = 21, req = { "thunder1" }, x = 74, z = -47, district = "dao" },
+	{ id = "jade3", name = "Heart of Jade", cost = 29000, income = 115, unlock = 22, req = { "jade2" }, x = 90, z = -10, district = "dao" },
 }
-
 -- The island grows lobe by lobe (owner 2026-10-21: "they go little by little, not full diameter"):
 -- the base disc keeps ISLAND_RADIUS, each expansion adds lobes of land beside the district it
 -- grows. `exp` = the expansion level that adds it; x, z, r in studs (peak frame). The farthest lobe
 -- edge (ISLAND_REACH) stays clear of the neighbours at PLOT_RADIUS 215 (east/west reach about 100; the lobes behind reach ~110, away from every neighbour).
 Config.ISLAND_LOBES = {
 	{ x = -70, z = 6, r = 34, exp = 1 }, -- Spirit Fields grow west (bamboo, koi)
-	{ x = -60, z = -52, r = 30, exp = 1 }, -- the Disciples' corner, back left (both quarters)
-	{ x = 70, z = 8, r = 28, exp = 2 }, -- Alchemy and Training grow east (training ground)
-	{ x = 62, z = -30, r = 26, exp = 2 }, -- ... and south-east (moon gate)
+	{ x = -60, z = -52, r = 30, exp = 1 }, -- the Disciples' corner, back left (quarters, springs)
+	{ x = -48, z = 46, r = 26, exp = 1 }, -- the fields' front left (the second and third lotus gardens)
+	{ x = 70, z = 8, r = 32, exp = 2 }, -- Alchemy and Training grow east (training ground, jade quarries)
+	{ x = 62, z = -30, r = 28, exp = 2 }, -- ... and south-east (moon gate, thunder crystals)
+	{ x = 88, z = -10, r = 16, exp = 2 }, -- ... and far east (the Heart of Jade)
 	{ x = -26, z = -78, r = 26, exp = 2 }, -- the summit behind the Main Hall (library)
 	{ x = 14, z = -80, r = 26, exp = 2 }, -- (pagodas)
 	{ x = 40, z = -74, r = 18, exp = 2 }, -- (bell tower; the Celestial Palace's back corners)
@@ -235,7 +252,7 @@ Config.WORKER_COST = { 0.5, 1, 2 }
 Config.WORKERS = {
 	garden = { name = "Farmer", x = -24, z = 44 },
 	vein1 = { name = "Miner", x = -12, z = 22 },
-	furnace = { name = "Alchemist", x = 26, z = 37 },
+	furnace = { name = "Alchemist", x = 24, z = 37 },
 	training = { name = "Fighter", x = 61.6, z = 6.6 },
 }
 function Config.workerCost(pad, n, realm)

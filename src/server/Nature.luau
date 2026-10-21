@@ -264,7 +264,7 @@ end
 local GEMS = { Color3.fromHex("4FE3C1"), Color3.fromHex("6FB8FF"), Color3.fromHex("C08BFF"), Color3.fromHex("FFD36A") }
 Nature.GEMS = GEMS
 
-function Nature.lotus(parent, cf, seed, scale, gem)
+function Nature.lotus(parent, cf, seed, scale, gem, petals)
 	local rng = Random.new(seed or 4)
 	local k = scale or 1
 	gem = gem or GEMS[math.floor(seed or 4) % #GEMS + 1]
@@ -288,6 +288,9 @@ function Nature.lotus(parent, cf, seed, scale, gem)
 	limb(m, cf.Position, stemTop.Position, 0.18 * k, Color3.fromHex("5E9A4A"))
 	-- two rings of petals: outer open wide, inner cupped
 	local deep, pale = Color3.fromHex("E5739A"), Color3.fromHex("FFF0F4")
+	if petals then -- { deep, pale } (the fire lotus)
+		deep, pale = petals[1], petals[2]
+	end
 	for ring = 1, 2 do
 		local n = ring == 1 and 8 or 6
 		local tilt = ring == 1 and math.rad(58) or math.rad(28)

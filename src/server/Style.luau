@@ -533,6 +533,22 @@ local function shimmer(m, at, len, wide, speed)
 	})
 end
 
+-- A small round pond (resource plots: fire lotus, meditation spring): a ring of rim stones, the
+-- opaque water and its drifting ripples. `tint` colours the water. Returns the model.
+function Style.pond(parent, cf, radius, tint)
+	local m = Instance.new("Model")
+	m.Name = "Pond"
+	local n = math.max(8, math.floor(radius * 2.2))
+	for i = 0, n - 1 do
+		local a = i / n * math.pi * 2
+		P(m, Vector3.new(radius * 0.55 + 0.6, 0.8, 1.2), cf * CFrame.new(math.cos(a) * radius, 0.4, math.sin(a) * radius) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
+	end
+	cylY(m, 0.3, radius * 2 - 0.4, cf * CFrame.new(0, 0.45, 0), tint or WATER).Reflectance = 0.12
+	shimmer(m, cf * CFrame.new(0, 0.6, 0), radius * 1.3, radius * 1.3, 0.05)
+	m.Parent = parent
+	return m
+end
+
 function Style.koiPond(parent, cf, seed)
 	local rng = Random.new(seed or 8)
 	local m = Instance.new("Model")

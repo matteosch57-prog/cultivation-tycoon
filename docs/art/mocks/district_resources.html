@@ -1,0 +1,103 @@
+<title>District Resources</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<style>
+/* Layout: the roster as three district columns, then one map per expansion stage */
+:root{
+  --bg:#1f2a2c; --panel:#27363a; --ink:#13191a; --fg:#f4f1e8; --muted:#b9c6c2; --line:#3a4d50;
+  --res:#59d39f; --newt:#ff9ad5; --feat:#ffc94a; --disc:#7fb6ff; --heart:#ff8a5c;
+  --display:Fredoka,"Trebuchet MS",sans-serif; --body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:26px} h2{font-size:20px} h3{font-size:16px}
+p{color:var(--muted);font-size:14px;line-height:1.5;max-width:70ch;margin:0}
+section{display:flex;flex-direction:column;gap:12px}
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.dist{background:var(--panel);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.row{display:flex;align-items:center;gap:10px}
+.row b{font-family:var(--display);font-size:15px;flex:1}
+.copies{display:flex;gap:5px}
+.c{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink)}
+.tag{font:600 11px var(--body);border-radius:6px;padding:1px 6px;color:var(--ink)}
+.maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.map{background:#2c4a57;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.map svg{width:100%;height:auto;display:block}
+.map h3{color:var(--muted);font-size:15px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:3px;border:2px solid var(--ink)}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:6px">
+  <h1>District Resources</h1>
+  <p>Option C: each district gets a few resource types and each type is built 2 or 3 times, every copy dearer than the last. New types arrive with the expansions. Copies are compact plots in rows, the way farms and mines line up in tycoons. Nothing is built yet.</p>
+</header>
+
+<section>
+  <h2>The roster</h2>
+  <div class="roster" id="roster"></div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--res)"></i>Type we have</span>
+    <span><i class="dot" style="background:var(--newt)"></i>New type</span>
+    <span>Each square = one copy you can build</span>
+  </div>
+</section>
+
+<section>
+  <h2>Where they stand</h2>
+  <div class="maps" id="maps"></div>
+</section>
+</main>
+
+<script>
+const DIST=[
+ {name:"Spirit Fields", note:"front left, grows west with expansion 1", types:[
+   {n:"Spirit Vein",k:"res",c:3,when:"start"},{n:"Lotus Garden",k:"res",c:3,when:"start"},
+   {n:"Spirit Tea Terrace",k:"newt",c:2,when:"expansion 1"},{n:"Bamboo Grove",k:"res",c:1,when:"expansion 1"},{n:"Koi Pond",k:"res",c:1,when:"expansion 1"}]},
+ {name:"Alchemy and Training", note:"right, grows east with expansion 2", types:[
+   {n:"Fire Lotus Pond",k:"newt",c:2,when:"start"},{n:"Jade Quarry",k:"newt",c:3,when:"expansion 2"},
+   {n:"Thunder Crystal",k:"newt",c:2,when:"expansion 2"},{n:"Furnace, Qi Array, Training, Moon Gate",k:"res",c:1,when:"as today"}]},
+ {name:"Disciples", note:"back left", types:[
+   {n:"Disciple Hall and quarters",k:"res",c:1,when:"as today"},{n:"Meditation Spring (new)",k:"newt",c:2,when:"expansion 1"}]},
+];
+const col=k=>k==="newt"?"var(--newt)":"var(--res)";
+document.getElementById("roster").innerHTML=DIST.map(d=>`<div class="dist"><h3>${d.name}</h3><p>${d.note}</p>${d.types.map(t=>`
+  <div class="row"><b>${t.n}</b><span class="copies">${Array.from({length:t.c},()=>`<i class="c" style="background:${col(t.k)}"></i>`).join("")}</span>
+  <span class="tag" style="background:${t.when==="start"||t.when==="as today"?"#d8e6e2":"var(--feat)"}">${t.when}</span></div>`).join("")}</div>`).join("");
+
+// maps: base disc + lobes, district plots as small rectangles
+const S=1.15,C=135,X=x=>C+x*S,Y=z=>C+z*S;
+const LOBES=[[-70,6,34,1],[-60,-52,30,1],[-50,44,22,1],[70,8,28,2],[62,-30,26,2],[-26,-78,26,2],[14,-80,26,2],[40,-74,18,2]];
+// plots: [label, x, z, w, d, kind, stage]
+const PLOTS=[
+ ["Vein",-20,24,7,7,"res",0],["Vein",-20,34,7,7,"res",0],["Vein",-30,12,7,7,"res",0],
+ ["Lotus",-36,36,14,9,"res",0],["Lotus",-40,48,14,9,"res",0],["Lotus",-56,50,14,9,"res",1],
+ ["Tea",-64,30,12,9,"newt",1],["Tea",-78,30,12,9,"newt",1],["Bamboo",-84,0,16,16,"res",1],["Koi",-70,12,14,14,"res",1],
+ ["Fire Lotus",26,30,11,11,"newt",0],["Fire Lotus",40,20,11,11,"newt",0],["Furnace",22,12,14,14,"feat",0],["Qi Array",44,-2,14,14,"feat",0],
+ ["Jade",66,24,11,9,"newt",2],["Jade",80,14,11,9,"newt",2],["Jade",82,0,11,9,"newt",2],["Training",68,4,16,16,"feat",2],
+ ["Thunder",60,-40,9,9,"newt",2],["Thunder",74,-30,9,9,"newt",2],["Moon Gate",56,-22,14,12,"feat",2],
+ ["Disc. Hall",-50,0,20,22,"disc",0],["Quarters",-54,-32,18,18,"disc",1],["Quarters",-62,-62,18,18,"disc",1],["Spring",-76,-46,9,9,"newt",1],["Spring",-40,-70,9,9,"newt",1],
+ ["Main Hall",0,-38,60,30,"heart",0],["Platform",0,0,20,20,"heart",0],["Pagodas",4,-74,18,18,"heart",2],["Library",-26,-80,24,18,"heart",2],["Bell",40,-74,16,16,"heart",2]];
+const KC={res:"var(--res)",newt:"var(--newt)",feat:"var(--feat)",disc:"var(--disc)",heart:"var(--heart)"};
+function map(st,title){
+  let s=`<svg viewBox="0 0 270 270" role="img" aria-label="${title}">`;
+  const land=[[0,0,62,0],...LOBES.map(l=>[l[0],l[1],l[2],l[3]])].filter(l=>l[3]<=st);
+  for(const l of land) s+=`<circle cx="${X(l[0])}" cy="${Y(l[1])}" r="${l[2]*S+3}" fill="#5a4636"/>`;
+  for(const l of land) s+=`<circle cx="${X(l[0])}" cy="${Y(l[1])}" r="${l[2]*S}" fill="${l[3]===st&&st>0?'#8fc46c':'#6e9f55'}"/>`;
+  s+=`<path d="M ${X(-20)} ${Y(-7)} A ${21*S} ${21*S} 0 1 0 ${X(20)} ${Y(-7)}" fill="none" stroke="#d8c7a2" stroke-width="5"/>`;
+  s+=`<line x1="${X(0)}" y1="${Y(60)}" x2="${X(0)}" y2="${Y(21)}" stroke="#d8c7a2" stroke-width="6"/>`;
+  for(const [n,x,z,w,d,k,ps] of PLOTS){ if(ps>st) continue;
+    s+=`<rect x="${X(x-w/2)}" y="${Y(z-d/2)}" width="${w*S}" height="${d*S}" rx="2.5" fill="${KC[k]}" stroke="#13191a" stroke-width="1.6"/>`;
+    s+=`<text x="${X(x)}" y="${Y(z)+3}" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="7.5" font-weight="600" fill="#13191a">${n}</text>`;
+  }
+  s+=`<text x="${X(0)}" y="264" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="10" fill="#d8e6e2">bridge</text></svg>`;
+  return `<div class="map"><h3>${title}</h3>${s}</div>`;
+}
+document.getElementById("maps").innerHTML=[0,1,2].map(st=>map(st,["Start","Expansion 1","Expansion 2"][st])).join("");
+</script>
