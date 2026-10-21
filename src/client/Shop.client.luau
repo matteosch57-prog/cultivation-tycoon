@@ -8,6 +8,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local UserInputService = game:GetService("UserInputService")
+local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -23,6 +25,14 @@ local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
 local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", more = "C9FFE4", back = "9FF5C8" }
+-- disciples for sale: a pale tile of their rarity colour
+local function tileColor(key)
+	local it = Config.shopItem(key)
+	if it and it.rarity then
+		return Config.rarity(it.rarity).color:Lerp(Color3.new(1, 1, 1), 0.55)
+	end
+	return Color3.fromHex(TILE[key] or "C9FFE4")
+end
 local TILT = { -2, 1.5, -1, 2 }
 
 local openEvent = Instance.new("BindableEvent")
@@ -95,9 +105,9 @@ local close -- forward
 local function tile(parent, key, order, name, line)
 	local col = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, Rotation = TILT[(order - 1) % #TILT + 1] })
 	Toy.list(col, false, px(2))
-	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), Color3.fromHex(TILE[key] or "C9FFE4"), px(20))
+	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
 	holder.LayoutOrder = 1
-	Toy.icon(btn, key == "more" and "pack2" or (key == "back" and "x2" or key), px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	Toy.icon(btn, key == "more" and "pack2" or key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = col
@@ -128,7 +138,7 @@ end
 
 local function row(parent, order)
 	local r = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
-	Toy.list(r, true, px(24), { VerticalAlignment = Enum.VerticalAlignment.Top })
+	Toy.list(r, true, px(16), { VerticalAlignment = Enum.VerticalAlignment.Top })
 	return r
 end
 
@@ -147,6 +157,9 @@ local function refresh()
 	if ui.boosts then
 		ui.boosts.Visible = ui.both or page == "boosts"
 		ui.packs.Visible = ui.both or page == "qi"
+	end
+	if ui.backPill then
+		ui.backPill.Visible = page == "qi"
 	end
 end
 
@@ -201,22 +214,27 @@ local function build()
 	end
 	itemTile(ui.boosts, Config.shopItem("pill"), #Config.SHOP_PASSES + 1)
 	ui.packs = row(body, 3)
+	-- second row: the Qi packs, then the disciples for sale (6 tiles fit a phone at px(16) gaps)
 	local n = 0
 	for _, it in Config.SHOP_PRODUCTS do
-		if it.seconds then
+		if it.seconds or it.rarity then
 			n += 1
 			itemTile(ui.packs, it, n)
 		end
 	end
 	if not ui.both then
 		-- page flips: "More Qi" on the boosts row, "Boosts" back on the packs row
-		local _, moreBtn = tile(ui.boosts, "more", 10, "More Qi")
+		local _, moreBtn = tile(ui.boosts, "more", 10, "Qi & Disciples")
 		moreBtn.Activated:Connect(function()
 			page = "qi"
 			refresh()
 			pop()
 		end)
-		local _, backBtn = tile(ui.packs, "back", 10, "Boosts")
+		-- back to the boosts: a small toy pill in the title row (the packs row is full on a phone)
+		local bHolder, backBtn = Toy.button(head, UDim2.fromOffset(px(96), px(34)), Color3.fromHex("9FF5C8"), px(12))
+		bHolder.LayoutOrder = 0
+		text(backBtn, "Boosts", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		ui.backPill = bHolder
 		backBtn.Activated:Connect(function()
 			page = "boosts"
 			refresh()
@@ -266,12 +284,13 @@ local function padCard(pad)
 	if not it or cards[pad] then
 		return
 	end
+	local big = key == "x2" -- the market's eye catcher at its gate
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "ShopCard"
 	bb.Adornee = pad
-	bb.Size = UDim2.fromOffset(260, 92)
-	bb.StudsOffset = Vector3.new(0, 5.5, 0)
-	bb.MaxDistance = 110
+	bb.Size = UDim2.fromOffset(260, big and 200 or 150)
+	bb.StudsOffset = Vector3.new(0, big and 7 or 5.5, 0)
+	bb.MaxDistance = 80 -- every island has ten cards: only the near ones draw
 	bb.AlwaysOnTop = true -- same as the build pad cards (Build.client)
 	bb.LightInfluence = 0
 	bb.ResetOnSpawn = false
@@ -295,9 +314,11 @@ local function padCard(pad)
 		t.Parent = f
 		return t
 	end
-	line(1, 22, PadLook.TEXT.title, it.name)
+	local holder = Toy.frame(f, { Size = UDim2.fromOffset(big and 104 or 62, big and 104 or 62), LayoutOrder = 0 })
+	local bob = Toy.icon(holder, key, big and 104 or 62)
+	line(1, big and 28 or 22, big and Color3.fromHex("FFE36B") or PadLook.TEXT.title, it.name)
 	line(2, 15, PadLook.TEXT.line, it.line)
-	cards[pad] = { bb = bb, price = line(3, 26, PadLook.TEXT.shop, ""), key = key }
+	cards[pad] = { bb = bb, price = line(3, 26, PadLook.TEXT.shop, ""), key = key, icon = bob, phase = pad.Position.X * 0.37 }
 	bb.Parent = playerGui
 end
 
@@ -314,16 +335,26 @@ local function refreshCards()
 	end
 end
 
-task.spawn(function()
-	local hub = workspace:WaitForChild("Sect"):WaitForChild("Hub")
-	for _, d in hub:GetChildren() do
-		padCard(d)
-	end
-	hub.ChildAdded:Connect(function(d)
+-- shop pads stream in with each peak's shop island (StepPads of PadKind "shop")
+local function onPad(d)
+	if d:GetAttribute("PadKind") == "shop" then
 		padCard(d)
 		refreshCards()
-	end)
-	refreshCards()
+	end
+end
+CollectionService:GetInstanceAddedSignal("StepPad"):Connect(onPad)
+CollectionService:GetInstanceRemovedSignal("StepPad"):Connect(refreshCards)
+-- the icons bob gently over their pads
+RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	for _, c in cards do
+		c.icon.Position = UDim2.fromOffset(0, math.sin(t * 2 + c.phase) * 4)
+	end
+end)
+task.spawn(function()
+	for _, d in CollectionService:GetTagged("StepPad") do
+		onPad(d)
+	end
 	fetchPrices(refreshCards)
 	for _, a in { "Pass_x2", "Pass_auto", "Pass_vip" } do
 		player:GetAttributeChangedSignal(a):Connect(refreshCards)

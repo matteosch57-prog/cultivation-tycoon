@@ -15,7 +15,7 @@ local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = {}
 
 local STUDIO = RunService:IsStudio()
-local api -- { sessions, rate, publish, save, canSave, notify, passChanged, remotes, styleP, palette }
+local api -- { sessions, rate, publish, save, canSave, notify, passChanged, addDisciple, remotes, style, styleP, palette, cultivators }
 -- rate(s, away) = qi/s of a session; save(s) -> true when the write landed
 
 local function itemById(list, id)
@@ -73,6 +73,9 @@ local function grantProduct(player, s, it)
 		local now = workspace:GetServerTimeNow()
 		d.boostUntil = math.max(now, d.boostUntil or 0) + Config.PILL_DURATION
 		api.notify:FireClient(player, "shopPill", Config.PILL_DURATION)
+	elseif it.rarity then
+		local kept = api.addDisciple(s, it.rarity)
+		api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
 	elseif it.seconds then
 		local gain = math.floor(api.rate(s, true) * it.seconds)
 		d.qi += gain
@@ -134,6 +137,15 @@ local function prompt(player, key)
 	if not it or it.id == 0 or (isPass and s.passes[key]) then
 		return
 	end
+	if it.rarity then
+		-- never sell a disciple that could not stay: a full list of stronger ones
+		local list = s.data.disciples
+		local weakest = list[#list] and Config.rarity(list[#list]).bonus or 0
+		if #list >= Config.DISCIPLE_CAP and weakest >= Config.rarity(it.rarity).bonus then
+			api.notify:FireClient(player, "shopFull", it.name)
+			return
+		end
+	end
 	lastPrompt[player] = now
 	Telemetry.custom(player, "Shop", "prompt", key, realm(s))
 	if isPass then
@@ -146,37 +158,101 @@ end
 local OPEN_SOURCES = { hud = true, pad = true, pill = true }
 local lastOpen = {}
 
--- World shop: purple pads in a ring around the hub cauldron. The look is only buildPads (the
--- "Step-on pad juice" work may restyle every step-on pad); the behaviour keys on ShopKey. Stepping onto one prompts its item
--- once (again only after stepping off). Every client draws the card (Shop.client).
+-- World shop: every peak has a small shop island (Config SHOP_ISLAND_*), built once at boot for each
+-- plot and never cleared (Main's grounds rebuild clears terrain only inside the largest peak).
+-- Pads are StepPads (the "Step-on pad juice" client may restyle them; the behaviour keys on
+-- ShopKey); stepping onto one prompts its item, again only after stepping off. Shop.client draws the
+-- icon and the card over each pad. No OwnerId: anyone may shop on any island.
 local PAD_REACH = 2.6
-local function buildPads(folder, baseY)
-	local pads = {}
-	local P = api.styleP
-	local purple = Color3.fromHex("9B6BE0")
-	for i, key in Config.SHOP_PADS do
-		-- between the bridge mouths (bridges leave at multiples of 360/PLOT_COUNT degrees)
-		local a = (i - 0.5) / Config.PLOT_COUNT * math.pi * 2
-		local at = CFrame.new(math.cos(a) * Config.SHOP_PAD_RADIUS, baseY, math.sin(a) * Config.SHOP_PAD_RADIUS)
-		-- an invisible anchor: Build.client draws the pad (tag "StepPad")
-		local p = P(folder, Vector3.new(0.5, 4, 4), at * CFrame.new(0, 0.27, 0) * CFrame.Angles(0, 0, math.pi / 2), purple, nil, Enum.PartType.Cylinder)
-		p.Transparency = 1
-		p.CastShadow = false
-		p.Name = "ShopPad_" .. key
-		p.CanCollide = false
-		p.CanTouch = false
-		p:SetAttribute("ShopKey", key)
-		-- step-on pad contract (the pad juice client draws every "StepPad"): no OwnerId = anyone;
-		-- no PriceText because the price is per player (regional pricing), Shop.client draws it
-		p:SetAttribute("PadKind", "shop")
-		p:SetAttribute("Title", Config.shopItem(key).name)
-		CollectionService:AddTag(p, "StepPad")
-		table.insert(pads, p)
-	end
-	return pads
+
+-- an invisible anchor: Build.client draws the pad itself (tag "StepPad", D27)
+local function shopPad(folder, at, key)
+	local p = api.styleP(folder, Vector3.new(0.5, 4, 4), at * CFrame.new(0, 0.27, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromHex("9B6BE0"), nil, Enum.PartType.Cylinder)
+	p.Transparency = 1
+	p.CastShadow = false
+	p.Name = "ShopPad_" .. key
+	p.CanCollide = false
+	p.CanTouch = false
+	p:SetAttribute("ShopKey", key)
+	-- step-on pad contract: no PriceText because the price is per player (regional pricing)
+	p:SetAttribute("PadKind", "shop")
+	p:SetAttribute("Title", Config.shopItem(key).name)
+	CollectionService:AddTag(p, "StepPad")
+	return p
 end
 
-function Shop.init(a, hubFolder, baseY)
+-- The island's frame: centre at SHOP_ISLAND_AT in the peak's frame, +Z facing the peak.
+function Shop.islandFrame(plotFrame)
+	local c = plotFrame * Config.SHOP_ISLAND_AT
+	return CFrame.lookAt(c, plotFrame.Position) * CFrame.Angles(0, math.pi, 0)
+end
+
+-- The point on the island's rim where the peak's bridge lands (world).
+function Shop.islandEntry(plotFrame)
+	return (Shop.islandFrame(plotFrame) * CFrame.new(0, 0, Config.SHOP_ISLAND_RADIUS - 1)).Position
+end
+
+function Shop.buildIsland(plot)
+	local Style = api.style
+	local R = Config.SHOP_ISLAND_RADIUS
+	local f = Shop.islandFrame(plot.frame)
+	local folder = Instance.new("Folder")
+	folder.Name = "ShopIsland"
+	-- lawn: everything inside 0.8 R stays clear (pads, pavilion, path); trees only on the rim
+	Style.island(folder, f, R, 700 + plot.index, function(x, z)
+		return Vector2.new(x, z).Magnitude < R * 0.8 or (math.abs(x) < 6 and z > 0)
+	end, true)
+	for k = 0, 9 do
+		local a = k / 10 * math.pi * 2 + 0.3
+		local x, z = math.cos(a) * (R - 3.5), math.sin(a) * (R - 3.5)
+		if not (math.abs(x) < 9 and z > 0) then
+			if k % 2 == 0 then
+				Style.sakura(folder, f * CFrame.new(x, 0, z), plot.index * 70 + k)
+			else
+				Style.pine(folder, f * CFrame.new(x, 0, z), plot.index * 70 + k, 10 + (k % 3) * 2)
+			end
+		end
+	end
+	-- entrance gate with the market's name, then 2x Qi right inside it (the first thing seen)
+	local sign = Style.archway(folder, f * CFrame.new(0, 0, R - 2), 9, 9)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.PixelsPerStud = 40
+	gui.Parent = sign
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.Fantasy
+	label.TextColor3 = Color3.fromRGB(255, 225, 150)
+	label.Text = "Sect Market"
+	label.Parent = gui
+	shopPad(folder, f * CFrame.new(0, 0, R - 8), "x2")
+	Style.lantern(folder, f * CFrame.new(-4.5, 0, R - 6), 0.8)
+	Style.lantern(folder, f * CFrame.new(4.5, 0, R - 6), 0.8)
+	-- the other items on an arc around the lawn, half a side, the first nearest the entrance
+	local half = #Config.SHOP_ITEM_PADS // 2
+	for i, key in Config.SHOP_ITEM_PADS do
+		local side = i <= half and -1 or 1
+		local k = i <= half and i or (#Config.SHOP_ITEM_PADS + 1 - i)
+		local t = math.rad(60 + (k - 1) * 30)
+		shopPad(folder, f * CFrame.new(side * math.sin(t) * 13, 0, math.cos(t) * 13), key)
+	end
+	-- the pavilion at the back holds the disciples for sale, each with its pad in front
+	Style.pavilion(folder, f * CFrame.new(0, 0, -12), 14, 9)
+	for i, key in Config.SHOP_DISCIPLE_PADS do
+		local x = (i - 2) * 5
+		local it = Config.shopItem(key)
+		local seat = f * CFrame.new(x, 1.2, -11) -- on the plinth, facing the lawn
+		local m = api.cultivators.build(folder, seat, i + 2, Config.rarity(it.rarity), Config.RARITIES)
+		m.Name = "ForSale_" .. key
+		shopPad(folder, f * CFrame.new(x, 0, -1.5), key)
+	end
+	folder.Parent = plot.folder
+	return folder
+end
+
+function Shop.init(a)
 	api = a
 	MarketplaceService.ProcessReceipt = processReceipt
 
@@ -223,7 +299,6 @@ function Shop.init(a, hubFolder, baseY)
 		lastOpen[player] = nil
 	end)
 
-	local pads = buildPads(hubFolder, baseY)
 	-- [player] = key of the pad they stand on, false = seen off every pad. A pad prompts only for a
 	-- player seen OFF it first (a spawn or a teleport onto a pad never prompts).
 	local onPad = {}
@@ -234,9 +309,9 @@ function Shop.init(a, hubFolder, baseY)
 				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 				local here = nil
 				if hrp then
-					for _, p in pads do
+					for _, p in CollectionService:GetTagged("StepPad") do
 						local d = hrp.Position - p.Position
-						if Vector2.new(d.X, d.Z).Magnitude < PAD_REACH and d.Y > -1 and d.Y < 7 then
+						if p:GetAttribute("PadKind") == "shop" and Vector2.new(d.X, d.Z).Magnitude < PAD_REACH and d.Y > -1 and d.Y < 7 then
 							here = p:GetAttribute("ShopKey")
 							break
 						end
