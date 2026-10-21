@@ -8,7 +8,7 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every
   client draws it: a carved slate disc, a stone octagon, a gold heart holding a PointLight, and two Neon
   rune rings (12 + 8 segments) turning in opposite ways. About 550 triangles a pad; rings only turn
-  within 120 studs of the camera.
+  within 120 studs of the camera, and only pads within 70 studs keep their light on.
 - One colour language (`src/shared/PadLook.luau`): ready = the kind's colour (build jade, breakthrough
   gold, shop amethyst) on rings, light, beam and price; not affordable = red, rings still, light dim.
 - Ready pads breathe (light pulse, a ground ring pulsing outward). The moment a pad becomes affordable:
@@ -27,7 +27,8 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   After a buy every pad waits until you stand on none (the step-out once chained 5 buys).
 - Build-in: the pieces drift out a little, swirl in and lock together bottom first (accelerating, a
   snap rather than a drift), then a stone snap, a small temple bell (the big bell for a Main Hall
-  level), sparks, dust and a warm light flash.
+  level), sparks, dust and a warm light flash. The pieces do not collide while they fly (they shoved
+  the avatar onto the next pads in Play).
 
 ## Constant motion (src/client/Juice.client.luau)
 - "+qi" floats off every earning building every 3 s (staggered).

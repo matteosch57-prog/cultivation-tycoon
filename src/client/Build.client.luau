@@ -19,6 +19,7 @@ local PadLook = require(Shared:WaitForChild("PadLook"))
 local PREVIEW_RANGE = 18 -- studs (horizontal) from the pad centre where the preview wakes
 local REACH = 2.6 -- the server buys inside this (Main PAD_REACH)
 local ANIM_RANGE = 120 -- rings only turn near the camera
+local LIGHT_RANGE = 70 -- and only the nearest pads light the ground
 local JADE = Color3.fromHex("6FB59C")
 local GOLD = Color3.fromHex("D4A445")
 local INK = Color3.fromHex("1B1420")
@@ -463,8 +464,7 @@ local function addPad(pad)
 	else
 		setReady(rec, true) -- shop pads, and other players' pads (their qi is theirs)
 		if not rec.shared then
-			rec.array.light.Enabled = false
-			rec.still = true
+			rec.still = true -- another player's pad: drawn, but still and unlit
 		end
 	end
 	pads[pad] = rec
@@ -524,9 +524,12 @@ local function animateBuild(model)
 	end
 	local mine = model.Parent and model.Parent.Parent and model.Parent.Parent.Name == ("Peak" .. tostring(player:GetAttribute("PlotIndex")))
 	local cf, size = model:GetBoundingBox()
-	local homes = table.create(#parts)
+	-- the flying pieces must not collide: they shoved the avatar onto the next pads (5 buys)
+	local homes, collide = table.create(#parts), table.create(#parts)
 	for i, p in parts do
 		homes[i] = p.CFrame
+		collide[i] = p.CanCollide
+		p.CanCollide = false
 		p.LocalTransparencyModifier = 1
 	end
 	local sc = scatter(parts)
@@ -577,6 +580,7 @@ local function animateBuild(model)
 			for i, p in parts do
 				p.CFrame = homes[i]
 				p.LocalTransparencyModifier = 0
+				p.CanCollide = collide[i]
 			end
 			if not model.Parent then
 				return
@@ -671,8 +675,14 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	for _, rec in pads do
-		if not rec.still and (rec.array.c.Position - camPos).Magnitude < ANIM_RANGE then
+		local dist = (rec.array.c.Position - camPos).Magnitude
+		if not rec.still and dist < ANIM_RANGE then
 			spin(rec.array, rec.ready)
+		end
+		-- only pads near the camera keep their light on (a peak has 10 shop pads, the hub more)
+		local lit = not rec.still and dist < LIGHT_RANGE
+		if rec.array.light.Enabled ~= lit then
+			rec.array.light.Enabled = lit
 		end
 		if rec.preview then
 			updatePreview(rec, hrp, dt)
