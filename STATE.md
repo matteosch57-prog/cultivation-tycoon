@@ -20,6 +20,10 @@ checked in Studio Play (ROADMAP).
   (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
   ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
+- **Building kit** (`Kit.luau`, ART_BIBLE "The kit"): Main Hall levels 1 to 5, Disciple Hall and
+  Quarters are assembled from kit pieces (on `integration`). Full peak measured
+  192k triangles / 33 draw calls. Visual check report: `docs/research/2026-10-21_visual_check.md`.
+
 ## Next action
 Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.
