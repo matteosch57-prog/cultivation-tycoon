@@ -3,8 +3,9 @@
 Known gaps not yet in a brief. Delete a line when it is fixed.
 
 ## Performance
-- A fully built peak is ~8,200 parts (Main Hall level 5 with wings and towers, pagodas, halls). Bake to
-  reused meshes before players arrive; measure soft-cloud particle overdraw on a phone.
+- Phone numbers for a full peak and the cloud overdraw A/B (`/perf`, `/clouds`) are not in yet.
+- Streaming target radius: at the default every peak stays loaded on a phone (owner call: smaller =
+  far peaks pop out).
 
 ## Look
 - Our own skybox (the Creator Store one is a re-upload that could be moderated).

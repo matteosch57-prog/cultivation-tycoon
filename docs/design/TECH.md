@@ -8,9 +8,11 @@
 | ServerScriptService.Server.Main | `src/server/Main.server.luau` | plots, grounds, qi, pads, features, saving |
 | ServerScriptService.Server.Builders | `src/server/Builders.luau` | one function per pad id |
 | ServerScriptService.Server.Style | `src/server/Style.luau` | hero-quality geometry (halls, roofs, islands, clouds) |
+| ServerScriptService.Server.Lowpoly | `src/server/Lowpoly.luau` | small balls / cylinders as clones of one low-poly mesh |
 | StarterPlayerScripts.Client.Hud | `src/client/Hud.client.luau` | HUD (mock C), phone/computer layouts |
 | StarterPlayerScripts.Client.Build | `src/client/Build.client.luau` | price cards, beacons, previews, build animation |
 | StarterPlayerScripts.Client.Juice | `src/client/Juice.client.luau` | floating qi, orbs, fly-to, event sounds and light |
+| StarterPlayerScripts.Client.PerfLog | `src/client/PerfLog.client.luau` | owner-only `/perf` log and `/clouds` A/B |
 
 Place-only content (not in Rojo): Lighting and `ActiveSky`, `ServerStorage.Sky_Original`, the Edit
 `Showcase` island, Terrain decoration. It persists only when the owner saves the place.
@@ -42,7 +44,21 @@ disables saving for that session. Errors log as `[Tycoon][save] event=<name> use
 `DebugGrant(player, qi)` · `DebugReset(player)` · `DebugSet(player, key, value)` (`orbNow` spawns an
 orb). Client: player attribute `HudDevice` = `pc` / `phone` forces a HUD layout.
 
-## Performance budget
-~500k triangles / ~500 draw calls per scene; small parts CastShadow off; few shadowed lights in view.
-A fully built peak is far over a phone-friendly part count: halls, pagodas and pavilions must be
-baked to reused meshes before players arrive (BACKLOG).
+## Performance
+Budget: ~500k triangles / ~500 draw calls per scene; small parts CastShadow off; few shadowed lights
+in view. Evidence: [2026-10-21 phone perf](../research/2026-10-21_phone_perf.md).
+- **Triangles, not parts, are the cost.** Parts sharing a shape and material draw instanced (a full
+  peak: ~7,200 parts, ~30 draw calls). A Ball part is 432 triangles, a Cylinder 96, a Block 12.
+- **Lowpoly:** `Style.P` and `Builders.part` ask `Lowpoly.part(shape, size)` for every part. A Ball
+  under `LOWPOLY_MAX` studs, or a Cylinder under it across, is a clone of one uploaded mesh
+  (`LOWPOLY_BALL` 80 triangles, `LOWPOLY_CYLINDER` 36, axis along X like a Cylinder part; same box, so
+  same look). Templates load once at server start with `AssetService:CreateMeshPartAsync`; with no
+  id, or a failed load (`[Tycoon][perf] event=lowpoly_load_failed`), plain parts are built. Source
+  meshes: `art/meshes/*.obj` from `tools/lowpoly_meshes.py`. A new small round detail costs nothing
+  extra as long as it goes through `P` / `part`; a big ball is still 432 triangles.
+- **Streaming** is on in the place (target radius = the default 1024, so every peak stays in).
+  Server-built models get no SLIM / StreamingMesh imposter. Client code finds world parts through
+  `Sect` signals, never a held reference.
+- **Measure on the phone:** owner chat `/perf` (10 min, a `[Perf]` row every 10 s in the console:
+  fps median and slow 5%, worst frame, draw calls, triangles, instances, memory, quality) and
+  `/clouds` (hides the cloud particles on that screen) for the overdraw A/B.

@@ -16,6 +16,12 @@ Config.SAVE_RETRIES = 3 -- DataStore attempts per load/save (backoff 1 s, 2 s)
 Config.SAVE_LOCK_WAITS = 6 -- tries to take a lock held by another live session on join
 Config.SAVE_LOCK_WAIT = 5 -- s between those tries
 
+-- Phone performance (B01 step 3): small Ball / Cylinder parts become clones of one low-poly mesh
+-- (art/meshes, tools/lowpoly_meshes.py). nil = off (plain parts). Set to "rbxassetid://<id>".
+Config.LOWPOLY_BALL = nil
+Config.LOWPOLY_CYLINDER = nil
+Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true parts
+
 -- Realms: each breakthrough multiplies income and costs.
 Config.REALMS = {
 	"Qi Condensation",

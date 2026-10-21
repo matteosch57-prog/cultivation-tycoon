@@ -2,6 +2,7 @@
 -- ctx = { folder, frame (peak CFrame, top surface at y=0, +Z faces the hub), pal (palette) }
 local Builders = {}
 local Style = require(script.Parent:WaitForChild("Style"))
+local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 local SP = Style.PAL
 
 -- Buildings around the sides face the CENTRE of the peak (their front, +Z, turned toward the
@@ -14,7 +15,7 @@ local function facingCentre(ctx, x, z, back)
 end
 
 local function part(ctx, size, cf, color, material, props)
-	local p = Instance.new("Part")
+	local p = Lowpoly.part(props and props.Shape, size)
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
@@ -24,7 +25,9 @@ local function part(ctx, size, cf, color, material, props)
 	p.Material = material or Enum.Material.SmoothPlastic
 	if props then
 		for k, v in props do
-			p[k] = v
+			if k ~= "Shape" then -- Lowpoly.part already gave it its shape (a MeshPart has none)
+				p[k] = v
+			end
 		end
 	end
 	p.Parent = ctx.folder

@@ -1,6 +1,7 @@
 -- Hero-quality builders (the "look" pass). Everything takes a world CFrame `cf` at ground level,
 -- front facing +Z. Palette and proportions follow docs/art/ART_BIBLE.md.
 local Style = {}
+local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 
 Style.PAL = {
 	vermilion = Color3.fromHex("B8352B"),
@@ -21,13 +22,10 @@ Style.PAL = {
 local PAL = Style.PAL
 
 local function P(parent, size, cf, color, mat, shape)
-	local p = Instance.new("Part")
+	local p = Lowpoly.part(shape, size) -- small balls and cylinders become shared low-poly meshes
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	if shape then
-		p.Shape = shape
-	end
 	p.Size = size
 	p.CFrame = cf
 	p.Color = color
