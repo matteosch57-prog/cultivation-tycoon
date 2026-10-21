@@ -69,6 +69,8 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   real ids: test with Studio's test purchase), the phone page flip. Captures:
   `docs/art/captures/shop_screen_play.jpg`, `shop_hub_pads_play.jpg`.
 
+The list to create in the dashboard (name, description, price, icon): [SHOP_ITEMS](SHOP_ITEMS.md).
+
 ## Disciple price ladder (economy check, D28)
 Relative to the 2x Qi pass price P: Elder 0.15P, Immortal 0.3P, Celestial 0.6P, Dao Ancestor 1P,
 Heavenly Emperor 2P, Primordial 4P. With P = 249: about 39 / 79 / 149 / 249 / 499 / 999 Robux.
