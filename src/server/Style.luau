@@ -92,25 +92,51 @@ function Style.roof(parent, cf, W, D, opts)
 			local hl = s.r + (s.a - s.r) * tb
 			local ang = math.atan2(ya - yb, db - da)
 			local c = frame * CFrame.new(0, (ya + yb) / 2, (da + db) / 2) * CFrame.Angles(ang, 0, 0)
-			P(parent, Vector3.new(hl * 2, 0.7, len), c, tile, Enum.Material.SmoothPlastic)
-			-- tile ribs: a lighter cap line along each row edge reads as courses of tiles
-			P(parent, Vector3.new(hl * 2, 0.25, 0.35), c * CFrame.new(0, 0.42, len / 2 - 0.3), tile:Lerp(Color3.new(1, 1, 1), 0.12), Enum.Material.SmoothPlastic)
+			if opts.kit2 then
+				-- kit 2: the tile courses come from the material, not from extra rib parts
+				P(parent, Vector3.new(hl * 2, 0.7, len), c, tile, Enum.Material.ClayRoofTiles)
+			else
+				P(parent, Vector3.new(hl * 2, 0.7, len), c, tile, Enum.Material.SmoothPlastic)
+				-- tile ribs: a lighter cap line along each row edge reads as courses of tiles
+				P(parent, Vector3.new(hl * 2, 0.25, 0.35), c * CFrame.new(0, 0.42, len / 2 - 0.3), tile:Lerp(Color3.new(1, 1, 1), 0.12), Enum.Material.SmoothPlastic)
+			end
 		end
-		-- eave fascia + rafter ends (the dark underside line that sells depth)
 		local ye = y(1)
-		P(parent, Vector3.new(s.a * 2, 0.6, 0.5), frame * CFrame.new(0, ye - 0.55, R - 0.1), PAL.timberDark)
-		P(parent, Vector3.new(s.a * 2, 0.25, 0.6), frame * CFrame.new(0, ye - 0.25, R + 0.05), PAL.gold)
-		local n = math.floor(s.a * 2 / 1.4)
-		for k = 1, n - 1 do
-			local x = -s.a + k * (s.a * 2 / n)
-			P(parent, Vector3.new(0.5, 0.5, 1.6), frame * CFrame.new(x, ye - 1.05, R - 0.9), PAL.timber)
+		if opts.kit2 then
+			-- kit 2 eave: a round tile-end roll on the edge, then stepped corbel bands under it
+			-- (three long parts per side carry the depth the rafter blocks used to)
+			if opts.tileEnds then
+				-- a row of round tile ends (instanced low-poly cylinders) under a thin gold drip line
+				local n = math.max(2, math.floor(s.a * 2 / 1.2))
+				for k = 0, n do
+					local x = -s.a + k * (s.a * 2 / n)
+					P(parent, Vector3.new(0.5, 0.6, 0.6), frame * CFrame.new(x, ye - 0.05, R + 0.15) * CFrame.Angles(0, math.pi / 2, 0), tile:Lerp(Color3.new(1, 1, 1), 0.15), nil, Enum.PartType.Cylinder)
+				end
+				P(parent, Vector3.new(s.a * 2 + 0.4, 0.15, 0.2), frame * CFrame.new(0, ye - 0.45, R + 0.3), opts.edge or PAL.gold)
+			else
+				P(parent, Vector3.new(s.a * 2 + 0.4, 0.7, 0.7), frame * CFrame.new(0, ye - 0.05, R + 0.1), opts.edge or PAL.gold, nil, Enum.PartType.Cylinder)
+			end
+			for k, step in (opts.corbels == false and {} or { { 0.7, 0.9, PAL.timberDark }, { 0.6, 2.0, PAL.timber }, { 0.6, 3.1, PAL.jade:Lerp(PAL.timberDark, 0.35) } }) do
+				-- each band ends where it meets the next side's band at the corner (no ends poking out)
+				local half = s.a - step[2] + 0.55
+				P(parent, Vector3.new(half * 2, step[1], 1.1), frame * CFrame.new(0, ye - 0.6 - k * 0.6, R - step[2]), step[3])
+			end
+		else
+			-- eave fascia + rafter ends (the dark underside line that sells depth)
+			P(parent, Vector3.new(s.a * 2, 0.6, 0.5), frame * CFrame.new(0, ye - 0.55, R - 0.1), PAL.timberDark)
+			P(parent, Vector3.new(s.a * 2, 0.25, 0.6), frame * CFrame.new(0, ye - 0.25, R + 0.05), PAL.gold)
+			local n = math.floor(s.a * 2 / 1.4)
+			for k = 1, n - 1 do
+				local x = -s.a + k * (s.a * 2 / n)
+				P(parent, Vector3.new(0.5, 0.5, 1.6), frame * CFrame.new(x, ye - 1.05, R - 0.9), PAL.timber)
+			end
 		end
 		-- soffit: dark ceiling under the overhang
 		local inner = math.max(R * t0, D / 2 - 0.5)
 		if s.r == 0 then
 			inner = math.max(R * t0, D / 2 - 0.5)
 		end
-		P(parent, Vector3.new(s.a * 2 - 1, 0.3, R - inner), frame * CFrame.new(0, ye - 1.5, (R + inner) / 2), PAL.timberDark)
+		P(parent, Vector3.new(s.a * 2 - 1, 0.3, R - inner), frame * CFrame.new(0, opts.kit2 and ye - 0.75 or ye - 1.5, (R + inner) / 2), PAL.timberDark)
 	end
 	-- hip ridges with upturned "flying" tips
 	for _, sx in { -1, 1 } do
@@ -145,9 +171,20 @@ function Style.roof(parent, cf, W, D, opts)
 		P(parent, Vector3.new(Lr * 2 + 1.6, 0.3, 1.5), cf * CFrame.new(0, H + 1.2, 0), PAL.gold)
 		for _, sx in { -1, 1 } do
 			local base = cf * CFrame.new(sx * (Lr + 0.4), H + 1.1, 0)
-			P(parent, Vector3.new(1.2, 2.6, 1.2), base * CFrame.new(0, 0.9, 0) * CFrame.Angles(0, 0, sx * 0.25), ridgeC)
-			P(parent, Vector3.new(1.0, 1.4, 1.0), base * CFrame.new(sx * 0.7, 2.4, 0) * CFrame.Angles(0, 0, -sx * 0.7), ridgeC)
-			P(parent, Vector3.new(0.5, 0.5, 0.5), base * CFrame.new(sx * 1.3, 2.9, 0), PAL.gold, nil, Enum.PartType.Ball)
+			if opts.kit2 then
+				-- kit 2 ridge end: one rising curl that turns back over the ridge (no stacked blocks)
+				local prev = base.Position
+				for _, k in { { 0.1, 1.0 }, { -0.1, 1.9 }, { -0.6, 2.5 }, { -1.2, 2.6 } } do
+					local p = (base * CFrame.new(sx * k[1], k[2], 0)).Position
+					rod(parent, prev, p, 0.7, ridgeC)
+					prev = p
+				end
+				P(parent, Vector3.new(0.6, 0.6, 0.6), CFrame.new(prev), PAL.gold, nil, Enum.PartType.Ball)
+			else
+				P(parent, Vector3.new(1.2, 2.6, 1.2), base * CFrame.new(0, 0.9, 0) * CFrame.Angles(0, 0, sx * 0.25), ridgeC)
+				P(parent, Vector3.new(1.0, 1.4, 1.0), base * CFrame.new(sx * 0.7, 2.4, 0) * CFrame.Angles(0, 0, -sx * 0.7), ridgeC)
+				P(parent, Vector3.new(0.5, 0.5, 0.5), base * CFrame.new(sx * 1.3, 2.9, 0), PAL.gold, nil, Enum.PartType.Ball)
+			end
 		end
 		-- centre jewel on the ridge
 		P(parent, Vector3.new(1.4, 1.4, 1.4), cf * CFrame.new(0, H + 2, 0) * CFrame.Angles(0, math.rad(45), math.rad(45)), PAL.gold)
@@ -236,9 +273,11 @@ function Style.hall(parent, cf, opts)
 		P(m, Vector3.new(2, 0.6, 2), at * CFrame.new(0, 0.3, 0), PAL.stone)
 		cylY(m, colH, 1.4, at * CFrame.new(0, colH / 2 + 0.6, 0), PAL.vermilion)
 		cylY(m, 0.4, 1.6, at * CFrame.new(0, colH - 0.6, 0), PAL.gold)
-		-- bracket set (dougong): three stacked, widening blocks
-		for k = 0, 2 do
-			P(m, Vector3.new(1.4 + k * 0.9, 0.5, 1.4 + k * 0.9), at * CFrame.new(0, colH + 0.85 + k * 0.5, 0), k == 1 and PAL.jade or PAL.timber)
+		-- bracket set (dougong): three stacked, widening blocks (kit 2 uses one frieze instead)
+		if not opts.kit2 then
+			for k = 0, 2 do
+				P(m, Vector3.new(1.4 + k * 0.9, 0.5, 1.4 + k * 0.9), at * CFrame.new(0, colH + 0.85 + k * 0.5, 0), k == 1 and PAL.jade or PAL.timber)
+			end
 		end
 	end
 	-- architrave band around the top of the columns
@@ -251,12 +290,26 @@ function Style.hall(parent, cf, opts)
 		P(m, Vector3.new(1.2, 1.2, D + 1.4), base * CFrame.new(sx * W / 2, beamY, 0), PAL.vermilion)
 		P(m, Vector3.new(1.3, 0.3, D + 1.5), base * CFrame.new(sx * W / 2, beamY - 0.45, 0), PAL.gold)
 	end
+	if opts.kit2 then
+		-- kit 2 frieze: one painted jade band right round the top of the colonnade, framed by
+		-- gold lines (what the reference halls do with a lattice decal, here with three parts a side)
+		local fy = beamY + 1.35
+		for _, side in { { W + 1.4, 0, D / 2 }, { W + 1.4, 0, -D / 2 }, { 1.2, 1, 0 }, { 1.2, -1, 0 } } do
+			local along = side[1] > 2
+			local size = along and Vector3.new(W + 1.4, 1.5, 1.0) or Vector3.new(1.0, 1.5, D + 1.4)
+			local at = base * CFrame.new(side[2] * W / 2, fy, side[3])
+			P(m, size, at, Color3.fromHex("2F6F55"))
+			P(m, size + Vector3.new(0.1, -1.25, 0.1), at * CFrame.new(0, 0.75, 0), PAL.gold)
+			P(m, size + Vector3.new(0.1, -1.25, 0.1), at * CFrame.new(0, -0.75, 0), PAL.gold)
+		end
+	end
 	-- walls: set back 1.5 studs behind the front colonnade (a shaded porch)
 	local wz = D / 2 - 2
 	local wallH = colH - 0.4
-	P(m, Vector3.new(W - 0.6, wallH, 0.8), base * CFrame.new(0, wallH / 2 + 0.6, -D / 2 + 0.2), PAL.plaster)
+	local wallMat = opts.kit2 and Enum.Material.Plaster or nil
+	P(m, Vector3.new(W - 0.6, wallH, 0.8), base * CFrame.new(0, wallH / 2 + 0.6, -D / 2 + 0.2), PAL.plaster, wallMat)
 	for _, sx in { -1, 1 } do
-		P(m, Vector3.new(0.8, wallH, D - 0.6), base * CFrame.new(sx * (W / 2 - 0.2), wallH / 2 + 0.6, 0), PAL.plaster)
+		P(m, Vector3.new(0.8, wallH, D - 0.6), base * CFrame.new(sx * (W / 2 - 0.2), wallH / 2 + 0.6, 0), PAL.plaster, wallMat)
 		-- timber frame band at the wall foot
 		P(m, Vector3.new(0.9, 1.4, D - 0.4), base * CFrame.new(sx * (W / 2 - 0.2), 1.3, 0), PAL.timber)
 	end
@@ -281,14 +334,14 @@ function Style.hall(parent, cf, opts)
 	local eaveY = colH + 2.6
 	if opts.single then
 		-- one big roof straight over the colonnade (smaller, humbler halls)
-		Style.roof(m, base * CFrame.new(0, eaveY, 0), W, D, { rise = D * 0.5, over = 4, rows = 6, tile = tile, ridge = ridge })
+		Style.roof(m, base * CFrame.new(0, eaveY, 0), W, D, { rise = D * 0.5, over = 4, rows = 6, tile = tile, ridge = ridge, kit2 = opts.kit2 })
 		m.Parent = parent
 		return m
 	end
 	-- lower eave (skirt) around the colonnade
 	local W2, D2 = W - 10, D - 8
 	local R1 = D / 2 + 5
-	local yfn = Style.roof(m, base * CFrame.new(0, eaveY, 0), W, D, { rise = 6, over = 5, tStart = (D2 / 2) / R1, rows = 4, tile = tile, ridge = ridge })
+	local yfn = Style.roof(m, base * CFrame.new(0, eaveY, 0), W, D, { rise = 6, over = 5, tStart = (D2 / 2) / R1, rows = 4, tile = tile, ridge = ridge, kit2 = opts.kit2 })
 	local joint = eaveY + yfn((D2 / 2) / R1)
 	-- upper storey (clerestory) with its own colour band, then the main roof
 	local upH = 4.5
@@ -302,7 +355,7 @@ function Style.hall(parent, cf, opts)
 		lattice(m, base * CFrame.new(-W2 / 4, joint + upH / 2 - 0.2, sz * (D2 / 2 + 0.15)) * CFrame.Angles(0, sz < 0 and math.pi or 0, 0), W2 / 4, upH - 2, PAL.gold:Lerp(PAL.plaster, 0.4))
 		lattice(m, base * CFrame.new(W2 / 4, joint + upH / 2 - 0.2, sz * (D2 / 2 + 0.15)) * CFrame.Angles(0, sz < 0 and math.pi or 0, 0), W2 / 4, upH - 2, PAL.gold:Lerp(PAL.plaster, 0.4))
 	end
-	Style.roof(m, base * CFrame.new(0, joint + upH + 0.8, 0), W2 + 2, D2 + 2, { rise = 7.5, over = 4.5, rows = 7, tile = tile, ridge = ridge })
+	Style.roof(m, base * CFrame.new(0, joint + upH + 0.8, 0), W2 + 2, D2 + 2, { rise = 7.5, over = 4.5, rows = 7, tile = tile, ridge = ridge, kit2 = opts.kit2 })
 	m.Parent = parent
 	return m
 end

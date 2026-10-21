@@ -53,6 +53,19 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
 - Detail lives at the ridge, the eave line and eye level; wall fields stay plain.
 - Buildings on the sides face the centre of the peak (`facingCentre` in Builders), never the void.
 
+### The kit: small to big (`src/server/Kit.luau`)
+Halls are assembled from finished pieces, never drawn one-off: piece (column, bracket set,
+railing, lattice panel, tile ends) -> bay (two columns, beam, panel, railing) -> hall (platform,
+bays, one or two roofs). Learned from studying reference temple halls (2026-10-21):
+- Long and low: a hall is several bays wide and two deep, roofs shallow; a level grows by bays and
+  a second roof, not by height.
+- Detail lives at eye level and repeats: railings round the deck, a lattice panel in every bay
+  behind a porch, a bracket set on every column, round tile ends along every eave.
+- Detail comes from the material where it can: roofs use `ClayRoofTiles` instead of rib parts,
+  walls use `Plaster`.
+- One method everywhere: the Main Hall levels, Disciple Hall and Quarters all call `Kit.hall`.
+Captures: [captures/57 to 60](captures/).
+
 ## Cultivators (disciples on the platform)
 - Real R15 Roblox avatars built by `src/server/Cultivators.luau` from a HumanoidDescription: catalog
   hanfu (layered clothing, which any experience may put on an NPC), hair and beard. Lineup mock

@@ -2,6 +2,7 @@
 -- ctx = { folder, frame (peak CFrame, top surface at y=0, +Z faces the hub), pal (palette) }
 local Builders = {}
 local Style = require(script.Parent:WaitForChild("Style"))
+local Kit = require(script.Parent:WaitForChild("Kit"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
@@ -206,15 +207,15 @@ function Builders.furnace(ctx, pad)
 end
 
 function Builders.hall(ctx, pad)
-	Style.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2), { W = 16, D = 10, colH = 8, plinth = 2, name = "DiscipleHall" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2), { bays = 3, bay = 5.5, depth = 2, colH = 7, plinth = 1.6, name = "DiscipleHall" })
 end
 
 -- Disciple Quarters: small two-storey halls in the front corners (each adds a disciple slot)
 function Builders.quarters1(ctx, pad)
-	Style.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { W = 12, D = 7, colH = 6, plinth = 1.5, name = "Quarters" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 2, bay = 5, depth = 1, colH = 6, plinth = 1.2, name = "Quarters" })
 end
 function Builders.quarters2(ctx, pad)
-	Style.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { W = 14, D = 8, colH = 7, plinth = 1.5, name = "GrandQuarters" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 3, bay = 5, depth = 1, colH = 6.5, plinth = 1.4, name = "GrandQuarters" })
 end
 
 function Builders.gate(ctx)
@@ -229,7 +230,7 @@ local PAGODA_AT = CFrame.new(0, 0, -74) -- behind the Main Hall, on the second e
 local MAIN_HALL_AT = CFrame.new(0, 0, -36)
 for lv = 1, 5 do
 	Builders["mainhall" .. lv] = function(ctx)
-		Style.mainHall(ctx.folder, ctx.frame * MAIN_HALL_AT, lv)
+		Kit.mainHall(ctx.folder, ctx.frame * MAIN_HALL_AT, lv)
 	end
 end
 
