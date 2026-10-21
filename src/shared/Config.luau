@@ -35,7 +35,12 @@ Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true par
 -- Leaf-card tree canopies (src/server/Nature.luau, tools/nature_assets.py writes art/meshes/canopy_*.obj).
 -- The owner uploads them (R11); empty = not uploaded yet, the old part trees stay. The leaf textures
 -- live in src/server/NatureKit.model.json as SurfaceAppearances.
-Config.NATURE_MESH = { sakura = "", ginkgo = "", round = "", pine = "" }
+Config.NATURE_MESH = {
+	sakura = "rbxassetid://99741618115048",
+	ginkgo = "rbxassetid://89967761874874",
+	round = "rbxassetid://112145916039641",
+	pine = "rbxassetid://91206435364540",
+}
 
 -- Realms: each breakthrough multiplies income and costs.
 Config.REALMS = {
