@@ -3,9 +3,10 @@
 -- breathes them (CultivatorIdle.client.luau): no animation upload needed.
 -- Four looks (sword disciple, lotus maiden, pill monk, elder sage); the rarity picks the robe colour
 -- and the aura tier. Front faces -Z (LookVector). `cf` is the ground point under the cushion.
--- Auras are layered glowing objects only (particles, beams, trails with built-in textures, so
--- nothing to upload): no Light instances (RULES R3). One layer joins per rarity; rates stay low and the
--- client switches the layers off beyond a short range, so a full platform stays cheap on phones.
+-- Auras are layered glowing objects only (magic circles and spirit swords from free Creator Store
+-- meshes, particles and trails with built-in textures, so nothing to upload): no Light instances (R3).
+-- One piece joins per rarity; rates stay low and the client switches the layers off beyond a short
+-- range, so a full platform stays cheap on phones.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 
@@ -18,7 +19,6 @@ local SKIN = Color3.fromRGB(238, 204, 176)
 local CUSHION = Color3.fromHex("B8352B"):Lerp(Color3.new(0, 0, 0), 0.3)
 local TEX = "rbxasset://textures/particles/"
 local SPARKLE = TEX .. "sparkles_main.dds"
-local VORTEX = TEX .. "forcefield_vortex_main.dds"
 local RING = TEX .. "explosion01_shockwave_main.dds"
 local GLOW = TEX .. "forcefield_glow_main.dds"
 local WHITE = Color3.new(1, 1, 1)
@@ -57,18 +57,24 @@ local ROBES = {
 	},
 }
 
--- Roblox's own Man and Woman bodies (shaped limbs and hands, not the blocky default) and dynamic
--- heads: a dynamic head has FaceControls, so the client can close the eyes in meditation, open them
--- to look at a player and blink (research 2026-10-21: a blocky body with the classic smile decal is
--- what reads cheap; a face that moves is what reads alive).
+-- Roblox's own Man and Woman bodies (shaped limbs and hands, not the blocky default) and one anime
+-- dynamic head for everyone (owner pick A + C, 2026-10-21: one cohesive style reads premium; a mix of
+-- catalog faces read cheap). The head has FaceControls, so the client closes the eyes in meditation,
+-- opens them to look at a player and blinks. Each look carries a signature item (sword, fan, flute, guqin).
 local MAN = { Torso = 86500008, RightArm = 86500036, LeftArm = 86500054, LeftLeg = 86500064, RightLeg = 86500078 }
 local WOMAN = { Torso = 86499666, RightArm = 86499698, LeftArm = 86499716, LeftLeg = 86499753, RightLeg = 86499793 }
 
+local ANIME = 14506610025 -- Anime Black - Dynamic Head (Marty_nas)
+local WAIST, BACK, NECK = Enum.AccessoryType.Waist, Enum.AccessoryType.Back, Enum.AccessoryType.Neck
 local LOOK = {
-	sword = { robes = "male", body = MAN, head = 10725826963, hair = { 101082692371776 } }, -- Man Face; Xianxia Low Ponytail - Black
-	lotus = { robes = "female", body = WOMAN, head = 10725626210, hair = { 113503254025840 } }, -- Woman Face; Hair buns with Hairpins - Black
-	monk = { robes = "male", body = MAN, head = 11180212350, hair = {} }, -- Classic Male Face, shaved head
-	elder = { robes = "male", body = MAN, head = 84767188836438, hair = { 89557677054617 }, face = { 123149555491840 } }, -- Old Man Jenkins; Imperial Crown Hair-White, white beard
+	-- Black Cultivator's Hair; Cultivator's Azure Cloud Sword at the waist
+	sword = { robes = "male", body = MAN, head = ANIME, hair = { 10945619882 }, props = { { 10070649892, WAIST } } },
+	-- Hair buns with Hairpins - Black; Wind Cultivator's Fan
+	lotus = { robes = "female", body = WOMAN, head = ANIME, hair = { 113503254025840 }, props = { { 15197091452, NECK } } },
+	-- Cultivator's Hair - Black; Cultivator's Black Bamboo Flute
+	monk = { robes = "male", body = MAN, head = ANIME, hair = { 11639642608 }, props = { { 10070641659, WAIST } } },
+	-- White Cultivator's Hair and the white beard; Cultivator's Cloud Guqin on the back
+	elder = { robes = "male", body = MAN, head = ANIME, hair = { 12373799299 }, face = { 123149555491840 }, props = { { 10070655361, BACK } } },
 }
 
 -- joint rotations of the cross-legged pose, applied in each joint's parent attachment frame
@@ -78,11 +84,12 @@ local POSE = {
 	RightHip = CFrame.Angles(0, math.rad(-50), 0) * CFrame.Angles(math.rad(90), 0, 0),
 	LeftKnee = CFrame.Angles(0, 0, math.rad(140)),
 	RightKnee = CFrame.Angles(0, 0, math.rad(-140)),
-	-- upper arms hang a little forward and out, forearms reach the knees
-	LeftShoulder = CFrame.Angles(math.rad(15), 0, math.rad(-10)),
-	RightShoulder = CFrame.Angles(math.rad(15), 0, math.rad(10)),
-	LeftElbow = CFrame.Angles(math.rad(35), 0, 0),
-	RightElbow = CFrame.Angles(math.rad(35), 0, 0),
+	-- the hands meet in the lap (a meditation mudra): it also hides the blocky hands, which read cheap
+	-- resting on the knees (mock 2026-10-21)
+	LeftShoulder = CFrame.Angles(math.rad(-15), math.rad(-50), 0),
+	RightShoulder = CFrame.Angles(math.rad(-15), math.rad(50), 0),
+	LeftElbow = CFrame.Angles(math.rad(95), 0, 0),
+	RightElbow = CFrame.Angles(math.rad(95), 0, 0),
 }
 
 local function P(parent, size, cf, color, mat, shape)
@@ -138,6 +145,9 @@ local function describe(look, tier)
 	end
 	for _, id in spec.face or {} do
 		table.insert(list, { AssetId = id, AccessoryType = Enum.AccessoryType.Face, IsLayered = false })
+	end
+	for _, prop in spec.props or {} do
+		table.insert(list, { AssetId = prop[1], AccessoryType = prop[2], IsLayered = false })
 	end
 	d:SetAccessories(list, true)
 	return d
@@ -289,13 +299,41 @@ local function attach(core, f, offset, name)
 	return a
 end
 
--- Aura layers, one more per rarity tier (research 2026-10-21: premium Roblox auras stack several
--- soft layers at low rates, with colour that brightens toward white, rather than one loud effect):
---   2 a turning qi sigil on the ground      3 rising motes             4 a halo ring behind the head
---   5 three qi orbs with trails             6 a second, wider sigil     7 an outer halo ring
---   8 a ring pulse on each breath           9 every colour in turn (client)
--- Orbs: 3 / 5 / 7 / 7 / 9 from tier 5. Flames and beam ribbons were tried and dropped (2026-10-21):
--- flames hid inside the avatar and the ribbons read as faint white arcs over the bright sky.
+-- Free Creator Store meshes (inserted once 2026-10-21, no scripts in them; R12), drawn through
+-- SpecialMesh so nothing is uploaded: a slim jian (121743230), a magic circle (115275786272862) and a
+-- stylized lotus (14340580562). Scale = studs wanted / the mesh's native size.
+local SWORD = { mesh = "rbxassetid://108120294", scale = Vector3.new(2.2, 1.75, 2.8), size = Vector3.new(0.4, 4.6, 1) }
+local CIRCLE = { mesh = "rbxassetid://131419958270785", native = 3.97 }
+local LOTUS = { mesh = "rbxassetid://14340526628", tex = "rbxassetid://14340559072", native = Vector3.new(22.23, 28.65, 22.23) }
+
+local function meshPart(m, name, size, cf, color, meshId, texId, scale)
+	local p = P(m, size, cf, color, texId and Enum.Material.SmoothPlastic or Enum.Material.Neon)
+	p.Name = name
+	local sm = Instance.new("SpecialMesh")
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = meshId
+	sm.TextureId = texId or "" -- no texture: the Neon colour glows through the mesh
+	sm.Scale = scale
+	sm.Parent = p
+	return p
+end
+
+-- a glowing magic circle of diameter d, lying flat (or standing, rotated by the caller)
+local function circle(m, name, d, cf, color)
+	return meshPart(m, name, Vector3.new(d, 0.1, d), cf, vivid(color), CIRCLE.mesh, nil, Vector3.new(d / CIRCLE.native, 2, d / CIRCLE.native))
+end
+
+-- Aura ladder (owner pick A + C, mocks docs/art/mocks/characters_AC2_*.jpg): one more piece per tier,
+-- every piece in the rarity colour and light only (no solid balls; R3: glowing objects, no Lights).
+--   2 a magic circle on the ground                 3 orbs of light circling at chest height, motes
+--   4 the same circle as a halo behind the head    5 a fan of spirit swords behind the back (3)
+--   6 a second, wider circle turning the other way, 5 swords
+--   7 a lotus seat instead of the cushion, 7 swords 8 a ring pulse on each breath
+--   9 every colour in turn (client), 9 swords
+-- The client turns the circles, floats the halo and the swords with the figure and circles the orbs;
+-- the body's rim glow (a Highlight) comes with the avatar.
+local ORBS = { 0, 0, 3, 4, 5, 5, 7, 7, 9 }
+local SWORDS = { 0, 0, 0, 0, 3, 5, 7, 7, 9 }
 local function aura(m, f, color, tier)
 	if tier < 2 then
 		return
@@ -304,25 +342,12 @@ local function aura(m, f, color, tier)
 	core.Transparency = 1
 	core.Name = "Aura"
 	local ground = attach(core, f, CFrame.new(0, 0.15, 0), "Ground")
-	-- motes and flames rise from a ring around the figure: an emitter on an attachment emits from a
-	-- single point, inside the body, where the avatar hides every particle
+	-- motes rise from a ring around the figure: an emitter on an attachment emits from a single point,
+	-- inside the body, where the avatar hides every particle
 	local shell = P(m, Vector3.new(4.4, 0.2, 4.4), f * CFrame.new(0, 1.3, 0), color)
 	shell.Transparency = 1
 	shell.Name = "AuraShell"
-	emitter(ground, "Sigil", {
-		Texture = VORTEX,
-		Color = seq(color),
-		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
-		EmissionDirection = Enum.NormalId.Top,
-		Speed = NumberRange.new(0.01),
-		Size = NumberSequence.new(4.6 + tier * 0.25),
-		Transparency = fade(0.05),
-		Lifetime = NumberRange.new(4),
-		Rate = 0.75,
-		RotSpeed = NumberRange.new(25),
-		Rotation = NumberRange.new(0, 360),
-		ZOffset = 0.5, -- toward the camera, so the floor never hides it
-	})
+	circle(m, "SigilCircle", 4.6 + tier * 0.6, f * CFrame.new(0, 0.06, 0), color).Transparency = 0.1
 	if tier >= 3 then
 		emitter(shell, "Motes", {
 			Texture = SPARKLE,
@@ -339,63 +364,58 @@ local function aura(m, f, color, tier)
 			SpreadAngle = Vector2.new(15, 15),
 			Rate = 3 + tier,
 		})
+		-- orbs of light: a glow sprite with a white heart and a short tail, no solid ball
+		local count = ORBS[tier]
+		for i = 0, count - 1 do
+			local a = math.rad(90 + i * 360 / count)
+			local orb = P(m, Vector3.new(0.3, 0.3, 0.3), f * CFrame.new(math.cos(a) * 2.8, 2.6 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color))
+			orb.Transparency = 1
+			orb.Name = "AuraOrb" -- not "QiOrb": Juice bobs every QiOrb (the collectible orbs)
+			emitter(orb, "Glow", { Texture = GLOW, Color = seq(color), LightEmission = 1, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(1.1), Transparency = NumberSequence.new(0.15), Lifetime = NumberRange.new(0.3), Rate = 30 })
+			emitter(orb, "Heart", { Texture = GLOW, Color = ColorSequence.new(WHITE), LightEmission = 1, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(0.4), Lifetime = NumberRange.new(0.3), Rate = 30 })
+			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
+			t0.Position, t1.Position = Vector3.new(0, 0.12, 0), Vector3.new(0, -0.12, 0)
+			t0.Parent, t1.Parent = orb, orb
+			local trail = Instance.new("Trail")
+			trail.Attachment0, trail.Attachment1 = t0, t1
+			trail.Color = seq(color)
+			trail.LightEmission = 1
+			trail.Lifetime = 0.45
+			trail.Transparency = NumberSequence.new(0.35, 1)
+			trail.WidthScale = NumberSequence.new(1, 0)
+			trail.FaceCamera = true
+			trail.Parent = orb
+		end
 	end
 	if tier >= 4 then
+		-- the halo stands behind the head (front is -Z); the client keeps it on the head as it floats
+		local d = tier >= 5 and 3.2 or 2.6
+		circle(m, "HaloCircle", d, f * CFrame.new(0, 5.15, 0.85) * CFrame.Angles(math.rad(90), 0, 0), color).Transparency = 0.05
 		local head = attach(core, f, CFrame.new(0, 5.15, 0.75), "HaloAt")
-		emitter(head, "Halo", {
-			Texture = RING,
-			Color = seq(color),
-			LockedToPart = true,
-			Speed = NumberRange.new(0),
-			Size = NumberSequence.new(2.6),
-			Transparency = fade(0.25),
-			Lifetime = NumberRange.new(3),
-			Rate = 0.67,
-			ZOffset = -2,
-		})
 		emitter(head, "HaloGlow", {
 			Texture = GLOW,
 			Color = seq(color),
 			LockedToPart = true,
 			Speed = NumberRange.new(0),
-			Size = NumberSequence.new(2.2),
+			Size = NumberSequence.new(d * 0.9),
 			Transparency = fade(0.7),
 			Lifetime = NumberRange.new(3),
 			Rate = 0.67,
 			ZOffset = -2.5,
 		})
 	end
-	if tier >= 6 then
-		-- a second sigil turning the other way, a ring wider than the first
-		emitter(ground, "Sigil2", {
-			Texture = RING,
-			Color = seq(color),
-			Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
-			EmissionDirection = Enum.NormalId.Top,
-			Speed = NumberRange.new(0.01),
-			Size = NumberSequence.new(7.5),
-			Transparency = fade(0.3),
-			Lifetime = NumberRange.new(4),
-			Rate = 0.75,
-			RotSpeed = NumberRange.new(-18),
-			Rotation = NumberRange.new(0, 360),
-			ZOffset = 0.5,
-		})
+	if tier >= 5 then
+		-- spirit swords in a fan behind the back, hilts toward the spine, tips out
+		local n = SWORDS[tier]
+		local spread = math.rad(n >= 7 and 75 or (n >= 5 and 60 or 40))
+		for i = 1, n do
+			local ang = -spread + 2 * spread * (i - 1) / (n - 1)
+			local cf = f * CFrame.new(0, 3.3, 1.7) * CFrame.Angles(0, 0, ang) * CFrame.new(0, 0.6 + SWORD.size.Y / 2, 0)
+			meshPart(m, "Sword", SWORD.size, cf, vivid(color), SWORD.mesh, nil, SWORD.scale)
+		end
 	end
-	if tier >= 7 then
-		-- an outer halo ring around the first
-		emitter(m.Aura.HaloAt, "Halo2", {
-			Texture = RING,
-			Color = seq(color),
-			LockedToPart = true,
-			Speed = NumberRange.new(0),
-			Size = NumberSequence.new(3.8),
-			Transparency = fade(0.45),
-			Lifetime = NumberRange.new(3),
-			Rate = 0.67,
-			RotSpeed = NumberRange.new(30),
-			ZOffset = -2,
-		})
+	if tier >= 6 then
+		circle(m, "SigilCircle2", 8.5, f * CFrame.new(0, 0.05, 0), color).Transparency = 0.4
 	end
 	if tier >= 8 then
 		emitter(ground, "Pulse", {
@@ -410,29 +430,25 @@ local function aura(m, f, color, tier)
 			Rate = 0, -- the client emits one on each in-breath
 		})
 	end
-	if tier >= 5 then
-		local count = ({ 3, 5, 7, 7, 9 })[tier - 4]
-		for i = 0, count - 1 do
-			local a = math.rad(90 + i * 360 / count)
-			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 2.6 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color), Enum.Material.Neon, Enum.PartType.Ball)
-			orb.Name = "QiOrb" -- chest height and clear of the head, so no orb crosses the face
-			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
-			t0.Position, t1.Position = Vector3.new(0, 0.15, 0), Vector3.new(0, -0.15, 0)
-			t0.Parent, t1.Parent = orb, orb
-			local trail = Instance.new("Trail")
-			trail.Attachment0, trail.Attachment1 = t0, t1
-			trail.Color = seq(color)
-			trail.LightEmission = 0.6
-			trail.Lifetime = 0.5
-			trail.Transparency = NumberSequence.new(0.3, 1)
-			trail.WidthScale = NumberSequence.new(1, 0)
-			trail.FaceCamera = true
-			trail.Parent = orb
-		end
-	end
 	if tier >= 9 then
 		m:SetAttribute("Prismatic", true)
 	end
+end
+
+-- the rim glow: a Highlight on the avatar in the rarity colour, stronger for rarer disciples (the
+-- client switches it off beyond its glow range)
+local function rim(avatar, color, tier)
+	if tier < 3 then
+		return
+	end
+	local h = Instance.new("Highlight")
+	h.Name = "Rim"
+	h.FillColor = vivid(color)
+	h.FillTransparency = tier >= 5 and 0.78 or 0.88
+	h.OutlineColor = vivid(color):Lerp(WHITE, 0.4)
+	h.OutlineTransparency = tier >= 5 and 0 or 0.5
+	h.DepthMode = Enum.HighlightDepthMode.Occluded
+	h.Parent = avatar
 end
 
 -- Build one cultivator. look: one of LOOKS (or an index), rarity: a Config.RARITIES entry.
@@ -447,8 +463,15 @@ function Cultivators.build(parent, cf, look, rarity, rarities)
 	m.Name = "Cultivator_" .. look
 	m:SetAttribute("Look", look)
 	m:SetAttribute("Rarity", rarity.name)
-	-- the cushion rests on the ground: the cultivator floats above it (client)
-	P(m, Vector3.new(0.5, 3.2, 3.2), cf * CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2), CUSHION, nil, Enum.PartType.Cylinder).Name = "Cushion"
+	-- the cushion rests on the ground: the cultivator floats above it (client); from Dao Ancestor up a
+	-- lotus in bloom (its stem sinks under the floor)
+	if tier >= 7 then
+		local k = 4.9 / LOTUS.native.X
+		local size = LOTUS.native * k
+		meshPart(m, "Cushion", size, cf * CFrame.new(0, 1.25 - size.Y / 2, 0), WHITE, LOTUS.mesh, LOTUS.tex, Vector3.one * k)
+	else
+		P(m, Vector3.new(0.5, 3.2, 3.2), cf * CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2), CUSHION, nil, Enum.PartType.Cylinder).Name = "Cushion"
+	end
 	aura(m, cf, rarity.color, tier)
 	m.Parent = parent
 	task.spawn(function()
@@ -459,6 +482,7 @@ function Cultivators.build(parent, cf, look, rarity, rarities)
 		local avatar = t:Clone()
 		avatar.Name = "Avatar"
 		avatar:PivotTo(cf * avatar:GetPivot())
+		rim(avatar, rarity.color, tier)
 		avatar.Parent = m
 		CollectionService:AddTag(m, Cultivators.TAG)
 	end)

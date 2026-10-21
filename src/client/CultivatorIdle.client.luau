@@ -3,7 +3,8 @@
 -- rises and leans with each slow breath and sways side to side, and the head lives on its own: it
 -- turns to watch a player who comes close, glances aside now and then, and drifts. The motes puff out
 -- now and then, the face (a dynamic head) meditates with closed eyes, blinks them open now and then
--- and opens them with a faint smile to watch a close player, a ring pulses out on each in-breath (tier 8+), the qi orbs and halo float along, and
+-- and opens them with a faint smile to watch a close player, a ring pulses out on each in-breath (tier 8+), the orbs of light
+-- circle, the magic circles turn, the halo circle and the spirit swords float with the figure, and
 -- the Primordial's aura runs through every colour. Local only (nothing replicates): the motion stops
 -- beyond FAR studs and the aura layers switch off beyond GLOW studs, which keeps phones cheap.
 local CollectionService = game:GetService("CollectionService")
@@ -46,7 +47,7 @@ local function add(m)
 	if not waist or not head or not m.Parent then
 		return
 	end
-	local f = { legs = {}, legsBase = {}, body = {}, bodyBase = {}, head = {}, headBase = {}, orbs = {}, orbBase = {}, phase = math.random() * 20 }
+	local f = { legs = {}, legsBase = {}, body = {}, bodyBase = {}, head = {}, headBase = {}, orbs = {}, orbBase = {}, circles = {}, swords = {}, swordBase = {}, phase = math.random() * 20 }
 	-- breathe about the bottom of the chest; the head turns about the neck
 	f.pivot = waist.CFrame * CFrame.new(0, -waist.Size.Y / 2, 0)
 	f.neck = f.pivot:ToObjectSpace(head.CFrame * CFrame.new(0, -head.Size.Y / 2, 0))
@@ -68,11 +69,22 @@ local function add(m)
 	end
 	f.centre = f.pivot.Position
 	for _, p in m:GetChildren() do
-		if p.Name == "QiOrb" then
+		if p.Name == "AuraOrb" then
 			table.insert(f.orbs, p)
 			table.insert(f.orbBase, p.Position - f.centre)
+		elseif p.Name == "SigilCircle" or p.Name == "SigilCircle2" then
+			table.insert(f.circles, { part = p, base = p.CFrame, dir = p.Name == "SigilCircle" and 1 or -1 })
+		elseif p.Name == "Sword" then
+			table.insert(f.swords, p)
+			table.insert(f.swordBase, p.CFrame)
+		elseif p.Name == "HaloCircle" then
+			-- the halo circle stands just behind the head, wherever the template put the head
+			f.haloCircle = p
+			f.haloTurn = p.CFrame.Rotation
+			f.haloPos = head.Position - head.CFrame.LookVector * 0.85
 		end
 	end
+	f.rim = avatar:FindFirstChild("Rim")
 	local aura = m:FindFirstChild("Aura")
 	f.halo = aura and aura:FindFirstChild("HaloAt")
 	-- the halo sits just behind the head, wherever the template put the head
@@ -122,6 +134,9 @@ RunService.RenderStepped:Connect(function(dt)
 			f.lit = dist < GLOW
 			for _, l in f.layers do
 				l.Enabled = f.lit
+			end
+			if f.rim then
+				f.rim.Enabled = f.lit
 			end
 		end
 		if not m.Parent then
@@ -187,6 +202,20 @@ RunService.RenderStepped:Connect(function(dt)
 			if f.halo then
 				f.halo.Position = f.haloBase + Vector3.new(0, up, 0)
 			end
+			-- the magic circles turn (the second the other way), the halo circle about its own axis
+			for _, c in f.circles do
+				table.insert(parts, c.part)
+				table.insert(cfs, c.base * CFrame.Angles(0, now * 0.25 * c.dir, 0))
+			end
+			if f.haloCircle then
+				table.insert(parts, f.haloCircle)
+				table.insert(cfs, CFrame.new(f.haloPos + Vector3.new(0, up, 0)) * f.haloTurn * CFrame.Angles(0, now * 0.4, 0))
+			end
+			-- the spirit swords hover with the figure, each on its own small rhythm
+			for i, sword in f.swords do
+				table.insert(parts, sword)
+				table.insert(cfs, f.swordBase[i] + Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0))
+			end
 			local spin = CFrame.Angles(0, now * 0.6, 0)
 			for i, orb in f.orbs do
 				local dir = (i % 2 == 0) and -1 or 1
@@ -211,8 +240,18 @@ RunService.RenderStepped:Connect(function(dt)
 					for _, l in f.layers do
 						l.Color = cs
 					end
-					for _, orb in f.orbs do
-						orb.Color = c
+					for _, c2 in f.circles do
+						c2.part.Color = c
+					end
+					for _, sword in f.swords do
+						sword.Color = c
+					end
+					if f.haloCircle then
+						f.haloCircle.Color = c
+					end
+					if f.rim then
+						f.rim.FillColor = c
+						f.rim.OutlineColor = c:Lerp(Color3.new(1, 1, 1), 0.4)
 					end
 				end
 			end
