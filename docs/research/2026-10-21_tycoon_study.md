@@ -71,5 +71,7 @@ doc. Treat game details below as community-reported.
   relative to `TideNext` (do fewer players leave in the 30 s before a tide?). The server prints
   `[Tycoon] spirit tide started, N players`; the analytics event belongs with the First session funnel
   work (B01 step 7), handed to that thread.
-- **Checked:** Luau parse (selene, Luau std) and a Rojo build. Not yet run in Studio Play (Studio is
-  shared with three other threads); a Play check with `TIDE_FIRST` lowered is the next rung.
+- **Checked in Studio Play (2026-10-21):** heads-up toast and the "Spirit Tide in" line, tide start
+  doubled the rate (6 to 12/s) and the line turned to "2x Spirit Tide"; a gift claim paid 120 s of
+  income (720 qi at 6/s) and a second claim was refused; no script errors. Capture:
+  `docs/art/captures/tide_and_gift_play.jpg`.
