@@ -84,7 +84,7 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
 - Phone budget: aura layers switch off beyond 90 studs and motion stops beyond 150 (client).
 - Pose and motion: the server poses the rig cross-legged through its joint graph and anchors it (new
   rigs have AnimationConstraints, no Motor6D); `CultivatorIdle.client.luau` animates locally within 150
-  studs and only on screen: the whole figure floats over its cushion, which rests on the ground, and bobs (halo and orbs
+  studs and only on screen: the whole figure floats 0.7 studs over its cushion (legs seated on it in the template; 2 studs read as detached in Play), and bobs (halo and orbs
   float along), the head watches a player within 24 studs (up to 55 degrees) and otherwise glances aside
   now and then, breath (rise and lean), a slow side sway, a head drift on its own rhythm, a sparkle puff
   every 8 to 14 s, the ground pulse on each in-breath, orbs circling (alternate directions from

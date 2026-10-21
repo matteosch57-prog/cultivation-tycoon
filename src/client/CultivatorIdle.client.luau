@@ -16,7 +16,7 @@ local FAR = 150
 local BODY_R = 6 -- studs: a figure with its aura, for the on-screen test
 local GLOW = 90
 local WATCH = 24 -- studs: a player this close is watched
-local HOVER = 1.1 -- studs above the cushion
+local HOVER = 0.7 -- studs above the cushion (Shop's Play: 2 studs read as detached)
 local BOB = 0.25 -- studs of float bob
 local FLOAT = 5.6 -- seconds per bob
 local BREATH = 4.5 -- seconds per breath
@@ -75,7 +75,8 @@ local function add(m)
 	end
 	local aura = m:FindFirstChild("Aura")
 	f.halo = aura and aura:FindFirstChild("HaloAt")
-	f.haloBase = f.halo and f.halo.Position
+	-- the halo sits just behind the head, wherever the template put the head
+	f.haloBase = f.halo and f.halo.Parent.CFrame:PointToObjectSpace(head.Position - head.CFrame.LookVector * 0.7)
 	f.motes = aura and aura:FindFirstChild("Motes", true)
 	f.pulse = aura and aura:FindFirstChild("Pulse", true)
 	f.layers = layersOf(m)

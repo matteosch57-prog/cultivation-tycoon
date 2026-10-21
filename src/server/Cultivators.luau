@@ -22,7 +22,7 @@ local VORTEX = TEX .. "forcefield_vortex_main.dds"
 local RING = TEX .. "explosion01_shockwave_main.dds"
 local GLOW = TEX .. "forcefield_glow_main.dds"
 local WHITE = Color3.new(1, 1, 1)
-local SEAT = 1.8 -- cushion top above the ground
+local SEAT = 0.5 -- cushion top above the ground: the folded legs rest here, the client lifts them
 
 -- Catalog layered clothing (any experience may dress an NPC in it). Index = rarity tier 1..9:
 -- white, green, blue, purple, gold, celestial teal, dao crimson, emperor red-gold, primordial white
@@ -235,7 +235,7 @@ local function template(look, tier)
 		end
 		for _, p in m:GetDescendants() do
 			if p:IsA("BasePart") then
-				p.CFrame += Vector3.new(0, SEAT - low - 0.4, 0)
+				p.CFrame += Vector3.new(0, SEAT - low, 0)
 			end
 		end
 		templates[key] = m
@@ -414,7 +414,7 @@ local function aura(m, f, color, tier)
 		local count = ({ 3, 5, 7, 7, 9 })[tier - 4]
 		for i = 0, count - 1 do
 			local a = math.rad(90 + i * 360 / count)
-			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 3.3 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color), Enum.Material.Neon, Enum.PartType.Ball)
+			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 2.6 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color), Enum.Material.Neon, Enum.PartType.Ball)
 			orb.Name = "QiOrb" -- chest height and clear of the head, so no orb crosses the face
 			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
 			t0.Position, t1.Position = Vector3.new(0, 0.15, 0), Vector3.new(0, -0.15, 0)
