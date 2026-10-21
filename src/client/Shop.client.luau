@@ -59,7 +59,7 @@ local function fetchPrices(onDone)
 	end
 end
 
--- "Owned" / "Soon" (no id yet) / the price
+-- "Owned" / "Soon" (no id yet) / the price in Robux (canBuy = true: drawn after a Robux icon)
 local function priceText(key)
 	local it, isPass = Config.shopItem(key)
 	if it and it.minRealm and (player:GetAttribute("Realm") or 1) < it.minRealm then
@@ -69,13 +69,13 @@ local function priceText(key)
 	elseif not it or it.id == 0 then
 		return "Soon", false
 	end
-	return Toy.ROBUX .. " " .. (prices[key] and tostring(prices[key]) or "..."), true
+	return prices[key] and tostring(prices[key]) or "...", true
 end
 
 local function packQi(it)
 	local q = math.floor((player:GetAttribute("AwayRate") or 0) * it.seconds)
 	local s = tostring(q):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-	return "+" .. s .. " Qi"
+	return "+" .. s
 end
 
 ---------------------------------------------------------------------------------------------
@@ -138,7 +138,14 @@ local function tile(parent, key, order, name, line)
 	sc.Name = "Pop"
 	sc.Parent = col
 	text(col, name, px(17), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	local lineLabel = line and text(col, line, px(12), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 }) or nil
+	local lineLabel
+	if key ~= "more" and Config.shopItem(key) and Config.shopItem(key).seconds then
+		-- a Qi pack's amount, after the qi icon
+		local _, l = Toy.amount(col, "qi", px(12), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
+		lineLabel = l
+	elseif line then
+		lineLabel = text(col, line, px(12), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
+	end
 	return col, btn, lineLabel
 end
 
@@ -147,7 +154,7 @@ local function itemTile(parent, it, order)
 	Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 4 })
 	local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(96), px(32)), BUY, px(10))
 	pHolder.LayoutOrder = 5
-	local label = text(pBtn, "", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local priceRow, label = Toy.amount(pBtn, "robux", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	local function buy()
 		local _, canBuy = priceText(it.key)
 		if canBuy then
@@ -158,7 +165,7 @@ local function itemTile(parent, it, order)
 	end
 	btn.Activated:Connect(buy)
 	pBtn.Activated:Connect(buy)
-	table.insert(ui.items, { it = it, label = label, button = pBtn, line = lineLabel })
+	table.insert(ui.items, { it = it, label = label, icon = priceRow:FindFirstChild("Currency"), button = pBtn, line = lineLabel })
 	return col
 end
 
@@ -175,6 +182,7 @@ local function refresh()
 	for _, rec in ui.items do
 		local str, canBuy = priceText(rec.it.key)
 		rec.label.Text = str
+		rec.icon.Visible = canBuy -- Owned / Soon / Realm N carry no price
 		rec.button.BackgroundColor3 = canBuy and BUY or GREY
 		if rec.it.seconds and rec.line then
 			rec.line.Text = packQi(rec.it)
@@ -335,7 +343,8 @@ local function padCard(pad)
 	local bob = Toy.icon(holder, key, big and 104 or 62)
 	line(1, big and 28 or 22, big and Color3.fromHex("FFE36B") or PadLook.TEXT.title, it.name)
 	line(2, 15, PadLook.TEXT.line, it.line)
-	cards[pad] = { bb = bb, price = line(3, 26, PadLook.TEXT.shop, ""), key = key, icon = bob, phase = pad.Position.X * 0.37 }
+	local priceRow, price = Toy.amount(f, "robux", 26, PadLook.TEXT.shop, { LayoutOrder = 3 })
+	cards[pad] = { bb = bb, price = price, robux = priceRow:FindFirstChild("Currency"), key = key, icon = bob, phase = pad.Position.X * 0.37 }
 	bb.Parent = playerGui
 end
 
@@ -351,6 +360,7 @@ local function refreshCards()
 				str = "Opens at " .. Config.realmName(it.minRealm) -- the pad has room for the name
 			end
 			c.price.Text = str
+			c.robux.Visible = canBuy
 			c.price.TextColor3 = canBuy and PadLook.TEXT.shop or Color3.fromHex("C8C0D0") -- grey: owned, or not on sale yet
 		end
 	end
