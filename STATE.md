@@ -20,6 +20,10 @@ checked in Studio Play (ROADMAP).
   (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
   ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
+- **Cultivators** (branch `cultivators`, merged into `integration`): disciples are R15 Roblox avatars
+  in catalog hanfu, 4 looks x 9 rarities, layered auras, floating idle with faces that blink and watch
+  a close player. Checked in Studio Edit (and a Play by Phone performance); design in ART_BIBLE.
+
 ## Next action
 Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.

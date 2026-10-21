@@ -12,6 +12,13 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 - Pad price cards are not AlwaysOnTop: Studio captures could not show AlwaysOnTop billboards.
 - Moon gate arc reads skewed from some angles.
 
+## Cultivators
+- Heavenly Emperor maiden robe (Chang'e Amber) reads pale gold, not orange: swap the id in `ROBES`.
+- Robes and hair are other creators' catalog items: if one is taken down it goes missing until its id
+  is replaced (`ROBES` / `LOOK` in `Cultivators.luau`).
+- An uploaded meditation animation (owner uploads, R5) would replace the coded pose and breathing.
+- Inner and Core ground sigils are faint at some angles over the light floor.
+
 ## Feel
 - The music bed is not picked yet (DECISIONS Q1).
 
