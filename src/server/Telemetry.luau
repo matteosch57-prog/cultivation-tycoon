@@ -163,7 +163,18 @@ end
 
 local function send(what, fn, ...)
 	if STUDIO then
-		print("[Tycoon][analytics]", what, ...)
+		local fieldText = ""
+		for _, v in { ... } do
+			if type(v) == "table" then
+				local parts = {}
+				for k, f in v do
+					table.insert(parts, k:sub(-2) .. "=" .. f)
+				end
+				table.sort(parts)
+				fieldText = " {" .. table.concat(parts, ", ") .. "}"
+			end
+		end
+		print("[Tycoon][analytics] " .. what .. fieldText)
 		return
 	end
 	local ok, err = pcall(fn, ...)
