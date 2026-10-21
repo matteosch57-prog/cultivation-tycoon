@@ -451,13 +451,21 @@ local function checkPads()
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		if hrp and hum and hum.Health > 0 and s.padData then
+			-- After a buy, every pad waits until the player stands on none of them: the step-out
+			-- move (or a new pad spawning underfoot) once landed on the next pad and chained 5 buys.
+			local onAny = false
 			for part, info in s.padData do
 				if not part.Parent then
 					s.padData[part] = nil
 				elseif not info.busy then
 					local d = hrp.Position - part.Position
 					if Vector2.new(d.X, d.Z).Magnitude < PAD_REACH and d.Y > -1 and d.Y < 7 then
+						onAny = true
+						if s.padHold then
+							break
+						end
 						if s.data.qi >= info.cost then
+							s.padHold = true
 							info.busy = true
 							s.padData[part] = nil
 							s.data.qi -= info.cost
@@ -466,6 +474,9 @@ local function checkPads()
 						break -- one pad per player per tick
 					end
 				end
+			end
+			if not onAny then
+				s.padHold = nil
 			end
 		end
 	end
