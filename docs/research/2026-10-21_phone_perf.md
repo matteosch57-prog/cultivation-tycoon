@@ -27,6 +27,11 @@ server does not replicate).
 | Courtyard toward the Main Hall, before | 26 | 226k |
 | Courtyard, after | 30 | 138k (-39%) |
 
+With the owner's uploaded meshes (Config ids, loaded through the real `Lowpoly` path): whole peak
+**32 draw calls, 150k triangles (-71%)**, courtyard **30 / 75k (-67%)**; uploaded meshes get Roblox's
+own distance detail levels, so they beat the EditableMesh test. Capture:
+`docs/art/captures/2026-10-21_lowpoly_uploaded.jpg`.
+
 Two rounds, same numbers. 2,810 of the 7,186 parts became MeshParts; clones of one mesh still
 instance (+4 draw calls). Look: `docs/art/captures/2026-10-21_lowpoly_before.jpg` vs `_after.jpg`,
 same camera on the Main Hall: no visible difference.

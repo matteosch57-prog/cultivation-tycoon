@@ -17,9 +17,9 @@ Config.SAVE_LOCK_WAITS = 6 -- tries to take a lock held by another live session 
 Config.SAVE_LOCK_WAIT = 5 -- s between those tries
 
 -- Phone performance (B01 step 3): small Ball / Cylinder parts become clones of one low-poly mesh
--- (art/meshes, tools/lowpoly_meshes.py). nil = off (plain parts). Set to "rbxassetid://<id>".
-Config.LOWPOLY_BALL = nil
-Config.LOWPOLY_CYLINDER = nil
+-- (art/meshes, tools/lowpoly_meshes.py, uploaded by the owner). nil = off (plain parts).
+Config.LOWPOLY_BALL = "rbxassetid://75794578549559"
+Config.LOWPOLY_CYLINDER = "rbxassetid://90367641492097"
 Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true parts
 
 -- Realms: each breakthrough multiplies income and costs.

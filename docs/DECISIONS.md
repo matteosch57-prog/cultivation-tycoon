@@ -45,5 +45,5 @@ the log as a D-number.
 - **D20** Phone performance (B01 step 3): measured, the cost of a full peak is triangles (~750k, small
   Ball parts at 432 each), not part count or draw calls (~30, instanced). So instead of baking whole
   buildings into unique meshes (one upload per building and level, no reuse), every small ball and
-  cylinder becomes a clone of one low-poly mesh: two uploads, -62% triangles on a whole-peak view, no
+  cylinder becomes a clone of one low-poly mesh: two uploads, -71% triangles on a whole-peak view (Studio Edit), no
   visible change. Not a generated-art mesh (D5): two geometric primitives written by a script.

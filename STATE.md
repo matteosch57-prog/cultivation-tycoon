@@ -17,10 +17,9 @@ checked in Studio Play (ROADMAP).
 
 - **B01 step 3 phone performance** (branch `phone-perf`): measured in Studio Edit, a full peak is ~750k
   triangles in ~30 draw calls; `Lowpoly` swaps small balls / cylinders for two shared low-poly meshes
-  (-62% triangles, same look, D20). Off until the two meshes are uploaded. `/perf` and `/clouds`
-  (owner only) log the phone numbers.
+  (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
+  ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
 ## Next action
-Mattéo: upload `art/meshes/ball_lowpoly.obj` and `cylinder_lowpoly.obj` (Studio Asset Manager), put
-their ids in `Config.LOWPOLY_BALL` / `LOWPOLY_CYLINDER`, then on the phone: `/perf`, walk a full peak,
+Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.
