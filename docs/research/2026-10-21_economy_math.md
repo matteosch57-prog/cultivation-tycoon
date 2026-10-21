@@ -147,3 +147,28 @@ replaced by costs x5 per realm through realm 5, then x10 (recruit reset kept).
 - Recruits stay alive: ~1,200 rolls a month (regular), 83% roll a Celestial or Dao Ancestor.
 - sim_pacing (active): realm 2 at 11 min, realm 3 at 17, realm 4 at 24 of total play.
 
+
+## 9. Reincarnation and Robux disciples (added the same day)
+`simulate(..., reinc=dict(lives, pl_base, sworn, start, gate))` replays the reincarnation rules of
+branch `reincarnation` (D29 there): Past Lives = `PAST_LIVES_MULT ^ (soulPeak - 9)` on all qi, where
+`soulPeak` is stamped at the reset; the player reincarnates on entering realm max(gate, soulPeak + 1);
+`sworn` best disciples follow. Median of 3 runs, 1 sworn disciple. Day the life ends (days in that
+life, days to re-reach the old peak):
+
+| player | x3, gate realm 10 (built) | x3, gate = realm 10 finished | x2, gate realm 10 |
+|---|---|---|---|
+| regular | life 1 day 7; then 5 to 7 days per life (catch-up 3) | life 1 day 18; then 5 to 7 | lives grow: 7, 11, 19, 27, 28 days |
+| casual | life 1 day 15; then 10 to 15 | life 1 day 34; then 11 to 15 | 18, 15, 25, 36, 63 days |
+| hooked | life 1 day 4; then 2 to 3 | life 1 day 9; then 3 | 3, 5, 10, 13, 15 days |
+
+- **Owner delegated the pick ("you decide, as long as you sim it right"): x3, gate at realm 10 as
+  built.** x3 keeps every life the same length at any depth, a loop that never walls; x2 doubles the
+  life length every two lives. The realm 10 gate gives a first life of about a week; the finished-10
+  gate only lengthens life 1.
+- Quick starts (realm 1 pre-built, start at realm 3 or 5) save ~30 to 40 min of replay per life and
+  do not move the day: comfort, not power.
+- **Robux disciples** (owner pick: every tier, priced to impact; `--bought`), regular player, play
+  minutes to finish realm 10 when owned from the start: none 1,026; Celestial 934 (-9%); Dao Ancestor
+  724 (-30%); Heavenly Emperor 569 (-45%); Primordial 362 (-65%); the three top ones 270 (-74%). Owned
+  from the start, Dao Ancestor and above flatten realms 1 to 6 to the walking floor, hence the realm
+  gates and once-per-player limits built on branch shop (853aeff).

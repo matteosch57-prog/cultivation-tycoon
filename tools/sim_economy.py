@@ -79,10 +79,15 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
     out = {}  # realm -> dict(play_s, day, wait_s, longest_wait_s, recruits, dmult)
     cur = dict(start=0, wait=0, longest=0, gap=0, recruits=0)
     peak, life, life_qi, life_day, lives_out, catchup = 1, 1, 0.0, 0, [], None
-    life_target = max(10, peak + 1)
+    gate = reinc.get("gate", 10) if reinc else 10  # 10 = on entering realm 10; 11 = realm 10 finished
+    life_target = max(gate, peak + 1)
 
-    def pl():
-        return reinc["pl_base"] ** max(0, peak - 9) if reinc else 1
+    soul = 0  # soulPeak: deepest realm of a FINISHED life, stamped at reincarnation (branch reincarnation)
+
+    def pl():  # live=True: the proposal's live peak; default = the built rule (soulPeak)
+        if not reinc:
+            return 1
+        return reinc["pl_base"] ** max(0, (peak if reinc.get("live") else soul) - 9)
 
     def cm(r):
         late_from = int(cfg["REALM_COST_LATE_FROM"])
@@ -168,7 +173,8 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
                             if life >= reinc["lives"]:
                                 return lives_out
                             old_peak, life, life_qi, life_day, catchup = peak, life + 1, 0.0, day + 1, None
-                            life_target = max(10, peak + 1)
+                            soul = max(soul, realm)
+                            life_target = max(gate, peak + 1)
                             realm = {"r3": 3, "r5": 5}.get(reinc["start"], 1)
                             if reinc["start"] == "built1":
                                 owned = {p["id"] for p in cfg["pads"]}
