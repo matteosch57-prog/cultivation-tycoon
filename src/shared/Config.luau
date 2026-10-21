@@ -239,11 +239,12 @@ Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receip
 -- item stands where it acts, on the owner's peak. `x` = across the peak; `z` = along it, or
 -- `fromRim` = studs inside the entrance arch (follows the island's size); `needs` = the building that
 -- must stand first (no pad offers what the player cannot use yet). Beside the path, never on it.
+-- Spots checked in Studio Play on a full peak (2026-10-21): every pad 7+ studs from any building.
 Config.SHOP_PEAK_PADS = {
 	{ key = "x2", x = 15, fromRim = 8 }, -- right of the path, the first thing on the peak
 	{ key = "vip", x = -15, fromRim = 8 }, -- left of it, under the arch whose name turns gold
-	{ key = "pill", x = 22, z = -6, needs = "furnace" }, -- the furnace brews this pill; here it is now
-	{ key = "auto", x = 54, z = -8, needs = "array" }, -- the orbs come from the Gathering Array
+	{ key = "pill", x = 20, z = -10, needs = "furnace" }, -- the furnace brews this pill; here it is now
+	{ key = "auto", x = 44, z = -8, needs = "array" }, -- the orbs come from the Gathering Array
 }
 -- (x, z) of a SHOP_PEAK_PADS entry on an island of `radius`
 function Config.shopPeakSpot(e, radius)

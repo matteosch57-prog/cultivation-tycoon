@@ -140,7 +140,7 @@ local function tile(parent, key, order, name, line)
 	holder.LayoutOrder = 1
 	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	if key == BEST then
-		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, px(14), 0, -px(12)), Rotation = 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF6B5E"), ZIndex = 5 })
+		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, px(12), 0, -px(2)), Rotation = 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF6B5E"), ZIndex = 5 })
 		Toy.corner(rib, UDim.new(0, px(8)))
 		local st = Instance.new("UIStroke")
 		st.Color = Toy.INK

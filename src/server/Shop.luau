@@ -308,9 +308,8 @@ function Shop.buildIsland(plot)
 			local onWalk = Vector3.new(w.X, 0, w.Y)
 			seat = f * CFrame.lookAt(onWalk + Vector3.new(side * 10, 0, 0), onWalk)
 			padAt = f * CFrame.new(onWalk + Vector3.new(side * 5, 0, 0))
-			if i < n - 1 then
-				Style.lantern(folder, f * CFrame.new(onWalk + Vector3.new(-side * 5.5, 0, -2)), 0.7)
-			end
+			-- its lantern stands on its own side, toward the gate (clear of the next station's pad)
+			Style.lantern(folder, f * CFrame.new(onWalk + Vector3.new(side * 7.5, 0, 3.5)), 0.7)
 		else
 			local w = walkAt(1)
 			local _, h = api.kit.pavilion(folder, f * CFrame.new(w.X, 0, w.Y - 3), 7, 8)

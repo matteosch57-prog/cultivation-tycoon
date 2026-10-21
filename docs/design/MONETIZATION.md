@@ -39,6 +39,14 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   an owned pass shows a toast instead). Pads are invisible `StepPad` anchors (`PadKind` "shop",
   `ShopKey`) drawn by the pad look (D27); `Shop.client` draws the bobbing item icon (near, on-screen
   cards only) and the price card. Anyone may shop on any peak.
+- **Checked in Studio Play (D33, 2026-10-21, full peak via DebugSet, ids at 0):** the four peak
+  pads stand 7+ studs from every building at radius 90 (the first pill and orbs spots touched the
+  furnace pavilion and the Training Ground and were moved); the entrance pair flanks the arch; the
+  garden walk, its six disciples and the Primordial pavilion build with no script errors; the screen
+  lands on Qi and Disciples from `ShopOpen` with icon tabs and rarity names. Not checked: the Get Qi
+  offer (needs the avatar on a pad), a real purchase. Captures: `docs/art/captures/shop_peak_top_play.jpg`,
+  `shop_entrance_play.jpg`, `shop_disciple_garden_play.jpg`, `shop_qi_tab_play.jpg`,
+  `shop_disciples_tab_v2_play.jpg`.
 - **Screen ergonomics (D33):** the tabs carry their icon; it opens on Boosts from the HUD and on Qi
   from Get Qi; disciple names are in their rarity colour; one "Best value" ribbon on the Qi Vault
   (most qi per Robux, no fake discount); the close X sits in the screen's top right corner.
