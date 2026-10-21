@@ -15,6 +15,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
+local Toy = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Toy"))
 
 local INK = Color3.fromHex("1B1420")
 local JADE = Color3.fromHex("59D39F")
@@ -306,6 +307,8 @@ local rebuildAll -- forward
 local popGain -- forward (the gift button calls it)
 local toast -- forward (it used to live on `ui`, which build() replaces: the recruit button
 -- then called a nil toast, errored, and stayed locked after the first recruit)
+local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands builds it)
+
 local function build()
 	gui:ClearAllChildren()
 	ui = {}
@@ -555,6 +558,21 @@ local function build()
 	ui.goalName = text(gt, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	ui.goalCost = text(gt, "", px(13), PINK, { LayoutOrder = 2 })
 	ui.goal = goal
+	-- Heavenly Hands (Karma Shop): a gold hand that builds the Next pad from anywhere (mock A)
+	local hHolder, hBtn = toy(goal, UDim2.fromOffset(px(50), px(42)), Color3.fromHex("FFD34D"), px(12))
+	hHolder.LayoutOrder = 3
+	hHolder.Visible = false
+	Toy.icon(hBtn, "hands", px(32), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	hBtn.Activated:Connect(function()
+		local id = goalPad and goalPad.Parent and goalPad:GetAttribute("PadId")
+		local ok, done = pcall(function()
+			return remotes.HandsBuild:InvokeServer(id)
+		end)
+		if not (ok and done) then
+			Sfx.play("deny")
+		end
+	end)
+	ui.hands = hHolder
 
 	toastLayer = frame(root, { Size = UDim2.fromScale(1, 1), ZIndex = 20 })
 	-- every list follows LayoutOrder (the default sorts by Name, which put the price above "Recruit")
@@ -782,7 +800,6 @@ end
 ---------------------------------------------------------------------------------------------
 -- per frame: smooth count-up, next-goal arrow, recruit wobble when affordable
 local goalAcc = 0
-local goalPad
 RunService.RenderStepped:Connect(function(dt)
 	if not ui.root then
 		return
@@ -816,6 +833,7 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.goalName, "Text", "Next: " .. (goalPad:GetAttribute("Title") or ""))
 		put(ui.goalCost, "Text", compact(cost) .. " Qi")
 		put(ui.goalCost, "TextColor3", target >= cost and Color3.fromHex("9FF5C8") or PINK)
+		put(ui.hands, "Visible", (player:GetAttribute("Dao_hands") or 0) > 0)
 		local cam = workspace.CurrentCamera
 		local rel = cam.CFrame:PointToObjectSpace(goalPad.Position)
 		put(ui.arrow, "Rotation", math.deg(math.atan2(rel.Z, rel.X))) -- 0 = right, 90 = toward the camera
@@ -932,6 +950,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		return
 	elseif kind == "shopOwned" then
 		toast("You already own " .. a, Color3.fromHex("9FF5C8"), 1.6)
+		return
+	elseif kind == "realmLook" then
+		toast(a, GOLD, 4) -- what this realm changed on the peak (Config.realmLookLine)
 		return
 	elseif kind == "tide" then
 		toast(string.format("Spirit Tide! Every sect earns 2x Qi for %d s", a), Color3.fromHex("9FD0FF"), 4)

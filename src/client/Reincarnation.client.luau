@@ -24,8 +24,9 @@ local GO = Color3.fromHex("B06BFF")
 local CONFIRM = Color3.fromHex("FF8A5C")
 local LOCKED = Color3.fromHex("C9C2D3")
 local KARMA = Color3.fromHex("D9B8FF")
-local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF" }
-local TILT = { -2, 1.5, -1, 2, -1.5, 1 }
+local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", rebirth = "FFC9A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6" }
+local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1 }
+local PER_ROW = 4
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ReincOpen"
@@ -145,6 +146,9 @@ local function refreshKarma()
 	for _, t in ui.tiles do
 		local lv = player:GetAttribute("Dao_" .. t.node.key) or 0
 		local cost = t.node.costs[lv + 1]
+		if t.node.lines then -- the line names what the NEXT level gives
+			t.line.Text = t.node.lines[math.min(lv + 1, #t.node.lines)]
+		end
 		for i, pip in t.pips do
 			pip.BackgroundColor3 = i <= lv and GOLD or Color3.fromHex("3A2D40")
 		end
@@ -262,14 +266,18 @@ local function buildKarma(body)
 		Toy.list(rows[i], true, px(18), { VerticalAlignment = Enum.VerticalAlignment.Top })
 	end
 	for i, node in Config.DAO do
-		local col = Toy.frame(rows[i <= 3 and 1 or 2], { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, Rotation = TILT[i] })
+		local col = Toy.frame(rows[i <= PER_ROW and 1 or 2], { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, Rotation = TILT[i] or 0 })
 		Toy.list(col, false, px(2))
 		local holder, btn = Toy.button(col, UDim2.fromOffset(px(58), px(58)), Color3.fromHex(TILE[node.key] or "C9FFE4"), px(16))
 		holder.LayoutOrder = 1
-		local ic = Toy.Icon.new(btn, px(44), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-		DRAW[node.key](ic)
+		local iconProps = { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) }
+		if DRAW[node.key] then
+			DRAW[node.key](Toy.Icon.new(btn, px(44), iconProps))
+		else
+			Toy.icon(btn, node.key, px(44), iconProps) -- drawings the HUD shares (Toy ICONS)
+		end
 		text(col, node.name, px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-		text(col, node.line, px(11), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
+		local lineLabel = text(col, node.line, px(11), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
 		local pipRow = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
 		Toy.list(pipRow, true, px(3))
 		local pips = {}
@@ -301,7 +309,7 @@ local function buildKarma(body)
 		end
 		btn.Activated:Connect(buy)
 		pBtn.Activated:Connect(buy)
-		table.insert(ui.tiles, { node = node, pips = pips, price = price, priceIcon = priceIcon, button = pBtn })
+		table.insert(ui.tiles, { node = node, pips = pips, price = price, priceIcon = priceIcon, button = pBtn, line = lineLabel })
 	end
 end
 

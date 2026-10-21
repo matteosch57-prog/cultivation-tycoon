@@ -273,6 +273,32 @@ local function makeCard(pad, kind)
 	if feature then
 		text(2, 15, PadLook.TEXT.line).Text = feature -- feature buildings say what they DO
 	end
+	-- a worker hire pad: one dot per worker the building can take, gold for the ones hired
+	local max = pad:GetAttribute("HireMax")
+	if max then
+		local dots = Instance.new("Frame")
+		dots.BackgroundTransparency = 1
+		dots.Size = UDim2.fromOffset(max * 24, 22)
+		dots.LayoutOrder = 2
+		local dl = Instance.new("UIListLayout")
+		dl.FillDirection = Enum.FillDirection.Horizontal
+		dl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		dl.VerticalAlignment = Enum.VerticalAlignment.Center
+		dl.Padding = UDim.new(0, 6)
+		dl.Parent = dots
+		for i = 1, max do
+			local d = Instance.new("Frame")
+			d.Size = UDim2.fromOffset(16, 16)
+			d.BackgroundColor3 = i <= (pad:GetAttribute("Hired") or 0) and Color3.fromHex("FFC94A") or Color3.fromHex("6B6170")
+			Instance.new("UICorner", d).CornerRadius = UDim.new(1, 0)
+			local st = Instance.new("UIStroke")
+			st.Color = INK
+			st.Thickness = 2.5
+			st.Parent = d
+			d.Parent = dots
+		end
+		dots.Parent = f
+	end
 	-- the price always shows its currency icon (owner rule): [Need] (qi drop) 1.2K [more]
 	local row = Instance.new("Frame")
 	row.BackgroundTransparency = 1

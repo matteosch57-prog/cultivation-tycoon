@@ -1,0 +1,198 @@
+<title>Sect Workers Mocks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<style>
+/* Layout: one column of phone scenes (mock C HUD) then a roster grid; dark single look like the other mocks */
+:root{
+  --bg:#241c2b; --panel:#2f2538; --ink:#1b1420; --fg:#ffffff; --muted:#cbbfd6;
+  --jade:#59d39f; --gold:#ffc94a; --red:#e0544b; --line:#3d3147;
+  --display:Fredoka,"Trebuchet MS",sans-serif; --body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+main{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:34px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:26px}
+h2{font-size:20px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+h2 small{font:500 13px var(--body);color:var(--muted)}
+p{margin:0;color:var(--muted);font-size:14px;line-height:1.5;max-width:68ch}
+section{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:18px}
+.opt{display:flex;flex-direction:column;gap:7px;min-width:0}
+.opt h3{font-size:16px;display:flex;align-items:center;gap:8px}
+.pick{font:600 11px var(--body);background:var(--jade);color:var(--ink);border-radius:6px;padding:2px 7px}
+.scene{width:100%;max-width:100%;aspect-ratio:667/375;border-radius:14px;overflow:hidden;display:block;background:#8fb8f0}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:14px}
+.card{background:var(--panel);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card svg{width:100%;height:auto;border-radius:10px;background:linear-gradient(#a9cdf5,#e8f1fb 62%,#79b866 62%)}
+.card b{font-family:var(--display);font-size:17px}
+.card .at{font-size:12px;color:var(--gold)}
+.card .mv{font-size:12.5px;color:var(--muted);line-height:1.4}
+.batch{font:600 10.5px var(--body);color:var(--ink);background:var(--gold);border-radius:5px;padding:1px 6px;align-self:flex-start}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px}
+.fact{border-top:2px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}
+.fact b{font-family:var(--display);font-size:15px}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:6px">
+  <h1>Sect Workers</h1>
+  <p>Outer disciples you hire with qi. Each one works at one building, makes that building earn more, and makes the peak feel alive. Nothing here is built yet.</p>
+</header>
+
+<section>
+  <h2>1. How you hire one <small>pick one</small></h2>
+  <div class="row">
+    <div class="opt"><h3>A. Hire pad by the building <span class="pick">my pick</span></h3><svg class="scene" id="sA" viewBox="0 0 667 375"></svg>
+      <p>A small pad next to the building. Step on it, a worker walks in. Same as every other pad, no new screen.</p></div>
+    <div class="opt"><h3>B. Workers button</h3><svg class="scene" id="sB" viewBox="0 0 667 375"></svg>
+      <p>A HUD button opens a list. Buy from anywhere, but it is a new screen with more text.</p></div>
+    <div class="opt"><h3>C. Free with the building</h3><svg class="scene" id="sC" viewBox="0 0 667 375"></svg>
+      <p>Workers just come with the building. Pure life, nothing to buy, no extra qi.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Up to 3 per building <small>the dots on the card</small></h2>
+  <div class="row">
+    <div class="opt"><h3>1 hired</h3><svg class="scene" id="l1" viewBox="0 0 667 375"></svg></div>
+    <div class="opt"><h3>2 hired</h3><svg class="scene" id="l2" viewBox="0 0 667 375"></svg></div>
+    <div class="opt"><h3>3 hired: pad gone</h3><svg class="scene" id="l3" viewBox="0 0 667 375"></svg></div>
+  </div>
+  <p>Each hire adds one worker you can see and +50% to that building's qi. After the third the pad disappears.</p>
+</section>
+
+<section>
+  <h2>3. Who works where <small>gold = first batch</small></h2>
+  <div class="roster" id="roster"></div>
+</section>
+
+<section>
+  <h2>4. The look <small>pick one</small></h2>
+  <div class="row">
+    <div class="opt"><h3>A. Plain work clothes + straw hat <span class="pick">my pick</span></h3><svg class="scene" id="kA" viewBox="0 0 667 375"></svg>
+      <p>Grey and brown, a straw hat, a tool. Never mistaken for a rare disciple, and light on phones.</p></div>
+    <div class="opt"><h3>B. Disciple robes, white tier</h3><svg class="scene" id="kB" viewBox="0 0 667 375"></svg>
+      <p>The same avatars as the meditating disciples. Prettier, but they blur with the ones you collect.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>How it would be built</h2>
+  <div class="facts">
+    <div class="fact"><b>Same avatars, simpler clothes</b><p>Real R15 avatars like the disciples, without the layered robes (fewer triangles). Tools made of a few parts.</p></div>
+    <div class="fact"><b>Moves on your screen only</b><p>Each worker loops a short job on the client: hoe, strike, fan. It stops when off screen or far away.</p></div>
+    <div class="fact"><b>Cheap on phones</b><p>At most 3 per building, about 30 on a full peak. I measure the triangles in Studio before the first batch ships.</p></div>
+    <div class="fact"><b>Income checked first</b><p>The economy thread sims the +50% before any number goes in Config.</p></div>
+  </div>
+</section>
+</main>
+
+<script>
+const INK="#1b1420";
+const out=(t,size,fill)=>`font-family="Fredoka,sans-serif" font-weight="700" font-size="${size}" fill="${fill||'#fff'}" stroke="${INK}" stroke-width="${size/5}" paint-order="stroke" stroke-linejoin="round">${t}`;
+const txt=(x,y,t,size,fill,anchor)=>`<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" ${out(t,size,fill)}</text>`;
+const qi=(x,y,s)=>`<g transform="translate(${x},${y}) scale(${s/64})"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></g>`;
+
+// a toy worker: x,y = feet; s = scale; robe colour; hat: straw|none|bun; tool name; flip
+function fig(x,y,s,o={}){
+  const robe=o.robe||"#8d8a86",sash=o.sash||"#6b4a33",skin="#eecbb0",f=o.flip?-1:1;
+  let tool="";
+  const T={
+    hoe:`<line x1="6" y1="-30" x2="20" y2="2" stroke="#7b5a44" stroke-width="2.6"/><path d="M17 -1 l9 4 -2 3 -9 -3z" fill="#9aa3ab" stroke="${INK}" stroke-width="1.2"/>`,
+    pick:`<line x1="4" y1="-34" x2="16" y2="-6" stroke="#7b5a44" stroke-width="2.6"/><path d="M-2 -36 q8 -6 16 2" fill="none" stroke="#9aa3ab" stroke-width="3.4"/>`,
+    staff:`<line x1="9" y1="-46" x2="9" y2="2" stroke="#7b5a44" stroke-width="2.6"/>`,
+    spear:`<line x1="9" y1="-56" x2="9" y2="2" stroke="#7b5a44" stroke-width="2.4"/><path d="M9 -64 l3 8 h-6z" fill="#cfd6dc" stroke="${INK}" stroke-width="1"/>`,
+    fan:`<path d="M9 -22 l12 -10 a14 14 0 0 1 2 14z" fill="#f3e3b5" stroke="${INK}" stroke-width="1.2"/>`,
+    axe:`<line x1="6" y1="-36" x2="14" y2="-4" stroke="#7b5a44" stroke-width="2.6"/><path d="M3 -38 l8 -3 2 8 -8 2z" fill="#9aa3ab" stroke="${INK}" stroke-width="1.2"/>`,
+    scroll:`<rect x="-10" y="-30" width="20" height="9" rx="2" fill="#f3e3b5" stroke="${INK}" stroke-width="1.2"/>`,
+    broom:`<line x1="8" y1="-34" x2="14" y2="-2" stroke="#7b5a44" stroke-width="2.4"/><path d="M10 -4 l10 0 4 6 -16 0z" fill="#d9b45a" stroke="${INK}" stroke-width="1"/>`,
+    rod:`<line x1="6" y1="-26" x2="34" y2="-50" stroke="#7b5a44" stroke-width="2"/><line x1="34" y1="-50" x2="36" y2="-14" stroke="#fff" stroke-width=".8"/>`,
+    sword:`<line x1="10" y1="-26" x2="30" y2="-44" stroke="#dfe6ec" stroke-width="2.6"/>`,
+    lamp:`<line x1="9" y1="-40" x2="9" y2="-8" stroke="#7b5a44" stroke-width="2"/><rect x="4" y="-12" width="10" height="10" rx="3" fill="#e05a4b" stroke="${INK}" stroke-width="1.2"/>`,
+    mallet:`<line x1="8" y1="-30" x2="20" y2="-44" stroke="#7b5a44" stroke-width="2.4"/><rect x="16" y="-52" width="10" height="8" rx="2" fill="#b4895e" stroke="${INK}" stroke-width="1.2"/>`,
+    bowl:`<ellipse cx="10" cy="-22" rx="7" ry="3" fill="#c9a37a" stroke="${INK}" stroke-width="1.2"/>`,
+  };
+  if(o.tool) tool=T[o.tool];
+  const hat=o.hat==="none"?`<path d="M-6 -48 q6 -6 12 0" fill="#2b2230"/>`
+    :o.hat==="bun"?`<path d="M-6 -47 q6 -7 12 0" fill="#2b2230"/><circle cx="0" cy="-53" r="3" fill="#2b2230"/>`
+    :`<path d="M-15 -47 L0 -58 L15 -47 Z" fill="#d9b45a" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  return `<g transform="translate(${x},${y}) scale(${s*f},${s})">
+    <ellipse cx="0" cy="1" rx="11" ry="3" fill="rgba(0,0,0,.18)"/>
+    <path d="M-9 0 L-7 -32 Q0 -36 7 -32 L9 0 Z" fill="${robe}" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>
+    <rect x="-7.5" y="-19" width="15" height="3" fill="${sash}"/>
+    <circle cx="0" cy="-41" r="7" fill="${skin}" stroke="${INK}" stroke-width="1.6"/>
+    ${hat}${tool}</g>`;
+}
+
+function sky(){return `<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb1ec"/><stop offset=".55" stop-color="#cfe0f5"/><stop offset="1" stop-color="#e9eef7"/></linearGradient></defs>
+  <rect width="667" height="375" fill="url(#sk)"/>
+  <ellipse cx="333" cy="300" rx="420" ry="150" fill="#6fae5c"/><ellipse cx="333" cy="300" rx="420" ry="150" fill="none" stroke="#5c9a4b" stroke-width="3"/>`;}
+function hud(){return `${qi(262,8,30)}${txt(352,33,"20,064",26)}${txt(352,50,"+152/s",12,"#e8fff4")}
+  <circle cx="58" cy="318" r="34" fill="rgba(0,0,0,.15)" stroke="rgba(255,255,255,.45)" stroke-width="2"/>
+  <circle cx="612" cy="322" r="30" fill="rgba(0,0,0,.15)" stroke="rgba(255,255,255,.45)" stroke-width="2"/>`;}
+function garden(x,y){let r=`<path d="M${x-120} ${y} L${x+70} ${y} L${x+110} ${y+70} L${x-140} ${y+70} Z" fill="#7b5a44" stroke="${INK}" stroke-width="2"/>`;
+  for(let i=0;i<4;i++){const yy=y+10+i*16;r+=`<line x1="${x-122-i*5}" y1="${yy}" x2="${x+76+i*9}" y2="${yy}" stroke="#5e4232" stroke-width="3"/>`;
+    for(let k=0;k<8;k++){const xx=x-112-i*4+k*(26+i*1.6);r+=`<path d="M${xx} ${yy-1} q-4 -8 -1 -11 M${xx} ${yy-1} q4 -8 1 -11" stroke="#7fd06a" stroke-width="2.4" fill="none"/>`;}}
+  return r+txt(x-20,y-12,"Herb Garden",13,"#fff");}
+function pad(x,y,ready){const c=ready?"#59d39f":"#e0544b";
+  return `<rect x="${x-9}" y="${y-150}" width="18" height="150" fill="${c}" opacity=".25"/>
+  <ellipse cx="${x}" cy="${y}" rx="34" ry="11" fill="${c}" opacity=".35" stroke="${c}" stroke-width="3"/>
+  <ellipse cx="${x}" cy="${y}" rx="22" ry="7" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/>`;}
+function card(x,y,name,price,dots,ready){
+  let d="";for(let i=0;i<3;i++)d+=`<circle cx="${x-14+i*14}" cy="${y+30}" r="5" fill="${i<dots?'#ffc94a':'rgba(255,255,255,.25)'}" stroke="${INK}" stroke-width="2"/>`;
+  return `${fig(x-50,y+6,.42,{tool:"hoe"})}${txt(x+6,y-6,name,20)}${qi(x-28,y+1,15)}${txt(x+8,y+14,price,15,ready?"#9ff5c8":"#ff8a80")}${d}`;}
+
+function sceneHire(dots,showPad){let s=sky()+garden(250,190);
+  const spots=[[200,236],[290,252],[150,256]];
+  for(let i=0;i<dots;i++)s+=fig(spots[i][0],spots[i][1],1.6,{tool:"hoe",flip:i%2});
+  if(showPad){s+=pad(470,300,true)+`<g transform="translate(470,140) scale(1.5) translate(-470,-140)">`+card(470,140,"Farmer",dots===0?"2.4K":dots===1?"4.8K":"9.6K",dots,true)+`</g>`;}
+  return s+fig(520,330,1.25,{robe:"#3b3550",hat:"bun",tool:"sword"})+hud();}
+
+document.getElementById("sA").innerHTML=sceneHire(1,true);
+document.getElementById("l1").innerHTML=sceneHire(1,true);
+document.getElementById("l2").innerHTML=sceneHire(2,true);
+document.getElementById("l3").innerHTML=sceneHire(3,false);
+
+// B: a Workers button and a sheet
+(function(){let s=sky()+garden(250,190)+fig(200,236,1.6,{tool:"hoe"})+hud();
+  s+=`<g><rect x="14" y="120" width="66" height="62" rx="14" fill="#f2c46b" stroke="${INK}" stroke-width="3"/>${fig(47,170,.7,{tool:"hoe"})}${txt(47,198,"Workers",13)}</g>`;
+  s+=`<rect x="190" y="70" width="290" height="230" rx="18" fill="#3b3047" stroke="${INK}" stroke-width="3"/>${txt(335,100,"Workers",20)}`;
+  [["Farmer","2.4K",1,"hoe"],["Miner","1.1K",0,"pick"],["Alchemist","9K",0,"fan"]].forEach((r,i)=>{const y=125+i*56;
+    s+=`<rect x="206" y="${y}" width="258" height="46" rx="12" fill="#4a3d58"/>${fig(232,y+40,.62,{tool:r[3]})}${txt(254,y+28,r[0],15,"#fff","start")}`;
+    for(let k=0;k<3;k++)s+=`<circle cx="${352+k*11}" cy="${y+23}" r="4" fill="${k<r[2]?'#ffc94a':'rgba(255,255,255,.25)'}" stroke="${INK}" stroke-width="1.5"/>`;
+    s+=`<rect x="392" y="${y+8}" width="64" height="30" rx="9" fill="#59d39f" stroke="${INK}" stroke-width="2.5"/>${qi(396,y+13,18)}${txt(434,y+29,r[1],13)}`;});
+  document.getElementById("sB").innerHTML=s;})();
+
+// C: free, workers already there, no pad
+(function(){let s=sky()+garden(250,190)+fig(200,236,1.6,{tool:"hoe"})+fig(300,252,1.6,{tool:"hoe",flip:1})+fig(520,330,1.25,{robe:"#3b3550",hat:"bun",tool:"sword"})+hud();
+  document.getElementById("sC").innerHTML=s;})();
+
+// look options: a lineup
+function lineup(id,opts){let s=sky();
+  opts.forEach((o,i)=>{s+=fig(110+i*112,270,1.7,o.f);s+=txt(110+i*112,320,o.n,14);});
+  s+=fig(110+opts.length*112,270,1.7,{robe:"#7b4fc8",hat:"bun",sash:"#ffc94a"})+txt(110+opts.length*112,320,"your disciple",14,"#dcc6ff");
+  document.getElementById(id).innerHTML=s;}
+lineup("kA",[{n:"Farmer",f:{tool:"hoe"}},{n:"Miner",f:{robe:"#7d6a58",tool:"pick"}},{n:"Alchemist",f:{robe:"#9a8f80",tool:"fan"}},{n:"Guard",f:{robe:"#6f7680",tool:"spear"}}]);
+lineup("kB",[{n:"Farmer",f:{robe:"#f4f1ec",sash:"#c9c2b8",hat:"bun",tool:"hoe"}},{n:"Miner",f:{robe:"#f4f1ec",sash:"#c9c2b8",hat:"none",tool:"pick"}},{n:"Alchemist",f:{robe:"#f4f1ec",sash:"#c9c2b8",hat:"bun",tool:"fan"}},{n:"Guard",f:{robe:"#f4f1ec",sash:"#c9c2b8",hat:"none",tool:"spear"}}]);
+
+// roster
+const R=[
+ ["Farmer","Herb Garden","Hoes the rows, then waters them.",{tool:"hoe"},1],
+ ["Sparring pair","Training Ground","Two disciples trade slow sword strikes, then bow.",{robe:"#6f7680",hat:"bun",tool:"sword"},1,{robe:"#6f7680",hat:"bun",tool:"sword",flip:1}],
+ ["Miner","Spirit Vein","Swings a pick at the glowing stone.",{robe:"#7d6a58",tool:"pick"},1],
+ ["Alchemist","Alchemy Furnace","Fans the fire, peers in, fans again.",{robe:"#9a8f80",hat:"none",tool:"fan"},1],
+ ["Woodcutter","Bamboo Grove","Chops a stalk, stacks it.",{robe:"#7d6a58",tool:"axe"}],
+ ["Koi keeper","Koi Pond","Scatters food from a bowl at the edge.",{tool:"bowl"}],
+ ["Scholar","Scripture Library","Reads a scroll, paces, reads again.",{robe:"#9a8f80",hat:"bun",tool:"scroll"}],
+ ["Gate guard","Sect Gate","Stands watch, turns to look at you.",{robe:"#6f7680",hat:"none",tool:"spear"}],
+ ["Bell ringer","Bell Tower","Swings the beam every so often.",{robe:"#8d8a86",tool:"mallet"}],
+ ["Sweeper","Stone Path","Sweeps slowly down the path.",{tool:"broom"}],
+ ["Lamplighter","Lantern Row","Walks the row, lights each lamp.",{robe:"#8d8a86",tool:"lamp"}],
+];
+document.getElementById("roster").innerHTML=R.map(r=>{
+  const two=r[5]?fig(70,96,1.25,r[3])+fig(130,96,1.25,r[5]):fig(100,96,1.35,r[3]);
+  return `<div class="card"><svg viewBox="0 0 200 110">${two}</svg>${r[4]?'<span class="batch">first batch</span>':''}<b>${r[0]}</b><span class="at">${r[1]}</span><span class="mv">${r[2]}</span></div>`;}).join("");
+</script>

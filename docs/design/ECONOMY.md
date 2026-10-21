@@ -38,6 +38,16 @@ shrinks the island back.
 - **Qi orbs** (Qi Gathering Array): one every `ORB_INTERVAL`, up to `ORB_MAX`; worth `ORB_VALUE` seconds
   of income.
 
+## Sect workers
+A hire pad (`Hire_<id>`, PadKind `hire`) stands beside each owned building in `WORKERS` until it has
+`WORKER_MAX` workers. The n-th costs `workerCost` (`WORKER_COST[n]` x the building's cost x `costMult`)
+and adds `WORKER_BONUS` x that building's income (`data.workers[id]`). A breakthrough or a new life
+sends them home with the buildings. The card shows one dot per worker the building takes; hire pads
+are not `Pad_` so the HUD goal and the guide trail still lead to buildings. Looks, spots and tools:
+`src/server/Workers.luau`; job loops on the client: `WorkerJobs.client.luau` (joints solved by hand,
+`Rig.luau`, nothing moves off screen). Why: the peak should look worked and alive (research
+2026-10-21_workers, owner picked hire pads and straw hats from mock `docs/art/mocks/workers.html`).
+
 ## Spirit Tide (server-wide)
 Every peak on a server earns `TIDE_MULT` x for `TIDE_DURATION` s, first `TIDE_FIRST` s after the server
 starts, then every `TIDE_INTERVAL` s; a toast warns `TIDE_WARN` s before. Workspace attributes `TideNext`

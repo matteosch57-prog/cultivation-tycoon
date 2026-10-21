@@ -12,7 +12,9 @@ local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
+local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
+local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -53,6 +55,9 @@ reincFn.Parent = remotes
 local daoFn = Instance.new("RemoteFunction")
 daoFn.Name = "DaoBuy"
 daoFn.Parent = remotes
+local handsFn = Instance.new("RemoteFunction")
+handsFn.Name = "HandsBuild"
+handsFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -225,6 +230,8 @@ local function buildGrounds(plot, radius)
 	plot.grounds = g
 	plot.label = label
 	plot.radius = radius
+	plot.lookKey = nil -- the realm look follows the island's size
+	RealmLook.apply(plot)
 end
 
 -- Terrain grass blades grow through anything standing on them (stairs, stone floors), so
@@ -313,7 +320,8 @@ end
 
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {} }
+	-- workers = { [building id] = workers hired there } (Config.WORKERS)
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
@@ -362,7 +370,7 @@ local function rate(s, away)
 	for id in data.owned do
 		local pad = Config.padById(id)
 		if pad then
-			base += pad.income
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0))
 		end
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
@@ -493,6 +501,25 @@ local function buildDisciples(s)
 	ctx.folder.Parent = s.plot.built
 end
 
+-- the hired workers at their buildings (Workers.luau); rebuilt whole, like the disciples
+local function buildWorkers(s)
+	local old = s.plot.built:FindFirstChild("Workers")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "Workers"
+	for id, n in s.data.workers or {} do
+		local pad = Config.padById(id)
+		if pad and s.data.owned[id] then
+			for k = 1, math.min(n, Config.WORKER_MAX) do
+				Workers.build(folder, s.plot.frame, pad, k, { s.plot.built, workspace.Terrain })
+			end
+		end
+	end
+	folder.Parent = s.plot.built
+end
+
 local refreshPads -- forward
 local PAD_COLOR = Color3.fromHex("6FB59C") -- jade
 
@@ -522,6 +549,14 @@ local function makePad(player, s, pad, cost, label, income, onBuy, kind)
 	return p
 end
 
+-- the one place a pad is paid for (standing on it, or Heavenly Hands)
+local function buyPad(s, part, info)
+	info.busy = true
+	s.padData[part] = nil
+	s.data.qi -= info.cost
+	info.onBuy()
+end
+
 -- Every 0.1 s: is an owner standing on one of their pads? (horizontal distance + height band)
 local PAD_REACH = 2.6 -- the pad top is 4 studs wide
 local function checkPads()
@@ -545,10 +580,7 @@ local function checkPads()
 						end
 						if s.data.qi >= info.cost then
 							s.padHold = true
-							info.busy = true
-							s.padData[part] = nil
-							s.data.qi -= info.cost
-							info.onBuy()
+							buyPad(s, part, info)
 						end
 						break -- one pad per player per tick
 					end
@@ -602,8 +634,11 @@ local function rebuild(s)
 	s.pads = {}
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
 	local radius = Config.islandRadius(s.data.owned)
+	s.plot.realm = s.data.realm
 	if s.plot.radius ~= radius then
 		buildGrounds(s.plot, radius)
+	else
+		RealmLook.apply(s.plot) -- what this realm shows around the peak (nothing below REALM_LOOK_FROM)
 	end
 	local hallLevel = Config.mainHallLevel(s.data.owned)
 	for _, pad in Config.PADS do
@@ -616,6 +651,7 @@ local function rebuild(s)
 		end
 	end
 	buildDisciples(s)
+	buildWorkers(s)
 end
 
 refreshPads = function(player, s)
@@ -641,6 +677,12 @@ refreshPads = function(player, s)
 	end
 	if all then
 		wanted.breakthrough = true
+	end
+	-- a hire pad beside every owned building that takes workers, until it has WORKER_MAX
+	for id in Config.WORKERS do
+		if s.data.owned[id] and ((s.data.workers or {})[id] or 0) < Config.WORKER_MAX then
+			wanted["hire_" .. id] = true
+		end
 	end
 	for id, p in s.pads do
 		if not wanted[id] or not p.Parent then
@@ -696,6 +738,37 @@ refreshPads = function(player, s)
 			end
 		end
 	end
+	for id, spec in Config.WORKERS do
+		local key = "hire_" .. id
+		local pad = Config.padById(id)
+		if wanted[key] and pad and not s.pads[key] then
+			local n = ((s.data.workers or {})[id] or 0) + 1
+			local cost = Config.workerCost(pad, n, s.data.realm)
+			local income = pad.income * Config.incomeMult(s.data.realm) * Config.WORKER_BONUS
+			local p = makePad(player, s, { id = key, x = spec.x, z = spec.z }, cost, spec.name, income, function()
+				s.data.workers = s.data.workers or {}
+				s.data.workers[id] = n
+				Telemetry.sink(player, s.data, cost, key)
+				-- the next hire costs more: a fresh pad (its card shows one more dot)
+				if s.pads[key] then
+					s.pads[key]:Destroy()
+					s.pads[key] = nil
+				end
+				local folder = s.plot.built:FindFirstChild("Workers")
+				if folder then
+					Workers.build(folder, s.plot.frame, pad, n, { s.plot.built, workspace.Terrain })
+				else
+					buildWorkers(s)
+				end
+				refreshPads(player, s)
+				publish(player)
+			end, "hire")
+			p.Name = "Hire_" .. id -- not "Pad_": the HUD goal and the guide trail lead to buildings only
+			p:SetAttribute("Hired", n - 1)
+			p:SetAttribute("HireMax", Config.WORKER_MAX)
+			s.pads[key] = p
+		end
+	end
 	if all and not s.pads.breakthrough then
 		local cost = math.floor(Config.BREAKTHROUGH_COST * mult)
 		local nextName = Config.realmName(s.data.realm + 1)
@@ -707,6 +780,7 @@ refreshPads = function(player, s)
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
 			s.data.owned = {}
+			s.data.workers = {}
 			s.data.qi = 0
 			s.data.pillReady = false
 			s.data.pillTimer = 0
@@ -716,6 +790,10 @@ refreshPads = function(player, s)
 			refreshPads(player, s)
 			publish(player)
 			notify:FireAllClients("breakthrough", player.DisplayName, nextName)
+			local line = Config.realmLookLine(s.data.realm)
+			if line then
+				notify:FireClient(player, "realmLook", line)
+			end
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 	end
@@ -901,6 +979,7 @@ local function onLeave(player)
 	s.plot.owner = nil
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
+	s.plot.realm = nil
 	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
 end
 
@@ -1038,10 +1117,13 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
-	d.realm = 1
+	-- Rebirth Gate lands deeper, always below the REINC_REALM gate (never free to repeat)
+	local landing = Config.DAO_REBIRTH_REALMS[dao(d, "rebirth")] or 1
+	d.realm = math.clamp(landing, 1, Config.REINC_REALM - 1)
 	d.owned = {}
+	d.workers = {}
 	if dao(d, "foundation") > 0 then
-		-- Old Foundations: the new life starts with every realm 1 building (skips the walk)
+		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
 		for _, pad in Config.PADS do
 			d.owned[pad.id] = true
 		end
@@ -1095,6 +1177,27 @@ daoFn.OnServerInvoke = function(player, key)
 	end
 	publish(player)
 	Telemetry.custom(player, "KarmaShop", key, lv + 1, Telemetry.lifeBucket(d.lives or 1))
+	return true
+end
+
+-- Heavenly Hands (Karma Shop): build one of your open pads from anywhere. The client names the pad
+-- its HUD "Next" card shows; the server checks the node, the owner, the price and a cooldown (R9).
+handsFn.OnServerInvoke = function(player, padId)
+	local s = sessions[player]
+	if not s or type(padId) ~= "string" or dao(s.data, "hands") <= 0 then
+		return false
+	end
+	local now = os.clock()
+	if now < (s.handsAt or 0) then
+		return false
+	end
+	s.handsAt = now + Config.HANDS_COOLDOWN
+	local part = s.pads and s.pads[padId]
+	local info = part and s.padData and s.padData[part]
+	if not info or info.busy or s.data.qi < info.cost then
+		return false
+	end
+	buyPad(s, part, info)
 	return true
 end
 
@@ -1243,6 +1346,13 @@ if game:GetService("RunService"):IsStudio() then
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
+			elseif key == "owned" or key == "workers" then
+				rebuild(s) -- DebugSet:Invoke(player, "workers", { garden = 3 })
+				refreshPads(player, s)
+			end
+			if key == "realm" or key == "owned" then
+				rebuild(s) -- DebugSet:Invoke(player, "realm", 9) shows that realm's look (RealmLook)
+				refreshPads(player, s)
 			end
 			publish(player)
 			return true
