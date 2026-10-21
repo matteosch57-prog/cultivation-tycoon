@@ -99,6 +99,12 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
   circle; Dao Ancestor a lotus seat; Heavenly Emperor a ring pulse on each breath; Primordial runs through
   every colour. Circle, swords and lotus are free Creator Store meshes drawn through SpecialMesh
   (Cultivators.luau names the ids). Captures: `characters_play_*.jpg`.
+- Ornaments grow with the rarity: blossom hairpins (lotus maiden, Inner to Elder), jade bead necklace
+  from Core, the RUYI sun crown (Xi Guan) from Immortal, the great gold crown (Jin Guan) from Heavenly
+  Emperor. Top female gowns: Ethereal Blossom black (Dao Ancestor), Gold Koi Empress red (Emperor).
+- Life (client): a raised-hand mudra now and then, a qi surge every 14 to 28 s (deep breath, orbs and
+  circles race, the rim brightens a little), a small bow to a visitor. Timers restart when a figure
+  comes into view, or every overdue surge fires at once.
 - Layer gotchas: an emitter on an Attachment emits from one point, inside the body, where the avatar
   hides it (motes rise from an invisible ring part instead); a flat ground sprite needs a positive
   ZOffset or the floor hides it; fire wisps and beam ribbons were tried and dropped (hidden, or faint

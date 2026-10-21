@@ -167,6 +167,13 @@ RunService.RenderStepped:Connect(function(dt)
 			local t = now + f.phase
 			local b = math.sin(t / BREATH * TAU)
 			local s = math.sin(t / SWAY * TAU)
+			-- a figure seen again after a while gets fresh timers: otherwise every overdue surge and
+			-- mudra fired at once the moment the platform came into view (Play 2026-10-22)
+			if now - (f.lastSeen or 0) > 1 then
+				f.nextSurge = math.max(f.nextSurge, now + 4 + math.random() * 12)
+				f.nextMudra = math.max(f.nextMudra, now + 2 + math.random() * 10)
+			end
+			f.lastSeen = now
 			-- a qi surge: the figure draws in a deep breath, orbs and circles race, the rim flares
 			if f.lit and now > f.nextSurge then
 				f.surgeAt = now
@@ -255,7 +262,7 @@ RunService.RenderStepped:Connect(function(dt)
 				table.insert(cfs, c.base * CFrame.Angles(0, f.circleAngle * c.dir, 0))
 			end
 			if f.rim and f.lit then
-				f.rim.FillTransparency = f.rimFill - 0.3 * k
+				f.rim.FillTransparency = f.rimFill - 0.12 * k -- more washed the robe out to one colour
 			end
 			if f.haloCircle then
 				table.insert(parts, f.haloCircle)
