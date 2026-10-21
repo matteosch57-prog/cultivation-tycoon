@@ -26,4 +26,4 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 
 ## Light events
 Recruit: a column in the rarity colour on the platform (taller for rarer). Expansion: a big column over
-the peak. Pill: gold column around the player. Orb: a flash.
+the peak. Pill: gold column around the player. Orb: a flash. Spirit Tide: a pale blue column over the peak and a soft gong.

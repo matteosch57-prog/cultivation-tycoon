@@ -20,6 +20,8 @@ local JADE = Color3.fromHex("59D39F")
 local JADE_LIGHT = Color3.fromHex("C9FFE4")
 local GOLD = Color3.fromHex("FFE36B")
 local PINK = Color3.fromHex("FFB3A8")
+local TIDE = Color3.fromHex("9FD0FF")
+local TIDE_LIGHT = Color3.fromHex("CFE6FF")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 
 ---------------------------------------------------------------------------------------------
@@ -300,6 +302,7 @@ end
 -- build
 local toastLayer
 local rebuildAll -- forward
+local popGain -- forward (the gift button calls it)
 local toast -- forward (it used to live on `ui`, which build() replaces: the recruit button
 -- then called a nil toast, errored, and stayed locked after the first recruit)
 local function build()
@@ -324,6 +327,8 @@ local function build()
 	colLayout.Parent = col
 	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	ui.rate = text(col, "+0/s", px(16), Color3.fromHex("9FF5C8"), { LayoutOrder = 2 })
+	-- Spirit Tide line (mock tycoon_ideas idea 3 A): countdown, then the 2x timer
+	ui.tide = text(col, "", px(12), TIDE_LIGHT, { LayoutOrder = 3 })
 	ui.counter = counter
 	counter.Name = "Counter" -- Juice flies qi drops into it
 
@@ -379,6 +384,42 @@ local function build()
 			end
 		else
 			toast("The furnace is still brewing", PINK, 1.2)
+		end
+	end)
+	-- Playtime gift (mock tycoon_ideas idea 2 A): countdown -> ready (wobbles, red dot) -> claim
+	local gCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	local gLayout = Instance.new("UIListLayout")
+	gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	gLayout.Padding = UDim.new(0, px(2))
+	gLayout.Parent = gCol
+	local gHolder, gBtn = toy(gCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFB3A8"), px(14))
+	gHolder.LayoutOrder = 1
+	local gift = Icon.new(gBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	gift:rect(32, 42, 42, 28, Color3.fromHex("E65B4F"), 4)
+	gift:rect(32, 25, 50, 12, Color3.fromHex("FF7A6B"), 3)
+	gift:rect(32, 37, 8, 38, Color3.fromHex("FFD34D"), nil, 0, false)
+	gift:detail(22, 22, 3, Color3.new(1, 1, 1), 0.3)
+	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(18), px(18)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
+	corner(gDot, UDim.new(1, 0))
+	local gst = Instance.new("UIStroke")
+	gst.Color = INK
+	gst.Thickness = px(3)
+	gst.Parent = gDot
+	ui.giftLabel = text(gCol, "Gift", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.gCol = gCol
+	ui.giftBtn = gBtn
+	ui.giftDot = gDot
+	gBtn.Activated:Connect(function()
+		if (player:GetAttribute("GiftIn") or -1) == 0 then
+			local ok, gain = pcall(function()
+				return remotes.ClaimGift:InvokeServer()
+			end)
+			if ok and gain then
+				popGain(gain, true)
+				toast("Gift  +" .. compact(gain) .. " Qi", GOLD, 2)
+			end
+		else
+			toast("Keep playing: your next gift is on its way", PINK, 1.5)
 		end
 	end)
 	ui.left = left
@@ -529,7 +570,7 @@ toast = function(str, color, hold)
 	end)
 end
 
-local function popGain(amount, big)
+popGain = function(amount, big)
 	if not ui.counter or amount <= 0 then
 		return
 	end
@@ -573,7 +614,9 @@ local function layout()
 	ui.recruit.Visible = hasHall
 	ui.dCol.Visible = hasHall
 	ui.pCol.Visible = hasFurnace
-	ui.left.Visible = hasHall or hasFurnace
+	local hasGift = (player:GetAttribute("GiftIn") or -1) >= 0
+	ui.gCol.Visible = hasGift
+	ui.left.Visible = hasHall or hasFurnace or hasGift
 	if not hasHall then
 		state.discOpen = false
 		ui.card.Visible = false
@@ -651,6 +694,11 @@ player:GetAttributeChangedSignal("HasHall"):Connect(function()
 	layout()
 end)
 player:GetAttributeChangedSignal("HasFurnace"):Connect(layout)
+player:GetAttributeChangedSignal("GiftIn"):Connect(function()
+	if ui.gCol and ((player:GetAttribute("GiftIn") or -1) >= 0) ~= ui.gCol.Visible then
+		layout()
+	end
+end)
 player:GetAttributeChangedSignal("MaxDisciples"):Connect(refreshStatic)
 player:GetAttributeChangedSignal("Qi"):Connect(function()
 	local q = player:GetAttribute("Qi") or 0
@@ -722,6 +770,39 @@ RunService.RenderStepped:Connect(function(dt)
 		ui.goal.Visible = false
 	end
 
+	-- Spirit Tide line under the counter; the rate turns tide blue while it runs
+	local now = workspace:GetServerTimeNow()
+	local tideLeft = (workspace:GetAttribute("TideUntil") or 0) - now
+	local tideIn = (workspace:GetAttribute("TideNext") or 0) - now
+	local tideText = ""
+	if tideLeft > 0 then
+		tideText = string.format("2x Spirit Tide %d:%02d", tideLeft // 60, math.floor(tideLeft % 60))
+	elseif tideIn > 0 then
+		tideText = string.format("Spirit Tide in %d:%02d", tideIn // 60, math.floor(tideIn % 60))
+	end
+	if ui.tide.Text ~= tideText then
+		ui.tide.Text = tideText
+		ui.tide.TextColor3 = tideLeft > 0 and TIDE or TIDE_LIGHT
+		ui.tide.TextSize = tideLeft > 0 and px(13) or px(12)
+		ui.rate.TextColor3 = tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8")
+	end
+
+	if ui.gCol.Visible then
+		local g = player:GetAttribute("GiftIn") or -1
+		ui.giftDot.Visible = g == 0
+		if g == 0 then
+			ui.giftLabel.Text = "Claim!"
+			ui.giftLabel.TextColor3 = GOLD
+			ui.giftBtn.Rotation = math.sin(os.clock() * 7) * 6
+			ui.giftBtn.BackgroundColor3 = Color3.fromHex("FFD36B")
+		else
+			ui.giftLabel.Text = string.format("Gift %d:%02d", g // 60, g % 60)
+			ui.giftLabel.TextColor3 = Color3.new(1, 1, 1)
+			ui.giftBtn.Rotation = 0
+			ui.giftBtn.BackgroundColor3 = Color3.fromHex("FFB3A8")
+		end
+	end
+
 	if ui.pCol.Visible then
 		local left = (player:GetAttribute("BoostUntil") or 0) - workspace:GetServerTimeNow()
 		if left > 0 then
@@ -760,6 +841,12 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		return
 	elseif kind == "expand" then
 		toast("Your peak grows! New land to build on", Color3.fromHex("9FF5C8"), 3)
+		return
+	elseif kind == "tideSoon" then
+		toast(string.format("A Spirit Tide rises in %d s", a), Color3.fromHex("9FD0FF"), 3)
+		return
+	elseif kind == "tide" then
+		toast(string.format("Spirit Tide! Every sect earns 2x Qi for %d s", a), Color3.fromHex("9FD0FF"), 4)
 		return
 	end
 	if kind == "built" then

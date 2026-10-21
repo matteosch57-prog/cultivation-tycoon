@@ -31,6 +31,19 @@ shrinks the island back.
 - **Qi orbs** (Qi Gathering Array): one every `ORB_INTERVAL`, up to `ORB_MAX`; worth `ORB_VALUE` seconds
   of income.
 
+## Spirit Tide (server-wide)
+Every peak on a server earns `TIDE_MULT` x for `TIDE_DURATION` s, first `TIDE_FIRST` s after the server
+starts, then every `TIDE_INTERVAL` s; a toast warns `TIDE_WARN` s before. Workspace attributes `TideNext`
+and `TideUntil` (server time) carry the schedule. Offline qi ignores it. Why: a shared moment worth
+staying for (research 2026-10-21_tycoon_study, Grow a Garden weather).
+
+## Playtime gifts
+After `GIFT_TIMES[i]` seconds of play in one session a gift button on the HUD's left column can be
+claimed (server `ClaimGift`) for `GIFT_VALUE[i]` seconds of income, counted without tide or pill. The
+`GiftIn` player attribute is the seconds left (0 = ready, -1 = all claimed this session). Why: pushes a
+first session past the ~8 minute benchmark (research 2026-10-21_tycoon_study). The HUD shows the next
+tide under the qi counter (owner picked mock A for both, 2026-10-21).
+
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,
 owned pads, qi and the pill reset; disciples stay. Names in `REALMS`.

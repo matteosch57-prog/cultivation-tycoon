@@ -34,6 +34,9 @@ notify.Parent = remotes
 local pillFn = Instance.new("RemoteFunction")
 pillFn.Name = "UsePill"
 pillFn.Parent = remotes
+local giftFn = Instance.new("RemoteFunction")
+giftFn.Name = "ClaimGift"
+giftFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -294,7 +297,13 @@ local function boosted(data)
 	return (data.boostUntil or 0) > workspace:GetServerTimeNow()
 end
 
-local function rate(data)
+-- Spirit Tide: a server-wide event, every peak on the server earns TIDE_MULT x while it lasts
+local function tideOn()
+	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
+end
+
+-- `away` = offline qi (and gifts), which never count the live tide or a pill
+local function rate(data, away)
 	local base = Config.BASE_RATE
 	for id in data.owned do
 		local pad = Config.padById(id)
@@ -302,7 +311,9 @@ local function rate(data)
 			base += pad.income
 		end
 	end
-	return base * Config.incomeMult(data.realm) * discipleMult(data) * (boosted(data) and 2 or 1)
+	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
+	local pill = (not away and boosted(data)) and 2 or 1
+	return base * Config.incomeMult(data.realm) * discipleMult(data) * pill * tide
 end
 
 local function publish(player)
@@ -323,6 +334,10 @@ local function publish(player)
 	player:SetAttribute("PillReady", d.pillReady == true)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
 	player:SetAttribute("BoostUntil", d.boostUntil or 0)
+	-- playtime gifts: GiftIn = seconds to the next one (0 = ready), -1 = all claimed this session
+	local gi = s.giftIdx or 1
+	local at = Config.GIFT_TIMES[gi]
+	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (s.playTime or 0))) or -1)
 	local built = 0
 	for _, pad in Config.PADS do
 		if d.owned[pad.id] then
@@ -692,7 +707,7 @@ local function onJoin(player)
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP)
 	local offlineGain = 0
 	if away > 60 then
-		offlineGain = math.floor(rate(data) * away)
+		offlineGain = math.floor(rate(data, true) * away)
 		data.qi += offlineGain
 	end
 
@@ -796,6 +811,24 @@ pillFn.OnServerInvoke = function(player)
 	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION
 	publish(player)
 	return true
+end
+
+giftFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s then
+		return nil
+	end
+	local gi = s.giftIdx or 1
+	local at = Config.GIFT_TIMES[gi]
+	if not at or (s.playTime or 0) < at then
+		return nil
+	end
+	local gain = math.floor(rate(s.data, true) * Config.GIFT_VALUE[gi])
+	s.giftIdx = gi + 1
+	s.data.qi += gain
+	publish(player)
+	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
+	return gain
 end
 
 -- Qi orbs (Qi Gathering Array): open grass spots in the peak's local frame
@@ -964,14 +997,43 @@ task.spawn(function()
 	end
 end)
 
+-- Spirit Tide schedule: TideNext / TideUntil are Workspace attributes (server time) so clients
+-- can draw it; a heads-up goes out TIDE_WARN s before it starts
+local tideWarned = false
+workspace:SetAttribute("TideNext", workspace:GetServerTimeNow() + Config.TIDE_FIRST)
+local function tideTick()
+	local now = workspace:GetServerTimeNow()
+	local nextAt = workspace:GetAttribute("TideNext")
+	if not tideWarned and now >= nextAt - Config.TIDE_WARN then
+		tideWarned = true
+		notify:FireAllClients("tideSoon", math.max(1, math.ceil(nextAt - now)))
+	end
+	if now >= nextAt then
+		tideWarned = false
+		workspace:SetAttribute("TideUntil", now + Config.TIDE_DURATION)
+		workspace:SetAttribute("TideNext", now + Config.TIDE_INTERVAL)
+		notify:FireAllClients("tide", Config.TIDE_DURATION)
+		local n = 0
+		for _ in sessions do
+			n += 1
+		end
+		print(string.format("[Tycoon] spirit tide started, %d players", n))
+	end
+end
+
 -- income tick + autosave
 local sinceSave = 0
 while true do
 	local dt = task.wait(1)
 	sinceSave += dt
+	local okTide, tideErr = pcall(tideTick)
+	if not okTide then
+		warn("[Tycoon] spirit tide tick failed:", tideErr)
+	end
 	for player, s in sessions do
 		local d = s.data
 		d.qi += rate(d) * dt
+		s.playTime = (s.playTime or 0) + dt
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then
 			d.pillTimer = (d.pillTimer or 0) + dt
