@@ -61,13 +61,15 @@ KINDS = {
 }
 
 
-def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=(), workers=None):
+def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=(), workers=None, walk=None):
     """reinc (proposal, branch reincarnation) = dict(lives, pl_base, sworn, start): reincarnate on
     reaching realm max(10, peak + 1); Past Lives = pl_base ^ max(0, peak - 9) on all qi; the `sworn`
     best disciples follow; start = "none" | "built1" (realm 1 pads owned) | "r3" | "r5"."""
     rng = random.Random(seed)
     k = KINDS[kind]
-    st = PLAY[k["play"]]
+    st = dict(PLAY[k["play"]])
+    if walk is not None:  # Heavenly Hands = 0: build from anywhere
+        st["walk"] = walk
     pads = {p["id"]: p for p in cfg["pads"]}
     # game passes (branch shop): 2x qi on live AND offline income, VIP +1 slot, orbs fly to you
     x2, vip = (2 if "2x" in passes else 1), (1 if "vip" in passes else 0)
@@ -78,9 +80,10 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
     played = 0  # seconds of play since the first join
     out = {}  # realm -> dict(play_s, day, wait_s, longest_wait_s, recruits, dmult)
     cur = dict(start=0, wait=0, longest=0, gap=0, recruits=0)
-    peak, life, life_qi, life_day, lives_out, catchup = 1, 1, 0.0, 0, [], None
+    peak, life, life_qi, life_day, lives_out, catchup, life_play = 1, 1, 0.0, 0, [], None, 0
     gate = reinc.get("gate", 10) if reinc else 10  # 10 = on entering realm 10; 11 = realm 10 finished
     life_target = max(gate, peak + 1)
+    deeper = not reinc or reinc.get("policy", "deeper") == "deeper"  # "gate": always reset at the gate
 
     # workers (Config.WORKERS): dict(pads, max, bonus, cost); hired on owned buildings, bought like a
     # pad whenever one is the cheapest thing on offer; sent home at every breakthrough
@@ -172,17 +175,18 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
                             catchup = day + 1 - life_day  # days into this life to re-reach the old peak
                         peak = max(peak, realm)
                         if reinc and realm >= life_target:
-                            karma = int(10 * (life_qi / (cfg["BREAKTHROUGH_COST"] * cm(10))) ** (1 / 3))
+                            karma = int(10 * 10 ** ((realm - 10) / 3))  # Config.karmaFor, entering the realm
                             lives_out.append(dict(life=life, realm=realm, day=day + 1, days=day + 1 - life_day,
-                                                  karma=karma, pl=pl(), catchup_day=catchup))
+                                                  karma=karma, pl=pl(), catchup_day=catchup, play_s=played - life_play))
                             if life >= reinc["lives"]:
                                 return lives_out
                             old_peak, life, life_qi, life_day, catchup = peak, life + 1, 0.0, day + 1, None
                             soul = max(soul, realm)
-                            life_target = max(gate, peak + 1)
-                            realm = {"r3": 3, "r5": 5}.get(reinc["start"], 1)
-                            if reinc["start"] == "built1":
+                            life_target = max(gate, peak + 1) if deeper else gate
+                            realm = reinc.get("start_realm") or {"r3": 3, "r5": 5}.get(reinc["start"], 1)
+                            if reinc["start"] == "built1" or reinc.get("built"):
                                 owned = {p["id"] for p in cfg["pads"]}
+                            life_play = played
                             disciples = sorted(disciples, reverse=True)[:reinc["sworn"]]
                         elif not reinc and realm > realms:
                             return out
