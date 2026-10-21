@@ -62,7 +62,7 @@ end
 -- "Owned" / "Soon" (no id yet) / the price
 local function priceText(key)
 	local it, isPass = Config.shopItem(key)
-	if isPass and player:GetAttribute("Pass_" .. key) then
+	if (isPass and player:GetAttribute("Pass_" .. key)) or player:GetAttribute("Limit_" .. key) then
 		return "Owned", false
 	elseif not it or it.id == 0 then
 		return "Soon", false
@@ -262,7 +262,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-for _, a in { "AwayRate", "Pass_x2", "Pass_auto", "Pass_vip" } do
+for _, a in { "AwayRate", "Pass_x2", "Pass_auto", "Pass_vip", "Limit_celestial" } do
 	player:GetAttributeChangedSignal(a):Connect(function()
 		if gui.Enabled then
 			refresh()
@@ -356,7 +356,7 @@ task.spawn(function()
 		onPad(d)
 	end
 	fetchPrices(refreshCards)
-	for _, a in { "Pass_x2", "Pass_auto", "Pass_vip" } do
+	for _, a in { "Pass_x2", "Pass_auto", "Pass_vip", "Limit_celestial" } do
 		player:GetAttributeChangedSignal(a):Connect(refreshCards)
 	end
 end)

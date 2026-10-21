@@ -23,10 +23,15 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   Boosts row (the three passes + Instant Pill), Qi row (three packs). A phone that cannot fit both
   rows flips pages with a "More Qi" / "Boosts" tile. Opened by the HUD's gold Shop button (always on
   top of the left column). Code: `src/client/Shop.client.luau`, drawing kit `src/shared/Toy.luau`.
-- **World shop:** purple pads in a ring around the hub cauldron (`Config.SHOP_PADS`), one item each;
-  stepping onto one prompts that item (only for a player seen off it first; an owned pass shows a
-  toast instead). Each pad is a `StepPad` (`PadKind` "shop", `ShopKey`), so the pad juice look can
-  restyle it; the card with the price is drawn by `Shop.client`.
+- **World shop (D28):** every peak has its own small "Sect Market" island beside its entrance
+  (`Config.SHOP_ISLAND_AT` in the peak frame, `SHOP_ISLAND_RADIUS`), built once per plot at boot and
+  joined to the peak's rim by a bridge that follows the island's size. The 2x Qi pad stands right
+  inside the gate (the eye catcher, with a big icon); `SHOP_ITEM_PADS` ring the lawn; a pavilion at
+  the back shows the disciples for sale (`SHOP_DISCIPLE_PADS`) as real cultivators, each with its
+  pad. Stepping onto a pad prompts its item (only for a player seen off it first; an owned pass
+  shows a toast instead). Pads are invisible `StepPad` anchors (`PadKind` "shop", `ShopKey`) drawn by
+  the pad look (D27); `Shop.client` draws the bobbing item icon and the price card. Anyone may shop
+  on any island.
 - **Ids and prices:** the owner pastes each pass / product id into `Config.SHOP_PASSES` /
   `Config.SHOP_PRODUCTS` (id 0 = "Soon", never prompts). Prices are never in code: the client reads
   them from `MarketplaceService` (passes are regionally priced, so one typed price would be wrong).
@@ -36,6 +41,10 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   landed. A retry finds the id and grants nothing twice. Passes: `UserOwnsGamePassAsync` on join
   (before the offline qi, so 2x counts on it) and `PromptGamePassPurchaseFinished` live; ownership is
   never saved (Roblox is the record).
+- **Disciples for sale (D28):** a FIXED rarity, never a roll (R8): Elder, Immortal, Celestial
+  (`limit` 1 per player, saved in `data.shopBought`). The server refuses the prompt when the sect is
+  full of stronger ones (it could not stay). A bought one joins like a recruit and, if no seat is
+  free, rests on the bench (`DISCIPLE_CAP`).
 - **Effects:** 2x Qi = `PASS_QI_MULT` on every qi/s, offline and gifts too (economy check: keep it);
   VIP = `VIP_SLOTS` more disciple seats and the arch name in bright gold; Auto Orbs = every orb on the
   owner's peak is collected 1.5 s after it appears while they stand on the peak; Instant Pill = 60 s

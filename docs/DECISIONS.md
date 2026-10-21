@@ -84,3 +84,9 @@ the log as a D-number.
   rarely preview the building, so the gathering preview is where this game stands out. Pads are drawn
   by the client from a tagged anchor so build, breakthrough and shop pads share one look and one
   colour set (`PadLook`). The pad's light is the R3 pad-beacon exception.
+- **D28** Shop island per player (owner: "each player have a small beautiful island for the shop, with
+  some characters, we will sell some too, like immortals"; "2x Qi in front of the access"): replaces
+  the hub ring of D24. It sits beside the entrance (the hub-side corner), the only spot clear of the
+  largest peak, the neighbours and their bridges. Disciples sold = fixed rarities Elder, Immortal and
+  Celestial once per player; never Dao Ancestor or above (economy check: one Celestial makes the late
+  game ~15% faster and skips nothing; the risk is the chase tier's collection value).

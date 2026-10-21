@@ -44,6 +44,11 @@ end
 -- Yields: called on join before the offline qi, so the 2x pass counts on it.
 function Shop.onJoin(player, s)
 	s.passes = {}
+	for _, it in Config.SHOP_PRODUCTS do
+		if it.limit and ((s.data.shopBought or {})[it.key] or 0) >= it.limit then
+			player:SetAttribute("Limit_" .. it.key, true)
+		end
+	end
 	for _, it in Config.SHOP_PASSES do
 		if it.id ~= 0 and player.Parent then
 			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, it.id)
@@ -102,6 +107,11 @@ local function processReceipt(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	grantProduct(player, s, it)
+	d.shopBought = d.shopBought or {} -- [key] = times bought (enforces `limit`)
+	d.shopBought[it.key] = (d.shopBought[it.key] or 0) + 1
+	if it.limit and d.shopBought[it.key] >= it.limit then
+		player:SetAttribute("Limit_" .. it.key, true) -- the shop shows it as owned
+	end
 	table.insert(d.receipts, info.PurchaseId)
 	while #d.receipts > Config.RECEIPTS_KEPT do
 		table.remove(d.receipts, 1)
@@ -135,6 +145,10 @@ local function prompt(player, key)
 	end
 	local it, isPass = Config.shopItem(key)
 	if not it or it.id == 0 or (isPass and s.passes[key]) then
+		return
+	end
+	if it.limit and ((s.data.shopBought or {})[key] or 0) >= it.limit then
+		api.notify:FireClient(player, "shopLimit", it.name)
 		return
 	end
 	if it.rarity then

@@ -154,7 +154,8 @@ Config.SHOP_PRODUCTS = {
 	-- when full). The top rarities stay earn-only (D27).
 	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder" },
 	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal" },
-	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial" },
+	-- `limit` = times one player may buy it (Celestial is a 0.12% chase tier: economy check, D28)
+	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 Config.VIP_SLOTS = 1

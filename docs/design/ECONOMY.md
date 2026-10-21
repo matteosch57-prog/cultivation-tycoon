@@ -28,8 +28,10 @@ shrinks the island back.
 ## Features
 - **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`
   per disciple recruited in this realm, `data.realmRecruits`, which a breakthrough resets), rolls `RARITIES`. The best `maxDisciples`
-  work; the rest rest until slots open. Never sold for Robux (RULES R8).
-- **Disciple slots:** `MAX_DISCIPLES` + one per owned pad in `SLOT_PADS`.
+  work; the rest rest until slots open. The roll is never sold for Robux (RULES R8); the Shop sells
+  a few FIXED rarities (Elder, Immortal, Celestial once per player), never Dao Ancestor or above
+  (D28, MONETIZATION).
+- **Disciple slots:** `MAX_DISCIPLES` + one per owned pad in `SLOT_PADS` + `VIP_SLOTS` with the VIP pass.
 - **Pill** (Alchemy Furnace): one brewed every `PILL_INTERVAL`; using it doubles qi/s for `PILL_DURATION`.
 - **Qi orbs** (Qi Gathering Array): one every `ORB_INTERVAL`, up to `ORB_MAX`; worth `ORB_VALUE` seconds
   of income.
