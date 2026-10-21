@@ -14,6 +14,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
 
 local INK = Color3.fromHex("1B1420")
 local JADE = Color3.fromHex("59D39F")
@@ -747,6 +748,13 @@ playerGui.ChildAdded:Connect(function(c)
 end)
 task.delay(2, layout) -- TouchGui settles a moment after spawn
 
+-- a property write only when the value changed (R16 rule 4: a write can redraw the GUI)
+local function put(obj, prop, value)
+	if obj[prop] ~= value then
+		obj[prop] = value
+	end
+end
+
 ---------------------------------------------------------------------------------------------
 -- per frame: smooth count-up, next-goal arrow, recruit wobble when affordable
 local goalAcc = 0
@@ -755,6 +763,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if not ui.root then
 		return
 	end
+	local t0 = PerfMark.begin()
 	local target = player:GetAttribute("Qi") or 0
 	local diff = target - state.shownQi
 	if math.abs(diff) < 1 then
@@ -762,7 +771,7 @@ RunService.RenderStepped:Connect(function(dt)
 	else
 		state.shownQi += diff * math.min(1, dt * 8)
 	end
-	ui.qi.Text = short(state.shownQi)
+	put(ui.qi, "Text", short(state.shownQi))
 
 	goalAcc += dt
 	if goalAcc > 0.5 then
@@ -778,16 +787,16 @@ RunService.RenderStepped:Connect(function(dt)
 		goalPad = best
 	end
 	if goalPad and goalPad.Parent then
-		ui.goal.Visible = true
+		put(ui.goal, "Visible", true)
 		local cost = goalPad:GetAttribute("Cost") or 0
-		ui.goalName.Text = "Next: " .. (goalPad:GetAttribute("Title") or "")
-		ui.goalCost.Text = compact(cost) .. " Qi"
-		ui.goalCost.TextColor3 = target >= cost and Color3.fromHex("9FF5C8") or PINK
+		put(ui.goalName, "Text", "Next: " .. (goalPad:GetAttribute("Title") or ""))
+		put(ui.goalCost, "Text", compact(cost) .. " Qi")
+		put(ui.goalCost, "TextColor3", target >= cost and Color3.fromHex("9FF5C8") or PINK)
 		local cam = workspace.CurrentCamera
 		local rel = cam.CFrame:PointToObjectSpace(goalPad.Position)
-		ui.arrow.Rotation = math.deg(math.atan2(rel.Z, rel.X)) -- 0 = right, 90 = toward the camera
+		put(ui.arrow, "Rotation", math.deg(math.atan2(rel.Z, rel.X))) -- 0 = right, 90 = toward the camera
 	else
-		ui.goal.Visible = false
+		put(ui.goal, "Visible", false)
 	end
 
 	-- Spirit Tide line under the counter; the rate turns tide blue while it runs
@@ -801,54 +810,55 @@ RunService.RenderStepped:Connect(function(dt)
 		tideText = string.format("Spirit Tide in %d:%02d", tideIn // 60, math.floor(tideIn % 60))
 	end
 	if ui.tide.Text ~= tideText then
-		ui.tide.Text = tideText
-		ui.tide.TextColor3 = tideLeft > 0 and TIDE or TIDE_LIGHT
-		ui.tide.TextSize = tideLeft > 0 and px(13) or px(12)
-		ui.rate.TextColor3 = tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8")
+		put(ui.tide, "Text", tideText)
+		put(ui.tide, "TextColor3", tideLeft > 0 and TIDE or TIDE_LIGHT)
+		put(ui.tide, "TextSize", tideLeft > 0 and px(13) or px(12))
+		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
 	end
 
 	if ui.gCol.Visible then
 		local g = player:GetAttribute("GiftIn") or -1
-		ui.giftDot.Visible = g == 0
+		put(ui.giftDot, "Visible", g == 0)
 		if g == 0 then
-			ui.giftLabel.Text = "Claim!"
-			ui.giftLabel.TextColor3 = GOLD
-			ui.giftBtn.Rotation = math.sin(os.clock() * 7) * 6
-			ui.giftBtn.BackgroundColor3 = Color3.fromHex("FFD36B")
+			put(ui.giftLabel, "Text", "Claim!")
+			put(ui.giftLabel, "TextColor3", GOLD)
+			put(ui.giftBtn, "Rotation", math.sin(os.clock() * 7) * 6)
+			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
 		else
-			ui.giftLabel.Text = string.format("Gift %d:%02d", g // 60, g % 60)
-			ui.giftLabel.TextColor3 = Color3.new(1, 1, 1)
-			ui.giftBtn.Rotation = 0
-			ui.giftBtn.BackgroundColor3 = Color3.fromHex("FFB3A8")
+			put(ui.giftLabel, "Text", string.format("Gift %d:%02d", g // 60, g % 60))
+			put(ui.giftLabel, "TextColor3", Color3.new(1, 1, 1))
+			put(ui.giftBtn, "Rotation", 0)
+			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFB3A8"))
 		end
 	end
 
 	if ui.pCol.Visible then
 		local left = (player:GetAttribute("BoostUntil") or 0) - workspace:GetServerTimeNow()
 		if left > 0 then
-			ui.pillLabel.Text = string.format("2x %d:%02d", left // 60, math.floor(left % 60))
-			ui.pillLabel.TextColor3 = GOLD
-			ui.pillBtn.Rotation = 0
-			ui.pillBtn.BackgroundColor3 = Color3.fromHex("FFE9A0")
+			put(ui.pillLabel, "Text", string.format("2x %d:%02d", left // 60, math.floor(left % 60)))
+			put(ui.pillLabel, "TextColor3", GOLD)
+			put(ui.pillBtn, "Rotation", 0)
+			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFE9A0"))
 		elseif player:GetAttribute("PillReady") then
-			ui.pillLabel.Text = "Use pill!"
-			ui.pillLabel.TextColor3 = Color3.new(1, 1, 1)
-			ui.pillBtn.Rotation = math.sin(os.clock() * 7) * 6
-			ui.pillBtn.BackgroundColor3 = Color3.fromHex("FFD36B")
+			put(ui.pillLabel, "Text", "Use pill!")
+			put(ui.pillLabel, "TextColor3", Color3.new(1, 1, 1))
+			put(ui.pillBtn, "Rotation", math.sin(os.clock() * 7) * 6)
+			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
 		else
 			local s = player:GetAttribute("PillIn") or 0
-			ui.pillLabel.Text = string.format("%d:%02d", s // 60, s % 60)
-			ui.pillLabel.TextColor3 = Color3.fromHex("C8C0D0")
-			ui.pillBtn.Rotation = 0
-			ui.pillBtn.BackgroundColor3 = Color3.fromHex("B8A878")
+			put(ui.pillLabel, "Text", string.format("%d:%02d", s // 60, s % 60))
+			put(ui.pillLabel, "TextColor3", Color3.fromHex("C8C0D0"))
+			put(ui.pillBtn, "Rotation", 0)
+			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("B8A878"))
 		end
 	end
 
 	if ui.recruit.Visible then
 		local can = target >= (player:GetAttribute("RecruitCost") or math.huge)
-		ui.recruit.Rotation = can and (-2 + math.sin(os.clock() * 6) * 2.5) or -2
-		ui.recruitBtn.BackgroundColor3 = can and Color3.fromHex("B06BFF") or Color3.fromHex("8C72A8")
+		put(ui.recruit, "Rotation", can and (-2 + math.sin(os.clock() * 6) * 2.5) or -2)
+		put(ui.recruitBtn, "BackgroundColor3", can and Color3.fromHex("B06BFF") or Color3.fromHex("8C72A8"))
 	end
+	PerfMark.finish("hud", t0)
 end)
 
 remotes.Notify.OnClientEvent:Connect(function(kind, a, b)

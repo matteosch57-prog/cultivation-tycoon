@@ -16,6 +16,16 @@ Config.SAVE_LEASE = 150 -- s a session lock lives without a refresh (autosave re
 Config.SAVE_RETRIES = 3 -- DataStore attempts per load/save (backoff 1 s, 2 s)
 Config.SAVE_LOCK_WAITS = 6 -- tries to take a lock held by another live session on join
 Config.SAVE_LOCK_WAIT = 5 -- s between those tries
+Config.SAVE_MIN_BUDGET = 2 -- an autosave waits for this much UpdateAsync budget (leave, close, receipts never wait)
+Config.SAVE_STAGGER = 0.3 -- s between players in one autosave pass
+
+-- Server health (ServerHealth.luau, ported from Gladiator RNG)
+Config.HEALTH_SAMPLE = 30 -- s between [SRVHEALTH] / [DSMON] samples
+Config.HEALTH_EVENT = 300 -- s between ServerHealth events (the window's worst sample)
+Config.HEALTH_LOW_FPS = 40 -- server heartbeat fps under this = an alert
+Config.HEALTH_ALERT_PING = 450 -- ms
+Config.HEALTH_LOW_BUDGET = 5 -- a DataStore budget under this = an alert + DataStorePressure
+Config.HEALTH_PRESSURE_COOLDOWN = 60 -- s between DataStorePressure events of one series (they accumulate)
 
 -- Phone performance (B01 step 3): small Ball / Cylinder parts become clones of one low-poly mesh
 -- (art/meshes, tools/lowpoly_meshes.py, uploaded by the owner). nil = off (plain parts).

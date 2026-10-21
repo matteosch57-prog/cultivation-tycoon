@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
 
 local player = Players.LocalPlayer
 
@@ -102,6 +103,7 @@ local still, lastPos = 0, nil
 local offset = 0
 
 RunService.RenderStepped:Connect(function(dt)
+	local t0 = PerfMark.begin()
 	scan += dt
 	if scan > 0.5 then
 		scan = 0
@@ -131,6 +133,7 @@ RunService.RenderStepped:Connect(function(dt)
 		for _, c in chevrons do
 			hide(c)
 		end
+		PerfMark.finish("guide", t0)
 		return
 	end
 	local dir = (to - from).Unit
@@ -149,4 +152,5 @@ RunService.RenderStepped:Connect(function(dt)
 			place(c, CFrame.lookAt(Vector3.new(p.X, y, p.Z), Vector3.new(p.X + dir.X, y, p.Z + dir.Z)), alpha)
 		end
 	end
+	PerfMark.finish("guide", t0)
 end)
