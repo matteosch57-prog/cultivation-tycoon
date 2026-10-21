@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
 local Style = require(script.Parent:WaitForChild("Style"))
+local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 
 local store = nil
 do
@@ -262,6 +263,14 @@ end
 -- Player state -----------------------------------------------------------------------
 -- sessions[player] = { data, plot, pads = { [id] = Part }, recruiting }
 local sessions = {}
+
+local function deepCopy(t)
+	local c = {}
+	for k, v in t do
+		c[k] = if type(v) == "table" then deepCopy(v) else v
+	end
+	return c
+end
 
 local function defaultData()
 	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1 }
@@ -596,37 +605,31 @@ refreshPads = function(player, s)
 	end
 end
 
--- Saving -----------------------------------------------------------------------------
-local function save(player)
-	local s = sessions[player]
-	if not s or not store or not s.loaded then
+-- Saving (SaveStore holds the session lock) ------------------------------------------
+local pendingSaves = 0
+
+-- `release` = the last save of this session (leave or close); later saves are skipped.
+local function save(s, release)
+	if not store or not s.loaded or s.released then
 		return
 	end
-	s.data.last = os.time()
-	local snapshot = table.clone(s.data)
-	local ok, err = pcall(function()
-		store:UpdateAsync("u" .. player.UserId, function()
-			return snapshot
-		end)
-	end)
-	if not ok then
-		warn("[Tycoon] save failed for", player.Name, err)
+	if release then
+		s.released = true
 	end
+	s.data.last = os.time()
+	local snapshot = deepCopy(s.data) -- the session keeps changing while UpdateAsync yields
+	pendingSaves += 1
+	SaveStore.save(store, s.userId, s.sessionId, snapshot, release)
+	pendingSaves -= 1
 end
 
-local function load(player)
+local function load(player, sessionId)
 	local data = nil
 	local loaded = true
 	if store then
-		local ok, result = pcall(function()
-			return store:GetAsync("u" .. player.UserId)
+		data, loaded = SaveStore.load(store, player.UserId, sessionId, function()
+			return player.Parent ~= nil
 		end)
-		if ok then
-			data = result
-		else
-			warn("[Tycoon] load failed, playing without saving this session:", result)
-			loaded = false -- never overwrite a save we could not read
-		end
 	end
 	local d = defaultData()
 	if type(data) == "table" then
@@ -671,13 +674,18 @@ local function onJoin(player)
 	plot.owner = player
 	player:SetAttribute("PlotIndex", plot.index) -- clients place their effects with it
 	setPlotLabel(plot, player.DisplayName .. "'s Sect")
-	local data, loaded = load(player)
+	local sessionId = SaveStore.newSessionId()
+	local data, loaded = load(player, sessionId)
 	if not player.Parent then
 		plot.owner = nil
 		setPlotLabel(plot, "Unclaimed Peak")
+		if store and loaded then
+			-- hand the lock back untouched (same data, same `last`) so a rejoin is not blocked
+			SaveStore.save(store, player.UserId, sessionId, data, true)
+		end
 		return
 	end
-	local s = { data = data, plot = plot, pads = {}, loaded = loaded }
+	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId }
 	sessions[player] = s
 
 	-- offline qi
@@ -710,8 +718,8 @@ local function onLeave(player)
 	if not s then
 		return
 	end
-	save(player)
 	sessions[player] = nil
+	save(s, true)
 	s.plot.built:ClearAllChildren()
 	s.plot.owner = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
@@ -930,8 +938,13 @@ for _, p in Players:GetPlayers() do
 end
 
 game:BindToClose(function()
-	for _, p in Players:GetPlayers() do
-		save(p)
+	for _, s in sessions do
+		task.spawn(save, s, true)
+	end
+	-- leave saves started by PlayerRemoving count too; Roblox allows ~30 s here
+	local deadline = os.clock() + 25
+	while pendingSaves > 0 and os.clock() < deadline do
+		task.wait(0.1)
 	end
 end)
 
@@ -979,8 +992,8 @@ while true do
 	end
 	if sinceSave >= Config.AUTOSAVE then
 		sinceSave = 0
-		for player in sessions do
-			task.spawn(save, player)
+		for _, s in sessions do
+			task.spawn(save, s)
 		end
 	end
 end

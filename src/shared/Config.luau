@@ -10,6 +10,11 @@ Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
+Config.DATA_VERSION = 1 -- save record format; SaveStore.migrate lifts older records to it
+Config.SAVE_LEASE = 150 -- s a session lock lives without a refresh (autosave refreshes it)
+Config.SAVE_RETRIES = 3 -- DataStore attempts per load/save (backoff 1 s, 2 s)
+Config.SAVE_LOCK_WAITS = 6 -- tries to take a lock held by another live session on join
+Config.SAVE_LOCK_WAIT = 5 -- s between those tries
 
 -- Realms: each breakthrough multiplies income and costs.
 Config.REALMS = {
