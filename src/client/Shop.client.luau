@@ -15,6 +15,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
+local PadLook = require(Shared:WaitForChild("PadLook"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
 
 local px, text = Toy.px, Toy.text
@@ -268,9 +269,10 @@ local function padCard(pad)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "ShopCard"
 	bb.Adornee = pad
-	bb.Size = UDim2.fromOffset(240, 78)
-	bb.StudsOffset = Vector3.new(0, 5, 0)
+	bb.Size = UDim2.fromOffset(260, 92)
+	bb.StudsOffset = Vector3.new(0, 5.5, 0)
 	bb.MaxDistance = 110
+	bb.AlwaysOnTop = true -- same as the build pad cards (Build.client)
 	bb.LightInfluence = 0
 	bb.ResetOnSpawn = false
 	local f = Toy.frame(bb, { Size = UDim2.fromScale(1, 1) })
@@ -287,15 +289,15 @@ local function padCard(pad)
 		t.Text = str
 		local st = Instance.new("UIStroke")
 		st.Color = Toy.INK
-		st.Thickness = math.max(2, size * 0.13)
+		st.Thickness = math.max(2, size * 0.14)
 		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = t
 		t.Parent = f
 		return t
 	end
-	line(1, 20, Color3.new(1, 1, 1), it.name)
-	line(2, 14, Color3.fromHex("FFE9A8"), it.line)
-	cards[pad] = { bb = bb, price = line(3, 22, Color3.fromHex("9FF5C8"), ""), key = key }
+	line(1, 22, PadLook.TEXT.title, it.name)
+	line(2, 15, PadLook.TEXT.line, it.line)
+	cards[pad] = { bb = bb, price = line(3, 26, PadLook.TEXT.shop, ""), key = key }
 	bb.Parent = playerGui
 end
 
@@ -307,7 +309,7 @@ local function refreshCards()
 		else
 			local str, canBuy = priceText(c.key)
 			c.price.Text = str
-			c.price.TextColor3 = canBuy and Color3.fromHex("9FF5C8") or Color3.fromHex("C8C0D0")
+			c.price.TextColor3 = canBuy and PadLook.TEXT.shop or Color3.fromHex("C8C0D0") -- grey: owned, or not on sale yet
 		end
 	end
 end

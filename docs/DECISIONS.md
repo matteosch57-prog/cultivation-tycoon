@@ -78,3 +78,9 @@ the log as a D-number.
   per player, budgeted and staggered autosaves, recursive backfill, and a failed load now asks the
   player to rejoin instead of playing without saving (replaces that part of D19: progress made in
   such a session was silently lost). ServerHealth logs server fps, memory and DataStore budgets.
+- **D27** Step-on pads = concept C "Formation" (owner pick of A Jade Seal / B Lotus / C Formation in a
+  playable 3D mock, `docs/art/mocks/pads_formation_mock.html`; "C amazing, with nice premium light, text
+  clear and easy, normalize colors"). Research (`docs/research/2026-10-21_pad_feel.md`): pad tycoons
+  rarely preview the building, so the gathering preview is where this game stands out. Pads are drawn
+  by the client from a tagged anchor so build, breakthrough and shop pads share one look and one
+  colour set (`PadLook`). The pad's light is the R3 pad-beacon exception.
