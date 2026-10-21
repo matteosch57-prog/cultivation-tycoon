@@ -1012,12 +1012,26 @@ local function reincarnate(player, s)
 	d.pillTimer = 0
 	d.boostUntil = 0
 	d.realmRecruits = 0
-	-- sworn disciples (the strongest, the list is kept sorted) follow into the new life
-	local sworn = {}
-	for i = 1, math.min(Config.SWORN_BASE, #d.disciples) do
-		sworn[i] = d.disciples[i]
+	-- disciples bought in the Shop are permanent (data.shopBought counts them by item key) and
+	-- do not use a sworn seat; then the SWORN_BASE strongest of the rest follow (list is sorted)
+	local bought = {} -- rarity name -> how many of the list are bought ones
+	for key, n in d.shopBought or {} do
+		local it = Config.shopItem(key)
+		if it and it.rarity then
+			bought[it.rarity] = (bought[it.rarity] or 0) + n
+		end
 	end
-	d.disciples = sworn
+	local kept, sworn = {}, 0
+	for _, name in d.disciples do
+		if (bought[name] or 0) > 0 then
+			bought[name] -= 1
+			table.insert(kept, name)
+		elseif sworn < Config.SWORN_BASE then
+			sworn += 1
+			table.insert(kept, name)
+		end
+	end
+	d.disciples = kept
 	lightning(s)
 	rebuild(s)
 	refreshPads(player, s)
