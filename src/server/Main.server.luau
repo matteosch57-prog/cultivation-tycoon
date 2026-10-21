@@ -366,6 +366,11 @@ local function publish(player)
 	player:SetAttribute("HasHall", d.owned.hall == true)
 	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.realmRecruits or 0))
 	player:SetAttribute("Disciples", table.concat(d.disciples, ","))
+	local pulled = {}
+	for name in d.pulled or {} do
+		table.insert(pulled, name)
+	end
+	player:SetAttribute("Pulled", table.concat(pulled, ","))
 	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
@@ -919,6 +924,12 @@ recruitFn.OnServerInvoke = function(player)
 	local kept = addDisciple(s, r.name)
 	publish(player)
 	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+	-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
+	s.data.pulled = s.data.pulled or {}
+	if not s.data.pulled[r.name] then
+		s.data.pulled[r.name] = true
+		publish(player)
+	end
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
 	return { ok = true, rarity = r.name, kept = kept }

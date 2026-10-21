@@ -47,6 +47,10 @@ Telemetry.EVENTS = {
 		fields = { "locked | error | newer (a load that could not take the save: the player was asked to rejoin)" },
 		question = "How often does a join fail to load a save, and why?",
 	},
+	DiscipleBought = {
+		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
+		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",
+	},
 	Shop = {
 		fields = {
 			"open | prompt | bought | closed",

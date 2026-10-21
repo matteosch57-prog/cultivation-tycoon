@@ -1,6 +1,6 @@
 -- Shop screen (mock B, docs/art/mocks/shop_B_phone.jpg, D24): no board, toy tiles floating over a
--- dark veil. Boosts (passes + Instant Pill) on one row, Qi packs on the next; a phone that cannot
--- fit both rows gets a "More Qi" tile that flips to the packs. Opened by the HUD's Shop button
+-- dark veil, one row per page: Boosts (passes + Instant Pill), Qi packs, Disciples, picked with
+-- toy tabs under the title. Opened by the HUD's Shop button
 -- (PlayerGui.ShopOpen, a BindableEvent fired with the source). The server prompts and grants
 -- (R9): a tap only sends the item key. Also draws the cards over the purple pads on the hub.
 local Players = game:GetService("Players")
@@ -24,7 +24,7 @@ local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
-local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", more = "C9FFE4", back = "9FF5C8" }
+local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8" }
 -- disciples for sale: a pale tile of their rarity colour
 local function tileColor(key)
 	local it = Config.shopItem(key)
@@ -62,7 +62,9 @@ end
 -- "Owned" / "Soon" (no id yet) / the price
 local function priceText(key)
 	local it, isPass = Config.shopItem(key)
-	if (isPass and player:GetAttribute("Pass_" .. key)) or player:GetAttribute("Limit_" .. key) then
+	if it and it.minRealm and (player:GetAttribute("Realm") or 1) < it.minRealm then
+		return "Realm " .. it.minRealm, false -- D28 gate (the card says which realm)
+	elseif (isPass and player:GetAttribute("Pass_" .. key)) or player:GetAttribute("Limit_" .. key) then
 		return "Owned", false
 	elseif not it or it.id == 0 then
 		return "Soon", false
@@ -89,6 +91,30 @@ gui.Parent = playerGui
 
 local ui = {}
 local page = "boosts"
+local function products(pick)
+	return function()
+		local list = {}
+		for _, it in Config.SHOP_PRODUCTS do
+			if pick(it) then
+				table.insert(list, it)
+			end
+		end
+		return list
+	end
+end
+local PAGES = {
+	{
+		key = "boosts",
+		name = "Boosts",
+		items = function()
+			local list = table.clone(Config.SHOP_PASSES)
+			table.insert(list, (Config.shopItem("pill")))
+			return list
+		end,
+	},
+	{ key = "qi", name = "Qi", items = products(function(it) return it.seconds ~= nil end) },
+	{ key = "disciples", name = "Disciples", items = products(function(it) return it.rarity ~= nil end) },
+}
 
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
@@ -107,7 +133,7 @@ local function tile(parent, key, order, name, line)
 	Toy.list(col, false, px(2))
 	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
 	holder.LayoutOrder = 1
-	Toy.icon(btn, key == "more" and "pack2" or key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = col
@@ -154,12 +180,9 @@ local function refresh()
 			rec.line.Text = packQi(rec.it)
 		end
 	end
-	if ui.boosts then
-		ui.boosts.Visible = ui.both or page == "boosts"
-		ui.packs.Visible = ui.both or page == "qi"
-	end
-	if ui.backPill then
-		ui.backPill.Visible = page == "qi"
+	for key, r in ui.rows or {} do
+		r.Visible = key == page
+		ui.tabs[key].BackgroundColor3 = key == page and Color3.fromHex("FFD36B") or GREY
 	end
 end
 
@@ -179,9 +202,6 @@ local function build()
 	gui:ClearAllChildren()
 	Toy.S = computeScale()
 	ui = { items = {} }
-	local vp = workspace.CurrentCamera.ViewportSize
-	-- room for both rows (computers), else two pages (phones)
-	ui.both = vp.Y >= px(520) and player:GetAttribute("HudDevice") ~= "phone"
 
 	local veil = Instance.new("TextButton")
 	veil.Text = ""
@@ -208,37 +228,28 @@ local function build()
 		close()
 	end)
 
-	ui.boosts = row(body, 2)
-	for i, it in Config.SHOP_PASSES do
-		itemTile(ui.boosts, it, i)
-	end
-	itemTile(ui.boosts, Config.shopItem("pill"), #Config.SHOP_PASSES + 1)
-	ui.packs = row(body, 3)
-	-- second row: the Qi packs, then the disciples for sale (6 tiles fit a phone at px(16) gaps)
-	local n = 0
-	for _, it in Config.SHOP_PRODUCTS do
-		if it.seconds or it.rarity then
+	-- three pages, one row each (six tiles fit a phone at px(16) gaps), picked by toy tabs
+	local tabs = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	Toy.list(tabs, true, px(10))
+	ui.rows, ui.tabs = {}, {}
+	for i, pg in PAGES do
+		local r = row(body, 2 + i)
+		ui.rows[pg.key] = r
+		local n = 0
+		for _, it in pg.items() do
 			n += 1
-			itemTile(ui.packs, it, n)
+			itemTile(r, it, n)
 		end
-	end
-	if not ui.both then
-		-- page flips: "More Qi" on the boosts row, "Boosts" back on the packs row
-		local _, moreBtn = tile(ui.boosts, "more", 10, "Qi & Disciples")
-		moreBtn.Activated:Connect(function()
-			page = "qi"
-			refresh()
-			pop()
-		end)
-		-- back to the boosts: a small toy pill in the title row (the packs row is full on a phone)
-		local bHolder, backBtn = Toy.button(head, UDim2.fromOffset(px(96), px(34)), Color3.fromHex("9FF5C8"), px(12))
-		bHolder.LayoutOrder = 0
-		text(backBtn, "Boosts", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		ui.backPill = bHolder
-		backBtn.Activated:Connect(function()
-			page = "boosts"
-			refresh()
-			pop()
+		local tHolder, tBtn = Toy.button(tabs, UDim2.fromOffset(px(118), px(34)), GREY, px(12))
+		tHolder.LayoutOrder = i
+		text(tBtn, pg.name, px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		ui.tabs[pg.key] = tBtn
+		tBtn.Activated:Connect(function()
+			if page ~= pg.key then
+				page = pg.key
+				refresh()
+				pop()
+			end
 		end)
 	end
 	refresh()
@@ -262,7 +273,13 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-for _, a in { "AwayRate", "Pass_x2", "Pass_auto", "Pass_vip", "Limit_celestial" } do
+local WATCH = { "AwayRate", "Realm", "Pass_x2", "Pass_auto", "Pass_vip" }
+for _, it in Config.SHOP_PRODUCTS do
+	if it.limit then
+		table.insert(WATCH, "Limit_" .. it.key)
+	end
+end
+for _, a in WATCH do
 	player:GetAttributeChangedSignal(a):Connect(function()
 		if gui.Enabled then
 			refresh()
@@ -329,6 +346,10 @@ local function refreshCards()
 			cards[pad] = nil
 		else
 			local str, canBuy = priceText(c.key)
+			local it = Config.shopItem(c.key)
+			if it.minRealm and (player:GetAttribute("Realm") or 1) < it.minRealm then
+				str = "Opens at " .. Config.realmName(it.minRealm) -- the pad has room for the name
+			end
 			c.price.Text = str
 			c.price.TextColor3 = canBuy and PadLook.TEXT.shop or Color3.fromHex("C8C0D0") -- grey: owned, or not on sale yet
 		end
@@ -356,7 +377,7 @@ task.spawn(function()
 		onPad(d)
 	end
 	fetchPrices(refreshCards)
-	for _, a in { "Pass_x2", "Pass_auto", "Pass_vip", "Limit_celestial" } do
+	for _, a in WATCH do
 		player:GetAttributeChangedSignal(a):Connect(refreshCards)
 	end
 end)

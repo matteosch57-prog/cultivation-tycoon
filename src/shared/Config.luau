@@ -151,11 +151,15 @@ Config.SHOP_PRODUCTS = {
 	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
 	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
 	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
-	-- when full). The top rarities stay earn-only (D27).
+	-- when full). Every tier from Elder up is sold (owner, D28), priced by the owner as a ladder.
 	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder" },
 	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal" },
-	-- `limit` = times one player may buy it (Celestial is a 0.12% chase tier: economy check, D28)
-	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1 },
+	-- `limit` = times one player may buy it: the chase tiers once each; `minRealm` = on sale only from
+	-- that realm (bought from the start they would flatten the early climb: economy check, D28)
+	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
+	{ key = "dao", id = 0, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
+	{ key = "emperor", id = 0, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1, minRealm = 7 },
+	{ key = "primordial", id = 0, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 Config.VIP_SLOTS = 1
@@ -167,7 +171,17 @@ Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receip
 Config.SHOP_ISLAND_AT = Vector3.new(50, 0, 115)
 Config.SHOP_ISLAND_RADIUS = 22
 Config.SHOP_ITEM_PADS = { "auto", "vip", "pill", "pack1", "pack2", "pack3" } -- around the lawn, left to right
-Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial" } -- in the pavilion
+Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial", "dao", "emperor", "primordial" } -- in and beside the pavilion, left to right
+
+-- the Shop product that sells disciple rarity `name` (nil when it is not sold)
+function Config.shopKeyOf(name)
+	for _, it in Config.SHOP_PRODUCTS do
+		if it.rarity == name then
+			return it.key
+		end
+	end
+	return nil
+end
 
 function Config.shopItem(key)
 	for _, list in { Config.SHOP_PASSES, Config.SHOP_PRODUCTS } do

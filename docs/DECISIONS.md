@@ -88,5 +88,6 @@ the log as a D-number.
   some characters, we will sell some too, like immortals"; "2x Qi in front of the access"): replaces
   the hub ring of D24. It sits beside the entrance (the hub-side corner), the only spot clear of the
   largest peak, the neighbours and their bridges. Disciples sold = fixed rarities Elder, Immortal and
-  Celestial once per player; never Dao Ancestor or above (economy check: one Celestial makes the late
-  game ~15% faster and skips nothing; the risk is the chase tier's collection value).
+  every tier Elder to Primordial (owner pick C, "price accordingly"), with the economy check's
+  guard-rails: Celestial and above once per player and gated by realm (3 / 5 / 7 / 9), bought ones
+  permanent, rolled ones keep a "first pulled" mark, price ladder in MONETIZATION.

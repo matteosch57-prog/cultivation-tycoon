@@ -671,6 +671,8 @@ local function refreshStatic()
 	ui.recruitCost.Text = compact(player:GetAttribute("RecruitCost") or 0)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
+	local pulledRaw = player:GetAttribute("Pulled") or ""
+	local pulled = pulledRaw == "" and {} or string.split(pulledRaw, ",")
 	ui.badge.Text = tostring(#list)
 	ui.badgeFrame.Visible = #list > 0
 	for _, c in ui.card:GetChildren() do
@@ -690,7 +692,9 @@ local function refreshStatic()
 			text(ui.card, string.format("%d resting (build Quarters)", #list - max), px(12), Color3.fromHex("C8C0D0"), { LayoutOrder = i })
 			break
 		end
-		text(ui.card, string.format("%s  +%d%%", name, r.bonus * 100), px(14), r.color, { LayoutOrder = i })
+		-- a sold rarity the player also rolled carries its "first pulled" mark
+		local mark = table.find(pulled, name) and Config.shopItem(Config.shopKeyOf(name)) and "  first pulled" or ""
+		text(ui.card, string.format("%s  +%d%%%s", name, r.bonus * 100, mark), px(14), r.color, { LayoutOrder = i })
 	end
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
@@ -707,7 +711,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "Disciples", "Built" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "Disciples", "Built", "Pulled" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -887,6 +891,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		return
 	elseif kind == "shopDisciple" then
 		toast((b and "New disciple: " or "New disciple resting: ") .. a .. "!", Config.rarity(a).color, 3)
+		return
+	elseif kind == "shopGate" then
+		toast(a .. " opens at " .. b, PINK, 2.5)
 		return
 	elseif kind == "shopLimit" then
 		toast("You already have your " .. a .. " from the Shop", Color3.fromHex("9FF5C8"), 2)

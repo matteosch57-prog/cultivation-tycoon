@@ -80,6 +80,10 @@ local function grantProduct(player, s, it)
 		api.notify:FireClient(player, "shopPill", Config.PILL_DURATION)
 	elseif it.rarity then
 		local kept = api.addDisciple(s, it.rarity)
+		-- bought disciples are permanent: a future reincarnation must keep these (D28)
+		d.boughtDisciples = d.boughtDisciples or {}
+		d.boughtDisciples[it.rarity] = (d.boughtDisciples[it.rarity] or 0) + 1
+		Telemetry.custom(player, "DiscipleBought", it.key, realm(s), Telemetry.minuteBucket(d.playSec or 0))
 		api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
 	elseif it.seconds then
 		local gain = math.floor(api.rate(s, true) * it.seconds)
@@ -145,6 +149,10 @@ local function prompt(player, key)
 	end
 	local it, isPass = Config.shopItem(key)
 	if not it or it.id == 0 or (isPass and s.passes[key]) then
+		return
+	end
+	if it.minRealm and (s.data.best or s.data.realm) < it.minRealm then
+		api.notify:FireClient(player, "shopGate", it.name, Config.realmName(it.minRealm))
 		return
 	end
 	if it.limit and ((s.data.shopBought or {})[key] or 0) >= it.limit then
@@ -249,18 +257,20 @@ function Shop.buildIsland(plot)
 	for i, key in Config.SHOP_ITEM_PADS do
 		local side = i <= half and -1 or 1
 		local k = i <= half and i or (#Config.SHOP_ITEM_PADS + 1 - i)
-		local t = math.rad(60 + (k - 1) * 30)
-		shopPad(folder, f * CFrame.new(side * math.sin(t) * 13, 0, math.cos(t) * 13), key)
+		local t = math.rad(30 + (k - 1) * 25)
+		shopPad(folder, f * CFrame.new(side * math.sin(t) * 12.5, 0, math.cos(t) * 12.5), key)
 	end
-	-- the pavilion at the back holds the disciples for sale, each with its pad in front
-	Style.pavilion(folder, f * CFrame.new(0, 0, -12), 14, 9)
+	-- the pavilion at the back shows the disciples for sale (the outer two beside it on the lawn),
+	-- each with its pad in front
+	Style.pavilion(folder, f * CFrame.new(0, 0, -14), 14, 9) -- plinth z -6 .. -22
+	local n = #Config.SHOP_DISCIPLE_PADS
 	for i, key in Config.SHOP_DISCIPLE_PADS do
-		local x = (i - 2) * 5
+		local x = (i - (n + 1) / 2) * 4.6
 		local it = Config.shopItem(key)
-		local seat = f * CFrame.new(x, 1.2, -11) -- on the plinth, facing the lawn
+		local seat = f * CFrame.new(x, math.abs(x) < 8 and 1.2 or 0, -11) -- plinth top inside the pavilion
 		local m = api.cultivators.build(folder, seat, i + 2, Config.rarity(it.rarity), Config.RARITIES)
 		m.Name = "ForSale_" .. key
-		shopPad(folder, f * CFrame.new(x, 0, -1.5), key)
+		shopPad(folder, f * CFrame.new(x, 0, -3.5), key)
 	end
 	folder.Parent = plot.folder
 	return folder

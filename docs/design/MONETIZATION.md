@@ -41,8 +41,14 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   landed. A retry finds the id and grants nothing twice. Passes: `UserOwnsGamePassAsync` on join
   (before the offline qi, so 2x counts on it) and `PromptGamePassPurchaseFinished` live; ownership is
   never saved (Roblox is the record).
-- **Disciples for sale (D28):** a FIXED rarity, never a roll (R8): Elder, Immortal, Celestial
-  (`limit` 1 per player, saved in `data.shopBought`). The server refuses the prompt when the sect is
+- **Disciples for sale (D28, owner pick C "but price accordingly"):** a FIXED rarity, never a roll
+  (R8), every tier from Elder to Primordial. Economy guard-rails: Celestial and above once per
+  player each (`limit`, `data.shopBought`) and on sale only from a realm (`minRealm`: Celestial 3,
+  Dao Ancestor 5, Heavenly Emperor 7, Primordial 9; the pad says "Opens at ..."), because owning Dao
+  or above from the start flattens realms 1 to 6 to the 5 min floor. Bought ones are counted in
+  `data.boughtDisciples` and survive breakthroughs (a future reincarnation must keep them). A rarity
+  the player rolled shows "first pulled" in the disciples card (`data.pulled`). Event
+  `DiscipleBought` (key, realm, minutes played). The server refuses the prompt when the sect is
   full of stronger ones (it could not stay). A bought one joins like a recruit and, if no seat is
   free, rests on the bench (`DISCIPLE_CAP`).
 - **Effects:** 2x Qi = `PASS_QI_MULT` on every qi/s, offline and gifts too (economy check: keep it);
@@ -62,6 +68,12 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   `Shop` open event printed; no script errors. Not yet tested: a real prompt and ProcessReceipt (need
   real ids: test with Studio's test purchase), the phone page flip. Captures:
   `docs/art/captures/shop_screen_play.jpg`, `shop_hub_pads_play.jpg`.
+
+## Disciple price ladder (economy check, D28)
+Relative to the 2x Qi pass price P: Elder 0.15P, Immortal 0.3P, Celestial 0.6P, Dao Ancestor 1P,
+Heavenly Emperor 2P, Primordial 4P. With P = 249: about 39 / 79 / 149 / 249 / 499 / 999 Robux. The
+owner sets the final prices (R5). Sim (regular player, realm 10 in ~1,026 min with nothing bought):
+Celestial -9%, Dao -30%, Heavenly Emperor -45%, Primordial -65%, all three top -74%.
 
 ## Price research (2026-10-21, Roblox's own pass / product listings)
 Auto-collect 175 to 350 (RT2 200, RT3 299, Mall 350, PS99 175); 2x income 299 to 600 (Brainrot 299,
