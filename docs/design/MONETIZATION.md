@@ -43,10 +43,11 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   never saved (Roblox is the record).
 - **Disciples for sale (D28, owner pick C "but price accordingly"):** a FIXED rarity, never a roll
   (R8), every tier from Elder to Primordial. Economy guard-rails: Celestial and above once per
-  player each (`limit`, `data.shopBought`) and on sale only from a realm (`minRealm`: Celestial 3,
+  player each and Elder / Immortal at most 8 each (`limit`, `data.shopBought`) and on sale only from a realm (`minRealm`: Celestial 3,
   Dao Ancestor 5, Heavenly Emperor 7, Primordial 9; the pad says "Opens at ..."), because owning Dao
   or above from the start flattens realms 1 to 6 to the 5 min floor. Bought ones are counted in
-  `data.boughtDisciples` and survive breakthroughs (a future reincarnation must keep them). A rarity
+  `data.boughtDisciples`, survive breakthroughs and are never trimmed by the disciple cap (the
+  cap drops the weakest unbought one); a reincarnation must keep them. A rarity
   the player rolled shows "first pulled" in the disciples card (`data.pulled`). Event
   `DiscipleBought` (key, realm, minutes played). The server refuses the prompt when the sect is
   full of stronger ones (it could not stay). A bought one joins like a recruit and, if no seat is
