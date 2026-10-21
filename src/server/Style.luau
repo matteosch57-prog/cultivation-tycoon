@@ -487,6 +487,52 @@ function Style.bellTower(parent, cf)
 	return m
 end
 
+---------------------------------------------------------------------------------------------
+-- Water kit (owner 2026-10-21: "the water sources and the waterfall can be improved"; Gladiator
+-- water research: no Glass, no Terrain water; flowing water = Beams with a scrolling texture over
+-- an opaque water part). Textures from tools/water_textures.py: white on alpha, tinted per beam.
+local WATER_FLOW = "rbxassetid://127092514641386" -- art/textures/water_flow.png
+local WATER_RIPPLE = "rbxassetid://125640503943862" -- art/textures/water_ripple.png
+local WATER = Color3.fromHex("4FA3C7")
+local SHINE = Color3.fromHex("E6F8FF")
+
+local function beam(parent, a0, a1, tex, props)
+	local b = Instance.new("Beam")
+	b.Attachment0, b.Attachment1 = a0, a1
+	b.Texture = tex
+	b.TextureMode = Enum.TextureMode.Wrap
+	b.Segments = 1
+	b.LightInfluence = 0.6
+	for k, v in props do
+		b[k] = v
+	end
+	b.Parent = parent
+	return b
+end
+
+-- Shimmering light ripples drifting over a flat water surface. `at` = the surface centre,
+-- `len` x `wide` studs (an inscribed square on a round pool: side = 0.7 x the diameter).
+local function shimmer(m, at, len, wide, speed)
+	local holder = P(m, Vector3.new(0.2, 0.2, 0.2), at, WATER)
+	holder.Transparency = 1
+	holder.CanCollide, holder.CanQuery, holder.CanTouch = false, false, false
+	-- attachments along X; their Y axis lies flat (along Z), which is where a flat beam's width goes
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.CFrame = CFrame.fromMatrix(Vector3.new(-len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
+	a1.CFrame = CFrame.fromMatrix(Vector3.new(len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
+	a0.Parent, a1.Parent = holder, holder
+	beam(holder, a0, a1, WATER_RIPPLE, {
+		FaceCamera = false,
+		Width0 = wide,
+		Width1 = wide,
+		TextureLength = wide,
+		TextureSpeed = speed or 0.05,
+		Color = ColorSequence.new(SHINE),
+		Transparency = NumberSequence.new(0.55),
+		LightEmission = 0.3,
+	})
+end
+
 function Style.koiPond(parent, cf, seed)
 	local rng = Random.new(seed or 8)
 	local m = Instance.new("Model")
@@ -496,8 +542,25 @@ function Style.koiPond(parent, cf, seed)
 		local a = i / 16 * math.pi * 2
 		P(m, Vector3.new(3.2, 1, 2.2), cf * CFrame.new(math.cos(a) * 8, 0.5, math.sin(a) * 8) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
 	end
-	cylY(m, 0.3, 15.6, cf * CFrame.new(0, 0.55, 0), Color3.fromHex("4FA3C7"))
-	cylY(m, 0.31, 9, cf * CFrame.new(1.5, 0.56, -1), Color3.fromHex("5DB6D6"))
+	cylY(m, 0.3, 15.6, cf * CFrame.new(0, 0.55, 0), WATER).Reflectance = 0.12
+	cylY(m, 0.31, 9, cf * CFrame.new(1.5, 0.56, -1), Color3.fromHex("5DB6D6")).Reflectance = 0.12
+	shimmer(m, cf * CFrame.new(0, 0.7, 0), 10.5, 10.5, 0.04)
+	-- now and then a ring spreads where a koi rose (Rate 0.5 x 2.5 s ~ 1 live)
+	local ringAt = P(m, Vector3.new(9, 0.2, 9), cf * CFrame.new(0, 0.75, 0), WATER)
+	ringAt.Transparency = 1
+	ringAt.CanCollide, ringAt.CanQuery, ringAt.CanTouch = false, false, false
+	local rings = Instance.new("ParticleEmitter")
+	rings.Texture = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+	rings.Shape = Enum.ParticleEmitterShape.Box
+	rings.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	rings.EmissionDirection = Enum.NormalId.Top
+	rings.Speed = NumberRange.new(0.01)
+	rings.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 3.5) })
+	rings.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	rings.Color = ColorSequence.new(SHINE)
+	rings.Lifetime = NumberRange.new(2.5)
+	rings.Rate = 0.5
+	rings.Parent = ringAt
 	-- lily pads, lotus flowers and koi
 	for i = 1, 7 do
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(2, 6.5)
@@ -1397,16 +1460,76 @@ function Style.cloudSea(parent, center, r0, r1, count, seed)
 	return f
 end
 
--- Waterfall pouring off an island's rim at local angle `a` (radians): a pool on the grass,
--- a falling white stream (particles: no Glass, no Terrain water) and mist at its foot.
+-- Waterfall pouring off an island's rim at local angle `a` (radians): a stone-rimmed pool on the
+-- grass with light rippling over it, a channel running to the lip, then the fall itself as two
+-- scrolling beams (a bright core and a wide faint veil) with foam at the lip and mist below.
+-- Particles: foam Rate 10 x 1.2 s, mist Rate 4 x 3.5 s (~26 live).
 function Style.waterfall(parent, cf, radius, a)
 	local m = Instance.new("Model")
 	m.Name = "Waterfall"
 	-- edge frame: local -Z points outward over the rim
 	local edge = cf * CFrame.new(math.cos(a) * (radius - 1), 0, math.sin(a) * (radius - 1)) * CFrame.Angles(0, -a - math.pi / 2, 0)
-	cylY(m, 0.3, 7, edge * CFrame.new(0, 0.05, 3), Color3.fromHex("5FB7D8"))
-	cylY(m, 0.6, 8, edge * CFrame.new(0, -0.15, 3), PAL.stone)
-	P(m, Vector3.new(3, 0.25, 4), edge * CFrame.new(0, 0.1, 0), Color3.fromHex("7CCBE6"))
+	local pool = edge * CFrame.new(0, 0, 4)
+	-- pool: a ring of rim stones (a gap where the channel leaves, toward -Z), the water, its shimmer
+	for i = 0, 11 do
+		local t = i / 12 * math.pi * 2
+		if math.cos(t) < 0.85 then
+			P(m, Vector3.new(1.9, 0.9, 1.3), pool * CFrame.new(math.sin(t) * 4.3, 0.3, -math.cos(t) * 4.3) * CFrame.Angles(0, -t, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
+		end
+	end
+	cylY(m, 0.3, 8, pool * CFrame.new(0, 0.1, 0), WATER).Reflectance = 0.12
+	shimmer(m, pool * CFrame.new(0, 0.2, 0), 5.5, 5.5, 0.06)
+	-- the channel to the lip, its water flowing outward between two stone kerbs
+	P(m, Vector3.new(3, 0.25, 4.6), edge * CFrame.new(0, 0.1, 0.4), WATER).Reflectance = 0.12
+	for _, sx in { -1, 1 } do
+		P(m, Vector3.new(0.8, 0.7, 4.8), edge * CFrame.new(sx * 1.9, 0.25, 0.4), PAL.stone)
+	end
+	local function holder(at)
+		local h = P(m, Vector3.new(0.2, 0.2, 0.2), at, WATER)
+		h.Transparency = 1
+		h.CanCollide, h.CanQuery, h.CanTouch = false, false, false
+		return h
+	end
+	local ch = holder(edge * CFrame.new(0, 0.3, 0.4))
+	local c0, c1 = Instance.new("Attachment"), Instance.new("Attachment")
+	c0.CFrame = CFrame.fromMatrix(Vector3.new(0, 0, 2.3), Vector3.zAxis, Vector3.xAxis) -- width flat along X
+	c1.CFrame = CFrame.fromMatrix(Vector3.new(0, 0, -2.3), Vector3.zAxis, Vector3.xAxis)
+	c0.Parent, c1.Parent = ch, ch
+	beam(ch, c0, c1, WATER_FLOW, {
+		FaceCamera = false,
+		Width0 = 2.8,
+		Width1 = 2.8,
+		TextureLength = 4,
+		TextureSpeed = 1.2,
+		Color = ColorSequence.new(SHINE),
+		Transparency = NumberSequence.new(0.25),
+		LightEmission = 0.3,
+	})
+	-- the fall: a bright core and a wider faint veil, both scrolling down and widening as they drop
+	local top = holder(edge * CFrame.new(0, 0, -1.9))
+	local foot = holder(edge * CFrame.new(0, -46, -5))
+	local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
+	t0.Parent, t1.Parent = top, foot
+	beam(top, t0, t1, WATER_FLOW, {
+		FaceCamera = true,
+		Width0 = 4.2,
+		Width1 = 8,
+		TextureLength = 12,
+		TextureSpeed = 2.2,
+		Color = ColorSequence.new(Color3.fromHex("F4FCFF"), Color3.fromHex("CDEFFB")),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.8, 0.25), NumberSequenceKeypoint.new(1, 1) }),
+		LightEmission = 0.35,
+	})
+	beam(top, t0, t1, WATER_FLOW, {
+		FaceCamera = true,
+		Width0 = 7,
+		Width1 = 15,
+		TextureLength = 20,
+		TextureSpeed = 1.4,
+		Color = ColorSequence.new(Color3.fromHex("DDF4FF")),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.7, 0.75), NumberSequenceKeypoint.new(1, 1) }),
+		LightEmission = 0.2,
+	})
 	local function emitterBox(size, at)
 		local b = P(m, size, at, Color3.new(1, 1, 1))
 		b.Transparency = 1
@@ -1415,20 +1538,21 @@ function Style.waterfall(parent, cf, radius, a)
 		b.CanTouch = false
 		return b
 	end
-	local fall = Instance.new("ParticleEmitter")
-	fall.Texture = SMOKE
-	fall.Shape = Enum.ParticleEmitterShape.Box
-	fall.Color = ColorSequence.new(Color3.fromHex("F2FBFF"), Color3.fromHex("BFE6F5"))
-	fall.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 4.5) })
-	fall.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(0.8, 0.4), NumberSequenceKeypoint.new(1, 1) })
-	fall.Lifetime = NumberRange.new(2.4, 2.8)
-	fall.Speed = NumberRange.new(2, 3)
-	fall.EmissionDirection = Enum.NormalId.Front
-	fall.Acceleration = Vector3.new(0, -16, 0)
-	fall.SpreadAngle = Vector2.new(4, 4)
-	fall.LightInfluence = 0.5
-	fall.Rate = 26
-	fall.Parent = emitterBox(Vector3.new(2.6, 0.2, 0.4), edge * CFrame.new(0, 0, -1.6))
+	-- white foam where the water tips over the lip
+	local foam = Instance.new("ParticleEmitter")
+	foam.Texture = SMOKE
+	foam.Shape = Enum.ParticleEmitterShape.Box
+	foam.Color = ColorSequence.new(Color3.fromHex("FFFFFF"))
+	foam.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 2.6) })
+	foam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	foam.Lifetime = NumberRange.new(1, 1.4)
+	foam.Speed = NumberRange.new(1, 2)
+	foam.EmissionDirection = Enum.NormalId.Front
+	foam.Acceleration = Vector3.new(0, -10, 0)
+	foam.SpreadAngle = Vector2.new(20, 20)
+	foam.LightInfluence = 0.5
+	foam.Rate = 10
+	foam.Parent = emitterBox(Vector3.new(3.6, 0.2, 0.4), edge * CFrame.new(0, 0, -1.8))
 	local spray = Instance.new("ParticleEmitter")
 	spray.Texture = SMOKE
 	spray.Shape = Enum.ParticleEmitterShape.Box
@@ -1440,7 +1564,7 @@ function Style.waterfall(parent, cf, radius, a)
 	spray.SpreadAngle = Vector2.new(180, 180)
 	spray.LightInfluence = 0.5
 	spray.Rate = 4
-	spray.Parent = emitterBox(Vector3.new(8, 2, 8), edge * CFrame.new(0, -48, -6))
+	spray.Parent = emitterBox(Vector3.new(8, 2, 8), edge * CFrame.new(0, -46, -6))
 	m.Parent = parent
 	return m
 end
