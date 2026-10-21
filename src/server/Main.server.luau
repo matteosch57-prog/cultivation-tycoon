@@ -11,6 +11,7 @@ local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
+local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 
 local store = nil
@@ -311,7 +312,8 @@ end
 
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {} }
+	-- workers = { [building id] = workers hired there } (Config.WORKERS)
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
@@ -360,7 +362,7 @@ local function rate(s, away)
 	for id in data.owned do
 		local pad = Config.padById(id)
 		if pad then
-			base += pad.income
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0))
 		end
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
@@ -491,6 +493,25 @@ local function buildDisciples(s)
 	ctx.folder.Parent = s.plot.built
 end
 
+-- the hired workers at their buildings (Workers.luau); rebuilt whole, like the disciples
+local function buildWorkers(s)
+	local old = s.plot.built:FindFirstChild("Workers")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "Workers"
+	for id, n in s.data.workers or {} do
+		local pad = Config.padById(id)
+		if pad and s.data.owned[id] then
+			for k = 1, math.min(n, Config.WORKER_MAX) do
+				Workers.build(folder, s.plot.frame, pad, k, { s.plot.built, workspace.Terrain })
+			end
+		end
+	end
+	folder.Parent = s.plot.built
+end
+
 local refreshPads -- forward
 local PAD_COLOR = Color3.fromHex("6FB59C") -- jade
 
@@ -614,6 +635,7 @@ local function rebuild(s)
 		end
 	end
 	buildDisciples(s)
+	buildWorkers(s)
 end
 
 refreshPads = function(player, s)
@@ -639,6 +661,12 @@ refreshPads = function(player, s)
 	end
 	if all then
 		wanted.breakthrough = true
+	end
+	-- a hire pad beside every owned building that takes workers, until it has WORKER_MAX
+	for id in Config.WORKERS do
+		if s.data.owned[id] and ((s.data.workers or {})[id] or 0) < Config.WORKER_MAX then
+			wanted["hire_" .. id] = true
+		end
 	end
 	for id, p in s.pads do
 		if not wanted[id] or not p.Parent then
@@ -694,6 +722,37 @@ refreshPads = function(player, s)
 			end
 		end
 	end
+	for id, spec in Config.WORKERS do
+		local key = "hire_" .. id
+		local pad = Config.padById(id)
+		if wanted[key] and pad and not s.pads[key] then
+			local n = ((s.data.workers or {})[id] or 0) + 1
+			local cost = Config.workerCost(pad, n, s.data.realm)
+			local income = pad.income * Config.incomeMult(s.data.realm) * Config.WORKER_BONUS
+			local p = makePad(player, s, { id = key, x = spec.x, z = spec.z }, cost, spec.name, income, function()
+				s.data.workers = s.data.workers or {}
+				s.data.workers[id] = n
+				Telemetry.sink(player, s.data, cost, key)
+				-- the next hire costs more: a fresh pad (its card shows one more dot)
+				if s.pads[key] then
+					s.pads[key]:Destroy()
+					s.pads[key] = nil
+				end
+				local folder = s.plot.built:FindFirstChild("Workers")
+				if folder then
+					Workers.build(folder, s.plot.frame, pad, n, { s.plot.built, workspace.Terrain })
+				else
+					buildWorkers(s)
+				end
+				refreshPads(player, s)
+				publish(player)
+			end, "hire")
+			p.Name = "Hire_" .. id -- not "Pad_": the HUD goal and the guide trail lead to buildings only
+			p:SetAttribute("Hired", n - 1)
+			p:SetAttribute("HireMax", Config.WORKER_MAX)
+			s.pads[key] = p
+		end
+	end
 	if all and not s.pads.breakthrough then
 		local cost = math.floor(Config.BREAKTHROUGH_COST * mult)
 		local nextName = Config.realmName(s.data.realm + 1)
@@ -705,6 +764,7 @@ refreshPads = function(player, s)
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
 			s.data.owned = {}
+			s.data.workers = {}
 			s.data.qi = 0
 			s.data.pillReady = false
 			s.data.pillTimer = 0
@@ -1038,6 +1098,7 @@ local function reincarnate(player, s)
 	d.lifeStart = d.playSec or 0
 	d.realm = 1
 	d.owned = {}
+	d.workers = {}
 	if dao(d, "foundation") > 0 then
 		-- Old Foundations: the new life starts with every realm 1 building (skips the walk)
 		for _, pad in Config.PADS do
@@ -1241,6 +1302,9 @@ if game:GetService("RunService"):IsStudio() then
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
+			elseif key == "owned" or key == "workers" then
+				rebuild(s) -- DebugSet:Invoke(player, "workers", { garden = 3 })
+				refreshPads(player, s)
 			end
 			publish(player)
 			return true

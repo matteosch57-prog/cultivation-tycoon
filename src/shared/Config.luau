@@ -145,6 +145,24 @@ function Config.mainHallLevel(owned)
 	return 0
 end
 
+-- Sect workers (research 2026-10-21_workers, mock docs/art/mocks/workers.html): a hire pad
+-- beside an owned building, up to WORKER_MAX workers each. The n-th costs WORKER_COST[n] x the
+-- building's cost (x costMult); each adds WORKER_BONUS x the building's income. A breakthrough
+-- or a new life sends them home with the buildings. Spots and looks: src/server/Workers.luau.
+-- `x`, `z` = the hire pad on the peak.
+Config.WORKER_MAX = 3
+Config.WORKER_BONUS = 0.5 -- simmed (research 2026-10-21_economy_math): ~9% faster climb; above 1.0 eats the hard part
+Config.WORKER_COST = { 0.5, 1, 2 }
+Config.WORKERS = {
+	garden = { name = "Farmer", x = -28, z = 21 },
+	vein1 = { name = "Miner", x = -16, z = 33 },
+	furnace = { name = "Alchemist", x = 30, z = 14 },
+	training = { name = "Fighter", x = 50, z = 6 },
+}
+function Config.workerCost(pad, n, realm)
+	return math.floor(pad.cost * Config.WORKER_COST[n] * Config.costMult(realm))
+end
+
 -- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
 Config.GUIDE_BUILT = 5 -- always shown in realm 1 until this many buildings stand
 Config.GUIDE_IDLE = 20 -- afterwards only after this many seconds standing still
