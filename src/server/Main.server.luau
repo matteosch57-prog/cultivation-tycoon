@@ -212,7 +212,7 @@ local function buildGrounds(plot, radius)
 	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
 	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
 	-- entrance archway carrying the owner's name
-	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
+	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 13, 16) -- taller (owner 2026-10-21)
 	sign.Name = "Sign"
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Back -- the board's +Z side (Front faced the frame: the name never showed)

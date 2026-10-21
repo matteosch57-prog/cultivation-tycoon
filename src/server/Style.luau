@@ -1006,33 +1006,107 @@ function Style.qiArray(parent, cf, r)
 	return m
 end
 
--- Plank rope bridge between two world points at deck height.
+-- Rope bridge between two world points at deck height (owner 2026-10-21: "make bridges better").
+-- The deck sags in a gentle curve like a real rope bridge, each plank follows the curve with a
+-- small gap and its own tilt and shade; two stringers run under the planks, posts with caps stand
+-- every few studs, and two ropes per side (a handrail and a knee rope) sag between them with
+-- thin hangers down to the deck. Each end has thick gate posts with a red paper lantern (a real
+-- light, R3) toward the far end of the span. Planks collide; ropes and stringers do not.
+local ROPE = Color3.fromHex("A8875A") -- hemp (the pale rope read as white pipes in the sun)
+local function ghost(p)
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	return p
+end
+-- a rod nothing collides with (ropes, stringers): the planks and posts carry the walking
+local function cord(parent, a, b, dia, color)
+	local len = (b - a).Magnitude
+	if len < 0.01 then
+		return
+	end
+	ghost(P(parent, Vector3.new(len, dia, dia), CFrame.lookAt((a + b) / 2, b) * CFrame.Angles(0, math.pi / 2, 0), color, nil, Enum.PartType.Cylinder)).CastShadow = false
+	ghost(P(parent, Vector3.new(dia, dia, dia), CFrame.new(b), color, nil, Enum.PartType.Ball)).CastShadow = false
+end
+
 function Style.bridge(parent, a, b, width)
 	local m = Instance.new("Model")
 	m.Name = "Bridge"
 	local len = (b - a).Magnitude
 	local base = CFrame.lookAt(a, b) -- -Z runs from a to b
 	local rng = Random.new(math.floor(a.X + b.Z))
-	local n = math.floor(len / 1.9)
+	local sag = math.min(len * 0.025, 3)
+	-- deck point at distance d along the span (the curve dips toward the middle)
+	local function at(d, x, y)
+		local t = d / len
+		return base * CFrame.new(x or 0, (y or 0) - sag * 4 * t * (1 - t), -d)
+	end
+	local function slope(d)
+		local t = d / len
+		return math.atan(sag * 4 * (1 - 2 * t) / len) -- the deck's rise per stud, as an angle
+	end
+	local woods = { PAL.timber, Color3.fromHex("6B4630"), Color3.fromHex("7A5236"), Color3.fromHex("5A3A28") }
+	local n = math.floor(len / 1.7)
 	for i = 0, n do
 		local d = i * len / n
-		local woods = { PAL.timber, Color3.fromHex("6B4630"), Color3.fromHex("4F3324") }
-		P(m, Vector3.new(width, 0.5, 1.55), base * CFrame.new(rng:NextNumber(-0.15, 0.15), -0.25, -d) * CFrame.Angles(0, math.rad(rng:NextNumber(-2, 2)), 0), woods[i % 3 + 1])
+		local plank = P(m, Vector3.new(width + rng:NextNumber(-0.3, 0.3), 0.45, 1.4), at(d, rng:NextNumber(-0.12, 0.12), -0.25) * CFrame.Angles(slope(d), math.rad(rng:NextNumber(-2.5, 2.5)), math.rad(rng:NextNumber(-1, 1))), woods[rng:NextInteger(1, #woods)])
+		plank.Material = Enum.Material.Wood
 	end
+	local posts = math.max(2, math.floor(len / 8))
 	for _, sx in { -1, 1 } do
-		P(m, Vector3.new(0.8, 0.8, len), base * CFrame.new(sx * (width / 2 - 0.8), -0.8, -len / 2), PAL.timberDark)
-		local posts = math.max(2, math.floor(len / 10))
+		-- stringers under the plank ends, segment by segment along the curve
 		local prev
 		for k = 0, posts do
 			local d = k * len / posts
-			local top = (base * CFrame.new(sx * (width / 2 + 0.2), 3.2, -d)).Position
-			P(m, Vector3.new(0.7, 3.8, 0.7), base * CFrame.new(sx * (width / 2 + 0.2), 1.4, -d), PAL.timber)
+			local p = at(d, sx * (width / 2 - 0.7), -0.75).Position
 			if prev then
-				local mid = (prev + top) / 2 - Vector3.new(0, 0.6, 0) -- rope sag
-				rod(m, prev, mid, 0.22, Color3.fromHex("C9B48A"))
-				rod(m, mid, top, 0.22, Color3.fromHex("C9B48A"))
+				cord(m, prev, p, 0.55, PAL.timberDark)
 			end
-			prev = top
+			prev = p
+		end
+		local rail, knee
+		for k = 0, posts do
+			local d = k * len / posts
+			local endPost = k == 0 or k == posts
+			local h = endPost and 5.2 or 3.9
+			local w = endPost and 1.1 or 0.6
+			local foot = at(d, sx * (width / 2 + 0.25))
+			P(m, Vector3.new(w, h, w), foot * CFrame.new(0, h / 2 - 0.6, 0), endPost and PAL.timberDark or PAL.timber).Material = Enum.Material.Wood
+			P(m, Vector3.new(w + 0.3, 0.3, w + 0.3), foot * CFrame.new(0, h - 0.45, 0), PAL.timberDark) -- cap
+			local r = foot * CFrame.new(0, 3.1, 0)
+			local kr = foot * CFrame.new(0, 1.5, 0)
+			if rail then
+				local mid = (rail.Position + r.Position) / 2 - Vector3.new(0, 0.55, 0)
+				cord(m, rail.Position, mid, 0.2, ROPE)
+				cord(m, mid, r.Position, 0.2, ROPE)
+				cord(m, knee.Position, kr.Position, 0.16, ROPE)
+				-- hangers from the handrail down to the deck edge
+				for q = 1, 2 do
+					local t = q / 3
+					local top = rail.Position:Lerp(mid, t * 2) -- first half
+					if t > 0.5 then
+						top = mid:Lerp(r.Position, (t - 0.5) * 2)
+					end
+					local dd = (k - 1 + t) * len / posts
+					cord(m, top, at(dd, sx * (width / 2 + 0.25), 0).Position, 0.1, ROPE)
+				end
+			end
+			rail, knee = r, kr
+			-- a red paper lantern hanging off each gate post, facing into the span
+			if endPost then
+				local inward = k == 0 and -1 or 1
+				local hang = foot * CFrame.new(0, h - 0.9, inward * 0.9)
+				cord(m, (foot * CFrame.new(0, h - 0.5, 0)).Position, hang.Position + Vector3.new(0, 0.6, 0), 0.08, PAL.timberDark)
+				local lantern = P(m, Vector3.new(0.9, 1.1, 0.9), hang * CFrame.new(0, -0.1, 0), Color3.fromHex("D9412F"), nil, Enum.PartType.Ball)
+				ghost(lantern)
+				P(m, Vector3.new(0.6, 0.18, 0.6), hang * CFrame.new(0, 0.48, 0), PAL.gold)
+				local light = Instance.new("PointLight")
+				light.Color = Color3.fromRGB(255, 150, 90)
+				light.Range = 9
+				light.Brightness = 0.9
+				light.Shadows = false
+				light.Parent = lantern
+			end
 		end
 	end
 	m.Parent = parent
