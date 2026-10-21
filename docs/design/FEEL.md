@@ -4,7 +4,7 @@ The juice layer (D16). Reference: research on top Roblox clicker/tycoon games (2
 small rewards, rewards fly to the counter, the most frequent sound is the quietest.
 
 ## Buying (src/client/Build.client.luau)
-- Pads are concept C "Formation" (D26, playable mock `docs/art/mocks/pads_formation_mock.html`). The
+- Pads are concept C "Formation" (D27, playable mock `docs/art/mocks/pads_formation_mock.html`). The
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every
   client draws it: a carved slate disc, a stone octagon, a gold heart holding a PointLight, and two Neon
   rune rings (12 + 8 segments) turning in opposite ways. About 550 triangles a pad; rings only turn

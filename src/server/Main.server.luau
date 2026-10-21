@@ -10,6 +10,7 @@ local Style = require(script.Parent:WaitForChild("Style"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
+local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -665,39 +666,70 @@ end
 -- Saving (SaveStore holds the session lock) ------------------------------------------
 local pendingSaves = 0
 
--- `release` = the last save of this session (leave or close); later saves are skipped.
+-- One save in flight per player (Gladiator R5): a second UpdateAsync on the same key would queue
+-- behind the first and spend budget for nothing. `release` = the last save of this session (leave
+-- or close); later saves are skipped. `urgent` (a receipt) waits its turn and writes; a plain
+-- autosave is skipped while another save of this player is in flight (that one is just as fresh).
 -- Returns true when the write landed.
-local function save(s, release)
+local function save(s, release, urgent)
 	if not store or not s.loaded or s.released then
+		return false
+	end
+	if s.saving and not release and not urgent then
+		return false
+	end
+	pendingSaves += 1 -- counted while it waits too, so BindToClose waits for it
+	while s.saving do
+		task.wait(0.1)
+	end
+	if s.released then
+		pendingSaves -= 1
 		return false
 	end
 	if release then
 		s.released = true
 	end
+	s.saving = true
 	s.data.last = os.time()
 	local snapshot = deepCopy(s.data) -- the session keeps changing while UpdateAsync yields
-	pendingSaves += 1
-	local ok = SaveStore.save(store, s.userId, s.sessionId, snapshot, release)
+	local ok, landed = pcall(SaveStore.save, store, s.userId, s.sessionId, snapshot, release)
+	s.saving = false
 	pendingSaves -= 1
-	return ok
+	return ok and landed
+end
+
+-- Additive backfill: a key the save lacks takes its default (nested tables too), a stored value is
+-- never replaced or retyped. Maps where a missing key means "not owned" default to {} so nothing
+-- is invented in them.
+local function backfill(d, default)
+	for k, v in default do
+		if d[k] == nil then
+			d[k] = if type(v) == "table" then deepCopy(v) else v
+		elseif type(v) == "table" and type(d[k]) == "table" then
+			backfill(d[k], v)
+		end
+	end
+	return d
 end
 
 local function load(player, sessionId)
-	local data = nil
-	local loaded = true
+	local data, loaded, reason = nil, true, nil
 	if store then
-		data, loaded = SaveStore.load(store, player.UserId, sessionId, function()
+		data, loaded, reason = SaveStore.load(store, player.UserId, sessionId, function()
 			return player.Parent ~= nil
 		end)
 	end
-	local d = defaultData()
-	if type(data) == "table" then
-		for k, v in data do
-			d[k] = v
-		end
-	end
-	return d, loaded
+	local d = if type(data) == "table" then backfill(data, defaultData()) else defaultData()
+	return d, loaded, reason
 end
+
+-- A join whose save could not be loaded is asked to rejoin, never played without saving (Gladiator
+-- R5: fail closed; progress made in such a session would be lost).
+local KICK_TEXT = {
+	locked = "Your sect is still open on another server. Please rejoin in a minute.",
+	newer = "This server is out of date. Please rejoin to get a new one.",
+	error = "We could not load your sect right now. Please rejoin.",
+}
 
 -- Join / leave -----------------------------------------------------------------------
 local function freePlot()
@@ -734,7 +766,14 @@ local function onJoin(player)
 	player:SetAttribute("PlotIndex", plot.index) -- clients place their effects with it
 	setPlotLabel(plot, player.DisplayName .. "'s Sect")
 	local sessionId = SaveStore.newSessionId()
-	local data, loaded = load(player, sessionId)
+	local data, loaded, reason = load(player, sessionId)
+	if store and not loaded and player.Parent then
+		plot.owner = nil
+		setPlotLabel(plot, "Unclaimed Peak")
+		Telemetry.custom(player, "SaveIssue", reason or "error")
+		player:Kick(KICK_TEXT[reason] or KICK_TEXT.error)
+		return
+	end
 	if not player.Parent then
 		plot.owner = nil
 		setPlotLabel(plot, "Unclaimed Peak")
@@ -1056,7 +1095,9 @@ Shop.init({
 	sessions = sessions,
 	rate = rate,
 	publish = publish,
-	save = save,
+	save = function(s) -- a receipt: waits for any save in flight, then writes (urgent)
+		return save(s, false, true)
+	end,
 	canSave = function()
 		return store ~= nil
 	end,
@@ -1069,6 +1110,7 @@ Shop.init({
 setupLighting()
 buildPlots()
 
+ServerHealth.start()
 Players.PlayerAdded:Connect(onJoin)
 Players.PlayerRemoving:Connect(onLeave)
 for _, p in Players:GetPlayers() do
@@ -1162,11 +1204,24 @@ while true do
 	end
 	if sinceSave >= Config.AUTOSAVE then
 		sinceSave = 0
+		local due = {}
 		for player, s in sessions do
 			Telemetry.source(player, s.data, s.earned or 0, "income")
 			Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
 			s.earned, s.orbEarned = 0, 0
-			task.spawn(save, s)
+			table.insert(due, s)
 		end
+		-- staggered, and only with budget: player saves never starve leave saves and receipts
+		task.spawn(function()
+			for _, s in due do
+				local waited = 0
+				while DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync) < Config.SAVE_MIN_BUDGET and waited < 10 do
+					task.wait(1)
+					waited += 1
+				end
+				task.spawn(save, s)
+				task.wait(Config.SAVE_STAGGER)
+			end
+		end)
 	end
 end

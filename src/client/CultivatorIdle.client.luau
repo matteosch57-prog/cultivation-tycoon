@@ -6,9 +6,11 @@
 -- switch off beyond GLOW studs, which keeps a full platform cheap on phones.
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local PerfMark = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("PerfMark"))
 
 local TAG = "Cultivator"
 local FAR = 150
+local BODY_R = 6 -- studs: a figure with its aura, for the on-screen test
 local GLOW = 90
 local BREATH = 4.5 -- seconds per breath
 local SWAY = 7.3 -- seconds per side-to-side sway
@@ -88,6 +90,7 @@ RunService.RenderStepped:Connect(function()
 	if not cam then
 		return
 	end
+	local t0 = PerfMark.begin()
 	local eye = cam.CFrame.Position
 	local now = os.clock()
 	local parts, cfs = {}, {}
@@ -101,7 +104,7 @@ RunService.RenderStepped:Connect(function()
 		end
 		if not m.Parent then
 			figures[m] = nil
-		elseif dist < FAR then
+		elseif dist < FAR and PerfMark.onScreen(cam, f.centre, BODY_R) then -- nothing moves unseen
 			local t = now + f.phase
 			local b = math.sin(t / BREATH * TAU)
 			local s = math.sin(t / SWAY * TAU)
@@ -151,4 +154,5 @@ RunService.RenderStepped:Connect(function()
 	if #parts > 0 then
 		workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
 	end
+	PerfMark.finish("cultivators", t0)
 end)

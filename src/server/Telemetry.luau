@@ -35,6 +35,18 @@ Telemetry.EVENTS = {
 		fields = { "pill | orb", "realm (realmBucket)" },
 		question = "Are the pill and the qi orbs used, or ignored?",
 	},
+	ServerHealth = {
+		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
+		question = "Are servers healthy: the worst 5 minutes of each server, does it slow down as it fills?",
+	},
+	DataStorePressure = {
+		fields = { "budget | throttle", "budget: request type; throttle: exp | srv | key | queue | throttled | overlimit", "players (playersBucket)" },
+		question = "Do saves run short of DataStore budget or get throttled, and at what server size?",
+	},
+	SaveIssue = {
+		fields = { "locked | error | newer (a load that could not take the save: the player was asked to rejoin)" },
+		question = "How often does a join fail to load a save, and why?",
+	},
 	Shop = {
 		fields = {
 			"open | prompt | bought | closed",

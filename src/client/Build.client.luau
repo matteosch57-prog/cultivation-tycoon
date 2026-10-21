@@ -1,4 +1,4 @@
--- Step-on pads and the buying feel (concept C "Formation", D26, mock in docs/art/mocks/).
+-- Step-on pads and the buying feel (concept C "Formation", D27, mock in docs/art/mocks/).
 -- Every pad is an invisible server anchor tagged "StepPad"; this script draws it: a carved stone
 -- array with two rune rings that turn while you can afford it, a light in its gold heart, a
 -- beacon beam and a price card. Walking up, the building's preview floats in pieces that gather

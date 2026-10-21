@@ -82,7 +82,8 @@ local page = "boosts"
 
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
-	local touch = playerGui:FindFirstChild("TouchGui") ~= nil or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+	local forced = player:GetAttribute("HudDevice") -- "phone" / "pc" forces a layout (testing)
+	local touch = if forced then forced == "phone" else (playerGui:FindFirstChild("TouchGui") ~= nil or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled))
 	if touch then
 		return math.clamp(vp.Y / 390, 0.78, 1.1)
 	end
@@ -166,7 +167,8 @@ local function build()
 	Toy.S = computeScale()
 	ui = { items = {} }
 	local vp = workspace.CurrentCamera.ViewportSize
-	ui.both = vp.Y >= px(520) -- room for both rows (computers), else two pages (phones)
+	-- room for both rows (computers), else two pages (phones)
+	ui.both = vp.Y >= px(520) and player:GetAttribute("HudDevice") ~= "phone"
 
 	local veil = Instance.new("TextButton")
 	veil.Text = ""
@@ -180,7 +182,7 @@ local function build()
 		close()
 	end)
 
-	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), AutomaticSize = Enum.AutomaticSize.XY })
+	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(14))
 	-- title + close
 	local head = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1, Rotation = -2 })

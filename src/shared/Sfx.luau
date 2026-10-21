@@ -18,7 +18,7 @@ local DEFS = {
 	hallBell = { id = 9125597331, vol = 0.7, pitchVar = 0.02, from = 0.92, to = 4.4 }, -- temple bell: Main Hall level up
 	expand = { id = 9120769331, vol = 0.28, pitchVar = 0.02, from = 0.28, to = 3.3 }, -- low boom: the island grows
 	deny = { id = 9113537815, vol = 0.16, pitchVar = 0.08, from = 0.07 }, -- soft boink: can't afford yet
-	-- step-on pads (formation array, D26); onsets and levels to be measured in Play (R13)
+	-- step-on pads (formation array, D27); onsets and levels to be measured in Play (R13)
 	padWake = { id = 9113122722, vol = 0.12, pitchVar = 0.05, to = 1.6 }, -- Angel Sparkle 2: the preview wakes as you walk up
 	padReady = { id = 9126073001, vol = 0.3, pitchVar = 0.03, from = 0.11 }, -- the orb ding, quieter: a pad just became affordable
 	padSpin = { id = 9116426727, vol = 0.35, pitchVar = 0.04, to = 0.9 }, -- Magic Transformation Flutter 2: rings spin up under you

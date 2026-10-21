@@ -72,7 +72,13 @@ the log as a D-number.
   the top rarities stay a chase (before, recruits stopped after realm 1). Realm 10 is the long goal:
   ~day 21 for two 30 min sessions a day, ~day 11 with the three passes
   (`docs/research/2026-10-21_economy_math.md`). Reincarnation after realm 10 is not designed yet.
-- **D26** Step-on pads = concept C "Formation" (owner pick of A Jade Seal / B Lotus / C Formation in a
+- **D26** Performance and data health normalised on Gladiator RNG's lessons (owner: "make sure game is
+  fluid and performant, normalize those techniques"; R16, R17). Frame jobs are timed (PerfMark) and
+  the `/perf` log names hitches; cultivators and qi orbs stop moving off screen. Saves: one in flight
+  per player, budgeted and staggered autosaves, recursive backfill, and a failed load now asks the
+  player to rejoin instead of playing without saving (replaces that part of D19: progress made in
+  such a session was silently lost). ServerHealth logs server fps, memory and DataStore budgets.
+- **D27** Step-on pads = concept C "Formation" (owner pick of A Jade Seal / B Lotus / C Formation in a
   playable 3D mock, `docs/art/mocks/pads_formation_mock.html`; "C amazing, with nice premium light, text
   clear and easy, normalize colors"). Research (`docs/research/2026-10-21_pad_feel.md`): pad tycoons
   rarely preview the building, so the gathering preview is where this game stands out. Pads are drawn
