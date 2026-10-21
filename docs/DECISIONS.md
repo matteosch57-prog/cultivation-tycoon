@@ -102,3 +102,13 @@ the log as a D-number.
   take no sworn seat. Economy check kept x3 and realm 10: a regular player's later lives take 5 to 7
   days each and stay that length at any depth (x2 walls). Research and pacing:
   `docs/research/2026-10-21_reincarnation_design.md`; system: [REINCARNATION](design/REINCARNATION.md).
+- **D30** Spirit Tide and playtime gifts (tycoon study `docs/research/2026-10-21_tycoon_study.md`,
+  Grow a Garden's server-wide moments and DevForum session advice; owner picked mock A for both): every
+  `TIDE_INTERVAL` all peaks on a server earn `TIDE_MULT` x for `TIDE_DURATION` with a heads-up and a
+  countdown line under the qi counter; gift button pays `GIFT_VALUE` seconds of income after
+  `GIFT_TIMES` of play in a session. Stealing was left out (breaks "fair and calm").
+- **D31** Karma Shop (owner: "have a karma shop"): six capped permanent nodes in `Config.DAO` bought
+  with karma ([REINCARNATION](design/REINCARNATION.md)); economy check: all maxed makes lives ~35%
+  shorter, going deeper still beats resetting often. The reincarnation screen keeps text to the road,
+  one NEXT line, two numbers and buttons (owner: "too much text"); every currency amount shows its
+  icon (R18).

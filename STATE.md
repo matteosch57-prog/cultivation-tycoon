@@ -29,6 +29,10 @@ checked in Studio Play (ROADMAP).
   (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
   new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
 
+- **Endless progression (D29, D31, on integration):** reincarnation from realm 10, Past Lives,
+  karma and the Karma Shop are built and checked in Studio Play (mock save); Spirit Tide and playtime
+  gifts (D30) too. Left: per-realm visuals and the two later Karma Shop nodes (ROADMAP M3).
+
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
 `[Perf]` console rows (they close ROADMAP "Phone performance").

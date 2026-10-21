@@ -19,3 +19,10 @@ Tick a line only when it is built, checked in Studio Play, and (where it says so
 - [ ] Return hooks: daily reward, offline screen, realm leaderboard, settings (volumes)
 - [ ] Store page: icon, thumbnails, description, age questionnaire; first-session analytics
 - [ ] Owner phone playtest, fixes, publish
+- [x] Spirit Tide and playtime gifts (D30)
+
+## M3 Endless progression (D29, D31)
+- [x] Reincarnation from realm 10: Past Lives x3 per deeper realm, karma, sworn disciple, realm names
+- [x] Rebirth chip and Reincarnation screen (road, NEXT, gains), Karma Shop (six nodes), currency icons
+- [ ] Per-realm visuals for realms 6 to 10+ (research doc section 4)
+- [ ] More Karma Shop nodes: start a life at realm 3 / 5, build without walking (Heavenly Hands)
