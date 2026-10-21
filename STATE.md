@@ -20,6 +20,13 @@ checked in Studio Play (ROADMAP).
   (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
   ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
+- **Shop** (D24, D28; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), a "Sect
+  Market" island on every peak with step-on pads, 3 passes and 10 products granted through saved
+  receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 13
+  items listed in `docs/design/SHOP_ITEMS.md` (type, name, description, price, icon in
+  `art/shop_icons/`) and paste each id into `Config.SHOP_PASSES` / `SHOP_PRODUCTS`; then a Studio
+  test purchase checks the prompt and ProcessReceipt.
+
 ## Next action
 Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.

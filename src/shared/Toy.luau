@@ -250,9 +250,7 @@ end
 
 -- Currency marks (owner rule: every price or amount shows its currency's icon)
 function Toy.qiIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:qi(32, 30, 1)
-	return ic.box
+	return Toy.icon(parent, "qi", size, props) -- the shared currency drawing (ICONS.qi)
 end
 function Toy.robuxIcon(parent, size, props)
 	local ic = Icon.new(parent, size, props)

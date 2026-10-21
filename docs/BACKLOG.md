@@ -17,3 +17,6 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 
 ## Docs
 - No doc gate script yet (Gladiator's `tools/check_docs.py` is the model).
+- HUD toasts still print amounts as words ("+3.6K Qi", "Gift +720 Qi", Qi pack and orb toasts in
+  `Hud.client`): switch them to `Toy.amount` with the qi / karma icon (owner rule: every amount shows
+  its currency icon). Rebase first; several threads edit Hud.client.
