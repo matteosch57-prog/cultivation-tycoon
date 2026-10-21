@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Toy = {}
 Toy.S = 1
@@ -223,9 +224,24 @@ function ICONS.bag(ic)
 	ic:detail(18, 36, 3, Color3.new(1, 1, 1), 0.3)
 end
 
--- Draws icon `key` in a size x size box; returns the box.
+-- a disciple in a robe of `robe` (the HUD's disciple drawing)
+local function disciple(ic, robe)
+	ic:rect(32, 52, 38, 22, robe, 9)
+	ic:circle(32, 12, 7, Toy.INK)
+	ic:circle(32, 29, 13, Color3.fromHex("F2CFAE"))
+	ic:rect(32, 21, 24, 7, Toy.INK, 3, 0, false).ZIndex = 3
+	ic:rect(32, 47, 8, 12, Color3.new(1, 1, 1), 2, 0, false).ZIndex = 3
+end
+
+-- Draws icon `key` in a size x size box; returns the box. A shop item with a `rarity` draws that
+-- disciple in its rarity colour.
 function Toy.icon(parent, key, size, props)
 	local ic = Icon.new(parent, size, props)
+	local item = Config.shopItem(key)
+	if item and item.rarity then
+		disciple(ic, Config.rarity(item.rarity).color)
+		return ic.box
+	end
 	local badge = ICONS[key] and ICONS[key](ic)
 	if badge then
 		Toy.text(ic.box, badge, math.floor(size * 0.36), Color3.fromHex("FFE36B"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.72, 0.8), ZIndex = 4 })

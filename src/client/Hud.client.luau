@@ -885,6 +885,12 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 	elseif kind == "shopPill" then
 		toast(string.format("Instant Pill: 2x Qi for %d s!", a), GOLD, 2.5)
 		return
+	elseif kind == "shopDisciple" then
+		toast((b and "New disciple: " or "New disciple resting: ") .. a .. "!", Config.rarity(a).color, 3)
+		return
+	elseif kind == "shopFull" then
+		toast("Your sect is full of stronger disciples", PINK, 2)
+		return
 	elseif kind == "shopOwned" then
 		toast("You already own " .. a, Color3.fromHex("9FF5C8"), 1.6)
 		return

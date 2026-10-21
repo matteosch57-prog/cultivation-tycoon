@@ -10,6 +10,7 @@ local Style = require(script.Parent:WaitForChild("Style"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
+local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 
 local store = nil
@@ -124,10 +125,17 @@ end
 --              radius, owner (Player?) }
 local plots = {}
 
--- Spots that must stay free of trees and boulders: the entrance path, every pad, the Main
--- Hall's largest footprint (level 5 with wings and towers) and the pagoda behind it.
+-- direction (peak frame) from the peak centre to its shop island's bridge
+local SHOP_DIR = Vector2.new(Config.SHOP_ISLAND_AT.X, Config.SHOP_ISLAND_AT.Z).Unit
+
+-- Spots that must stay free of trees and boulders: the entrance path, the shop bridge's foot, every
+-- pad, the Main Hall's largest footprint (level 5 with wings and towers) and the pagoda behind it.
 local function keepClear(x, z)
 	if math.abs(x) < 10 and z > 0 then
+		return true
+	end
+	local v = Vector2.new(x, z)
+	if v:Dot(SHOP_DIR) > 0 and math.abs(v.X * SHOP_DIR.Y - v.Y * SHOP_DIR.X) < 7 then
 		return true
 	end
 	if math.abs(x) < 38 and z > -58 and z < -14 then
@@ -179,6 +187,9 @@ local function buildGrounds(plot, radius)
 	local hubEdge = dir * (Config.HUB_RADIUS - 3) + Vector3.new(0, BASE_Y, 0)
 	local peakEdge = plot.center - dir * (radius - 3)
 	Style.bridge(g, hubEdge + Vector3.new(0, 0.05, 0), peakEdge + Vector3.new(0, 0.05, 0), 8)
+	-- and one from the peak rim to its shop island (Shop.buildIsland)
+	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
+	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
 	-- entrance archway carrying the owner's name
 	local sign = Style.archway(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
 	sign.Name = "Sign"
@@ -254,6 +265,7 @@ local function buildPlots()
 		built.Parent = folder
 		local plot = { index = i, frame = frame, center = center, folder = folder, built = built, owner = nil }
 		buildGrounds(plot, Config.ISLAND_RADIUS)
+		Shop.buildIsland(plot)
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()
@@ -783,7 +795,7 @@ local function onJoin(player)
 		end
 		return
 	end
-	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId }
+	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Shop.onJoin(player, s) -- yields for the pass checks
 	if not player.Parent then
@@ -862,6 +874,30 @@ local function roll()
 	return Config.RARITIES[1]
 end
 
+local function byBonus(a, b)
+	return Config.rarity(a).bonus > Config.rarity(b).bonus
+end
+
+-- Seat a new disciple (a recruit, or one bought in the Shop). Returns true when it works a seat;
+-- false = the sect is full of stronger ones and it left (`force` keeps it on the bench instead).
+local function addDisciple(s, name, force)
+	local list = s.data.disciples
+	local max = maxDisciples(s)
+	table.sort(list, byBonus)
+	local kept = #list < max or Config.rarity(name).bonus > Config.rarity(list[max]).bonus
+	if kept or force then
+		-- full: the newcomer takes the weakest working seat (it joins and the list re-sorts)
+		table.insert(list, name)
+	end
+	table.sort(list, byBonus)
+	-- keep at most as many as the largest possible sect (benched ones beyond the slots)
+	while #list > Config.DISCIPLE_CAP do
+		table.remove(list)
+	end
+	buildDisciples(s)
+	return kept
+end
+
 recruitFn.OnServerInvoke = function(player)
 	local s = sessions[player]
 	if not s or s.recruiting then
@@ -880,28 +916,7 @@ recruitFn.OnServerInvoke = function(player)
 	s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
 	Telemetry.sink(player, s.data, cost, "recruit")
 	local r = roll()
-	local kept = true
-	local list = s.data.disciples
-	local max = maxDisciples(s)
-	local function byBonus(a, b)
-		return Config.rarity(a).bonus > Config.rarity(b).bonus
-	end
-	table.sort(list, byBonus)
-	if #list < max then
-		table.insert(list, r.name)
-	elseif r.bonus > Config.rarity(list[max]).bonus then
-		-- full: the newcomer takes the weakest working seat (it joins and the list re-sorts)
-		table.insert(list, r.name)
-	else
-		kept = false
-	end
-	table.sort(list, byBonus)
-	-- keep at most as many as the largest possible sect (benched ones beyond the slots)
-	local cap = Config.MAX_DISCIPLES + Config.VIP_SLOTS + #Config.SLOT_PADS
-	while #list > cap do
-		table.remove(list)
-	end
-	buildDisciples(s)
+	local kept = addDisciple(s, r.name)
 	publish(player)
 	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
 	Telemetry.funnel(player, s.data)
@@ -1103,10 +1118,17 @@ Shop.init({
 	end,
 	notify = notify,
 	passChanged = passChanged,
+	addDisciple = function(s, name)
+		local kept = addDisciple(s, name, true) -- paid for: never turned away
+		publish(s.player)
+		return kept
+	end,
 	remotes = remotes,
+	style = Style,
 	styleP = Style.P,
 	palette = Style.PAL,
-}, world:WaitForChild("Hub"), BASE_Y)
+	cultivators = Cultivators,
+})
 setupLighting()
 buildPlots()
 

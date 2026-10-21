@@ -150,13 +150,23 @@ Config.SHOP_PRODUCTS = {
 	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
 	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
 	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
+	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
+	-- when full). The top rarities stay earn-only (D27).
+	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder" },
+	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal" },
+	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial" },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 Config.VIP_SLOTS = 1
+Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
--- World shop: purple pads in a ring around the hub cauldron (one per key, in this order)
-Config.SHOP_PADS = { "x2", "auto", "vip", "pill", "pack2", "pack3" }
-Config.SHOP_PAD_RADIUS = 18
+-- World shop: every peak has its own shop island (src/server/Shop.luau), in the peak's local frame
+-- at SHOP_ISLAND_AT (beside the entrance, clear of the largest peak and the neighbours), joined to
+-- the peak's rim by a bridge. 2x Qi stands at its entrance; the other items ring its lawn.
+Config.SHOP_ISLAND_AT = Vector3.new(50, 0, 115)
+Config.SHOP_ISLAND_RADIUS = 22
+Config.SHOP_ITEM_PADS = { "auto", "vip", "pill", "pack1", "pack2", "pack3" } -- around the lawn, left to right
+Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial" } -- in the pavilion
 
 function Config.shopItem(key)
 	for _, list in { Config.SHOP_PASSES, Config.SHOP_PRODUCTS } do
