@@ -94,6 +94,8 @@ local function add(m)
 		elseif p.Name == "Sword" then
 			table.insert(f.swords, p)
 			table.insert(f.swordBase, p.CFrame)
+		elseif p.Name == "MountSword" then
+			f.mount, f.mountBase = p, p.CFrame -- a flyer's sword rides the float with its rider
 		elseif p.Name == "HaloCircle" then
 			-- the halo circle stands just behind the head, wherever the template put the head
 			f.haloCircle = p
@@ -267,6 +269,10 @@ RunService.RenderStepped:Connect(function(dt)
 			if f.haloCircle then
 				table.insert(parts, f.haloCircle)
 				table.insert(cfs, CFrame.new(f.haloPos + Vector3.new(0, up, 0)) * f.haloTurn * CFrame.Angles(0, now * 0.4, 0))
+			end
+			if f.mount then
+				table.insert(parts, f.mount)
+				table.insert(cfs, f.mountBase + Vector3.new(0, up, 0))
 			end
 			-- the spirit swords hover with the figure, each on its own small rhythm
 			for i, sword in f.swords do
