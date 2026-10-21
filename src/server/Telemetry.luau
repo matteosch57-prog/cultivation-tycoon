@@ -51,6 +51,10 @@ Telemetry.EVENTS = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",
 	},
+	KarmaShop = {
+		fields = { "node key (Config.DAO)", "level bought", "life (lifeBucket)" },
+		question = "Which Karma Shop nodes do players buy first, and in which life?",
+	},
 	Reincarnate = {
 		fields = { "life that ended (lifeBucket)", "realm reached (deepBucket)", "hours played in that life (hourBucket)" },
 		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",

@@ -17,7 +17,16 @@ through `rate` (live and offline). It changes only when a life ends deeper than 
 
 ## Karma (choices)
 `Config.karmaFor(realm, builtShare)` paid at each reincarnation: ~10 at realm 10, x2.15 per realm deeper,
-and the share of the current realm's pads counts. Spent in the Dao Tree (not built yet).
+and the share of the current realm's pads counts (x(1 + `DAO_ECHO` x Soul Echo level)).
+
+## Karma Shop (the Dao Tree, owner: "a karma shop")
+`Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
+`data.dao`, published as `Dao_<key>`. Sworn Bond (+1 disciple follows you per level), Disciple Seat
+(+1 slot), Old Foundations (a new life starts with every realm 1 building), Elixir Mastery (a brewed
+pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline cap per
+level), Soul Echo (+`DAO_ECHO` karma per level). Nothing copies a paid pass. Opened from the
+"Karma Shop" button under Reincarnate; tiles in the Shop's language (icon, name, one line, level pips,
+price). Event `KarmaShop`: node, level, life.
 
 ## Screen and HUD
 - HUD: a "Rebirth 3/10" chip beside the realm name above the progress bar; gold and wobbling from

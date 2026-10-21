@@ -49,6 +49,9 @@ giftFn.Parent = remotes
 local reincFn = Instance.new("RemoteFunction")
 reincFn.Name = "Reincarnate"
 reincFn.Parent = remotes
+local daoFn = Instance.new("RemoteFunction")
+daoFn.Name = "DaoBuy"
+daoFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -308,13 +311,23 @@ end
 
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0 }
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {} }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
 -- benched, e.g. after a breakthrough resets the Quarters). `s.passes` = game passes owned (Shop).
+-- Karma Shop node level (0 = not bought)
+local function dao(d, key)
+	return (d.dao or {})[key] or 0
+end
+
 local function maxDisciples(s)
-	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip)
+	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip) + dao(s.data, "seat")
+end
+
+-- karma a reincarnation would pay now (Soul Echo included)
+local function karmaGain(d, share)
+	return math.floor(Config.karmaFor(math.max(d.realm, Config.REINC_REALM), share) * (1 + Config.DAO_ECHO * dao(d, "echo")))
 end
 
 local function discipleMult(s)
@@ -409,7 +422,10 @@ local function publish(player)
 	player:SetAttribute("SoulPeak", d.soulPeak or 0)
 	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
 	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
-	player:SetAttribute("ReincKarma", Config.karmaFor(math.max(d.realm, Config.REINC_REALM), d.realm >= Config.REINC_REALM and built / #Config.PADS or 0))
+	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / #Config.PADS or 0))
+	for _, n in Config.DAO do
+		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
+	end
 	local ls = player:FindFirstChild("leaderstats")
 	if ls then
 		ls.Realm.Value = d.realm
@@ -834,7 +850,7 @@ local function onJoin(player)
 	end
 
 	-- offline qi
-	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP)
+	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
 	local offlineGain = 0
 	if away > 60 then
 		offlineGain = math.floor(rate(s, true) * away)
@@ -981,7 +997,7 @@ pillFn.OnServerInvoke = function(player)
 	end
 	s.data.pillReady = false
 	s.data.pillTimer = 0
-	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION
+	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
 	return true
@@ -1012,7 +1028,7 @@ local function reincarnate(player, s)
 	if d.realm < Config.REINC_REALM then
 		return nil
 	end
-	local gained = Config.karmaFor(d.realm, builtShare(d))
+	local gained = karmaGain(d, builtShare(d))
 	local lifeSec = (d.playSec or 0) - (d.lifeStart or 0)
 	Telemetry.custom(player, "Reincarnate", Telemetry.lifeBucket(d.lives or 1), Telemetry.deepBucket(d.realm), Telemetry.hourBucket(lifeSec))
 	print(string.format("[Tycoon] %d reincarnated: life %d ended at realm %d, +%d karma", player.UserId, d.lives or 1, d.realm, gained))
@@ -1022,6 +1038,12 @@ local function reincarnate(player, s)
 	d.lifeStart = d.playSec or 0
 	d.realm = 1
 	d.owned = {}
+	if dao(d, "foundation") > 0 then
+		-- Old Foundations: the new life starts with every realm 1 building (skips the walk)
+		for _, pad in Config.PADS do
+			d.owned[pad.id] = true
+		end
+	end
 	d.qi = 0
 	d.pillReady = false
 	d.pillTimer = 0
@@ -1035,7 +1057,7 @@ local function reincarnate(player, s)
 		if (bought[name] or 0) > 0 then
 			bought[name] -= 1
 			table.insert(kept, name)
-		elseif sworn < Config.SWORN_BASE then
+		elseif sworn < Config.SWORN_BASE + dao(d, "sworn") then
 			sworn += 1
 			table.insert(kept, name)
 		end
@@ -1048,6 +1070,30 @@ local function reincarnate(player, s)
 	task.spawn(save, s, false, true)
 	notify:FireAllClients("reincarnate", player.DisplayName, d.lives)
 	return { karma = gained, lives = d.lives, pastLives = Config.pastLivesMult(d.soulPeak) }
+end
+
+-- Karma Shop: buy the next level of one node (server checks the price and the cap, R9)
+daoFn.OnServerInvoke = function(player, key)
+	local s = sessions[player]
+	local node = type(key) == "string" and Config.daoNode(key)
+	if not s or not node then
+		return false
+	end
+	local d = s.data
+	d.dao = d.dao or {}
+	local lv = d.dao[key] or 0
+	local cost = node.costs[lv + 1]
+	if not cost or (d.karma or 0) < cost then
+		return false
+	end
+	d.karma -= cost
+	d.dao[key] = lv + 1
+	if key == "seat" then
+		buildDisciples(s) -- a benched disciple takes the new seat
+	end
+	publish(player)
+	Telemetry.custom(player, "KarmaShop", key, lv + 1, Telemetry.lifeBucket(d.lives or 1))
+	return true
 end
 
 reincFn.OnServerInvoke = function(player)

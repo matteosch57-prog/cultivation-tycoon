@@ -59,6 +59,28 @@ function Config.pastLivesMult(soulPeak)
 end
 -- ~10 at realm 10, x2.15 per realm deeper (a realm costs x10: the cube root of the qi it took);
 -- `built` = share of this realm's pads owned (0..1) so progress inside a realm counts too
+-- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
+-- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
+Config.DAO = {
+	{ key = "sworn", name = "Sworn Bond", line = "+1 disciple follows you", costs = { 10, 30 } },
+	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
+	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 20 } },
+	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
+	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
+	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
+}
+Config.DAO_PILL_SECONDS = 30 -- elixir, per level
+Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
+Config.DAO_ECHO = 0.1 -- echo, karma per level
+function Config.daoNode(key)
+	for _, n in Config.DAO do
+		if n.key == key then
+			return n
+		end
+	end
+	return nil
+end
+
 function Config.karmaFor(realm, built)
 	return math.floor(10 * 10 ^ ((realm - Config.REINC_REALM + (built or 0)) / 3))
 end

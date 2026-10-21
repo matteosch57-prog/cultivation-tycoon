@@ -2,6 +2,7 @@
 -- the NEXT step, and what a new life keeps and gains. Opened by the HUD's Rebirth button
 -- (PlayerGui.ReincOpen, a BindableEvent). Same language as the Shop: no board, toy pieces over a
 -- dark veil. The server decides (R9): the button only asks; a second tap confirms.
+-- A second page, the Karma Shop (Config.DAO), spends karma on permanent nodes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -22,6 +23,9 @@ local GREY = Color3.fromHex("8C8296")
 local GO = Color3.fromHex("B06BFF")
 local CONFIRM = Color3.fromHex("FF8A5C")
 local LOCKED = Color3.fromHex("C9C2D3")
+local KARMA = Color3.fromHex("D9B8FF")
+local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF" }
+local TILT = { -2, 1.5, -1, 2, -1.5, 1 }
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ReincOpen"
@@ -39,6 +43,7 @@ gui.Parent = playerGui
 local ui = {}
 local armedUntil = 0 -- second tap within this time confirms
 local busy = false
+local page = "road" -- "road" | "karma"
 
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
@@ -90,8 +95,64 @@ local function link(parent, order, done)
 	return l
 end
 
+-- Karma Shop icons, drawn from shapes in a 64-unit box (Toy.Icon)
+local DRAW = {}
+function DRAW.sworn(ic)
+	for _, x in { 22, 42 } do
+		ic:rect(x, 46, 16, 20, Color3.fromHex("5096FF"), 6)
+		ic:circle(x, 26, 9, Color3.fromHex("F2CFAE"))
+	end
+end
+function DRAW.seat(ic)
+	ic:rect(32, 48, 44, 12, Color3.fromHex("E65B4F"), 6)
+	ic:rect(32, 34, 14, 18, Color3.fromHex("9A6BFF"), 6)
+	ic:circle(32, 20, 9, Color3.fromHex("F2CFAE"))
+end
+function DRAW.foundation(ic)
+	ic:rect(32, 44, 36, 20, Color3.fromHex("FFF4DC"), 2)
+	ic:rect(32, 28, 50, 12, Color3.fromHex("C0392B"), 4)
+	ic:rect(32, 47, 10, 14, Color3.fromHex("8A5A3C"), 2)
+end
+function DRAW.elixir(ic)
+	ic:rect(23, 32, 22, 20, Color3.fromHex("E65B4F"), 10)
+	ic:rect(41, 32, 22, 20, Color3.fromHex("FFF4DC"), 10)
+	ic.box.Rotation = -35
+end
+function DRAW.meditation(ic)
+	ic:circle(30, 32, 20, Color3.fromHex("FFE36B"))
+	ic:detail(40, 26, 16, Color3.fromHex(TILE.meditation))
+end
+function DRAW.echo(ic)
+	ic:circle(32, 32, 22, Color3.fromHex("9A6BFF"))
+	ic:circle(32, 32, 13, Color3.fromHex("D9B8FF"))
+	ic:circle(32, 32, 5, Color3.fromHex("FFFFFF"))
+end
+
+local function refreshKarma()
+	local have = player:GetAttribute("Karma") or 0
+	ui.karma.Text = commas(have) .. " Karma"
+	for _, t in ui.tiles do
+		local lv = player:GetAttribute("Dao_" .. t.node.key) or 0
+		local cost = t.node.costs[lv + 1]
+		for i, pip in t.pips do
+			pip.BackgroundColor3 = i <= lv and GOLD or Color3.fromHex("3A2D40")
+		end
+		if not cost then
+			t.price.Text = "Max"
+			t.button.BackgroundColor3 = LOCKED
+		else
+			t.price.Text = commas(cost)
+			t.button.BackgroundColor3 = have >= cost and JADE or LOCKED
+		end
+	end
+end
+
 local function refresh()
 	if not ui.body then
+		return
+	end
+	if page == "karma" then
+		refreshKarma()
 		return
 	end
 	local realm = player:GetAttribute("Realm") or 1
@@ -151,7 +212,86 @@ local function refresh()
 	end
 end
 
-local function build()
+local build -- forward
+local function goTo(p)
+	page = p
+	armedUntil = 0
+	build()
+end
+
+local function head(body, title)
+	local h = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1, Rotation = -2 })
+	Toy.list(h, true, px(14))
+	if page == "karma" then
+		local bHolder, bBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), JADE, px(10))
+		bHolder.LayoutOrder = 0
+		text(bBtn, "<", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		bBtn.Activated:Connect(function()
+			goTo("road")
+		end)
+	end
+	text(h, title, px(32), page == "karma" and KARMA or GOLD, { LayoutOrder = 1 })
+	local xHolder, xBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), Color3.fromHex("FF6B5E"), px(10))
+	xHolder.LayoutOrder = 2
+	text(xBtn, "X", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	xBtn.Activated:Connect(function()
+		close()
+	end)
+end
+
+-- the Karma Shop page: one tile per node (icon, name, a short line, level pips, price)
+local function buildKarma(body)
+	head(body, "Karma Shop")
+	ui.karma = text(body, "", px(20), KARMA, { LayoutOrder = 2 })
+	ui.tiles = {}
+	local rows = {}
+	for i = 1, 2 do
+		rows[i] = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 + i })
+		Toy.list(rows[i], true, px(18), { VerticalAlignment = Enum.VerticalAlignment.Top })
+	end
+	for i, node in Config.DAO do
+		local col = Toy.frame(rows[i <= 3 and 1 or 2], { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, Rotation = TILT[i] })
+		Toy.list(col, false, px(2))
+		local holder, btn = Toy.button(col, UDim2.fromOffset(px(58), px(58)), Color3.fromHex(TILE[node.key] or "C9FFE4"), px(16))
+		holder.LayoutOrder = 1
+		local ic = Toy.Icon.new(btn, px(44), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+		DRAW[node.key](ic)
+		text(col, node.name, px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		text(col, node.line, px(11), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
+		local pipRow = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
+		Toy.list(pipRow, true, px(3))
+		local pips = {}
+		for l = 1, #node.costs do
+			local pip = Toy.frame(pipRow, { Size = UDim2.fromOffset(px(9), px(9)), BackgroundTransparency = 0, LayoutOrder = l })
+			Toy.corner(pip, UDim.new(1, 0))
+			local st = Instance.new("UIStroke")
+			st.Color = Toy.INK
+			st.Thickness = px(2)
+			st.Parent = pip
+			pips[l] = pip
+		end
+		local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(70), px(26)), JADE, px(9))
+		pHolder.LayoutOrder = 5
+		local price = text(pBtn, "", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local function buy()
+			if busy then
+				return
+			end
+			busy = true
+			local ok, done = pcall(function()
+				return remotes.DaoBuy:InvokeServer(node.key)
+			end)
+			busy = false
+			Sfx.play(ok and done and "buyChime" or "deny")
+			refreshKarma()
+		end
+		btn.Activated:Connect(buy)
+		pBtn.Activated:Connect(buy)
+		table.insert(ui.tiles, { node = node, pips = pips, price = price, button = pBtn })
+	end
+end
+
+build = function()
 	gui:ClearAllChildren()
 	Toy.S = computeScale()
 	ui = {}
@@ -171,16 +311,12 @@ local function build()
 	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(8))
 	ui.body = body
-
-	local head = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1, Rotation = -2 })
-	Toy.list(head, true, px(14))
-	text(head, "Reincarnation", px(32), GOLD, { LayoutOrder = 1 })
-	local xHolder, xBtn = Toy.button(head, UDim2.fromOffset(px(34), px(34)), Color3.fromHex("FF6B5E"), px(10))
-	xHolder.LayoutOrder = 2
-	text(xBtn, "X", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	xBtn.Activated:Connect(function()
-		close()
-	end)
+	if page == "karma" then
+		buildKarma(body)
+		refresh()
+		return
+	end
+	head(body, "Reincarnation")
 
 	local roadRow = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(roadRow, true, px(6))
@@ -222,6 +358,14 @@ local function build()
 			refresh()
 		end
 	end)
+	-- the Karma Shop: what karma is for
+	local kHolder, kBtn = Toy.button(body, UDim2.fromOffset(px(160), px(34)), KARMA, px(11))
+	kHolder.LayoutOrder = 16
+	kHolder.Rotation = -1.5
+	text(kBtn, "Karma Shop", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	kBtn.Activated:Connect(function()
+		goTo("karma")
+	end)
 	refresh()
 end
 
@@ -230,6 +374,7 @@ local function open()
 		return
 	end
 	armedUntil = 0
+	page = "road"
 	build()
 	gui.Enabled = true
 	Sfx.play("toast")
@@ -244,7 +389,11 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-for _, a in { "Realm", "Built", "Karma", "Lives", "ReincKarma", "PastLives", "NextPastLives" } do
+local watched = { "Realm", "Built", "Karma", "Lives", "ReincKarma", "PastLives", "NextPastLives" }
+for _, n in Config.DAO do
+	table.insert(watched, "Dao_" .. n.key)
+end
+for _, a in watched do
 	player:GetAttributeChangedSignal(a):Connect(function()
 		if gui.Enabled then
 			refresh()
