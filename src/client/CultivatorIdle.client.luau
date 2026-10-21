@@ -5,7 +5,9 @@
 -- now and then, the face (a dynamic head) meditates with closed eyes, blinks them open now and then
 -- and opens them with a faint smile to watch a close player, a ring pulses out on each in-breath (tier 8+), the orbs of light
 -- circle, the magic circles turn, the halo circle and the spirit swords float with the figure, and
--- the Primordial's aura runs through every colour. Local only (nothing replicates): the motion stops
+-- the Primordial's aura runs through every colour. Life: now and then the right hand lifts into a
+-- raised mudra, a qi surge sends the orbs racing and the circles spinning while the figure draws in a
+-- deep breath, and a visitor who comes close gets a small bow. Local only (nothing replicates): the motion stops
 -- beyond FAR studs and the aura layers switch off beyond GLOW studs, which keeps phones cheap.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -25,6 +27,10 @@ local SWAY = 7.3 -- seconds per side-to-side sway
 local NOD = 9.1 -- seconds per head drift
 local LEGS = { HumanoidRootPart = true, LowerTorso = true, LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true }
 local HEADWEAR = { [Enum.AccessoryType.Hair] = true, [Enum.AccessoryType.Face] = true, [Enum.AccessoryType.Hat] = true }
+local RIGHT_ARM = { RightUpperArm = true, RightLowerArm = true, RightHand = true }
+local TAU = math.pi * 2
+local MUDRA = math.rad(55) -- how far the right arm lifts toward the chest
+local SURGE = 2.5 -- seconds a qi surge lasts
 
 local player = Players.LocalPlayer
 local figures = {}
@@ -68,6 +74,17 @@ local function add(m)
 		end
 	end
 	f.centre = f.pivot.Position
+	-- the right arm can lift into a raised mudra: it turns about the shoulder
+	local upper = avatar:FindFirstChild("RightUpperArm")
+	if upper then
+		f.shoulder = f.pivot:ToObjectSpace(upper.CFrame * CFrame.new(0, upper.Size.Y / 2, 0))
+		f.arm = {}
+		for i, p in f.body do
+			if RIGHT_ARM[p.Name] then
+				f.arm[i] = true
+			end
+		end
+	end
 	for _, p in m:GetChildren() do
 		if p.Name == "AuraOrb" then
 			table.insert(f.orbs, p)
@@ -100,6 +117,12 @@ local function add(m)
 	f.face = head:FindFirstChildOfClass("FaceControls")
 	f.eyes, f.smile = 1, 0
 	f.nextOpen = os.clock() + 2 + math.random() * 6
+	-- life: a raised-hand mudra now and then, a qi surge now and then, a small bow to a visitor
+	f.mudra, f.nextMudra = 0, os.clock() + 6 + math.random() * 12
+	f.surgeAt, f.nextSurge = -100, os.clock() + 8 + math.random() * 14
+	f.bowAt = -100
+	f.orbAngle, f.circleAngle = math.random() * TAU, 0
+	f.rimFill = f.rim and f.rim.FillTransparency
 	figures[m] = f
 end
 
@@ -113,7 +136,6 @@ for _, m in CollectionService:GetTagged(TAG) do
 	task.spawn(add, m)
 end
 
-local TAU = math.pi * 2
 local MAX_YAW = math.rad(55)
 
 RunService.RenderStepped:Connect(function(dt)
@@ -145,16 +167,35 @@ RunService.RenderStepped:Connect(function(dt)
 			local t = now + f.phase
 			local b = math.sin(t / BREATH * TAU)
 			local s = math.sin(t / SWAY * TAU)
-			local up = HOVER + BOB * math.sin(t / FLOAT * TAU)
+			-- a qi surge: the figure draws in a deep breath, orbs and circles race, the rim flares
+			if f.lit and now > f.nextSurge then
+				f.surgeAt = now
+				f.nextSurge = now + 14 + math.random() * 14
+				if f.motes then
+					f.motes:Emit(14)
+				end
+			end
+			local k = math.max(0, 1 - (now - f.surgeAt) / SURGE)
+			k = k * k * (3 - 2 * k) -- smooth in and out
+			local up = HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k
 			local lift = f.pivot + Vector3.new(0, up, 0)
 			for i, p in f.legs do
 				table.insert(parts, p)
 				table.insert(cfs, lift * f.legsBase[i])
 			end
-			local body = lift * CFrame.new(0, 0.05 * b, 0) * CFrame.Angles(math.rad(-1.5 * b), 0, math.rad(1.2 * s))
+			-- the raised mudra: the right hand lifts to the chest for a few breaths, then returns
+			local raise = now > f.nextMudra and now < f.nextMudra + 3.5
+			if now > f.nextMudra + 3.5 then
+				f.nextMudra = now + 10 + math.random() * 12
+			end
+			f.mudra += ((raise and 1 or 0) - f.mudra) * math.min(1, dt * 3)
+			-- a small bow to a visitor, once each time someone comes close
+			local bow = math.sin(math.pi * math.clamp((now - f.bowAt) / 1.2, 0, 1)) * math.rad(10)
+			local body = lift * CFrame.new(0, 0.05 * b + 0.06 * k, 0) * CFrame.Angles(math.rad(-1.5 * b) - bow * 0.4 - math.rad(3) * k, 0, math.rad(1.2 * s))
+			local arm = f.shoulder and body * f.shoulder * CFrame.Angles(-MUDRA * f.mudra, 0, 0) * f.shoulder:Inverse()
 			for i, p in f.body do
 				table.insert(parts, p)
-				table.insert(cfs, body * f.bodyBase[i])
+				table.insert(cfs, (arm and f.arm[i] and arm or body) * f.bodyBase[i])
 			end
 			-- the head watches a player who comes close, otherwise glances aside now and then
 			local yaw, pitch = 0, 0
@@ -167,6 +208,10 @@ RunService.RenderStepped:Connect(function(dt)
 					watching = true
 				end
 			end
+			if watching and not f.watched then
+				f.bowAt = now
+			end
+			f.watched = watching
 			if not watching then
 				if now > f.nextGlance then
 					f.glance = (f.glance == 0) and math.rad(math.random(-35, 35)) or 0
@@ -194,7 +239,7 @@ RunService.RenderStepped:Connect(function(dt)
 				f.face.LeftLipCornerPuller, f.face.RightLipCornerPuller = f.smile, f.smile
 			end
 			local n = math.sin(t / NOD * TAU)
-			local neck = body * f.neck * CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
+			local neck = body * f.neck * CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch - bow + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
 			for i, p in f.head do
 				table.insert(parts, p)
 				table.insert(cfs, neck * f.headBase[i])
@@ -203,9 +248,14 @@ RunService.RenderStepped:Connect(function(dt)
 				f.halo.Position = f.haloBase + Vector3.new(0, up, 0)
 			end
 			-- the magic circles turn (the second the other way), the halo circle about its own axis
+			f.circleAngle += dt * 0.25 * (1 + 4 * k)
+			f.orbAngle += dt * 0.6 * (1 + 3 * k)
 			for _, c in f.circles do
 				table.insert(parts, c.part)
-				table.insert(cfs, c.base * CFrame.Angles(0, now * 0.25 * c.dir, 0))
+				table.insert(cfs, c.base * CFrame.Angles(0, f.circleAngle * c.dir, 0))
+			end
+			if f.rim and f.lit then
+				f.rim.FillTransparency = f.rimFill - 0.3 * k
 			end
 			if f.haloCircle then
 				table.insert(parts, f.haloCircle)
@@ -216,12 +266,13 @@ RunService.RenderStepped:Connect(function(dt)
 				table.insert(parts, sword)
 				table.insert(cfs, f.swordBase[i] + Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0))
 			end
-			local spin = CFrame.Angles(0, now * 0.6, 0)
+			-- the orbs circle (alternate directions from 4 orbs); in a surge they race and rise
+			local spin = CFrame.Angles(0, f.orbAngle, 0)
 			for i, orb in f.orbs do
 				local dir = (i % 2 == 0) and -1 or 1
-				local turn = #f.orbs > 3 and CFrame.Angles(0, now * 0.6 * dir, 0) or spin
+				local turn = #f.orbs > 3 and CFrame.Angles(0, f.orbAngle * dir, 0) or spin
 				table.insert(parts, orb)
-				table.insert(cfs, CFrame.new(f.centre + Vector3.new(0, up + 0.25 * math.sin(now * 1.3 + i), 0) + turn * f.orbBase[i]))
+				table.insert(cfs, CFrame.new(f.centre + Vector3.new(0, up + 0.25 * math.sin(now * 1.3 + i) + 0.8 * k, 0) + turn * f.orbBase[i]))
 			end
 			if f.lit then
 				if f.motes and now > f.nextPuff then

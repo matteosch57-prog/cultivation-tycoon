@@ -51,8 +51,8 @@ local ROBES = {
 		{ { 136565350420707, DRESS } }, -- Hanfu-Inspired Imperial Gown-Purple
 		{ { 124671367097250, DRESS } }, -- Flowing Cloud Hanfu Robe-Gold
 		{ AZURE },
-		{ { 106614697052382, DRESS }, RED_CLOAK }, -- Empress Hanfu Robe - Garnet under the red cloak
-		{ { 72320280506296, DRESS } }, -- Chang'e's Moon Palace Flowing Hanfu-Amber
+		{ { 125031843258125, DRESS }, RED_CLOAK }, -- Ethereal Blossom flowing sleeves Hanfu Gown-Black under the red cloak
+		{ { 73084763578818, DRESS } }, -- Ancient Gold Koi Empress Hanfu - Red (red-gold, the Emperor's colours)
 		{ { 80805967098465, DRESS }, WHITE_CLOAK }, -- Chang'e's Moon Palace Flowing Hanfu-Creamy under the white cloak
 	},
 }
@@ -122,6 +122,30 @@ local function tierOf(rarity, rarities)
 	return 1
 end
 
+-- Ornaments grow with the rarity (owner 2026-10-22: "make sure clothing is good and evolving, same for
+-- ornaments"): blossom hairpins for the lotus maiden from Inner, a jade bead necklace from Core, the
+-- sun crown (Xi Guan) from Immortal and the great gold crown (Jin Guan) from Heavenly Emperor.
+local HAT, NECKLACE = Enum.AccessoryType.Hat, Enum.AccessoryType.Neck
+local HAIRPINS = { 14123045587, HAT } -- Traditional Blossom Hairpins in Red (kaixiuuu)
+local JADE_BEADS = { 376527115, NECKLACE } -- Jade Necklace with Shell Pendant (Roblox)
+local SUN_CROWN = { 94324972899443, HAT } -- Traditional Headpiece | Xi Guan (RUYI)
+local GOLD_CROWN = { 105721861896087, HAT } -- Traditional Headpiece | Jin Guan (RUYI)
+local function ornaments(look, tier)
+	local list = {}
+	if look == "lotus" and tier >= 2 and tier < 5 then
+		table.insert(list, HAIRPINS)
+	end
+	if tier >= 3 and look ~= "lotus" then -- the fan already sits at the lotus maiden's neck
+		table.insert(list, JADE_BEADS)
+	end
+	if tier >= 8 then
+		table.insert(list, GOLD_CROWN)
+	elseif tier >= 5 then
+		table.insert(list, SUN_CROWN)
+	end
+	return list
+end
+
 local function describe(look, tier)
 	local spec = LOOK[look]
 	local d = Instance.new("HumanoidDescription")
@@ -148,6 +172,9 @@ local function describe(look, tier)
 	end
 	for _, prop in spec.props or {} do
 		table.insert(list, { AssetId = prop[1], AccessoryType = prop[2], IsLayered = false })
+	end
+	for _, o in ornaments(look, tier) do
+		table.insert(list, { AssetId = o[1], AccessoryType = o[2], IsLayered = false })
 	end
 	d:SetAccessories(list, true)
 	return d
