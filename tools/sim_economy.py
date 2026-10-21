@@ -61,7 +61,7 @@ KINDS = {
 }
 
 
-def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=()):
+def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=(), workers=None):
     """reinc (proposal, branch reincarnation) = dict(lives, pl_base, sworn, start): reincarnate on
     reaching realm max(10, peak + 1); Past Lives = pl_base ^ max(0, peak - 9) on all qi; the `sworn`
     best disciples follow; start = "none" | "built1" (realm 1 pads owned) | "r3" | "r5"."""
@@ -82,6 +82,9 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
     gate = reinc.get("gate", 10) if reinc else 10  # 10 = on entering realm 10; 11 = realm 10 finished
     life_target = max(gate, peak + 1)
 
+    # workers (Config.WORKERS): dict(pads, max, bonus, cost); hired on owned buildings, bought like a
+    # pad whenever one is the cheapest thing on offer; sent home at every breakthrough
+    hired = {}
     soul = 0  # soulPeak: deepest realm of a FINISHED life, stamped at reincarnation (branch reincarnation)
 
     def pl():  # live=True: the proposal's live peak; default = the built rule (soulPeak)
@@ -105,7 +108,8 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
         return 1 + sum(sorted(disciples, reverse=True)[:max_disc()])
 
     def base_rate():
-        return (cfg["BASE_RATE"] + sum(pads[i]["income"] for i in owned)) * cfg["REALM_INCOME_MULT"] ** (realm - 1) * dmult() * pl()
+        wk = sum(n * workers["bonus"] * pads[i]["income"] for i, n in hired.items()) if workers else 0
+        return (cfg["BASE_RATE"] + wk + sum(pads[i]["income"] for i in owned)) * cfg["REALM_INCOME_MULT"] ** (realm - 1) * dmult() * pl()
 
     def cmult():  # Config.costMult
         return cm(realm)
@@ -162,6 +166,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
                                           recruits=cur["recruits"], dmult=dmult())
                         realm += 1
                         qi, owned, pill_ready, pill_timer, boost = 0.0, set(), False, 0, 0
+                        hired = {}
                         cur = dict(start=played, wait=0, longest=0, gap=0, recruits=0)
                         if reinc and life > 1 and realm == old_peak:
                             catchup = day + 1 - life_day  # days into this life to re-reach the old peak
@@ -186,6 +191,17 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
                 else:
                     target = min(choices, key=lambda p: p["cost"])
                     target_cost = target["cost"] * cmult()
+                    if workers:  # a worker cheaper than every open pad is bought instead
+                        hire = [(pads[i]["cost"] * workers["cost"][hired.get(i, 0)] * cmult(), i) for i in workers["pads"]
+                                if i in owned and hired.get(i, 0) < workers["max"]]
+                        if hire and min(hire)[0] < target_cost:
+                            wc, wid = min(hire)
+                            if qi >= wc:
+                                qi -= wc
+                                hired[wid] = hired.get(wid, 0) + 1
+                                cur["longest"], cur["gap"] = max(cur["longest"], cur["gap"]), 0
+                                continue
+                            target_cost = wc
                     n = cur["recruits"] if cfg.get("RECRUIT_RESET", 1) else recruited
                     rm = cfg["RECRUIT_REALM_MULT"] ** (realm - 1) if "RECRUIT_REALM_MULT" in cfg else cmult()
                     rc = cfg["RECRUIT_BASE"] * rm * (1 + n * cfg["RECRUIT_GROWTH"])
