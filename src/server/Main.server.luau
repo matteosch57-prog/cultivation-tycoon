@@ -7,6 +7,7 @@ local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Co
 local Builders = require(script.Parent:WaitForChild("Builders"))
 local Style = require(script.Parent:WaitForChild("Style"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
+local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 
 local store = nil
 do
@@ -546,6 +547,8 @@ refreshPads = function(player, s)
 				local income = pad.income * Config.incomeMult(s.data.realm)
 				s.pads[pad.id] = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
+					Telemetry.sink(player, s.data, cost, pad.id)
+					Telemetry.funnel(player, s.data)
 					-- BuiltAt tells clients to play the assemble animation for this model
 					-- a Main Hall level replaces the one before it
 					local lv = tonumber(pad.id:match("^mainhall(%d)$"))
@@ -589,8 +592,11 @@ refreshPads = function(player, s)
 		local nextName = Config.realmName(s.data.realm + 1)
 		local bt = { id = "breakthrough", x = 0, z = 14 }
 		s.pads.breakthrough = makePad(player, s, bt, cost, "Breakthrough: " .. nextName, 0, function()
+			Telemetry.sink(player, s.data, cost, "breakthrough")
 			s.data.realm += 1
 			s.data.best = math.max(s.data.best or 1, s.data.realm)
+			Telemetry.realm(player, s.data.realm)
+			Telemetry.funnel(player, s.data)
 			s.data.owned = {}
 			s.data.qi = 0
 			s.data.pillReady = false
@@ -694,7 +700,12 @@ local function onJoin(player)
 	if away > 60 then
 		offlineGain = math.floor(rate(data) * away)
 		data.qi += offlineGain
+		Telemetry.source(player, data, offlineGain, "offline", true)
 	end
+	data.sessions = (data.sessions or 0) + 1
+	s.joinedAt = os.clock()
+	s.earned, s.orbEarned = 0, 0
+	Telemetry.funnel(player, data)
 
 	rebuild(s)
 	refreshPads(player, s)
@@ -719,6 +730,15 @@ local function onLeave(player)
 		return
 	end
 	sessions[player] = nil
+	local built = 0
+	for id in s.data.owned do
+		if Config.padById(id) then
+			built += 1
+		end
+	end
+	Telemetry.source(player, s.data, s.earned or 0, "income")
+	Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
+	Telemetry.custom(player, "SessionEnd", Telemetry.builtBucket(built), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())), s.data.sessions == 1 and "first" or "return")
 	save(s, true)
 	s.plot.built:ClearAllChildren()
 	s.plot.owner = nil
@@ -757,6 +777,7 @@ recruitFn.OnServerInvoke = function(player)
 	s.recruiting = true
 	s.data.qi -= cost
 	s.data.recruited += 1
+	Telemetry.sink(player, s.data, cost, "recruit")
 	local r = roll()
 	local kept = true
 	local list = s.data.disciples
@@ -781,6 +802,8 @@ recruitFn.OnServerInvoke = function(player)
 	end
 	buildDisciples(s)
 	publish(player)
+	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+	Telemetry.funnel(player, s.data)
 	s.recruiting = false
 	return { ok = true, rarity = r.name, kept = kept }
 end
@@ -795,6 +818,7 @@ pillFn.OnServerInvoke = function(player)
 	s.data.pillTimer = 0
 	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION
 	publish(player)
+	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
 	return true
 end
 
@@ -871,6 +895,8 @@ local function checkOrbs(player, s, hrp)
 		elseif (orb.Position - hrp.Position).Magnitude < 4.5 then
 			local gain = math.floor(rate(s.data) * Config.ORB_VALUE)
 			s.data.qi += gain
+			s.orbEarned = (s.orbEarned or 0) + gain
+			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
 			notify:FireClient(player, "orb", gain, orb.Position)
 			orb:Destroy()
 			table.remove(s.orbs, i)
@@ -971,7 +997,10 @@ while true do
 	sinceSave += dt
 	for player, s in sessions do
 		local d = s.data
-		d.qi += rate(d) * dt
+		local gain = rate(d) * dt
+		d.qi += gain
+		s.earned = (s.earned or 0) + gain
+		d.playSec = (d.playSec or 0) + dt
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then
 			d.pillTimer = (d.pillTimer or 0) + dt
@@ -992,7 +1021,10 @@ while true do
 	end
 	if sinceSave >= Config.AUTOSAVE then
 		sinceSave = 0
-		for _, s in sessions do
+		for player, s in sessions do
+			Telemetry.source(player, s.data, s.earned or 0, "income")
+			Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
+			s.earned, s.orbEarned = 0, 0
 			task.spawn(save, s)
 		end
 	end

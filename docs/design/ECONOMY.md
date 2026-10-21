@@ -31,6 +31,11 @@ shrinks the island back.
 - **Qi orbs** (Qi Gathering Array): one every `ORB_INTERVAL`, up to `ORB_MAX`; worth `ORB_VALUE` seconds
   of income.
 
+## Pacing
+`python tools/sim_pacing.py` replays these rules from Config and prints the minutes to each milestone
+for an active, a casual and an idle player (`--set KEY=VALUE` tries a value first, `--trace` lists
+every purchase). Evidence and the sweep: `docs/research/2026-10-21_first_session_onboarding.md`.
+
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,
 owned pads, qi and the pill reset; disciples stay. Names in `REALMS`.

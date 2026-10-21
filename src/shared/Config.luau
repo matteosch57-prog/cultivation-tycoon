@@ -26,7 +26,7 @@ Config.REALMS = {
 }
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 Config.REALM_COST_MULT = 8 -- costs x8 per realm
-Config.BREAKTHROUGH_COST = 45000
+Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.

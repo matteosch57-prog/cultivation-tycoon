@@ -38,6 +38,24 @@ a live one is retried `SAVE_LOCK_WAITS` times, `SAVE_LOCK_WAIT` s apart. Every D
 (v0 = the bare data table). A record newer than this server, a failed load or a lock that stays held
 disables saving for that session. Errors log as `[Tycoon][save] event=<name> user=<id> ...`.
 
+## Telemetry (`src/server/Telemetry.luau`)
+`Telemetry.EVENTS` is the catalogue (name, fields, question); `Telemetry.custom` refuses a name not in
+it. Fields are built from positional values into `CustomField01..03` only (Roblox ignores any other
+key), always bucketed (`minuteBucket`, `builtBucket`, `realmBucket`), never a UserId or free text. A
+custom event name is permanent once a published server sends it (100 per experience): add a field
+value before a new name. Studio prints `[Tycoon][analytics] ...` instead of sending (Roblox drops
+Studio events). One server budget for every event type; events over it are counted and the count
+printed once a minute.
+- **Onboarding funnel** (`Telemetry.FUNNEL`, once per player, in order): Joined, First building, Main
+  Hall, Five buildings, Disciple Hall, First recruit, First expansion, Celestial Palace, Breakthrough.
+  `data.funnel` = steps logged, so a return visit never re-logs. `FunnelTime` gives the minutes played
+  (`data.playSec`) at each step.
+- **Custom:** `SessionEnd` (buildings bucket, session minutes, first | return), `Recruit` (rarity, realm,
+  kept | benched), `Feature` (pill | orb, realm).
+- **Economy** (currency `Qi`): sinks per pad id, `recruit`, `breakthrough`; sources summed and sent
+  with each autosave and on leave (`income`, `orb`) plus `offline` (TimedReward) on join.
+- **Progression:** `Realm` Complete with the realm left behind, on each breakthrough.
+
 ## Studio test hooks (Studio only, ServerStorage)
 `DebugGrant(player, qi)` · `DebugReset(player)` · `DebugSet(player, key, value)` (`orbNow` spawns an
 orb). Client: player attribute `HudDevice` = `pc` / `phone` forces a HUD layout.
