@@ -7,13 +7,6 @@ the log as a D-number.
 - **Q1** Music bed: Guzheng (1), Temple Of Lihangin (2) or Harmonious Cycles (3). The owner picks by
   ear with the Workspace attribute `MusicTrack`.
 
-- **Q3** Realm pacing after the first breakthrough: today realms 2 and 3 go faster than realm 1
-  (disciples carry over). Keep (rebirth games shorten runs) or raise the realm cost ratio
-  (sweep in `docs/research/2026-10-21_first_session_onboarding.md`). Update: the whole-climb sim
-  (`docs/research/2026-10-21_economy_math.md`) shows realms 2 and 3 are short but realm 8+ each take
-  ~2.4x the last (realm 10 = a day of play). Branch `economy` restarts the recruit price each realm
-  and steps costs x4.5 after realm 5 (late realms ~1.3x the last); the owner keeps or reverts it.
-
 ## Log (all 2026-10-21, the first session)
 - **D1** Theme: cultivation. Compared against aquarium (an old leader, fading), pet shop (the live
   leader, direct competition), wizard (open but combat-heavy). Cultivation is niche, but the owner
@@ -72,3 +65,10 @@ the log as a D-number.
   from code, because passes are regionally priced. The 2x Qi pass also doubles offline qi (economy
   check: the three passes together give ~1.5 to 2x pace and skip no content). Design in
   MONETIZATION "How the shop works".
+- **D25** Realm pacing (closes Q3; owner: "first realms should be fast, then it should get hard; after
+  realm 10 we will offer reincarnation"). Costs x5 per realm through realm 5, then x10
+  (`REALM_COST_MULT`, `REALM_COST_LATE`, `REALM_COST_LATE_FROM`); the recruit price's +50% steps
+  restart at each breakthrough (`data.realmRecruits`) so recruiting stays a qi sink in every realm and
+  the top rarities stay a chase (before, recruits stopped after realm 1). Realm 10 is the long goal:
+  ~day 21 for two 30 min sessions a day, ~day 11 with the three passes
+  (`docs/research/2026-10-21_economy_math.md`). Reincarnation after realm 10 is not designed yet.
