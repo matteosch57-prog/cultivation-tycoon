@@ -10,7 +10,6 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
   far peaks pop out).
 
 ## Look
-- Pagoda (and the Main Hall level 5 towers) still use `Style.pagoda`, not the kit.
 - Our own skybox (the Creator Store one is a re-upload that could be moderated).
 - HUD: the disciples card is a panel (R4 says no panels); the far price card's feature line is ~8 px.
 

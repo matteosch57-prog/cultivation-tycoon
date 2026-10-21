@@ -274,7 +274,7 @@ function Kit.mainHall(parent, cf, level, title)
 	end
 	if L.towers then
 		for _, sx in { -1, 1 } do
-			Style.pagoda(m, cf * CFrame.new(sx * 22, 0, -16), 6, 1, 3, 3)
+			Kit.pagoda(m, cf * CFrame.new(sx * 22, 0, -16), 6, 1, 3, 3)
 		end
 	end
 	m.Parent = parent
@@ -472,6 +472,41 @@ function Kit.moonGate(parent, cf)
 		P(m, Vector3.new(2.4, 1.6, 2), cf * CFrame.new(-6 + i * 3.2, 0.8, -4 - (i % 2) * 2) * CFrame.Angles(0.2, i, 0.1), PAL.rock)
 	end
 	Style.sakura(m, cf * CFrame.new(8, 0, -8), 77)
+	m.Parent = parent
+	return m
+end
+
+-- Pagoda on the kit: square tiers, each a plaster body with kit columns and bracket sets at the
+-- corners, a lattice panel on every face (a door on the ground floor front) and a kit roof with
+-- tile ends. Same stacking as the old Style.pagoda, so a pagoda bought in two halves (tiers
+-- fromTier..toTier) still lines up.
+function Kit.pagoda(parent, cf, baseW, fromTier, toTier, totalTiers)
+	local m = Instance.new("Model")
+	m.Name = "Pagoda"
+	if fromTier == 1 then
+		Kit.platform(m, cf, baseW + 6, baseW + 6, 2.3, 4.5)
+	end
+	local y = 2.3
+	for i = 1, totalTiers do
+		local w = baseW * (1 - (i - 1) * 0.16)
+		local h = (i == 1) and 6 or 4.2
+		local at = cf * CFrame.new(0, y, 0)
+		if i >= fromTier and i <= toTier then
+			P(m, Vector3.new(w, h, w), at * CFrame.new(0, h / 2, 0), PAL.plaster, Enum.Material.Plaster)
+			local eave = columnsWithBrackets(m, at, { -w / 2, w / 2 }, { -w / 2, w / 2 }, h - 0.94, 0.6)
+			P(m, Vector3.new(w + 0.6, 0.7, w + 0.6), at * CFrame.new(0, h - 0.6, 0), Kit.RED)
+			P(m, Vector3.new(w + 0.7, 0.18, w + 0.7), at * CFrame.new(0, h - 1.0, 0), PAL.gold)
+			for k = 0, 3 do
+				local face = at * CFrame.Angles(0, k * math.pi / 2, 0)
+				local door = i == 1 and k == 0
+				local pw = w * (door and 0.42 or 0.36)
+				local ph = door and h - 1.9 or h - 2.6
+				Kit.panel(m, face * CFrame.new(0, door and 0.1 or 0.9, w / 2 + 0.05), pw, ph, nil)
+			end
+			kitRoof(m, at * CFrame.new(0, eave, 0), w, w, w * 0.22, 2.6, 5)
+		end
+		y += h + 0.9 + w * 0.22 * 0.35
+	end
 	m.Parent = parent
 	return m
 end
