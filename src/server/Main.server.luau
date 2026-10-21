@@ -1014,10 +1014,7 @@ local function reincarnate(player, s)
 	d.realmRecruits = 0
 	-- disciples bought in the Shop are permanent (data.boughtDisciples = { [rarity] = count }) and
 	-- do not use a sworn seat; then the SWORN_BASE strongest of the rest follow (list is sorted)
-	local bought = {} -- a copy: counted down as the bought ones are found in the list
-	for name, n in d.boughtDisciples or {} do
-		bought[name] = n
-	end
+	local bought = table.clone(d.boughtDisciples or {}) -- counted down as they are found in the list
 	local kept, sworn = {}, 0
 	for _, name in d.disciples do
 		if (bought[name] or 0) > 0 then
