@@ -18,23 +18,30 @@ local CUSHION = Color3.fromHex("B8352B"):Lerp(Color3.new(0, 0, 0), 0.3)
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local SEAT = 1.8 -- cushion top above the ground
 
--- Catalog layered clothing (any experience may dress an NPC in it). Index = rarity tier 1..5:
--- white, green, blue, purple, gold. Creator: Lucky Koi unless noted. Checked as captures, since
--- a dark robe hides the rarity colour.
+-- Catalog layered clothing (any experience may dress an NPC in it). Index = rarity tier 1..7:
+-- white, green, blue, purple, gold, celestial teal, dao crimson; each tier lists its layers, robe
+-- first. Creator: Lucky Koi unless noted. Checked as captures, since a dark robe hides the rarity.
+local SHIRT, DRESS, JACKET = Enum.AccessoryType.Shirt, Enum.AccessoryType.DressSkirt, Enum.AccessoryType.Jacket
+local AZURE = { 94369290663213, JACKET } -- Mint Blue Azure Breeze Hanfu (Japan Kimono)
+local RED_CLOAK = { 115620162427301, JACKET } -- Traditional Chinese Red Hanfu Cloak (RUYI)
 local ROBES = {
 	male = {
-		{ 79303524577143, Enum.AccessoryType.Shirt }, -- Male Long Robe Hanfu-White
-		{ 100632011366877, Enum.AccessoryType.Shirt }, -- Male Wuxia Hanfu-Green (the long robe green read black)
-		{ 138259484709999, Enum.AccessoryType.Shirt }, -- Male Wuxia Hanfu-Blue (the long robe blue read black)
-		{ 88444695833424, Enum.AccessoryType.Shirt }, -- Male Long Robe Hanfu-Purple
-		{ 113946197012814, Enum.AccessoryType.Shirt }, -- Male Wuxia Hanfu-Gold
+		{ { 79303524577143, SHIRT } }, -- Male Long Robe Hanfu-White
+		{ { 100632011366877, SHIRT } }, -- Male Wuxia Hanfu-Green (the long robe green read black)
+		{ { 138259484709999, SHIRT } }, -- Male Wuxia Hanfu-Blue (the long robe blue read black)
+		{ { 88444695833424, SHIRT } }, -- Male Long Robe Hanfu-Purple
+		{ { 113946197012814, SHIRT } }, -- Male Wuxia Hanfu-Gold
+		{ AZURE },
+		{ { 131611803410283, SHIRT }, RED_CLOAK }, -- Male Long Robe Hanfu-Black Red under the red cloak
 	},
 	female = {
-		{ 12388422808, Enum.AccessoryType.DressSkirt }, -- White Cultivator's Robes (Nexus Exchange)
-		{ 76684958127170, Enum.AccessoryType.DressSkirt }, -- Flowing Cloud Hanfu Robe-Green
-		{ 124497512666896, Enum.AccessoryType.DressSkirt }, -- Empress Hanfu Robe - Sapphire
-		{ 136565350420707, Enum.AccessoryType.DressSkirt }, -- Hanfu-Inspired Imperial Gown-Purple
-		{ 124671367097250, Enum.AccessoryType.DressSkirt }, -- Flowing Cloud Hanfu Robe-Gold
+		{ { 12388422808, DRESS } }, -- White Cultivator's Robes (Nexus Exchange)
+		{ { 76684958127170, DRESS } }, -- Flowing Cloud Hanfu Robe-Green
+		{ { 124497512666896, DRESS } }, -- Empress Hanfu Robe - Sapphire
+		{ { 136565350420707, DRESS } }, -- Hanfu-Inspired Imperial Gown-Purple
+		{ { 124671367097250, DRESS } }, -- Flowing Cloud Hanfu Robe-Gold
+		{ AZURE },
+		{ { 106614697052382, DRESS }, RED_CLOAK }, -- Empress Hanfu Robe - Garnet under the red cloak
 	},
 }
 
@@ -96,8 +103,10 @@ local function describe(look, tier)
 		d[k] = SKIN
 	end
 	-- one list for layered and rigid accessories (SetAccessories with `true` replaces both)
-	local robe = ROBES[spec.robes][tier]
-	local list = { { AssetId = robe[1], AccessoryType = robe[2], IsLayered = true, Order = 1 } }
+	local list = {}
+	for i, layer in ROBES[spec.robes][tier] do
+		table.insert(list, { AssetId = layer[1], AccessoryType = layer[2], IsLayered = true, Order = i })
+	end
 	for _, id in spec.hair do
 		table.insert(list, { AssetId = id, AccessoryType = Enum.AccessoryType.Hair, IsLayered = false })
 	end
@@ -216,7 +225,8 @@ local function template(look, tier)
 	return m
 end
 
--- aura tiers: 1 none, 2 a small ground ring, 3 a wide ring + rising motes, 4 + halo, 5 + three qi orbs
+-- aura tiers: 1 none, 2 a small ground ring, 3 a wide ring + rising motes, 4 + halo, 5 + three qi orbs,
+-- 6 + an outer ring and five orbs, 7 + a second halo and seven orbs
 local function aura(m, f, color, tier)
 	if tier < 2 then
 		return
@@ -235,7 +245,7 @@ local function aura(m, f, color, tier)
 		pe.Lifetime = NumberRange.new(2.5, 3.5)
 		pe.Speed = NumberRange.new(0.8, 1.4)
 		pe.Acceleration = Vector3.new(0, 0.4, 0)
-		pe.Rate = ({ 0, 0, 5, 7, 10 })[tier]
+		pe.Rate = ({ 0, 0, 5, 7, 10, 12, 14 })[tier]
 		pe.SpreadAngle = Vector2.new(15, 15)
 		pe.Shape = Enum.ParticleEmitterShape.Disc
 		pe.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
@@ -245,15 +255,24 @@ local function aura(m, f, color, tier)
 	local d = tier == 2 and 3.8 or 4.6
 	local ring = P(m, Vector3.new(0.1, d, d), f * CFrame.new(0, 1.32, 0) * CFrame.Angles(0, 0, math.pi / 2), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
 	ring.Name = "AuraRing"
+	if tier >= 6 then
+		local outer = P(m, Vector3.new(0.1, 6.4, 6.4), f * CFrame.new(0, 1.3, 0) * CFrame.Angles(0, 0, math.pi / 2), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
+		outer.Name = "AuraRing"
+	end
 	if tier >= 4 then
 		local halo = P(m, Vector3.new(0.1, 3.4, 3.4), f * CFrame.new(0, 5.2, 0.7) * CFrame.Angles(0, math.pi / 2, 0), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
 		halo.Name = "Halo"
 	end
+	if tier >= 7 then
+		local halo = P(m, Vector3.new(0.1, 4.6, 4.6), f * CFrame.new(0, 5.2, 0.85) * CFrame.Angles(0, math.pi / 2, 0), color, Enum.Material.ForceField, Enum.PartType.Cylinder)
+		halo.Name = "Halo"
+	end
 	if tier >= 5 then
-		for i = 0, 2 do
-			local a = math.rad(90 + i * 120)
-			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.4, 4.2 + (i % 2) * 0.6, math.sin(a) * 2.4), color, Enum.Material.Neon, Enum.PartType.Ball)
-			orb.Name = "QiOrb"
+		local count = ({ 3, 5, 7 })[tier - 4]
+		for i = 0, count - 1 do
+			local a = math.rad(90 + i * 360 / count)
+			local orb = P(m, Vector3.new(0.4, 0.4, 0.4), f * CFrame.new(math.cos(a) * 2.8, 3.3 + (i % 2) * 0.5, math.sin(a) * 2.8), color, Enum.Material.Neon, Enum.PartType.Ball)
+			orb.Name = "QiOrb" -- chest height and clear of the head, so no orb crosses the face
 		end
 	end
 end
