@@ -38,7 +38,8 @@ neither changed. Cumulative inside a life, gone after a reincarnation:
 - 6 Void Refinement: three soft clouds hug the rim, tinted `Config.realmTint`.
 - 7 Body Integration: floating rocks ring the peak (blocks only; the front sixth stays clear).
 - 8 Mahayana: a second waterfall at `REALM_FALL_ANGLE`.
-- 9 Tribulation Transcendence: a dark storm cloud behind the hall (attribute `Storm`);
+- 9 Tribulation Transcendence: a solid slate storm cloud of ~8 Ball puffs behind the hall (attribute
+  `Storm`; owner pick A after a particle haze read as a smudge);
   `RealmLook.client.luau` flashes a short neon bolt in it every 9 to 20 s while it is on screen (R3
   event flash, R16) and a soft thunder within 260 studs.
 - 10 True Immortal: a gold Foil halo over the Main Hall spot (no light, sunlit metal); from 11 its
@@ -63,3 +64,10 @@ Studio Play on integration (mock save), 2026-10-21: the chip reads "Rebirth 1/10
 realm 10; a reincarnation from realm 10 gave life 2, +10 karma, Past Lives x3 (rate x3), kept the
 strongest disciple (sworn) and the Shop-bought one, and a second call was refused. Captures:
 `docs/art/captures/reinc_screen_realm1.jpg`, `reinc_screen_realm10.jpg`, `reinc_screen_life2.jpg`.
+Studio Play on integration (mock save, camera only), 2026-10-21 evening: realms 6 to 10 build their
+looks (clouds, 6 rocks, second waterfall, storm, halo); a storm strikes about twice in 30 s; a
+reincarnation with Rebirth Gate 2 + Old Foundations landed at realm 5 with 27 / 27 built; Heavenly
+Hands built the breakthrough from the HUD (a wrong pad id and a call inside the cooldown were refused)
+and the realm 6 line toasted. Particle clouds made on the server fill in over ~15 s on clients.
+The first storm (a particle haze) read as a grey smudge twice; owner picked solid puffs (A). Captures: `realm6_void_clouds.jpg`,
+`realm10_all_looks.jpg`, `hands_next_card.jpg`.

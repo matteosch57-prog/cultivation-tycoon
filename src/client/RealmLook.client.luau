@@ -18,11 +18,11 @@ local SEE = 700 -- studs: farther storms are a grey smudge, no strike
 local HEAR = 260
 local rng = Random.new()
 
--- the storm's centre: the first emitter box of its Storm cloud
+-- where bolts start: under the Storm cloud's first part (its flat underside), and its width
 local function centreOf(folder)
 	local storm = folder:FindFirstChild("Storm")
-	local box = storm and storm:FindFirstChildWhichIsA("BasePart")
-	return box and box.Position, box and box.Size.X or 0
+	local base = storm and storm:FindFirstChildWhichIsA("BasePart")
+	return base and base.Position - Vector3.new(0, base.Size.Y / 2, 0), base and base.Size.X or 0
 end
 
 local function strike(pos, width)

@@ -57,23 +57,46 @@ local function rocks(parent, frame, radius, seed)
 		local a = (i - 0.5) / n * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
 		-- keep the bridges (front, +Z) and the shop side clear: skip the front sixth
 		if math.abs(math.atan2(math.sin(a - math.pi / 2), math.cos(a - math.pi / 2))) > 0.55 then
-			local r = radius + rng:NextNumber(14, 26)
+			local r = radius + rng:NextNumber(16, 28)
 			local cf = frame * CFrame.new(math.cos(a) * r, rng:NextNumber(4, 22), math.sin(a) * r) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
-			floatingRock(parent, cf, rng:NextNumber(6, 11), rng)
+			floatingRock(parent, cf, rng:NextNumber(10, 16), rng)
 		end
 	end
+end
+
+-- a solid storm cloud: a flat dark underside and a crown of slate puffs (owner pick A after a
+-- particle haze read as a smudge twice). ~8 Ball parts, only on realm 9+ peaks. The underside is the
+-- first part: RealmLook.client strikes from its centre, its width sets the bolt length.
+local function stormCloud(parent, cf, width, seed)
+	local rng = Random.new(seed)
+	local m = Instance.new("Model")
+	m.Name = "Storm"
+	local function puff(at, size, color)
+		local b = ghost(P(m, size, at, color, Enum.Material.SmoothPlastic, Enum.PartType.Ball))
+		b.CastShadow = false
+		return b
+	end
+	puff(cf, Vector3.new(width, width * 0.16, width * 0.55), Config.REALM_STORM)
+	for i = 1, 7 do
+		local u = (i - 1) / 6 * 2 - 1
+		local s = width * rng:NextNumber(0.28, 0.38) * (1 - math.abs(u) * 0.3)
+		local at = cf * CFrame.new(u * width * 0.36, s * 0.25 + (1 - math.abs(u)) * width * 0.08, rng:NextNumber(-0.1, 0.1) * width)
+		puff(at, Vector3.new(s, s * 0.8, s), Config.REALM_STORM:Lerp(Color3.fromRGB(150, 160, 190), 0.25 + (1 - math.abs(u)) * 0.2))
+	end
+	m.Parent = parent
+	return m
 end
 
 local function halo(parent, frame, tint)
 	local m = Instance.new("Model")
 	m.Name = "Halo"
 	-- over the Main Hall (pad spot 0, -30), tipped toward the bridge so it reads from the entrance
-	local centre = frame * CFrame.new(0, 52, -30) * CFrame.Angles(math.rad(70), 0, 0)
-	local R, n = 15, 24
+	local centre = frame * CFrame.new(0, 46, -30) * CFrame.Angles(math.rad(70), 0, 0)
+	local R, n = 18, 28
 	for i = 0, n - 1 do
 		local a = i / n * math.pi * 2
 		local seg = 2 * math.pi * R / n + 0.4
-		local p = P(m, Vector3.new(seg, 1.4, 2.2), centre * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, -R), tint, Enum.Material.Foil)
+		local p = P(m, Vector3.new(seg, 2.2, 3), centre * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, -R), tint, Enum.Material.Foil)
 		ghost(p).CastShadow = false
 	end
 	-- slow motes falling from the ring (not light: LightEmission 0)
@@ -118,7 +141,7 @@ function RealmLook.apply(plot)
 	for i = 0, 2 do
 		local a = math.pi / 2 + math.pi * (0.62 + i * 0.38) -- left, back and right of the peak
 		local r = radius * 0.95
-		tintedCloud(f, frame * CFrame.new(math.cos(a) * r, -14 - i % 2 * 6, math.sin(a) * r) * CFrame.Angles(0, -a, 0), radius * 1.1, plot.index * 13 + i, tint, 0.55)
+		tintedCloud(f, frame * CFrame.new(math.cos(a) * r, -14 - i % 2 * 6, math.sin(a) * r) * CFrame.Angles(0, -a, 0), radius * 1.1, plot.index * 13 + i, tint, Config.REALM_TINT_CLOUD)
 	end
 	if realm >= 7 then
 		rocks(f, frame, radius, plot.index * 31)
@@ -128,8 +151,7 @@ function RealmLook.apply(plot)
 	end
 	if realm >= 9 then
 		-- the storm sits behind the hall so it never hides the peak from the entrance camera
-		local storm = tintedCloud(f, frame * CFrame.new(0, 85, -radius * 0.4), radius * 1.6, plot.index * 17, Color3.fromHex("3B4258"), 0.75)
-		storm.Name = "Storm"
+		stormCloud(f, frame * CFrame.new(0, 62, -radius * 0.55), radius * 1.3, plot.index * 17)
 		f:SetAttribute("Storm", true)
 	end
 	if realm >= 10 then
