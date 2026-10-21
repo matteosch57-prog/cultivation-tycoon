@@ -189,10 +189,12 @@ Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receip
 -- World shop: every peak has its own shop island (src/server/Shop.luau), in the peak's local frame
 -- at SHOP_ISLAND_AT (beside the entrance, clear of the largest peak and the neighbours), joined to
 -- the peak's rim by a bridge. 2x Qi stands at its entrance; the other items ring its lawn.
-Config.SHOP_ISLAND_AT = Vector3.new(50, 0, 115)
-Config.SHOP_ISLAND_RADIUS = 22
+-- (55, 122) and 28: the island's lobes stay outside the 100.5-stud terrain clear of the largest peak and
+-- ~8 studs clear of the neighbour peak's largest island; 13 pads need the room (Play check 2026-10-21)
+Config.SHOP_ISLAND_AT = Vector3.new(55, 0, 122)
+Config.SHOP_ISLAND_RADIUS = 28
 Config.SHOP_ITEM_PADS = { "auto", "vip", "pill", "pack1", "pack2", "pack3" } -- around the lawn, left to right
-Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial", "dao", "emperor", "primordial" } -- in and beside the pavilion, left to right
+Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial", "dao", "emperor", "primordial" } -- the back arc, left to right
 
 -- the Shop product that sells disciple rarity `name` (nil when it is not sold)
 function Config.shopKeyOf(name)

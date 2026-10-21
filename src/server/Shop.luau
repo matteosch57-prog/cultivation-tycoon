@@ -220,7 +220,7 @@ function Shop.buildIsland(plot)
 	local f = Shop.islandFrame(plot.frame)
 	local folder = Instance.new("Folder")
 	folder.Name = "ShopIsland"
-	-- lawn: everything inside 0.8 R stays clear (pads, pavilion, path); trees only on the rim
+	-- lawn: everything inside 0.8 R stays clear (pads, cauldron, path); trees only on the rim
 	Style.island(folder, f, R, 700 + plot.index, function(x, z)
 		return Vector2.new(x, z).Magnitude < R * 0.8 or (math.abs(x) < 6 and z > 0)
 	end, true)
@@ -252,25 +252,31 @@ function Shop.buildIsland(plot)
 	shopPad(folder, f * CFrame.new(0, 0, R - 8), "x2")
 	Style.lantern(folder, f * CFrame.new(-4.5, 0, R - 6), 0.8)
 	Style.lantern(folder, f * CFrame.new(4.5, 0, R - 6), 0.8)
-	-- the other items on an arc around the lawn, half a side, the first nearest the entrance
+	-- a bronze cauldron at the heart of the lawn (its fire is a real light)
+	Style.cauldron(folder, f * CFrame.new(0, 0, -1), 0.8)
+	-- the other items on the front arc, half a side, the first nearest the entrance
 	local half = #Config.SHOP_ITEM_PADS // 2
 	for i, key in Config.SHOP_ITEM_PADS do
 		local side = i <= half and -1 or 1
 		local k = i <= half and i or (#Config.SHOP_ITEM_PADS + 1 - i)
-		local t = math.rad(30 + (k - 1) * 25)
-		shopPad(folder, f * CFrame.new(side * math.sin(t) * 12.5, 0, math.cos(t) * 12.5), key)
+		local t = math.rad(35 + (k - 1) * 27)
+		shopPad(folder, f * CFrame.new(side * math.sin(t) * 16, 0, math.cos(t) * 16), key)
 	end
-	-- the pavilion at the back shows the disciples for sale (the outer two beside it on the lawn),
-	-- each with its pad in front
-	Style.pavilion(folder, f * CFrame.new(0, 0, -14), 14, 9) -- plinth z -6 .. -22
+	-- the disciples for sale sit on the back arc facing the cauldron, each with its pad in front and
+	-- a lantern between neighbours (cheapest on the left as you walk in)
 	local n = #Config.SHOP_DISCIPLE_PADS
 	for i, key in Config.SHOP_DISCIPLE_PADS do
-		local x = (i - (n + 1) / 2) * 4.6
+		local t = math.rad(115 + (i - 1) * (130 / (n - 1)))
+		local dx, dz = -math.sin(t), math.cos(t)
 		local it = Config.shopItem(key)
-		local seat = f * CFrame.new(x, math.abs(x) < 8 and 1.2 or 0, -11) -- plinth top inside the pavilion
+		local seat = f * CFrame.lookAt(Vector3.new(dx * 20, 0, dz * 20), Vector3.zero) -- facing the cauldron
 		local m = api.cultivators.build(folder, seat, i + 2, Config.rarity(it.rarity), Config.RARITIES)
 		m.Name = "ForSale_" .. key
-		shopPad(folder, f * CFrame.new(x, 0, -3.5), key)
+		shopPad(folder, f * CFrame.new(dx * 14, 0, dz * 14), key)
+		if i < n then
+			local tm = t + math.rad(65 / (n - 1))
+			Style.lantern(folder, f * CFrame.new(-math.sin(tm) * 21, 0, math.cos(tm) * 21), 0.7)
+		end
 	end
 	folder.Parent = plot.folder
 	return folder
