@@ -3,6 +3,8 @@
 local Builders = {}
 local Style = require(script.Parent:WaitForChild("Style"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
+local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
+local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
 local SP = Style.PAL
 
 -- Buildings around the sides face the CENTRE of the peak (their front, +Z, turned toward the
@@ -301,68 +303,15 @@ function Builders.island(ctx, radius, bare)
 	end
 end
 
--- A seated disciple figure. slot 1..5 around the meditation platform.
+-- A seated cultivator on the meditation platform (slot 1..). The slot picks one of the four
+-- looks; the rarity picks the robe colour and the aura (Cultivators.luau, mock
+-- docs/art/mocks/cultivators_lineup.jpg).
 function Builders.disciple(ctx, slot, rarity)
 	local a = math.rad(-90 + (slot - 3) * 40)
 	local x, z = math.cos(a) * 8.5, -math.sin(a) * 8.5 -- arc on the hub side of the platform
 	local face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
-	local m = Instance.new("Model")
+	local m = Cultivators.build(ctx.folder, ctx.frame * face, slot, rarity, Config.RARITIES)
 	m.Name = "Disciple" .. slot
-	local sub = { folder = m, frame = ctx.frame, pal = ctx.pal }
-	local robe = rarity.color:Lerp(Color3.fromRGB(245, 240, 230), 0.25)
-	local robeDark = rarity.color:Lerp(Color3.new(0, 0, 0), 0.25)
-	local trim = rarity.bonus >= 1.5 and SP.gold or SP.plaster
-	local skin = Color3.fromRGB(238, 204, 176)
-	local hair = Color3.fromRGB(28, 24, 26)
-	-- meditation cushion
-	local cushion = part(sub, Vector3.new(0.5, 3.2, 3.2), face * CFrame.new(0, 1.55, 0) * CFrame.Angles(0, 0, math.pi / 2), SP.vermilion:Lerp(Color3.new(0, 0, 0), 0.3))
-	cushion.Shape = Enum.PartType.Cylinder
-	-- crossed legs: a wide low lap, knees slightly forward
-	part(sub, Vector3.new(3.2, 0.9, 1.9), face * CFrame.new(0, 2.15, -0.2), robeDark)
-	-- robe skirt and torso (tapered: wide at the waist, narrower at the shoulders)
-	part(sub, Vector3.new(2.2, 1.0, 1.4), face * CFrame.new(0, 2.85, 0.15), robe)
-	part(sub, Vector3.new(1.8, 1.3, 1.1), face * CFrame.new(0, 3.95, 0.15), robe)
-	part(sub, Vector3.new(0.25, 2.2, 1.12), face * CFrame.new(0, 3.5, 0.15) * CFrame.Angles(0, 0, math.rad(18)), trim) -- crossed collar
-	part(sub, Vector3.new(1.95, 0.35, 1.2), face * CFrame.new(0, 3.25, 0.15), robeDark) -- sash
-	-- sleeves falling to hands resting on the knees
-	for _, sx in { -1, 1 } do
-		part(sub, Vector3.new(0.8, 1.6, 0.9), face * CFrame.new(sx * 1.15, 3.55, 0) * CFrame.Angles(math.rad(-25), 0, math.rad(sx * 12)), robe)
-		part(sub, Vector3.new(0.9, 0.5, 0.9), face * CFrame.new(sx * 1.25, 2.75, -0.55), trim)
-		part(sub, Vector3.new(0.45, 0.4, 0.45), face * CFrame.new(sx * 1.25, 2.75, -1.05), skin)
-	end
-	-- head, hair and topknot
-	part(sub, Vector3.new(0.5, 0.4, 0.5), face * CFrame.new(0, 4.75, 0.15), skin) -- neck
-	part(sub, Vector3.new(1.25, 1.35, 1.25), face * CFrame.new(0, 5.55, 0.15), skin)
-	part(sub, Vector3.new(1.35, 0.6, 1.35), face * CFrame.new(0, 6.05, 0.25), hair)
-	part(sub, Vector3.new(1.35, 1.1, 0.4), face * CFrame.new(0, 5.55, 0.75), hair) -- back of the head
-	local bun = part(sub, Vector3.new(0.7, 0.7, 0.7), face * CFrame.new(0, 6.55, 0.3), hair)
-	bun.Shape = Enum.PartType.Ball
-	part(sub, Vector3.new(0.9, 0.18, 0.18), face * CFrame.new(0, 6.55, 0.3), trim) -- hairpin
-	for _, d in m:GetChildren() do
-		if d:IsA("BasePart") then
-			d.CastShadow = false
-			d.CanCollide = false
-		end
-	end
-	if rarity.bonus >= 1.5 then
-		local aura = part(sub, Vector3.new(1, 1, 1), face * CFrame.new(0, 3.5, 0), rarity.color, Enum.Material.Neon, { Transparency = 1 })
-		local att = Instance.new("Attachment")
-		att.Parent = aura
-		local pe = Instance.new("ParticleEmitter")
-		pe.Color = ColorSequence.new(rarity.color)
-		pe.LightEmission = 1
-		pe.Size = NumberSequence.new(0.6, 0)
-		pe.Speed = NumberRange.new(1, 2)
-		pe.Lifetime = NumberRange.new(1, 2)
-		pe.Rate = 10
-		pe.SpreadAngle = Vector2.new(180, 180)
-		pe.Parent = att
-		local light = Instance.new("PointLight")
-		light.Color = rarity.color
-		light.Range = 8
-		light.Parent = aura
-	end
-	m.Parent = ctx.folder
 	return m
 end
 
