@@ -20,6 +20,13 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 - HUD: the disciples card is a panel (R4 says no panels); the far price card's feature line is ~8 px.
 - Incense haze smears the courtyard; the Qi Array orb blows out to a white disc.
 
+## Cultivators
+- Heavenly Emperor maiden robe (Chang'e Amber) reads pale gold, not orange: swap the id in `ROBES`.
+- Robes and hair are other creators' catalog items: if one is taken down it goes missing until its id
+  is replaced (`ROBES` / `LOOK` in `Cultivators.luau`).
+- An uploaded meditation animation (owner uploads, R5) would replace the coded pose and breathing.
+- Inner and Core ground sigils are faint at some angles over the light floor.
+
 ## Feel
 - The music bed is not picked yet (DECISIONS Q1).
 

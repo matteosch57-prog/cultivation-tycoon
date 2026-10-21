@@ -40,6 +40,10 @@ checked in Studio Play (ROADMAP).
   `art/shop_icons/`) and paste each id into `Config.SHOP_PASSES` / `SHOP_PRODUCTS`; then a Studio
   test purchase checks the prompt and ProcessReceipt.
 
+- **Cultivators** (branch `cultivators`, merged into `integration`): disciples are R15 Roblox avatars
+  in catalog hanfu, 4 looks x 9 rarities, layered auras, floating idle with faces that blink and watch
+  a close player. Checked in Studio Edit (and a Play by Phone performance); design in ART_BIBLE.
+
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
 `[Perf]` console rows (they close ROADMAP "Phone performance").
