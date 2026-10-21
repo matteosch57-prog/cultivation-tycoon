@@ -34,6 +34,18 @@ Hub at the origin, 6 peaks at `PLOT_RADIUS` (215) around it, all standing at wor
 Each peak's `frame` has +Z facing the hub. `buildGrounds(plot, radius)` rebuilds island, terrain,
 trees, waterfall, bridge and arch when the island grows or shrinks.
 
+## Step-on pads (D27)
+- Server: every pad is an invisible anchor part (`Pad_<id>` on a peak, `ShopPad_<key>` on a shop island)
+  tagged `StepPad`, attributes `PadKind` (build / breakthrough / shop), `Title`, `Cost`, `Feature`,
+  `OwnerId` (none = anyone). Buying is a position check every 0.1 s (`checkPads`, `PAD_REACH` 2.6);
+  after a buy every pad waits until the player stands on none (`s.padHold`). Shop pads prompt only
+  after the player was seen off them.
+- Client (`Build.client.luau`) draws every tagged pad locally in `workspace.LocalPadFX`: the array,
+  beacon, price card, preview and press; colours only from `src/shared/PadLook.luau`. A building's
+  preview is a hidden copy under its pad (`Preview`); the client moves its pieces with `BulkMoveTo`.
+- Build-in: the client animates a model with a fresh `BuiltAt`; its parts are CanCollide off locally
+  while they fly (colliding pieces shoved the avatar onto other pads and bought them).
+
 ## Data
 DataStore `CultivationTycoon_v1`. Studio Play with `MOCK_DATASTORE` on (the default; gated on the flag AND
 `IsStudio()`) uses no store: every Play is a new player and nothing saves. With it off, Studio uses

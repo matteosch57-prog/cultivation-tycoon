@@ -20,6 +20,11 @@ checked in Studio Play (ROADMAP).
   (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
   ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
+- **Step-on pads** (D27, merged in integration): formation array pads, gathering preview, swirl
+  build-in, one colour set (`PadLook`), qi / Robux icon on every pad price; chain-buy cause fixed
+  (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
+  new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
+
 ## Next action
 Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.
