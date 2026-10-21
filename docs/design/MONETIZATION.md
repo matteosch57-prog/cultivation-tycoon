@@ -71,7 +71,10 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
 
 ## Disciple price ladder (economy check, D28)
 Relative to the 2x Qi pass price P: Elder 0.15P, Immortal 0.3P, Celestial 0.6P, Dao Ancestor 1P,
-Heavenly Emperor 2P, Primordial 4P. With P = 249: about 39 / 79 / 149 / 249 / 499 / 999 Robux. The
+Heavenly Emperor 2P, Primordial 4P. With P = 249: about 39 / 79 / 149 / 249 / 499 / 999 Robux.
+Owner (2026-10-21): "can be more expensive even for high ones", so the suggested ladder is steeper at
+the top: Elder 49, Immortal 99, Celestial 249, Dao Ancestor 599, Heavenly Emperor 1,299, Primordial
+2,999 (the top tiers are once per player and realm-gated, so they work as the premium anchor). The
 owner sets the final prices (R5). Sim (regular player, realm 10 in ~1,026 min with nothing bought):
 Celestial -9%, Dao -30%, Heavenly Emperor -45%, Primordial -65%, all three top -74%.
 
