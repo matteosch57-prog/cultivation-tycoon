@@ -22,11 +22,29 @@ and the share of the current realm's pads counts (x(1 + `DAO_ECHO` x Soul Echo l
 ## Karma Shop (the Dao Tree, owner: "a karma shop")
 `Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
 `data.dao`, published as `Dao_<key>`. Sworn Bond (+1 disciple follows you per level), Disciple Seat
-(+1 slot), Old Foundations (a new life starts with every realm 1 building), Elixir Mastery (a brewed
-pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline cap per
-level), Soul Echo (+`DAO_ECHO` karma per level). Nothing copies a paid pass. Opened from the
-"Karma Shop" button under Reincarnate; tiles in the Shop's language (icon, name, one line, level pips,
+(+1 slot), Old Foundations (a new life starts with every building of its landing realm), Rebirth Gate
+(a new life lands at `DAO_REBIRTH_REALMS[level]`, realm 3 then 5, always below the gate), Elixir Mastery
+(a brewed pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline
+cap per level), Soul Echo (+`DAO_ECHO` karma per level), Heavenly Hands (a gold hand on the HUD "Next"
+card builds that pad from anywhere: remote `HandsBuild(padId)`, the server checks the node, the owner,
+the price and `HANDS_COOLDOWN`, then pays through the same `buyPad` as standing on the pad). Nothing copies a paid pass. A node with `lines` shows the line of its next level. Opened from the
+"Karma Shop" button under Reincarnate; tiles in 2 rows of 4; tiles in the Shop's language (icon, name, one line, level pips,
 price). Event `KarmaShop`: node, level, life.
+
+## What each realm shows (realms 6 and up)
+`src/server/RealmLook.luau` builds `plot.look` (folder `RealmLook`) from the peak's realm and island
+size; `RealmLook.apply` runs at the end of `buildGrounds` and in `rebuild`, and does nothing when
+neither changed. Cumulative inside a life, gone after a reincarnation:
+- 6 Void Refinement: three soft clouds hug the rim, tinted `Config.realmTint`.
+- 7 Body Integration: floating rocks ring the peak (blocks only; the front sixth stays clear).
+- 8 Mahayana: a second waterfall at `REALM_FALL_ANGLE`.
+- 9 Tribulation Transcendence: a dark storm cloud behind the hall (attribute `Storm`);
+  `RealmLook.client.luau` flashes a short neon bolt in it every 9 to 20 s while it is on screen (R3
+  event flash, R16) and a soft thunder within 260 studs.
+- 10 True Immortal: a gold Foil halo over the Main Hall spot (no light, sunlit metal); from 11 its
+  colour climbs the rarity ladder from Celestial.
+A breakthrough to a realm with a look toasts its line to the owner (`Config.realmLookLine`, Notify
+`realmLook`).
 
 ## Screen and HUD
 - HUD: a "Rebirth 3/10" chip beside the realm name above the progress bar; gold and wobbling from
