@@ -32,3 +32,5 @@ Append only. Retire a rule by striking it through, never renumber. Cite by numbe
 - **R17** Data: one save in flight per player, fail closed on load (rejoin message, never a session
   that cannot save), autosaves wait for budget and leave/close/receipts never do, constant-text
   warns; MemoryStore and ordered stores follow TECH "Data" before their first use.
+- **R18** Every amount of a currency shows its icon (qi drop, karma orb, Robux mark), prices included;
+  a new currency gets its icon the day it is added (`Toy.icon(parent, "qi" | "karma", size)`).

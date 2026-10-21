@@ -20,6 +20,10 @@ checked in Studio Play (ROADMAP).
   (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
   ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
 
+- **Endless progression (D29, D31, on integration):** reincarnation from realm 10, Past Lives,
+  karma and the Karma Shop are built and checked in Studio Play (mock save); Spirit Tide and playtime
+  gifts (D30) too. Left: per-realm visuals and the two later Karma Shop nodes (ROADMAP M3).
+
 ## Next action
 Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
 `/clouds`, `/perf` again, and send the console rows.
