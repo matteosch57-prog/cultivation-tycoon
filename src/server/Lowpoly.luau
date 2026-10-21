@@ -52,4 +52,16 @@ function Lowpoly.part(shape: Enum.PartType?, size: Vector3): BasePart
 	return p
 end
 
+-- The low-poly mesh at any size (soft round canopies, Nature.luau): 80 triangles for a ball of
+-- any size against a Ball part's 432. Falls back to a true part before the meshes load.
+function Lowpoly.mesh(shape: Enum.PartType): BasePart
+	local t = templates[shape]
+	if t then
+		return t:Clone()
+	end
+	local p = Instance.new("Part")
+	p.Shape = shape
+	return p
+end
+
 return Lowpoly
