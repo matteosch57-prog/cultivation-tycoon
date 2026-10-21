@@ -24,6 +24,11 @@ checked in Studio Play (ROADMAP).
   Quarters are assembled from kit pieces (on `integration`). Full peak measured
   192k triangles / 33 draw calls. Visual check report: `docs/research/2026-10-21_visual_check.md`.
 
+- **Step-on pads** (D27, merged in integration): formation array pads, gathering preview, swirl
+  build-in, one colour set (`PadLook`), qi / Robux icon on every pad price; chain-buy cause fixed
+  (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
+  new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
+
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
 `[Perf]` console rows (they close ROADMAP "Phone performance").

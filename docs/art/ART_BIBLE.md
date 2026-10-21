@@ -106,6 +106,12 @@ Captures: [captures/57 to 60](captures/).
 - Templates are built once per look and rarity per server, then cloned. If a catalog item is ever
   taken down, that robe or hair goes missing until its id is replaced in `ROBES` / `LOOK`.
 
+## Step-on pads
+Concept C "Formation" (D27): a slate disc, a stone octagon, a gold heart and two Neon rune rings.
+Ready = the kind's colour (build jade 59D39F, breakthrough gold FFC94A, shop amethyst A97CF0), not
+affordable = red E0544B, all from `src/shared/PadLook.luau` (never hand-pick a pad colour). Feel,
+motion and sounds: [FEEL](../design/FEEL.md) "Buying". Captures 50 (ready) and 51 (locked).
+
 ## Light (RULES R3)
 Scene light comes only from the sky or a visible lamp holding a real Light (stone lanterns, braziers,
 the cauldron fire, the spirit crystals and orbs, which are glowing objects). Gameplay markers are the
