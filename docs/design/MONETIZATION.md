@@ -83,3 +83,12 @@ Auto-collect 175 to 350 (RT2 200, RT3 299, Mall 350, PS99 175); 2x income 299 to
 Mall 600); VIP 375 to 800 (Brainrot 375, PS99 400, Mall 800); income-sized cash packs 19 to 199
 (Sell Lemons 5 min 19 ... 7 d 199). A one-time starter pack (~99) and a higher-tier anchor (~1199)
 are common next steps. Prices are the owner's call (R5).
+
+## Shop island check (Studio Play, 2026-10-21)
+Six islands, 13 shop pads each (78 tagged), all six disciples for sale load their avatars, no script
+errors. The first layout (radius 22, pavilion) crowded the pads into each other; radius 28 with the
+disciples on a back arc facing a cauldron gives every pad room. The screen's Disciples row shows the
+realm gates ("Realm 3" ... "Realm 9"). Not checked: billboard cards (the Studio capture omits
+BillboardGuis), a real purchase (ids still 0), tab taps (no mouse input through the MCP).
+Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.jpg`,
+`shop_disciples_tab_play.jpg`.
