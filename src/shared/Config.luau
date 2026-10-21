@@ -34,7 +34,7 @@ Config.REALMS = {
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 Config.REALM_COST_MULT = 8 -- costs x8 per realm up to REALM_COST_LATE_FROM
 -- after that costs step by REALM_COST_LATE: with disciples near their slot cap, a realm then takes
--- ~1.5x the last instead of ~2.7x (no wall of days at realm 8+; research 2026-10-21_economy_math, Q3)
+-- ~1.3x the last instead of ~2.4x (no wall of days at realm 8+; research 2026-10-21_economy_math, Q3)
 Config.REALM_COST_LATE = 4.5
 Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
