@@ -121,3 +121,12 @@ the log as a D-number.
   B or C). Economy check (sim_economy reinc mode, 2026-10-21): the gate resetter earns a flat ~4
   karma/h whatever the landing while going deeper earns 4.5 to 80 karma/h over lives 2 to 6; Hands
   cuts realms 1 to 7 from 93 to 62 min for a slow phone walker and leaves the realm 10 date unchanged.
+- **D33** World shop spread out (owner: "everything on one island is crowded af"; picked mock A and
+  the screen changes, "all accepted"): each item stands where it acts (2x Qi and VIP at the peak
+  entrance, Instant Pill at the furnace, Auto Orbs at the array, the last two only once built), the
+  side island keeps only the six disciples along a walk (the owner's D28 "beautiful island with
+  characters"), Qi packs leave the world for a quiet Get Qi offer on a pad out of reach. Why: Roblox's
+  contextual-purchase guide (complementary and in-play offers, displays that lead to the shop, few
+  prompts) and tycoon practice (upgrades beside what they upgrade); no public data compares pads
+  with a screen, so the `Shop` event's sources are how we measure it. Research
+  `docs/research/2026-10-21_shop_placement.md`; mocks `docs/art/mocks/shop_layout_*.png`.

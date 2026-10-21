@@ -1,0 +1,148 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Shop layout mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- World shop layout + shop screen mocks (R4). ?view=now|A|B|ui|short. Rendered with Edge headless:
+     the maps at 1280x720 to shop_layout_<view>.jpg, the phone screens at 844x390. Positions are in the
+     peak's frame (Config.PADS x, z; +Z = the entrance, drawn at the bottom), largest island (r 90). -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif;background:#1d2a3a}
+:root{--ink:#1b1420;--buy:#47d16c;--gold:#ffe36b;--shop:#a97cf0}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) var(--ink);paint-order:stroke fill;line-height:1.05}
+.toy{border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.lbl{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font:600 12px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50;white-space:nowrap}
+.legend{position:absolute;right:18px;top:18px;width:330px;color:#fff;font:500 14px Fredoka}
+.legend h1{font-size:30px;margin-bottom:8px}
+.legend .row{display:flex;gap:10px;align-items:center;margin:7px 0}
+.legend img{width:34px;height:34px}
+.legend .why{color:#cfe;font-size:12.5px;opacity:.85}
+svg text{font-family:Fredoka;font-weight:600}
+.phone{position:relative;width:100vw;height:100vh;background:url('../captures/18_peak_wide.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.55)}
+.price{display:flex;align-items:center;justify-content:center;gap:4px;background:var(--buy);color:#fff}
+.grey{background:#c9c2d3!important}
+.tabs{display:flex;gap:10px}
+.tab{display:flex;align-items:center;gap:6px;padding:3px 14px 3px 8px;font-size:16px;background:#c9c2d3}
+.tab img{width:24px;height:24px}
+.tab.on{background:#ffd36b}
+.tile{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sq{width:86px;height:86px;display:flex;align-items:center;justify-content:center}
+.sq img{width:64px;height:64px}
+.rib{position:absolute;top:-12px;right:-14px;background:#ff6b5e;color:#fff;font-size:12px;padding:1px 8px;border-radius:8px;border:2px solid var(--ink);transform:rotate(8deg);z-index:3}
+</style></head>
+<body><div id="root"></div><div class="lbl" id="lbl"></div>
+<script>
+const view=new URLSearchParams(location.search).get('view')||'A';
+const root=document.getElementById('root');
+const ICON=k=>`../../../art/shop_icons/${k}.png`;
+const QI=`<svg width="18" height="20" viewBox="0 0 20 24"><path d="M10 1C6 8 2 12 2 16a8 8 0 0016 0c0-4-4-8-8-15z" fill="#59d39f" stroke="#1b1420" stroke-width="2.4"/></svg>`;
+const RBX=`<svg width="18" height="18" viewBox="0 0 20 20"><path d="M10 1l8 4.5v9L10 19l-8-4.5v-9z" fill="none" stroke="#fff" stroke-width="3"/><rect x="7.5" y="7.5" width="5" height="5" fill="#fff"/></svg>`;
+
+// ---------- world maps ----------
+const S=3.3, CX=380, CY=330, R=90; // px per stud, peak centre, island radius
+const P=(x,z)=>[CX+x*S, CY+z*S];
+const B=[ // Config.PADS (x, z) and a rough footprint half-size in studs
+ ['Main Hall',0,-30,30,15],['Pagoda',0,-60,8,8],['Platform',0,0,9,9,1],['Herb Garden',-28,12,8,6],
+ ['Spirit Vein',-16,24,5,5,1],['Twin Vein',18,22,5,5,1],['Lanterns',10,30,3,3,1],['Furnace',30,4,7,7],
+ ['Disciple Hall',-47,-4,10,9],['Sect Gate',0,52,8,3],['Array',46,-22,7,7,1],['Quarters',-30,40,8,7],
+ ['Quarters',30,40,8,7],['Bamboo',-64,24,6,6,1],['Training',62,8,8,8,1],['Bell Tower',-52,-50,6,6],
+ ['Koi Pond',52,-50,8,8,1],['Library',60,46,9,7],['Moon Gate',-60,46,7,5]];
+function pad(x,z,key,label,big){const [px,py]=P(x,z);const r=big?20:15;
+ return `<circle cx="${px}" cy="${py}" r="${r}" fill="#a97cf0" stroke="#fff" stroke-width="3" opacity=".95"/>
+ <image href="${ICON(key)}" x="${px-r*.8}" y="${py-r*.8}" width="${r*1.6}" height="${r*1.6}"/>
+ <text x="${px}" y="${py+r+15}" text-anchor="middle" font-size="14" fill="#fff" stroke="#1b1420" stroke-width="4" paint-order="stroke">${label}</text>`}
+function peak(shop){
+ let s=`<svg width="1280" height="720" style="position:absolute;left:0;top:0">`;
+ s+=`<defs><radialGradient id="g"><stop offset="0" stop-color="#6aa65a"/><stop offset="1" stop-color="#4c8a45"/></radialGradient></defs>`;
+ s+=`<circle cx="${CX}" cy="${CY}" r="${R*S}" fill="url(#g)" stroke="#2e5a33" stroke-width="4"/>`;
+ // path from the arch to the platform, and the bridge to the hub (below)
+ s+=`<rect x="${CX-12}" y="${CY}" width="24" height="${R*S}" fill="#d9cfb4" opacity=".8"/>`;
+ s+=`<rect x="${CX-14}" y="${CY+R*S-6}" width="28" height="60" fill="#8a5a35"/>`;
+ s+=`<text x="${CX}" y="${CY+R*S+50}" text-anchor="middle" font-size="15" fill="#fff">bridge from the hub (players arrive here)</text>`;
+ for(const [n,x,z,w,h,round] of B){const [px,py]=P(x,z);
+  s+= round?`<circle cx="${px}" cy="${py}" r="${w*S}" fill="#7d8796" stroke="#3d4450" stroke-width="2"/>`
+   :`<rect x="${px-w*S}" y="${py-h*S}" width="${2*w*S}" height="${2*h*S}" rx="6" fill="#2f3f66" stroke="#1b2440" stroke-width="2"/>`;
+  s+=`<text x="${px}" y="${py+4}" text-anchor="middle" font-size="11.5" fill="#e9eef7">${n}</text>`}
+ // entrance arch
+ const [ax,ay]=P(0,R-1); s+=`<rect x="${ax-20}" y="${ay-6}" width="40" height="10" fill="#b23a2e" stroke="#1b1420" stroke-width="2"/>`;
+ s+=shop; return s+`</svg>`}
+function islandSide(kind){ // the old shop island's spot: front right, joined by a bridge
+ const [fx,fy]=P(55*0.62,122*0.62); let s=`<line x1="${fx}" y1="${fy}" x2="690" y2="560" stroke="#8a5a35" stroke-width="10"/>`;
+ return s}
+
+const legends={
+ now:`<h1>Now</h1><div class="why">13 pads on one island per peak, off to the side. Passes, pill, qi and six disciples all compete in one ring; the island is a detour from the build path.</div>`,
+ A:`<h1>A: sold where it matters</h1>
+  <div class="row"><img src="${ICON('x2')}"><img src="${ICON('vip')}"><div>Entrance, both sides of the path<div class="why">first thing on the peak; VIP sits under the arch that turns gold</div></div></div>
+  <div class="row"><img src="${ICON('pill')}"><div>At the Alchemy Furnace<div class="why">the furnace brews this pill; here it is now. Appears with the furnace</div></div></div>
+  <div class="row"><img src="${ICON('auto')}"><div>At the Gathering Array<div class="why">orbs come from here. Appears with the array</div></div></div>
+  <div class="row"><img src="${ICON('primordial')}"><div>Disciple Garden island<div class="why">only the six disciples, on a walk, cheapest first, Primordial at the end</div></div></div>
+  <div class="row"><img src="${ICON('pack2')}"><div>Qi packs: screen only<div class="why">offered when a pad is out of reach (see the "short" mock)</div></div></div>`,
+ B:`<h1>B: no island</h1>
+  <div class="row"><img src="${ICON('x2')}"><img src="${ICON('vip')}"><img src="${ICON('pill')}"><img src="${ICON('auto')}"><div>Same spots as A</div></div>
+  <div class="row"><img src="${ICON('primordial')}"><div>One disciple at the Disciple Hall<div class="why">the best one on sale for you, on a plinth; its pad opens the Disciples tab. 1 avatar per peak instead of 6, one island less</div></div></div>`};
+
+function nowView(){ // the market island drawn large to show the crowding
+ let s=peak(''); const ix=980,iy=470,ir=150;
+ s+=`<svg width="1280" height="720" style="position:absolute;left:0;top:0"><line x1="${P(32,80)[0]}" y1="${P(32,80)[1]}" x2="${ix-ir}" y2="${iy}" stroke="#8a5a35" stroke-width="10"/>
+ <circle cx="${ix}" cy="${iy}" r="${ir}" fill="#5f9a52" stroke="#2e5a33" stroke-width="4"/>`;
+ const keys=['auto','vip','pill','pack1','pack2','pack3'];
+ keys.forEach((k,i)=>{const side=i<3?-1:1;const kk=i<3?i:5-i;const t=(35+kk*27)*Math.PI/180;
+  const x=ix+side*Math.sin(t)*16*5.3, y=iy+Math.cos(t)*16*5.3; s+=`<circle cx="${x}" cy="${y}" r="13" fill="#a97cf0" stroke="#fff" stroke-width="2"/><image href="${ICON(k)}" x="${x-11}" y="${y-11}" width="22" height="22"/>`});
+ ['elder','immortal','celestial','dao','emperor','primordial'].forEach((k,i)=>{const t=(115+i*26)*Math.PI/180;
+  const x=ix-Math.sin(t)*14*5.3,y=iy+Math.cos(t)*14*5.3; s+=`<circle cx="${x}" cy="${y}" r="13" fill="#a97cf0" stroke="#fff" stroke-width="2"/><image href="${ICON(k)}" x="${x-11}" y="${y-11}" width="22" height="22"/>`});
+ s+=`<circle cx="${ix}" cy="${iy+140}" r="14" fill="#a97cf0" stroke="#fff" stroke-width="2"/><image href="${ICON('x2')}" x="${ix-12}" y="${iy+128}" width="24" height="24"/>
+ <text x="${ix}" y="${iy-ir-12}" text-anchor="middle" font-size="18" fill="#fff">Sect Market island (radius 28)</text></svg>`;
+ return s}
+
+function shopA(){return pad(15,R-8,'x2','2x Qi',1)+pad(-15,R-8,'vip','VIP Sect',1)+pad(40,-6,'pill','Instant Pill')+pad(57,-18,'auto','Auto Orbs')}
+function aView(){
+ let s=peak(shopA()); const ix=1000,iy=500,ir=120;
+ s+=`<svg width="1280" height="720" style="position:absolute;left:0;top:0">
+ <line x1="${P(32,80)[0]}" y1="${P(32,80)[1]}" x2="${ix-ir+10}" y2="${iy+40}" stroke="#8a5a35" stroke-width="10"/>
+ <circle cx="${ix}" cy="${iy}" r="${ir}" fill="#5f9a52" stroke="#2e5a33" stroke-width="4"/>
+ <path d="M${ix-ir+10} ${iy+40} Q ${ix-20} ${iy+60} ${ix} ${iy-20} T ${ix+30} ${iy-95}" fill="none" stroke="#d9cfb4" stroke-width="16" opacity=".85"/>`;
+ const spots=[[-80,60],[-40,72],[-52,10],[-10,32],[40,-20],[30,-82]];
+ ['elder','immortal','celestial','dao','emperor','primordial'].forEach((k,i)=>{const [dx,dy]=spots[i];const x=ix+dx,y=iy+dy;
+  s+=`<rect x="${x-17}" y="${y-28}" width="34" height="22" rx="4" fill="#2f3f66"/><circle cx="${x}" cy="${y+6}" r="12" fill="#a97cf0" stroke="#fff" stroke-width="2"/><image href="${ICON(k)}" x="${x-14}" y="${y-30}" width="28" height="28"/>`});
+ s+=`<text x="${ix}" y="${iy-ir-12}" text-anchor="middle" font-size="18" fill="#fff">Disciple Garden: a walk of six</text></svg>`;
+ return s}
+function bView(){
+ return peak(shopA()+pad(-47,12,'primordial','Disciples'))}
+
+// ---------- phone screens ----------
+function tile(k,name,line,price,opts={}){
+ const col=opts.color||'#fff';
+ return `<div class="tile" style="transform:rotate(${opts.tilt||0}deg)"><div class="toy sq" style="background:${opts.bg||'#c9ffe4'}">${opts.rib?`<div class="rib">${opts.rib}</div>`:''}<img src="${ICON(k)}"></div>
+ <div class="big" style="font-size:17px;--sw:4px;color:${col}">${name}</div>
+ <div class="big" style="font-size:12px;--sw:3px;color:#c9ffe4">${line}</div>
+ <div class="toy price ${price[0]==='R'||price==='Owned'?'grey':''}" style="width:92px;height:30px;border-radius:10px;margin-top:3px"><span class="big" style="font-size:16px;--sw:3px;display:flex;gap:4px;align-items:center">${/^\d/.test(price)?RBX:''}${price}</span></div></div>`}
+function screen(tab,tiles){
+ return `<div class="phone"><div class="veil"></div>
+ <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px">
+  <div class="tabs">${[['boosts','x2','Boosts'],['qi','pack2','Qi'],['disciples','celestial','Disciples']].map(([k,i,n])=>`<div class="toy tab ${k===tab?'on':''}"><img src="${ICON(i)}"><span class="big" style="--sw:3px">${n}</span></div>`).join('')}</div>
+  <div style="display:flex;gap:16px;align-items:flex-start">${tiles}</div></div>
+  <div class="toy" style="position:absolute;right:22px;top:16px;width:44px;height:44px;background:#ff6b5e;display:flex;align-items:center;justify-content:center"><span class="big" style="font-size:24px">X</span></div></div>`}
+const RC={elder:'#be64ff',immortal:'#ffc83c',celestial:'#6ee1eb',dao:'#e6323c',emperor:'#ff8c28',primordial:'#ff6edc'};
+function uiView(){ // opened from the Disciple Garden pad: lands on Disciples, names in rarity colour
+ const t=[['elder','Elder','+150% Qi','49'],['immortal','Immortal','+400% Qi','99'],['celestial','Celestial','+900% Qi','249'],['dao','Dao Ancestor','+2,000% Qi','Realm 5'],['emperor','Heavenly Emperor','+4,500% Qi','Realm 7'],['primordial','Primordial','+10,000% Qi','Realm 9']];
+ return screen('disciples',t.map(([k,n,l,p],i)=>tile(k,n,l,p,{color:RC[k],bg:'#f1e6ff',tilt:[-2,1.5,-1,2,-1.5,1][i]})).join(''))}
+function qiView(){
+ const t=[['pack1','Qi Pouch','+48,000','25'],['pack2','Qi Chest','+288,000','99'],['pack3','Qi Vault','+1,728,000','399']];
+ return screen('qi',t.map(([k,n,l,p],i)=>tile(k,n,`<span style="display:inline-flex;gap:3px;align-items:center">${QI}${l}</span>`,p,{bg:'#c9ffe4',tilt:[-2,1.5,-1][i],rib:i===2?'Best value':''})).join(''))}
+function shortView(){ // standing on a pad you cannot afford yet: one quiet offer under the card
+ return `<div class="phone">
+  <div style="position:absolute;left:50%;top:22%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+   <div class="big" style="font-size:24px">Training Ground</div>
+   <div class="big" style="font-size:22px;color:#ff8b7d;display:flex;gap:5px;align-items:center">${QI}11,190</div></div>
+  <div style="position:absolute;left:50%;bottom:16%;transform:translateX(-50%);display:flex;gap:12px;align-items:center">
+   <div class="big" style="font-size:18px;display:flex;gap:5px;align-items:center">Need ${QI}2,140 more</div>
+   <div class="toy price" style="padding:4px 14px;border-radius:12px"><img src="${ICON('pack1')}" style="width:26px;height:26px"><span class="big" style="font-size:17px;--sw:3px">Get Qi</span></div></div></div>`}
+
+const LBL={now:'Now: everything on one side island',A:'A (recommended): products where they act, disciples get their own garden',B:'B: no island, one disciple at the Disciple Hall',ui:'Screen: opened from the garden, lands on Disciples; names in rarity colour',qi:'Screen: Qi tab with one Best value ribbon',short:'On a pad you cannot afford: one quiet Get Qi (opens the Qi tab), fades in 4 s'};
+const V={now:nowView,A:aView,B:bView,ui:uiView,qi:qiView,short:shortView};
+root.innerHTML=V[view]()+(legends[view]?`<div class="legend">${legends[view]}</div>`:'');
+document.getElementById('lbl').textContent=LBL[view];
+</script></body></html>

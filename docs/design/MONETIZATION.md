@@ -23,15 +23,25 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   Boosts row (the three passes + Instant Pill), Qi row (three packs). A phone that cannot fit both
   rows flips pages with a "More Qi" / "Boosts" tile. Opened by the HUD's gold Shop button (always on
   top of the left column). Code: `src/client/Shop.client.luau`, drawing kit `src/shared/Toy.luau`.
-- **World shop (D28):** every peak has its own small "Sect Market" island beside its entrance
-  (`Config.SHOP_ISLAND_AT` in the peak frame, `SHOP_ISLAND_RADIUS`), built once per plot at boot and
-  joined to the peak's rim by a bridge that follows the island's size. The 2x Qi pad stands right
-  inside the gate (the eye catcher, with a big icon); `SHOP_ITEM_PADS` ring the lawn; a pavilion at
-  the back shows the disciples for sale (`SHOP_DISCIPLE_PADS`) as real cultivators, each with its
-  pad. Stepping onto a pad prompts its item (only for a player seen off it first; an owned pass
-  shows a toast instead). Pads are invisible `StepPad` anchors (`PadKind` "shop", `ShopKey`) drawn by
-  the pad look (D27); `Shop.client` draws the bobbing item icon and the price card. Anyone may shop
-  on any island.
+- **World shop (D33, replaces the one-island market of D28; research
+  `2026-10-21_shop_placement.md`, mock `docs/art/mocks/shop_layout_A.png`):** every item stands where
+  it acts, beside the path, never on it. On the owner's peak (`Config.SHOP_PEAK_PADS`,
+  `Shop.refreshPeak`, called from every pad refresh): 2x Qi right and VIP left just inside the
+  entrance arch (they follow the rim when the island grows; the VIP arch name turns gold right
+  there), Instant Pill beside the Alchemy Furnace and Auto Orbs beside the Gathering Array (each only
+  once that building stands). The side island is now the **Disciple Garden**
+  (`Config.SHOP_ISLAND_AT`, `SHOP_ISLAND_RADIUS`, joined to the rim by a bridge): only the six
+  disciples for sale (`SHOP_DISCIPLE_PADS`), as real cultivators along a stone walk from its gate,
+  cheapest first on alternate sides, Primordial last under a pavilion. Qi packs have no pad: standing
+  on one of your own pads you cannot afford shows a quiet "Need [qi] N more · Get Qi" for 4 s (once
+  per step onto it, only while a pack is on sale; Studio always), which opens the Qi page (open
+  source `short`). Stepping onto a shop pad prompts its item (only for a player seen off it first;
+  an owned pass shows a toast instead). Pads are invisible `StepPad` anchors (`PadKind` "shop",
+  `ShopKey`) drawn by the pad look (D27); `Shop.client` draws the bobbing item icon (near, on-screen
+  cards only) and the price card. Anyone may shop on any peak.
+- **Screen ergonomics (D33):** the tabs carry their icon; it opens on Boosts from the HUD and on Qi
+  from Get Qi; disciple names are in their rarity colour; one "Best value" ribbon on the Qi Vault
+  (most qi per Robux, no fake discount); the close X sits in the screen's top right corner.
 - **Ids and prices:** the owner pastes each pass / product id into `Config.SHOP_PASSES` /
   `Config.SHOP_PRODUCTS` (id 0 = "Soon", never prompts). Prices are never in code: the client reads
   them from `MarketplaceService` (passes are regionally priced, so one typed price would be wrong).

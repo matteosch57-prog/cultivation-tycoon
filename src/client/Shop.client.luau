@@ -1,8 +1,9 @@
 -- Shop screen (mock B, docs/art/mocks/shop_B_phone.jpg, D24): no board, toy tiles floating over a
 -- dark veil, one row per page: Boosts (passes + Instant Pill), Qi packs, Disciples, picked with
--- toy tabs under the title. Opened by the HUD's Shop button
--- (PlayerGui.ShopOpen, a BindableEvent fired with the source). The server prompts and grants
--- (R9): a tap only sends the item key. Also draws the cards over the purple pads on the hub.
+-- toy tabs (with their icons) under the title. Opened by the HUD's Shop button and by the Get Qi
+-- offer (PlayerGui.ShopOpen, a BindableEvent fired with the source and an optional page key). The
+-- server prompts and grants (R9): a tap only sends the item key. Also draws the cards over the world
+-- shop's purple pads (D33) and the quiet Get Qi offer on a build pad the player cannot afford.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -18,6 +19,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local PadLook = require(Shared:WaitForChild("PadLook"))
+local PerfMark = require(Shared:WaitForChild("PerfMark"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
 
 local px, text = Toy.px, Toy.text
@@ -106,14 +108,15 @@ local PAGES = {
 	{
 		key = "boosts",
 		name = "Boosts",
+		icon = "x2",
 		items = function()
 			local list = table.clone(Config.SHOP_PASSES)
 			table.insert(list, (Config.shopItem("pill")))
 			return list
 		end,
 	},
-	{ key = "qi", name = "Qi", items = products(function(it) return it.seconds ~= nil end) },
-	{ key = "disciples", name = "Disciples", items = products(function(it) return it.rarity ~= nil end) },
+	{ key = "qi", name = "Qi", icon = "pack2", items = products(function(it) return it.seconds ~= nil end) },
+	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(function(it) return it.rarity ~= nil end) },
 }
 
 local function computeScale()
@@ -128,16 +131,34 @@ end
 
 local close -- forward
 
+local BEST = "pack3" -- the one "Best value" ribbon (the most qi per Robux)
+
 local function tile(parent, key, order, name, line)
 	local col = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, Rotation = TILT[(order - 1) % #TILT + 1] })
 	Toy.list(col, false, px(2))
 	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
 	holder.LayoutOrder = 1
 	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	if key == BEST then
+		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, px(14), 0, -px(12)), Rotation = 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF6B5E"), ZIndex = 5 })
+		Toy.corner(rib, UDim.new(0, px(8)))
+		local st = Instance.new("UIStroke")
+		st.Color = Toy.INK
+		st.Thickness = px(2)
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		st.Parent = rib
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(7)), UDim.new(0, px(7))
+		pad.Parent = rib
+		text(rib, "Best value", px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
+	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = col
-	text(col, name, px(17), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	-- a disciple's name in its rarity colour (the Index and recruit language)
+	local it = Config.shopItem(key)
+	local nameColor = it and it.rarity and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
+	text(col, name, px(17), nameColor, { LayoutOrder = 2 })
 	local lineLabel
 	if key ~= "more" and Config.shopItem(key) and Config.shopItem(key).seconds then
 		-- a Qi pack's amount, after the qi icon
@@ -225,13 +246,13 @@ local function build()
 
 	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(14))
-	-- title + close
-	local head = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1, Rotation = -2 })
-	Toy.list(head, true, px(14))
-	text(head, "Shop", px(34), GOLD, { LayoutOrder = 1 })
-	local xHolder, xBtn = Toy.button(head, UDim2.fromOffset(px(34), px(34)), Color3.fromHex("FF6B5E"), px(10))
-	xHolder.LayoutOrder = 2
-	text(xBtn, "X", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	text(body, "Shop", px(34), GOLD, { LayoutOrder = 1, Rotation = -2 })
+	-- close: a big X in the screen's top right corner (where a thumb looks for it), inside the safe area
+	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
+	xHolder.AnchorPoint = Vector2.new(1, 0)
+	xHolder.Position = UDim2.new(1, -px(22), 0, px(16) + game:GetService("GuiService"):GetGuiInset().Y)
+	xHolder.ZIndex = 2 -- over the veil
+	text(xBtn, "X", px(24), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	xBtn.Activated:Connect(function()
 		close()
 	end)
@@ -248,9 +269,12 @@ local function build()
 			n += 1
 			itemTile(r, it, n)
 		end
-		local tHolder, tBtn = Toy.button(tabs, UDim2.fromOffset(px(118), px(34)), GREY, px(12))
+		local tHolder, tBtn = Toy.button(tabs, UDim2.fromOffset(px(132), px(36)), GREY, px(12))
 		tHolder.LayoutOrder = i
-		text(tBtn, pg.name, px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local tRow = Toy.frame(tBtn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		Toy.list(tRow, true, px(5), { VerticalAlignment = Enum.VerticalAlignment.Center })
+		Toy.icon(tRow, pg.icon, px(26), { LayoutOrder = 1 })
+		text(tRow, pg.name, px(16), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
 		ui.tabs[pg.key] = tBtn
 		tBtn.Activated:Connect(function()
 			if page ~= pg.key then
@@ -263,11 +287,17 @@ local function build()
 	refresh()
 end
 
-local function open(source)
+-- `tab` = the page to land on (the Get Qi offer opens Qi); the HUD button opens Boosts
+local function open(source, tab)
 	if gui.Enabled then
 		return
 	end
 	page = "boosts"
+	for _, pg in PAGES do
+		if pg.key == tab then
+			page = tab
+		end
+	end
 	build()
 	gui.Enabled = true
 	pop()
@@ -301,7 +331,7 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(functio
 end)
 
 ---------------------------------------------------------------------------------------------
--- world shop: a card over each purple pad on the hub (same language as the build pad cards)
+-- world shop: a card over each purple pad (peak and Disciple Garden), same language as the build pad cards
 local cards = {}
 local function padCard(pad)
 	local key = pad:GetAttribute("ShopKey")
@@ -375,12 +405,19 @@ local function onPad(d)
 end
 CollectionService:GetInstanceAddedSignal("StepPad"):Connect(onPad)
 CollectionService:GetInstanceRemovedSignal("StepPad"):Connect(refreshCards)
--- the icons bob gently over their pads
+-- the icons bob gently over their pads: only the near ones the camera sees (R16)
 RunService.RenderStepped:Connect(function()
+	local t0 = PerfMark.begin()
 	local t = os.clock()
-	for _, c in cards do
-		c.icon.Position = UDim2.fromOffset(0, math.sin(t * 2 + c.phase) * 4)
+	local cam = workspace.CurrentCamera
+	local eye = cam.CFrame.Position
+	for pad, c in cards do
+		local at = pad.Position
+		if (at - eye).Magnitude < c.bb.MaxDistance and PerfMark.onScreen(cam, at, 8) then
+			c.icon.Position = UDim2.fromOffset(0, math.sin(t * 2 + c.phase) * 4)
+		end
 	end
+	PerfMark.finish("shopCards", t0)
 end)
 task.spawn(function()
 	for _, d in CollectionService:GetTagged("StepPad") do
@@ -389,5 +426,90 @@ task.spawn(function()
 	fetchPrices(refreshCards)
 	for _, a in WATCH do
 		player:GetAttributeChangedSignal(a):Connect(refreshCards)
+	end
+end)
+
+---------------------------------------------------------------------------------------------
+-- Get Qi (research 2026-10-21_shop_placement, mock shop_layout_short.png): standing on a pad of
+-- your own that you cannot afford yet shows one quiet offer under it for a few seconds; a tap opens
+-- the Qi page. Once per step onto a pad, never a prompt by itself, and only while a pack is on sale.
+local NUDGE_SECONDS = 4
+local NUDGE_KINDS = { build = true, hire = true, breakthrough = true }
+local nudgeGui = Instance.new("ScreenGui")
+nudgeGui.Name = "ShopNudge"
+nudgeGui.ResetOnSpawn = false
+nudgeGui.IgnoreGuiInset = true
+nudgeGui.DisplayOrder = 4 -- under the shop screen
+nudgeGui.Enabled = false
+nudgeGui.Parent = playerGui
+local nudgeShown = 0
+
+local function packOnSale()
+	for _, it in Config.SHOP_PRODUCTS do
+		if it.seconds and it.id ~= 0 then
+			return true
+		end
+	end
+	return RunService:IsStudio() -- Studio shows it with the ids still at 0 (the page then reads Soon)
+end
+
+local function commas(n)
+	return (tostring(math.floor(n)):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+end
+
+local function showNudge(short)
+	nudgeGui:ClearAllChildren()
+	Toy.S = computeScale()
+	local offer = Toy.frame(nudgeGui, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 0.84) })
+	Toy.list(offer, true, px(12))
+	text(offer, "Need", px(18), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	local _, amount = Toy.amount(offer, "qi", px(18), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	amount.Text = commas(short)
+	text(offer, "more", px(18), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	local holder, btn = Toy.button(offer, UDim2.fromOffset(px(118), px(38)), BUY, px(12))
+	holder.LayoutOrder = 4
+	local inner = Toy.frame(btn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	Toy.list(inner, true, px(5))
+	Toy.icon(inner, "pack1", px(26), { LayoutOrder = 1 })
+	text(inner, "Get Qi", px(17), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
+	btn.Activated:Connect(function()
+		nudgeGui.Enabled = false
+		open("short", "qi")
+	end)
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.3
+	sc.Parent = offer
+	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	nudgeGui.Enabled = true
+	nudgeShown = os.clock()
+end
+
+task.spawn(function()
+	local lastPad = nil -- the pad the offer was shown for (again only after stepping off it)
+	while true do
+		task.wait(0.25)
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local here = nil
+		if hrp then
+			for _, p in CollectionService:GetTagged("StepPad") do
+				if NUDGE_KINDS[p:GetAttribute("PadKind")] and p:GetAttribute("OwnerId") == player.UserId then
+					local d = hrp.Position - p.Position
+					if Vector2.new(d.X, d.Z).Magnitude < 2.6 and d.Y > -1 and d.Y < 7 then
+						here = p
+						break
+					end
+				end
+			end
+		end
+		if here and here ~= lastPad then
+			local short = (here:GetAttribute("Cost") or 0) - (player:GetAttribute("Qi") or 0)
+			if short > 0 and not gui.Enabled and packOnSale() then
+				showNudge(short)
+			end
+		end
+		lastPad = here
+		if nudgeGui.Enabled and (os.clock() - nudgeShown > NUDGE_SECONDS or gui.Enabled) then
+			nudgeGui.Enabled = false
+		end
 	end
 end)

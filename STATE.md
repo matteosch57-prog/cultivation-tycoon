@@ -41,9 +41,10 @@ checked in Studio Play (ROADMAP).
   (whole climb, passes, Robux disciples, reincarnation lives at ~5 to 7 days each with x3).
   Simulated only: real pacing waits for the first live batch (funnel and realm events).
 
-- **Shop** (D24, D28; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), a "Sect
-  Market" island on every peak with step-on pads, 3 passes and 10 products granted through saved
-  receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 13
+- **Shop** (D24, D33; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), items
+  sold where they act (passes at the peak entrance, pill at the furnace, orbs at the array), a
+  Disciple Garden island with the six disciples for sale, a Get Qi offer on a pad out of reach; 3
+  passes and 10 products granted through saved receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 13
   items listed in `docs/design/SHOP_ITEMS.md` (type, name, description, price, icon in
   `art/shop_icons/`) and paste each id into `Config.SHOP_PASSES` / `SHOP_PRODUCTS`; then a Studio
   test purchase checks the prompt and ProcessReceipt.

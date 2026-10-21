@@ -140,6 +140,8 @@ local plots = {}
 -- direction (peak frame) from the peak centre to its shop island's bridge
 local SHOP_DIR = Vector2.new(Config.SHOP_ISLAND_AT.X, Config.SHOP_ISLAND_AT.Z).Unit
 
+local groundRadius = Config.ISLAND_RADIUS -- the island being drawn (buildGrounds sets it first)
+
 -- Spots that must stay free of trees and boulders: the entrance path, the shop bridge's foot, every
 -- pad, the Main Hall's largest footprint (level 5 with wings and towers) and the pagoda behind it.
 local function keepClear(x, z)
@@ -161,6 +163,12 @@ local function keepClear(x, z)
 			return true
 		end
 	end
+	for _, e in Config.SHOP_PEAK_PADS do -- the shop pads (the entrance ones move with the rim)
+		local sx, sz = Config.shopPeakSpot(e, groundRadius)
+		if (Vector2.new(x, z) - Vector2.new(sx, sz)).Magnitude < 7 then
+			return true
+		end
+	end
 	return false
 end
 
@@ -178,6 +186,7 @@ local function buildGrounds(plot, radius)
 	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADII[#Config.ISLAND_RADII] * 1.05 + 6, Enum.Material.Air)
 	local g = Instance.new("Folder")
 	g.Name = "Grounds"
+	groundRadius = radius
 	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true)
 	-- trees around the rim, wherever nothing is planned
 	local n = math.floor(radius / 4)
@@ -797,6 +806,7 @@ refreshPads = function(player, s)
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 	end
+	Shop.refreshPeak(s) -- the shop items that stand where they act (passes at the entrance, pill, orbs)
 end
 
 -- Saving (SaveStore holds the session lock) ------------------------------------------
@@ -976,6 +986,7 @@ local function onLeave(player)
 	Telemetry.custom(player, "SessionEnd", Telemetry.builtBucket(built), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())), s.data.sessions == 1 and "first" or "return")
 	save(s, true)
 	s.plot.built:ClearAllChildren()
+	Shop.clearPeak(s.plot)
 	s.plot.owner = nil
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")

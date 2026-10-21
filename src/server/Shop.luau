@@ -1,4 +1,4 @@
--- Shop (MONETIZATION.md): game passes, developer products, the purple pads around the hub cauldron.
+-- Shop (MONETIZATION.md): game passes, developer products, the world shop's purple pads.
 -- The server decides every prompt and grant (R9). Products are granted only through ProcessReceipt:
 -- the PurchaseId is stored in the save with the grant and the save must land before
 -- PurchaseGranted is returned, so a retried receipt (same server or a later one) grants once.
@@ -178,14 +178,15 @@ local function prompt(player, key)
 	end
 end
 
-local OPEN_SOURCES = { hud = true, pad = true, pill = true }
+local OPEN_SOURCES = { hud = true, pad = true, pill = true, short = true } -- short = the Get Qi offer on a pad out of reach
 local lastOpen = {}
 
--- World shop: every peak has a small shop island (Config SHOP_ISLAND_*), built once at boot for each
--- plot and never cleared (Main's grounds rebuild clears terrain only inside the largest peak).
--- Pads are StepPads (the "Step-on pad juice" client may restyle them; the behaviour keys on
--- ShopKey); stepping onto one prompts its item, again only after stepping off. Shop.client draws the
--- icon and the card over each pad. No OwnerId: anyone may shop on any island.
+-- World shop (D33, research 2026-10-21_shop_placement): every item stands where it acts. The
+-- passes and the pill stand on the owner's peak (Config.SHOP_PEAK_PADS, Shop.refreshPeak); the
+-- disciples for sale walk the peak's side island, the Disciple Garden (Shop.buildIsland, built once
+-- at boot and never cleared). Pads are StepPads (the step-on pad client draws them; the behaviour
+-- keys on ShopKey); stepping onto one prompts its item, again only after stepping off. Shop.client
+-- draws the icon and the card over each pad. No OwnerId: a visitor may buy on any peak.
 local PAD_REACH = 2.6
 
 -- an invisible anchor: Build.client draws the pad itself (tag "StepPad", D27)
@@ -204,6 +205,48 @@ local function shopPad(folder, at, key)
 	return p
 end
 
+-- The peak's shop pads: one per SHOP_PEAK_PADS entry whose building stands, at its spot for the
+-- current island size. Only what changed is added or removed (a rebuilt pad re-pops its card).
+-- Called from Main's refreshPads (every build, breakthrough, expansion and join).
+function Shop.refreshPeak(s)
+	local plot = s.plot
+	local folder = plot.folder:FindFirstChild("ShopPads")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "ShopPads"
+		folder.Parent = plot.folder
+	end
+	local radius = plot.radius or Config.islandRadius(s.data.owned)
+	local wanted = {}
+	for _, e in Config.SHOP_PEAK_PADS do
+		if not e.needs or s.data.owned[e.needs] then
+			local x, z = Config.shopPeakSpot(e, radius)
+			wanted["ShopPad_" .. e.key] = { e = e, x = x, z = z }
+		end
+	end
+	for _, p in folder:GetChildren() do
+		local w = wanted[p.Name]
+		if w and p:GetAttribute("SpotX") == w.x and p:GetAttribute("SpotZ") == w.z then
+			wanted[p.Name] = nil -- already standing at the right spot
+		else
+			p:Destroy()
+		end
+	end
+	for _, w in wanted do
+		local p = shopPad(folder, plot.frame * CFrame.new(w.x, 0, w.z), w.e.key)
+		p:SetAttribute("SpotX", w.x)
+		p:SetAttribute("SpotZ", w.z)
+	end
+end
+
+-- the peak goes back to unclaimed: its shop pads leave with the owner
+function Shop.clearPeak(plot)
+	local folder = plot.folder:FindFirstChild("ShopPads")
+	if folder then
+		folder:ClearAllChildren()
+	end
+end
+
 -- The island's frame: centre at SHOP_ISLAND_AT in the peak's frame, +Z facing the peak.
 function Shop.islandFrame(plotFrame)
 	local c = plotFrame * Config.SHOP_ISLAND_AT
@@ -215,20 +258,26 @@ function Shop.islandEntry(plotFrame)
 	return (Shop.islandFrame(plotFrame) * CFrame.new(0, 0, Config.SHOP_ISLAND_RADIUS - 1)).Position
 end
 
+-- the Garden walk in the island's frame: from the bridge (+Z) to the back, a gentle S
+local function walkAt(t)
+	local R = Config.SHOP_ISLAND_RADIUS
+	return Vector2.new(math.sin(t * math.pi * 1.5) * 5, (R - 2) - t * (2 * R - 11))
+end
+
 function Shop.buildIsland(plot)
 	local Style = api.style
 	local R = Config.SHOP_ISLAND_RADIUS
 	local f = Shop.islandFrame(plot.frame)
 	local folder = Instance.new("Folder")
-	folder.Name = "ShopIsland"
-	-- lawn: everything inside 0.8 R stays clear (pads, cauldron, path); trees only on the rim
+	folder.Name = "DiscipleGarden"
+	-- lawn: the walk and its stations stay clear; trees only on the rim
 	Style.island(folder, f, R, 700 + plot.index, function(x, z)
 		return Vector2.new(x, z).Magnitude < R * 0.8 or (math.abs(x) < 6 and z > 0)
 	end, true)
 	for k = 0, 9 do
 		local a = k / 10 * math.pi * 2 + 0.3
 		local x, z = math.cos(a) * (R - 3.5), math.sin(a) * (R - 3.5)
-		if not (math.abs(x) < 9 and z > 0) then
+		if not (math.abs(x) < 9 and (z > 0 or z < -15)) then -- clear of the gate and the pavilion
 			if k % 2 == 0 then
 				Style.sakura(folder, f * CFrame.new(x, 0, z), plot.index * 70 + k)
 			else
@@ -236,36 +285,42 @@ function Shop.buildIsland(plot)
 			end
 		end
 	end
-	-- entrance gate with the market's name, then 2x Qi right inside it (the first thing seen)
-	api.kit.gate(folder, f * CFrame.new(0, 0, R - 2), 9, 9, "Sect Market")
-	shopPad(folder, f * CFrame.new(0, 0, R - 8), "x2")
-	Style.lantern(folder, f * CFrame.new(-4.5, 0, R - 6), 0.8)
-	Style.lantern(folder, f * CFrame.new(4.5, 0, R - 6), 0.8)
-	-- a bronze cauldron at the heart of the lawn (its fire is a real light)
-	Style.cauldron(folder, f * CFrame.new(0, 0, -1), 0.8)
-	-- the other items on the front arc, half a side, the first nearest the entrance
-	local half = #Config.SHOP_ITEM_PADS // 2
-	for i, key in Config.SHOP_ITEM_PADS do
-		local side = i <= half and -1 or 1
-		local k = i <= half and i or (#Config.SHOP_ITEM_PADS + 1 - i)
-		local t = math.rad(35 + (k - 1) * 27)
-		shopPad(folder, f * CFrame.new(side * math.sin(t) * 16, 0, math.cos(t) * 16), key)
+	api.kit.gate(folder, f * CFrame.new(0, 0, R - 2), 9, 9, "Disciple Garden")
+	-- the walk: flat stones from the gate to the pavilion at the back
+	local steps = 14
+	for i = 0, steps do
+		local a, b = walkAt(i / steps), walkAt(math.min(1, (i + 1) / steps))
+		local mid = (a + b) / 2
+		local look = Vector3.new(b.X - a.X, 0, b.Y - a.Y)
+		local cf = f * CFrame.lookAt(Vector3.new(mid.X, 0.1, mid.Y), Vector3.new(mid.X, 0.1, mid.Y) + (look.Magnitude > 0 and look or Vector3.zAxis))
+		api.styleP(folder, Vector3.new(4, 0.25, 3.2), cf, api.palette.stoneLight, Enum.Material.Slate).CastShadow = false
 	end
-	-- the disciples for sale sit on the back arc facing the cauldron, each with its pad in front and
-	-- a lantern between neighbours (cheapest on the left as you walk in)
+	-- stations: five beside the walk on alternate sides (cheapest nearest the gate), each a
+	-- cultivator on its cushion facing the walk with its pad between them and the stones; the last
+	-- (Primordial) sits under a pavilion at the walk's end, its pad in front
 	local n = #Config.SHOP_DISCIPLE_PADS
 	for i, key in Config.SHOP_DISCIPLE_PADS do
-		local t = math.rad(115 + (i - 1) * (130 / (n - 1)))
-		local dx, dz = -math.sin(t), math.cos(t)
 		local it = Config.shopItem(key)
-		local seat = f * CFrame.lookAt(Vector3.new(dx * 20, 0, dz * 20), Vector3.zero) -- facing the cauldron
+		local seat, padAt
+		if i < n then
+			local w = walkAt((i - 0.4) / n)
+			local side = i % 2 == 1 and -1 or 1
+			local onWalk = Vector3.new(w.X, 0, w.Y)
+			seat = f * CFrame.lookAt(onWalk + Vector3.new(side * 10, 0, 0), onWalk)
+			padAt = f * CFrame.new(onWalk + Vector3.new(side * 5, 0, 0))
+			if i < n - 1 then
+				Style.lantern(folder, f * CFrame.new(onWalk + Vector3.new(-side * 5.5, 0, -2)), 0.7)
+			end
+		else
+			local w = walkAt(1)
+			local _, h = api.kit.pavilion(folder, f * CFrame.new(w.X, 0, w.Y - 3), 7, 8)
+			seat = f * CFrame.new(w.X, h, w.Y - 3) -- facing the gate (+Z)
+			seat = seat * CFrame.Angles(0, math.pi, 0)
+			padAt = f * CFrame.new(w.X, 0, w.Y + 4.5)
+		end
 		local m = api.cultivators.build(folder, seat, i + 2, Config.rarity(it.rarity), Config.RARITIES)
 		m.Name = "ForSale_" .. key
-		shopPad(folder, f * CFrame.new(dx * 14, 0, dz * 14), key)
-		if i < n then
-			local tm = t + math.rad(65 / (n - 1))
-			Style.lantern(folder, f * CFrame.new(-math.sin(tm) * 21, 0, math.cos(tm) * 21), 0.7)
-		end
+		shopPad(folder, padAt, key)
 	end
 	folder.Parent = plot.folder
 	return folder

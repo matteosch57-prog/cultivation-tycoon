@@ -235,15 +235,28 @@ Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 Config.VIP_SLOTS = 1
 Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
--- World shop: every peak has its own shop island (src/server/Shop.luau), in the peak's local frame
--- at SHOP_ISLAND_AT (beside the entrance, clear of the largest peak and the neighbours), joined to
--- the peak's rim by a bridge. 2x Qi stands at its entrance; the other items ring its lawn.
+-- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
+-- item stands where it acts, on the owner's peak. `x` = across the peak; `z` = along it, or
+-- `fromRim` = studs inside the entrance arch (follows the island's size); `needs` = the building that
+-- must stand first (no pad offers what the player cannot use yet). Beside the path, never on it.
+Config.SHOP_PEAK_PADS = {
+	{ key = "x2", x = 15, fromRim = 8 }, -- right of the path, the first thing on the peak
+	{ key = "vip", x = -15, fromRim = 8 }, -- left of it, under the arch whose name turns gold
+	{ key = "pill", x = 22, z = -6, needs = "furnace" }, -- the furnace brews this pill; here it is now
+	{ key = "auto", x = 54, z = -8, needs = "array" }, -- the orbs come from the Gathering Array
+}
+-- (x, z) of a SHOP_PEAK_PADS entry on an island of `radius`
+function Config.shopPeakSpot(e, radius)
+	return e.x, e.fromRim and (radius - e.fromRim) or e.z
+end
+-- Disciple Garden: every peak's side island holds only the disciples for sale, along a walk from
+-- its bridge, cheapest first and Primordial at the end (src/server/Shop.luau). At SHOP_ISLAND_AT in
+-- the peak's frame (beside the entrance, clear of the largest peak and the neighbours).
 -- (55, 122) and 28: the island's lobes stay outside the 100.5-stud terrain clear of the largest peak and
--- ~8 studs clear of the neighbour peak's largest island; 13 pads need the room (Play check 2026-10-21)
+-- ~8 studs clear of the neighbour peak's largest island (Play check 2026-10-21)
 Config.SHOP_ISLAND_AT = Vector3.new(55, 0, 122)
 Config.SHOP_ISLAND_RADIUS = 28
-Config.SHOP_ITEM_PADS = { "auto", "vip", "pill", "pack1", "pack2", "pack3" } -- around the lawn, left to right
-Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial", "dao", "emperor", "primordial" } -- the back arc, left to right
+Config.SHOP_DISCIPLE_PADS = { "elder", "immortal", "celestial", "dao", "emperor", "primordial" } -- along the walk, first to last
 
 -- the Shop product that sells disciple rarity `name` (nil when it is not sold)
 function Config.shopKeyOf(name)
