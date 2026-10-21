@@ -215,7 +215,8 @@ local function buildGrounds(plot, radius)
 	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
 	sign.Name = "Sign"
 	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
+	gui.Face = Enum.NormalId.Back -- the board's +Z side (Front faced the frame: the name never showed)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 40
 	gui.Parent = sign
 	local label = Instance.new("TextLabel")

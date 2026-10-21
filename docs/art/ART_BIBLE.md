@@ -70,7 +70,8 @@ bays, one or two roofs). Learned from studying reference temple halls (2026-10-2
   railing, panel and tile-end pieces under a kit roof (`ClayRoofTiles`, round tile ends).
 - Name boards (`Kit.plaque`): a dark board in a gold frame, the name in gold Fantasy. A one-roof hall
   hangs it in the middle bay (odd bay counts only), a two-roof hall on the upper storey between the
-  eaves. The text is the pad name; the Sect Gate shows the sect's name.
+  eaves. The text is the pad name; the Sect Gate shows the sect's name. The SurfaceGui goes on the
+  board's Back face (its +Z side, toward the viewer) with SizingMode PixelsPerStud. Captures 70, 71 (Play).
 - Moon Gate: the ring is cut from blocks whose outer corners sit on the circle, and the wall between
   ring and square is strips whose ends hide under the ring (24 long blocks read as a cog wheel).
 Captures: [captures/57 to 60](captures/), before/after [63 to 69](captures/).

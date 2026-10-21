@@ -235,7 +235,7 @@ function Kit.hall(parent, cf, opts)
 		end
 		if opts.plaque then
 			-- two roofs: the name board sits between the eaves, on the upper storey's front
-			Kit.plaque(m, deck * CFrame.new(0, joint + 0.95, D2 / 2 + 0.25), math.min(W2 * 0.4, 6.5), 1.5, opts.plaque)
+			Kit.plaque(m, deck * CFrame.new(0, joint + 0.95, D2 / 2 + 0.25), math.min(W2 * 0.6, 9), 1.6, opts.plaque)
 		end
 		local top = table.clone(ro)
 		top.rise, top.over, top.rows = D2 * 0.32, 3.5, 5
@@ -289,7 +289,10 @@ function Kit.plaque(parent, cf, w, h, text)
 	board.Name = "Plaque"
 	if text then
 		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Front
+		-- the board faces +Z, which is its Back face (Front = LookVector = -Z: the text sat on the
+		-- side against the frame and every board read blank in Play)
+		gui.Face = Enum.NormalId.Back
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud -- (FixedSize squashed the text)
 		gui.PixelsPerStud = 40
 		gui.LightInfluence = 0.6 -- stays readable in the porch shade
 		gui.Parent = board
@@ -299,13 +302,13 @@ function Kit.plaque(parent, cf, w, h, text)
 		label.BackgroundTransparency = 1
 		label.TextScaled = true
 		label.Font = Enum.Font.Fantasy
-		label.TextColor3 = Color3.fromRGB(255, 225, 150)
+		label.TextColor3 = Color3.fromRGB(255, 214, 110)
 		label.Text = text
 		local pad = Instance.new("UIPadding")
 		pad.PaddingLeft = UDim.new(0.06, 0)
 		pad.PaddingRight = UDim.new(0.06, 0)
-		pad.PaddingTop = UDim.new(0.12, 0)
-		pad.PaddingBottom = UDim.new(0.12, 0)
+		pad.PaddingTop = UDim.new(0.08, 0)
+		pad.PaddingBottom = UDim.new(0.08, 0)
 		pad.Parent = label
 		label.Parent = gui
 	end
