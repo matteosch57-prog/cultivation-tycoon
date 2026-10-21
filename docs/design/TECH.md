@@ -30,8 +30,9 @@ Each peak's `frame` has +Z facing the hub. `buildGrounds(plot, radius)` rebuilds
 trees, waterfall, bridge and arch when the island grows or shrinks.
 
 ## Data
-DataStore `CultivationTycoon_v1`; Studio uses `CultivationTycoon_v1_studio` so tests never touch live
-saves. Saved on leave, every `AUTOSAVE` s and on close (close waits for every pending save).
+DataStore `CultivationTycoon_v1`. Studio Play with `MOCK_DATASTORE` on (the default; gated on the flag AND
+`IsStudio()`) uses no store: every Play is a new player and nothing saves. With it off, Studio uses
+`CultivationTycoon_v1_studio`, so tests never touch live saves. Saved on leave, every `AUTOSAVE` s and on close (close waits for every pending save).
 
 `SaveStore.luau` owns the record `{ v, data, lock = { id, t } }`. Each join gets its own session id and
 takes the lock on load (UpdateAsync); every save lands only while the record still carries that id,

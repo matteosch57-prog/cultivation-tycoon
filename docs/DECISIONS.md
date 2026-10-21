@@ -60,3 +60,6 @@ the log as a D-number.
 - **D22** Guide arrow = mock A (owner pick of A / B / C, `docs/art/mocks/guide_A..C.jpg`): a jade
   chevron trail on the ground, the most common tycoon guide and the only one of the three that still
   points the way when the pad is behind the player. Plain objects, so no new light exception (R3).
+- **D23** Studio Play uses a mock save by default (`MOCK_DATASTORE`, owner 2026-10-21: "why not using a mock data
+  store like my other games"): every Play starts as a new player, so the first session (guide trail, funnel)
+  is what a tester sees; the `_studio` store stays for save tests with the flag off. Gate = flag AND `IsStudio()`.

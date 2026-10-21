@@ -10,7 +10,11 @@ local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 
 local store = nil
-do
+if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
+	-- Studio mock (both halves of the gate, never the flag alone): no store at all, so every Play
+	-- starts as a brand-new player and nothing is saved. Set MOCK_DATASTORE false to test saving.
+	print("[Tycoon] Studio mock save: fresh player every Play, nothing saved")
+else
 	local ok, result = pcall(function()
 		-- Studio tests write to their own store so they never touch live saves.
 		local suffix = game:GetService("RunService"):IsStudio() and "_studio" or ""

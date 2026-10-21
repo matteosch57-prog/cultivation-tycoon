@@ -15,7 +15,8 @@ Append only. Retire a rule by striking it through, never renumber. Cite by numbe
   publishes, and saves place-only edits (Ctrl+S). Never `git commit`/`push` unless he asks in the moment.
 - **R6** Terrain: the map stands at world y = 2 (`BASE_Y`); grass cylinders are centred at world y = -4
   (FillCylinder snaps to the 4-stud grid). Ground-touching parts paint the earth under them.
-- **R7** Studio sessions save to the `_studio` DataStore only.
+- **R7** Studio sessions save to the `_studio` DataStore only (or nowhere, with `MOCK_DATASTORE` on). A
+  Studio-only switch is gated on the flag AND `IsStudio()`, never the flag alone.
 - **R8** Robux never buys a random reward. Recruits cost qi; their odds are shown in game.
 - **R9** The server decides every purchase, grant and roll; clients only draw and play sounds.
 - **R10** Never launch Roblox Studio yourself; no mouse input through the Studio MCP.

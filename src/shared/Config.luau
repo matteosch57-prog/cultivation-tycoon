@@ -10,6 +10,7 @@ Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
+Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)
 Config.DATA_VERSION = 1 -- save record format; SaveStore.migrate lifts older records to it
 Config.SAVE_LEASE = 150 -- s a session lock lives without a refresh (autosave refreshes it)
 Config.SAVE_RETRIES = 3 -- DataStore attempts per load/save (backoff 1 s, 2 s)
