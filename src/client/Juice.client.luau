@@ -313,6 +313,17 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		if c then
 			pillar(c + Vector3.new(0, 1, 0), Color3.fromHex("9FD0FF"), 50, 2)
 		end
+	elseif kind == "reincarnate" then
+		Sfx.play("thunder")
+		task.delay(0.3, function()
+			Sfx.play("gong")
+		end)
+		if a == player.DisplayName then
+			local c = plotCentre()
+			if c then
+				pillar(c + Vector3.new(0, 1, 0), Color3.fromHex("D9B8FF"), 80, 2.5)
+			end
+		end
 	elseif kind == "breakthrough" then
 		Sfx.play("thunder")
 		task.delay(0.15, function()

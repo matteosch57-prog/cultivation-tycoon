@@ -46,6 +46,9 @@ pillFn.Parent = remotes
 local giftFn = Instance.new("RemoteFunction")
 giftFn.Name = "ClaimGift"
 giftFn.Parent = remotes
+local reincFn = Instance.new("RemoteFunction")
+reincFn.Name = "Reincarnate"
+reincFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -304,7 +307,8 @@ local function deepCopy(t)
 end
 
 local function defaultData()
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1 }
+	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0 }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
@@ -349,7 +353,19 @@ local function rate(s, away)
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
 	local pill = (not away and boosted(data)) and 2 or 1
 	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass
+	local past = Config.pastLivesMult(data.soulPeak)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past
+end
+
+-- share of this realm's pads owned (0..1)
+local function builtShare(d)
+	local n = 0
+	for _, pad in Config.PADS do
+		if d.owned[pad.id] then
+			n += 1
+		end
+	end
+	return n / #Config.PADS
 end
 
 local function publish(player)
@@ -387,6 +403,13 @@ local function publish(player)
 		end
 	end
 	player:SetAttribute("Built", built)
+	-- reincarnation: what a new life would keep and gain (the screen previews it)
+	player:SetAttribute("Lives", d.lives or 1)
+	player:SetAttribute("Karma", d.karma or 0)
+	player:SetAttribute("SoulPeak", d.soulPeak or 0)
+	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
+	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
+	player:SetAttribute("ReincKarma", Config.karmaFor(math.max(d.realm, Config.REINC_REALM), d.realm >= Config.REINC_REALM and built / #Config.PADS or 0))
 	local ls = player:FindFirstChild("leaderstats")
 	if ls then
 		ls.Realm.Value = d.realm
@@ -965,6 +988,59 @@ giftFn.OnServerInvoke = function(player)
 	publish(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
 	return gain
+end
+
+-- Reincarnation: the ONE function every caller goes through, so the gate lives here. A new life
+-- lands at realm 1, below the REINC_REALM gate, so it can never be repeated for free.
+local function reincarnate(player, s)
+	local d = s.data
+	if d.realm < Config.REINC_REALM then
+		return nil
+	end
+	local gained = Config.karmaFor(d.realm, builtShare(d))
+	local lifeSec = (d.playSec or 0) - (d.lifeStart or 0)
+	Telemetry.custom(player, "Reincarnate", Telemetry.lifeBucket(d.lives or 1), Telemetry.deepBucket(d.realm), Telemetry.hourBucket(lifeSec))
+	print(string.format("[Tycoon] %d reincarnated: life %d ended at realm %d, +%d karma", player.UserId, d.lives or 1, d.realm, gained))
+	d.karma = (d.karma or 0) + gained
+	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
+	d.lives = (d.lives or 1) + 1
+	d.lifeStart = d.playSec or 0
+	d.realm = 1
+	d.owned = {}
+	d.qi = 0
+	d.pillReady = false
+	d.pillTimer = 0
+	d.boostUntil = 0
+	d.realmRecruits = 0
+	-- sworn disciples (the strongest, the list is kept sorted) follow into the new life
+	local sworn = {}
+	for i = 1, math.min(Config.SWORN_BASE, #d.disciples) do
+		sworn[i] = d.disciples[i]
+	end
+	d.disciples = sworn
+	lightning(s)
+	rebuild(s)
+	refreshPads(player, s)
+	publish(player)
+	task.spawn(save, s, false, true)
+	notify:FireAllClients("reincarnate", player.DisplayName, d.lives)
+	return { karma = gained, lives = d.lives, pastLives = Config.pastLivesMult(d.soulPeak) }
+end
+
+reincFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or s.reincBusy then
+		return nil
+	end
+	s.reincBusy = true
+	local ok, res = pcall(reincarnate, player, s)
+	s.reincBusy = false
+	if not ok then
+		warn("[Tycoon] reincarnation failed")
+		print("[Tycoon] reincarnation error:", res)
+		return nil
+	end
+	return res
 end
 
 -- Qi orbs (Qi Gathering Array): open grass spots in the peak's local frame

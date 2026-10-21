@@ -40,7 +40,28 @@ Config.REALMS = {
 	"Core Formation",
 	"Nascent Soul",
 	"Soul Transformation",
+	"Void Refinement",
+	"Body Integration",
+	"Mahayana",
+	"Tribulation Transcendence",
+	"True Immortal",
 }
+
+-- Reincarnation (docs/research/2026-10-21_reincarnation_design.md): from REINC_REALM a player may
+-- start a new life at realm 1. Past Lives: every realm above REINC_REALM - 1 reached in a FINISHED
+-- life (`soulPeak`, monotonic) multiplies all qi by PAST_LIVES_MULT in later lives. Karma is paid
+-- per reincarnation from how deep that life went; SWORN_BASE best disciples follow into the next life.
+Config.REINC_REALM = 10
+Config.PAST_LIVES_MULT = 3
+Config.SWORN_BASE = 1
+function Config.pastLivesMult(soulPeak)
+	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))
+end
+-- ~10 at realm 10, x2.15 per realm deeper (a realm costs x10: the cube root of the qi it took);
+-- `built` = share of this realm's pads owned (0..1) so progress inside a realm counts too
+function Config.karmaFor(realm, built)
+	return math.floor(10 * 10 ^ ((realm - Config.REINC_REALM + (built or 0)) / 3))
+end
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 -- Owner direction (D25): the first realms are fast laps, then it gets hard; realm 10 is the long goal
 -- (reincarnation comes after it). Costs x5 per realm up to REALM_COST_LATE_FROM (realms 2 to 5 take
@@ -218,7 +239,10 @@ Config.PALETTES = {
 }
 
 function Config.realmName(realm)
-	return Config.REALMS[math.min(realm, #Config.REALMS)] .. (realm > #Config.REALMS and (" " .. realm) or "")
+	if realm > #Config.REALMS then
+		return "Immortal Realm " .. realm
+	end
+	return Config.REALMS[realm]
 end
 
 function Config.costMult(realm)

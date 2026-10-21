@@ -51,6 +51,10 @@ Telemetry.EVENTS = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",
 	},
+	Reincarnate = {
+		fields = { "life that ended (lifeBucket)", "realm reached (deepBucket)", "hours played in that life (hourBucket)" },
+		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",
+	},
 	Shop = {
 		fields = {
 			"open | prompt | bought | closed",
@@ -140,6 +144,26 @@ function Telemetry.builtBucket(n)
 	for _, hi in BUILT do
 		if n < hi then
 			return hi - lo == 1 and tostring(lo) or (lo .. "-" .. (hi - 1))
+		end
+		lo = hi
+	end
+	return lo .. "+"
+end
+
+function Telemetry.lifeBucket(n)
+	return n >= 6 and "6+" or (n >= 4 and "4-5" or tostring(n))
+end
+
+function Telemetry.deepBucket(realm)
+	return realm >= 13 and "13+" or tostring(realm)
+end
+
+local HOURS = { 1, 3, 10, 30, 100 }
+function Telemetry.hourBucket(sec)
+	local h, lo = sec / 3600, 0
+	for _, hi in HOURS do
+		if h < hi then
+			return lo .. "-" .. hi
 		end
 		lo = hi
 	end

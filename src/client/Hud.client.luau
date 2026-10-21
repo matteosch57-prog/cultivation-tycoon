@@ -477,7 +477,25 @@ local function build()
 	pLayout.Padding = UDim.new(0, px(2))
 	pLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	pLayout.Parent = prog
-	ui.realm = text(prog, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 1 })
+	-- realm name + the Rebirth chip (road to reincarnation: "Rebirth 3/10", opens Reincarnation.client)
+	local realmRow = frame(prog, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	local rrLayout = Instance.new("UIListLayout")
+	rrLayout.FillDirection = Enum.FillDirection.Horizontal
+	rrLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	rrLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	rrLayout.Padding = UDim.new(0, px(8))
+	rrLayout.Parent = realmRow
+	ui.realm = text(realmRow, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 1 })
+	local chipHolder, chipBtn = toy(realmRow, UDim2.fromOffset(px(104), px(26)), Color3.fromHex("B06BFF"), px(9))
+	chipHolder.LayoutOrder = 2
+	ui.rebirth = text(chipBtn, "", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	ui.rebirthBtn = chipBtn
+	chipBtn.Activated:Connect(function()
+		local ev = playerGui:FindFirstChild("ReincOpen")
+		if ev then
+			ev:Fire()
+		end
+	end)
 	local barHolder = frame(prog, { Size = UDim2.fromOffset(px(240), px(24)), LayoutOrder = 2 })
 	local barShadow = frame(barHolder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(3)), BackgroundTransparency = 0, BackgroundColor3 = INK })
 	corner(barShadow, UDim.new(1, 0))
@@ -668,6 +686,8 @@ local function refreshStatic()
 	end
 	ui.rate.Text = "+" .. compact(player:GetAttribute("Rate") or 0) .. "/s"
 	ui.realm.Text = player:GetAttribute("RealmName") or ""
+	local realmNow = player:GetAttribute("Realm") or 1
+	ui.rebirth.Text = realmNow >= Config.REINC_REALM and "Rebirth!" or string.format("Rebirth %d/%d", realmNow, Config.REINC_REALM)
 	ui.recruitCost.Text = compact(player:GetAttribute("RecruitCost") or 0)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
@@ -820,6 +840,15 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
 	end
 
+	-- the Rebirth chip wobbles gold once a new life is open
+	if (player:GetAttribute("Realm") or 1) >= Config.REINC_REALM then
+		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
+		ui.rebirthBtn.BackgroundColor3 = GOLD
+	else
+		ui.rebirthBtn.Rotation = 0
+		ui.rebirthBtn.BackgroundColor3 = Color3.fromHex("B06BFF")
+	end
+
 	if ui.gCol.Visible then
 		local g = player:GetAttribute("GiftIn") or -1
 		put(ui.giftDot, "Visible", g == 0)
@@ -914,5 +943,7 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		toast(string.format("Your sect gathered %s Qi while you were away", short(a)), Color3.fromHex("9FD0FF"), 5)
 	elseif kind == "breakthrough" then
 		toast(a .. " broke through to " .. b .. "!", GOLD, 4)
+	elseif kind == "reincarnate" then
+		toast(string.format("%s begins life %d!", a, b), Color3.fromHex("D9B8FF"), 4)
 	end
 end)
