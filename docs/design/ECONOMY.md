@@ -21,10 +21,15 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 `mainhall1..5`: one building at the back centre, each level replaces the last (hut, sect hall, great
 hall, palace with wings, gold celestial palace with towers). Only the highest owned level stands.
 
-## Island expansions
-`expand1`, `expand2` grow the island through `ISLAND_RADII`; the outer ring holds the variety buildings
-(bamboo grove, training ground, bell tower, koi pond, library, moon gate, pagoda). A breakthrough
-shrinks the island back.
+## Island layout and expansions (layout A, owner 2026-10-21)
+Buildings stand in districts (`district` on each pad): Spirit Fields front left (veins, Lotus Garden,
+bamboo, koi), Alchemy and Training on the right (furnace, Qi Array, Training Ground, Moon Gate), the
+Disciples' corner back left (Disciple Hall, quarters, bell) and the heart (avenue, plaza, Main Hall, the
+summit with the pagodas and library). Each OTHER owned qi building in the same district adds
+`DISTRICT_BONUS` to a building's income (`districtMult`; the heart takes no bonus). The base disc keeps
+`ISLAND_RADIUS`; `expand1`/`expand2` add the lobes in `ISLAND_LOBES` where their districts grow, and
+`ROADS` (plus the plaza ring `ROAD_RING`) lay paths into each district as its land arrives. A
+breakthrough takes the lobes back. Mock and study: `docs/art/mocks/island_layout.html`.
 
 ## Features
 - **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`

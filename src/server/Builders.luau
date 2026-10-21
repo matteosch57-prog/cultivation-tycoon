@@ -164,7 +164,7 @@ end
 
 function Builders.lanterns(ctx)
 	for _, sx in { -1, 1 } do
-		for _, z in { 18, 29, 40 } do -- clear of the Sect Gate columns at z=46
+		for _, z in { 27, 34, 41 } do -- clear of the plaza ring road (r 21) and the Sect Gate columns at z=46
 			Style.lantern(ctx.folder, ctx.frame * CFrame.new(sx * 6.2, 0, z), 0.9)
 		end
 	end

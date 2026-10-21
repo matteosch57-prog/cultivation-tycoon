@@ -1,0 +1,138 @@
+<title>Sect Island Layout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<style>
+/* Layout: a short study, then one row of three top-down maps per option (start, 1st expansion, 2nd) */
+:root{
+  --bg:#1f2a2c; --panel:#27363a; --ink:#13191a; --fg:#f4f1e8; --muted:#b9c6c2; --line:#3a4d50;
+  --grass:#6e9f55; --grass2:#80b062; --road:#d8c7a2; --sky:#2c4a57;
+  --res:#59d39f; --feat:#ffc94a; --disc:#7fb6ff; --heart:#ff8a5c; --new:#ffffff;
+  --display:Fredoka,"Trebuchet MS",sans-serif; --body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:26px} h2{font-size:20px} h3{font-size:15px;color:var(--muted);font-weight:600}
+p,li{color:var(--muted);font-size:14px;line-height:1.5;max-width:70ch;margin:0}
+ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+section{display:flex;flex-direction:column;gap:12px}
+.study{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.find{border-top:2px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}
+.find b{font-family:var(--display);font-size:15px;color:var(--fg)}
+.maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.map{background:var(--sky);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.map svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink)}
+.pick{font:600 11px var(--body);background:var(--res);color:var(--ink);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
+.bonus{font-size:13px;color:var(--fg);background:var(--panel);border-radius:10px;padding:8px 12px;max-width:none}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:6px">
+  <h1>Sect Island Layout</h1>
+  <p>How the buildings on a peak could be grouped, joined by roads, and how the island could grow piece by piece. Nothing here is built yet.</p>
+</header>
+
+<section>
+  <h2>What the study says</h2>
+  <div class="study">
+    <div class="find"><b>Buildings in districts</b><p>City and tycoon builders group buildings into districts with a clear job; neighbours that belong together give each other a bonus (Block By Block Tycoon, City Tales).</p></div>
+    <div class="find"><b>Land grows plot by plot</b><p>Theme Park Tycoon 2 and RollerCoaster Tycoon buy the next plot of land beside the park, never the whole ring at once.</p></div>
+    <div class="find"><b>Roads and landmarks</b><p>One main avenue, a round plaza and curving side paths read better than scattered buildings; a tall landmark at the end pulls players in.</p></div>
+    <div class="find"><b>Today on our peak</b><p>Resource and feature buildings are mixed around the rim, only the Stone Path is a road, and each expansion grows the whole circle.</p></div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--res)"></i>Makes qi (resource)</span>
+    <span><i class="dot" style="background:var(--feat)"></i>Does something (feature)</span>
+    <span><i class="dot" style="background:var(--disc)"></i>Disciples</span>
+    <span><i class="dot" style="background:var(--heart)"></i>Main Hall</span>
+    <span><i class="dot" style="background:var(--new)"></i>New land</span>
+  </div>
+</section>
+
+<section>
+  <h2>Today</h2>
+  <div class="maps" id="today"></div>
+</section>
+
+<section>
+  <h2>A. Districts and a ring road <span class="pick">my pick</span></h2>
+  <p>Four districts around a round plaza: Spirit Fields (left), Alchemy and Training (right), Disciples (back left), the Main Hall at the end of the avenue. Each expansion adds one lobe of land where its district grows.</p>
+  <div class="maps" id="optA"></div>
+  <p class="bonus">District bonus: every qi building in the same district adds +5% to the others there, so where you build matters.</p>
+</section>
+
+<section>
+  <h2>B. Mountain terraces</h2>
+  <p>One stair avenue climbs three terraces to the Main Hall. Expansion 1 adds a wing on each side, expansion 2 adds the summit terrace at the back.</p>
+  <div class="maps" id="optB"></div>
+  <p class="bonus">Terrace bonus: buildings on higher terraces earn more, and the climb shows your progress from the bridge.</p>
+</section>
+</main>
+
+<script>
+const S=1.25, C=135;                       // studs to px, map centre
+const X=x=>C+x*S, Y=z=>C+z*S;              // +z (toward the bridge) is down the map
+const COL={res:"var(--res)",feat:"var(--feat)",disc:"var(--disc)",heart:"var(--heart)"};
+const NAMES={path:"Path",vein1:"Vein",vein2:"Vein II",lanterns:"Lanterns",mainhall:"Main Hall",platform:"Platform",garden:"Lotus Garden",
+ furnace:"Furnace",hall:"Disc. Hall",gate:"Gate",array:"Qi Array",quarters1:"Quarters",quarters2:"Quarters II",bamboo:"Bamboo",training:"Training",
+ bell:"Bell",koi:"Koi Pond",pagoda1:"Pagoda",pagoda2:"Spire",library:"Library",moongate:"Moon Gate"};
+const KIND={path:"res",vein1:"res",vein2:"res",lanterns:"res",garden:"res",bamboo:"res",koi:"res",gate:"res",bell:"res",library:"res",moongate:"res",pagoda1:"res",pagoda2:"res",
+ training:"feat",furnace:"feat",array:"feat",platform:"disc",hall:"disc",quarters1:"disc",quarters2:"disc",mainhall:"heart"};
+const STAGE1=["bamboo","training","bell","koi"], STAGE2=["pagoda1","pagoda2","library","moongate"];
+
+function map(title, stage, land, places, roads, terraces){
+  let s=`<svg viewBox="0 0 270 270" role="img" aria-label="${title}">`;
+  // land: [x,z,r,stageAdded]
+  for(const [x,z,r,st] of land){ if(st<=stage){
+    s+=`<circle cx="${X(x)}" cy="${Y(z)}" r="${r*S+3}" fill="#5a4636"/>`; } }
+  for(const [x,z,r,st] of land){ if(st<=stage){
+    s+=`<circle cx="${X(x)}" cy="${Y(z)}" r="${r*S}" fill="${st===stage&&st>0?'#8fc46c':'var(--grass)'}"/>`; } }
+  for(const t of (terraces||[])){ if(t.st<=stage) s+=`<path d="${t.d}" fill="none" stroke="#4d7a3c" stroke-width="3" stroke-dasharray="6 4"/>`; }
+  for(const r of roads){ if((r.st||0)<=stage){
+    s+=r.ring?`<circle cx="${X(0)}" cy="${Y(0)}" r="${r.ring*S}" fill="none" stroke="var(--road)" stroke-width="${r.w||5}"/>`
+      :`<polyline points="${r.p.map(([x,z])=>X(x)+","+Y(z)).join(" ")}" fill="none" stroke="var(--road)" stroke-width="${r.w||4}" stroke-linecap="round" stroke-linejoin="round"/>`; } }
+  for(const [id,x,z] of places){
+    const st=STAGE2.includes(id)?2:STAGE1.includes(id)?1:0; if(st>stage) continue;
+    const k=KIND[id], r=id==="mainhall"?8:5.5;
+    s+=`<circle cx="${X(x)}" cy="${Y(z)}" r="${r}" fill="${COL[k]}" stroke="#13191a" stroke-width="2"/>`;
+    s+=`<text x="${X(x)}" y="${Y(z)-r-3}" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="9" font-weight="600" fill="#fff" stroke="#13191a" stroke-width="2.2" paint-order="stroke">${NAMES[id]}</text>`;
+  }
+  s+=`<text x="${X(0)}" y="262" text-anchor="middle" font-family="Fredoka,sans-serif" font-size="10" fill="#d8e6e2">bridge</text></svg>`;
+  return `<div class="map"><h3>${title}</h3>${s}</div>`;
+}
+const stages=["Start","Expansion 1","Expansion 2"];
+
+// Today: Config.PADS positions, the island grows as a whole circle (radius 62, 76, 90 scaled to fit)
+const todayPlaces=[["vein1",-16,24],["mainhall",0,-30],["platform",0,0],["garden",-28,12],["vein2",18,22],["furnace",30,4],["hall",-47,-4],["gate",0,52],["array",46,-22],["quarters1",-30,40],["bamboo",-64,24],["training",62,8],["bell",-52,-50],["koi",52,-50],["quarters2",30,40],["pagoda1",0,-60],["library",60,46],["moongate",-60,46],["pagoda2",12,-66]];
+const todayLand=s=>[[0,0,[62,76,90][s]*0.95,0]];
+document.getElementById("today").innerHTML=[0,1,2].map(st=>map(stages[st],st,todayLand(st),todayPlaces,[{p:[[0,58],[0,10]],w:4}])).join("");
+
+// A: districts round a plaza, lobes added where each district grows
+const aLand=[[0,0,58,0],[-66,4,30,1],[-50,-34,22,1],[66,4,30,2],[0,-74,26,2]];
+const aPlaces=[["gate",0,54],["platform",0,0],["mainhall",0,-34],
+ ["vein1",-24,26],["vein2",-38,12],["garden",-36,38],
+ ["furnace",26,24],["array",40,8],
+ ["hall",-26,-22],["quarters1",-42,-8],["quarters2",-36,-36],
+ ["bamboo",-74,0],["koi",-60,22],["bell",-56,-38],["training",72,4],["moongate",58,-16],
+ ["pagoda1",-8,-78],["pagoda2",10,-82],["library",24,-60]];
+const aRoads=[{p:[[0,60],[0,-34]],w:6},{ring:20,w:5},{p:[[-14,14],[-30,22],[-50,14],[-72,6]]},{p:[[14,14],[28,18],[44,8]]},{p:[[44,8],[70,4]],st:2},
+ {p:[[-14,-14],[-28,-20],[-44,-10]]},{p:[[0,-40],[0,-70],[-8,-76]],st:2},{p:[[-44,-12],[-54,-34]],st:1}];
+document.getElementById("optA").innerHTML=[0,1,2].map(st=>map(stages[st],st,aLand,aPlaces,aRoads)).join("");
+
+// B: one stair avenue up three terraces; wings at expansion 1, the summit at expansion 2
+const bLand=[[0,0,58,0],[-68,6,26,1],[68,6,26,1],[0,-78,30,2]];
+const bPlaces=[["gate",0,54],["vein1",-26,30],["vein2",26,30],["garden",-42,16],
+ ["platform",0,4],["furnace",30,2],["hall",-30,2],["quarters1",-46,-12],["quarters2",46,-12],
+ ["mainhall",0,-36],["array",34,-30],
+ ["bamboo",-74,0],["koi",-62,22],["training",72,2],["bell",64,24],
+ ["pagoda1",-10,-82],["pagoda2",10,-88],["library",-28,-70],["moongate",28,-70]];
+const bRoads=[{p:[[0,60],[0,-40]],w:7},{p:[[-44,16],[44,16]]},{p:[[-46,-14],[46,-14]]},{p:[[-44,16],[-70,8]],st:1},{p:[[44,16],[70,8]],st:1},{p:[[0,-40],[0,-82]],w:6,st:2},{p:[[-28,-70],[28,-70]],st:2}];
+const bTer=[{d:`M ${X(-56)} ${Y(18)} L ${X(56)} ${Y(18)}`,st:0},{d:`M ${X(-56)} ${Y(-18)} L ${X(56)} ${Y(-18)}`,st:0},{d:`M ${X(-30)} ${Y(-56)} L ${X(30)} ${Y(-56)}`,st:2}];
+document.getElementById("optB").innerHTML=[0,1,2].map(st=>map(stages[st],st,bLand,bPlaces,bRoads,bTer)).join("");
+</script>

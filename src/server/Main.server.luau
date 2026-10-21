@@ -172,29 +172,72 @@ local function keepClear(x, z)
 	return false
 end
 
-local WATERFALL_ANGLE = -1.75 -- back-left rim: clear of the Main Hall towers and the pagoda at every size
+local WATERFALL_ANGLE = 0.55 -- front-right rim, between the shop bridge and the east lobe (layout A keeps it clear of every lobe)
 
--- The peak's ground: island (terrain grass on top), rim trees, waterfall, rope bridge and
--- the entrance archway with the owner's name. Rebuilt whenever the island grows or shrinks.
-local function buildGrounds(plot, radius)
+-- is (x, z) on one of these lobes of land?
+local function onLobe(lobes, x, z, margin)
+	for _, l in lobes do
+		if (Vector2.new(x, z) - Vector2.new(l.x, l.z)).Magnitude < l.r + (margin or 0) then
+			return true
+		end
+	end
+	return false
+end
+
+-- The peak's ground: island (terrain grass on top) with the lobes its expansions added, roads,
+-- rim trees, waterfall, rope bridge and the entrance archway with the owner's name. Rebuilt
+-- whenever the land changes (an expansion, a breakthrough).
+local function buildGrounds(plot, radius, lobes)
+	lobes = lobes or {}
 	if plot.grounds then
 		plot.grounds:Destroy()
 	end
 	-- clear the old terrain grass (largest island + margin; never reaches the hub or neighbours)
 	-- (islands reach at most 1.05 x radius, so 1.05 x max + 6 stays clear of the neighbours at
 	-- PLOT_RADIUS 215 and of the hub)
-	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADII[#Config.ISLAND_RADII] * 1.05 + 6, Enum.Material.Air)
+	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADIUS * 1.05 + 6, Enum.Material.Air)
+	for _, l in Config.ISLAND_LOBES do -- every lobe a peak can own (layout A), each with its margin
+		workspace.Terrain:FillCylinder(plot.frame * CFrame.new(l.x, -6, l.z), 20, l.r * 1.05 + 4, Enum.Material.Air)
+	end
 	local g = Instance.new("Folder")
 	g.Name = "Grounds"
 	groundRadius = radius
-	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true)
-	-- trees around the rim, wherever nothing is planned
+	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true, lobes)
+	-- roads: the plaza ring and the paths into each district this land reaches (Config.ROADS)
+	local level = #lobes > 0 and (lobes[#lobes].exp or 0) or 0
+	local roads = Instance.new("Folder")
+	roads.Name = "Roads"
+	Style.road(roads, plot.frame, {}, 5, Config.ROAD_RING)
+	for _, r in Config.ROADS do
+		if r.exp <= level then
+			Style.road(roads, plot.frame, r, 4.5)
+		end
+	end
+	roads.Parent = g
+	-- trees around the rim of the base disc and of each lobe, wherever nothing is planned
+	local rim = {}
 	local n = math.floor(radius / 4)
 	for k = 0, n - 1 do
 		local a = k / n * math.pi * 2 + 0.13
 		local r = radius - 8 - (k % 2) * 3
-		local x, z = math.cos(a) * r, math.sin(a) * r
-		if not keepClear(x, z) then
+		table.insert(rim, { math.cos(a) * r, math.sin(a) * r, k })
+	end
+	for li, l in lobes do
+		local ln = math.floor(l.r / 4)
+		for k = 0, ln - 1 do
+			local a = k / ln * math.pi * 2
+			local r = l.r - 6 - (k % 2) * 3
+			local x, z = l.x + math.cos(a) * r, l.z + math.sin(a) * r
+			if Vector2.new(x, z).Magnitude > radius - 2 then -- only on the new land, not over the base disc
+				table.insert(rim, { x, z, li * 20 + k })
+			end
+		end
+	end
+	for _, t in rim do
+		local x, z, k = t[1], t[2], t[3]
+		-- base-rim trees that a lobe now surrounds would stand in the middle of the new land
+		local inner = Vector2.new(x, z).Magnitude < radius and onLobe(lobes, x, z, -4)
+		if not inner and not keepClear(x, z) then
 			if k % 3 == 0 then
 				Style.sakura(g, plot.frame * CFrame.new(x, 0, z), plot.index * 50 + k)
 			else
@@ -380,7 +423,7 @@ local function rate(s, away)
 	for id in data.owned do
 		local pad = Config.padById(id)
 		if pad then
-			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0))
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
 		end
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
@@ -548,7 +591,7 @@ local function makePad(player, s, pad, cost, label, income, onBuy, kind)
 	p:SetAttribute("Title", label)
 	p:SetAttribute("Cost", cost)
 	p:SetAttribute("Income", income)
-	p:SetAttribute("Feature", pad.feature)
+	p:SetAttribute("Feature", pad.feature or Config.districtLine(pad)) -- what it does, or its district bonus
 	p:SetAttribute("OwnerId", player.UserId)
 	p:SetAttribute("PadId", pad.id)
 	buildPreview(s, pad, p)
@@ -644,9 +687,11 @@ local function rebuild(s)
 	s.pads = {}
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
 	local radius = Config.islandRadius(s.data.owned)
+	local level = Config.expansionLevel(s.data.owned)
 	s.plot.realm = s.data.realm
-	if s.plot.radius ~= radius then
-		buildGrounds(s.plot, radius)
+	if s.plot.radius ~= radius or s.plot.landLevel ~= level then
+		s.plot.landLevel = level
+		buildGrounds(s.plot, radius, Config.islandLobes(s.data.owned))
 	else
 		RealmLook.apply(s.plot) -- what this realm shows around the peak (nothing below REALM_LOOK_FROM)
 	end
@@ -721,7 +766,8 @@ refreshPads = function(player, s)
 					end
 					-- an expansion grows the island under the player's feet
 					if pad.id == "expand1" or pad.id == "expand2" then
-						buildGrounds(s.plot, Config.islandRadius(s.data.owned))
+						s.plot.landLevel = Config.expansionLevel(s.data.owned)
+						buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned))
 						notify:FireClient(player, "expand")
 					end
 					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
@@ -992,6 +1038,7 @@ local function onLeave(player)
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
 	s.plot.realm = nil
+	s.plot.landLevel = 0
 	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
 end
 
@@ -1378,7 +1425,7 @@ end
 local function passChanged(player, s, key)
 	if key == "vip" then
 		s.plot.vip = true
-		buildGrounds(s.plot, Config.islandRadius(s.data.owned)) -- redraws the arch in gold
+		buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned)) -- redraws the arch in gold
 		buildDisciples(s) -- the extra slot seats a benched disciple
 	end
 	publish(player)

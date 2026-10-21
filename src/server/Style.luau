@@ -848,10 +848,13 @@ local function levitation(m, cf, radius, depth, rng)
 	end
 end
 
-function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
+-- `extra` = lobes of land the expansions added (Config.islandLobes: { x, z, r }), each with its own
+-- grass top, dirt band, rock underside and grass drips, joined to the base disc.
+function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 	local rng = Random.new(seed or 5)
 	local m = Instance.new("Model")
 	m.Name = "Island"
+	extra = extra or {}
 	-- irregular outline: a main disc plus lobes
 	local lobes = { { 0, 0, radius } }
 	for i = 1, 7 do
@@ -859,6 +862,14 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		-- lobes reach at most 1.05 x radius (Main.server clears terrain on that promise)
 		local r = radius * rng:NextNumber(0.6, 0.68)
 		table.insert(lobes, { math.cos(a) * r, math.sin(a) * r, radius * rng:NextNumber(0.3, 0.37) })
+	end
+	for _, e in extra do
+		table.insert(lobes, { e.x, e.z, e.r })
+		for i = 1, 3 do
+			local a = math.atan2(e.z, e.x) + (i - 2) * 0.9 + rng:NextNumber(-0.2, 0.2)
+			local r = e.r * rng:NextNumber(0.45, 0.6)
+			table.insert(lobes, { e.x + math.cos(a) * r, e.z + math.sin(a) * r, e.r * rng:NextNumber(0.4, 0.48) })
+		end
 	end
 	for _, l in lobes do
 		local at = cf * CFrame.new(l[1], 0, l[2])
@@ -876,29 +887,38 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		cylY(m, 3, l[3] * 2 + 0.2, at * CFrame.new(0, -4, 0), PAL.dirt, Enum.Material.SmoothPlastic)
 	end
 	-- rock underside: rings of faceted chunks, narrowing and darkening with depth
-	local layers = 6
 	local depth = radius * 1.1
-	local step = depth / layers
-	for k = 0, layers - 1 do
-		local f = 1 - k / layers
-		local ringR = radius * 0.95 * f ^ 0.9
-		local h = step * 1.5
-		-- every chunk's TOP stays under the dirt band (y <= -6), so nothing pokes through the grass
-		local y = -6.5 - k * step - h / 2
-		local n = math.max(3, math.floor(ringR / 3.2))
-		-- warm sandstone near the grass, fading to a cool slate that melts into the clouds
-		local col = Color3.fromHex("A08A74"):Lerp(Color3.fromHex("5A5670"), (k / (layers - 1)) ^ 0.8)
-		-- chunks grow with the island and sit with their outer face on the ring (centred at 0.72 x
-		-- ring and capped at 14 studs, the body ended at ~0.77 x radius: a table top at r = 90)
-		local cap = math.max(14, radius * 0.22)
-		for i = 1, n do
-			local a = i / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
-			local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, cap)
-			local cr = ringR - s * 0.55
-			local at = cf * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr)
-			P(m, Vector3.new(s, h, s), at * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6), rng:NextNumber(-0.12, 0.12)), col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)))
+	local function under(ox, oz, R)
+		local layers = 6
+		local dep = R * 1.1
+		local step = dep / layers
+		local base = cf * CFrame.new(ox, 0, oz)
+		for k = 0, layers - 1 do
+			local f = 1 - k / layers
+			local ringR = R * 0.95 * f ^ 0.9
+			local h = step * 1.5
+			-- every chunk's TOP stays under the dirt band (y <= -6), so nothing pokes through the grass
+			local y = -6.5 - k * step - h / 2
+			local n = math.max(3, math.floor(ringR / 3.2))
+			-- warm sandstone near the grass, fading to a cool slate that melts into the clouds
+			local col = Color3.fromHex("A08A74"):Lerp(Color3.fromHex("5A5670"), (k / (layers - 1)) ^ 0.8)
+			-- chunks grow with the island and sit with their outer face on the ring (centred at 0.72 x
+			-- ring and capped at 14 studs, the body ended at ~0.77 x radius: a table top at r = 90)
+			local cap = math.max(14, R * 0.22)
+			for i = 1, n do
+				local a = i / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+				local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, cap)
+				local cr = ringR - s * 0.55
+				local at = base * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr)
+				P(m, Vector3.new(s, h, s), at * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6), rng:NextNumber(-0.12, 0.12)), col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)))
+			end
+			cylY(m, h, ringR * 1.8, base * CFrame.new(0, y, 0), col)
 		end
-		cylY(m, h, ringR * 1.8, cf * CFrame.new(0, y, 0), col)
+	end
+	under(0, 0, radius)
+	for _, e in extra do
+		under(e.x, e.z, e.r)
+		cylY(m, 1.6, e.r * 1.92, cf * CFrame.new(e.x, -6.2, e.z), Color3.fromHex("B8A48C")) -- the crisp shelf
 	end
 	-- hanging spires
 	for i = 1, 4 do
@@ -939,6 +959,21 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		if useTerrain then -- the same grass as the lawn, not plastic tabs
 			drip.Material = Enum.Material.LeafyGrass
 			tip.Material = Enum.Material.LeafyGrass
+		end
+	end
+	for _, e in extra do
+		local d = math.floor(e.r / 2.2)
+		for i = 1, d do
+			local a = i / d * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
+			local x, z = e.x + math.cos(a) * e.r, e.z + math.sin(a) * e.r
+			if Vector2.new(x, z).Magnitude > radius + 2 then
+				local len = rng:NextNumber(1.6, 3.8)
+				local at = cf * CFrame.new(x, -1.6 - len / 2, z) * CFrame.Angles(0, -a + math.pi / 2, 0)
+				local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, 0.2))
+				if useTerrain then
+					drip.Material = Enum.Material.LeafyGrass
+				end
+			end
 		end
 	end
 	-- dangling roots under the shelf
@@ -1267,6 +1302,48 @@ function Style.bridge(parent, a, b, width)
 				light.Brightness = 0.9
 				light.Shadows = false
 				light.Parent = lantern
+			end
+		end
+	end
+	m.Parent = parent
+	return m
+end
+
+-- Roads (layout A, owner 2026-10-21): dressed stone slabs laid along a polyline (points in the
+-- peak frame, { x, z }), slightly turned so they read hand-laid, with a darker slab now and then.
+-- `ring` lays the plaza ring road instead (radius in studs). Flat and low: they never collide
+-- with a building, and the ground under them is painted earth by the caller (paintGround).
+function Style.road(parent, cf, points, width, ring)
+	local m = Instance.new("Model")
+	m.Name = "Road"
+	local rng = Random.new(#points * 7 + (ring or 0))
+	local w = width or 5
+	local function slab(pos, dir, i)
+		local c = (i % 4 == 0) and PAL.stone or PAL.stoneLight
+		local p = P(m, Vector3.new(w + rng:NextNumber(-0.4, 0.4), 0.3, 2.6), CFrame.lookAt(pos, pos + dir) * CFrame.Angles(0, math.rad(rng:NextNumber(-4, 4)), 0), c)
+		p.CastShadow = false
+	end
+	local i = 0
+	if ring then
+		local n = math.floor(2 * math.pi * ring / 2.9)
+		for k = 0, n - 1 do
+			local a = k / n * math.pi * 2
+			if math.sin(a) * ring > -12 then -- a horseshoe: the back would run under the Main Hall's front
+				local pos = cf * Vector3.new(math.cos(a) * ring, 0.15, math.sin(a) * ring)
+				local tangent = cf:VectorToWorldSpace(Vector3.new(-math.sin(a), 0, math.cos(a)))
+				i += 1
+				slab(pos, tangent, i)
+			end
+		end
+	else
+		for k = 1, #points - 1 do
+			local a = cf * Vector3.new(points[k][1], 0.15, points[k][2])
+			local b = cf * Vector3.new(points[k + 1][1], 0.15, points[k + 1][2])
+			local len = (b - a).Magnitude
+			local n = math.max(1, math.floor(len / 2.9))
+			for j = 0, n - 1 do
+				i += 1
+				slab(a:Lerp(b, (j + 0.5) / n), b - a, i)
 			end
 		end
 	end

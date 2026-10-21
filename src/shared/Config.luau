@@ -3,7 +3,7 @@ local Config = {}
 
 Config.PLOT_COUNT = 6
 Config.PLOT_RADIUS = 215 -- distance from the hub to each peak centre (room for 90-stud islands)
-Config.ISLAND_RADIUS = 62 -- starting island; grows with expand1/expand2 (ISLAND_RADII)
+Config.ISLAND_RADIUS = 62 -- the base disc; expansions add lobes (ISLAND_LOBES)
 Config.HUB_RADIUS = 36
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
@@ -116,41 +116,103 @@ Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no discipl
 -- `feature` = what the building does besides qi/s (shown on its price card).
 -- `x`,`z` = pad position in the peak's local frame (+Z faces the hub bridge).
 -- The Main Hall (mainhall1..5) is ONE building upgraded in place; each level replaces the last.
--- expand1/expand2 grow the island (Config.ISLAND_RADII) and open the outer building spots.
+-- expand1/expand2 add lobes of land (Config.ISLAND_LOBES) where their districts grow.
+-- `district` groups buildings (layout A, owner 2026-10-21, docs/art/mocks/island_layout.html):
+-- fields (Spirit Fields, front left), dao (Alchemy and Training, right), disciples (back left),
+-- heart (the avenue, plaza, Main Hall and the summit behind it). DISTRICT_BONUS below.
 Config.PADS = {
-	{ id = "path", name = "Stone Path", cost = 10, income = 1, unlock = 0, req = {}, x = 0, z = 40 },
-	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -16, z = 24 },
-	{ id = "lanterns", name = "Lantern Row", cost = 60, income = 3, unlock = 0, req = {}, x = 10, z = 30 },
-	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Your sect's heart: upgrade it" },
-	{ id = "platform", name = "Meditation Platform", cost = 150, income = 4, unlock = 2, req = {}, x = 0, z = 0, feature = "Disciples meditate here" },
-	{ id = "garden", name = "Herb Garden", cost = 300, income = 8, unlock = 3, req = {}, x = -28, z = 12 },
-	{ id = "vein2", name = "Twin Spirit Vein", cost = 600, income = 14, unlock = 4, req = {}, x = 18, z = 22 },
-	{ id = "mainhall2", name = "Sect Hall", cost = 900, income = 20, unlock = 4, req = { "mainhall1" }, x = 0, z = -30, feature = "Main Hall level 2" },
-	{ id = "furnace", name = "Alchemy Furnace", cost = 1200, income = 10, unlock = 6, req = {}, x = 30, z = 4, feature = "Brews a 2x Qi pill" },
-	{ id = "hall", name = "Disciple Hall", cost = 1500, income = 10, unlock = 6, req = {}, x = -47, z = -4, feature = "Unlocks recruiting" },
-	{ id = "gate", name = "Sect Gate", cost = 2200, income = 25, unlock = 8, req = {}, x = 0, z = 52 },
-	{ id = "array", name = "Qi Gathering Array", cost = 3200, income = 30, unlock = 9, req = {}, x = 46, z = -22, feature = "Spawns qi orbs to collect" },
-	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Main Hall level 3" },
-	{ id = "quarters1", name = "Disciple Quarters", cost = 5000, income = 5, unlock = 10, req = { "hall" }, x = -30, z = 40, feature = "+1 disciple slot" },
+	{ id = "path", name = "Stone Path", cost = 10, income = 1, unlock = 0, req = {}, x = 0, z = 40, district = "heart" },
+	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -20, z = 24, district = "fields" },
+	{ id = "lanterns", name = "Lantern Row", cost = 60, income = 3, unlock = 0, req = {}, x = 10, z = 30, district = "heart" },
+	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Your sect's heart: upgrade it", district = "heart" },
+	{ id = "platform", name = "Meditation Platform", cost = 150, income = 4, unlock = 2, req = {}, x = 0, z = 0, feature = "Disciples meditate here", district = "heart" },
+	{ id = "garden", name = "Herb Garden", cost = 300, income = 8, unlock = 3, req = {}, x = -36, z = 36, district = "fields" },
+	{ id = "vein2", name = "Twin Spirit Vein", cost = 600, income = 14, unlock = 4, req = {}, x = -18, z = 34, district = "fields" },
+	{ id = "mainhall2", name = "Sect Hall", cost = 900, income = 20, unlock = 4, req = { "mainhall1" }, x = 0, z = -30, feature = "Main Hall level 2", district = "heart" },
+	{ id = "furnace", name = "Alchemy Furnace", cost = 1200, income = 10, unlock = 6, req = {}, x = 26, z = 20, feature = "Brews a 2x Qi pill", district = "dao" },
+	{ id = "hall", name = "Disciple Hall", cost = 1500, income = 10, unlock = 6, req = {}, x = -50, z = 0, feature = "Unlocks recruiting", district = "disciples" },
+	{ id = "gate", name = "Sect Gate", cost = 2200, income = 25, unlock = 8, req = {}, x = 0, z = 52, district = "heart" },
+	{ id = "array", name = "Qi Gathering Array", cost = 3200, income = 30, unlock = 9, req = {}, x = 44, z = -2, feature = "Spawns qi orbs to collect", district = "dao" },
+	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Main Hall level 3", district = "heart" },
+	{ id = "quarters1", name = "Disciple Quarters", cost = 5000, income = 5, unlock = 10, req = { "hall", "expand1" }, x = -54, z = -32, feature = "+1 disciple slot", district = "disciples" },
 	{ id = "expand1", name = "Expand the Peak", cost = 6000, income = 0, unlock = 11, req = {}, x = -14, z = 8, feature = "Your island grows" },
-	{ id = "bamboo", name = "Bamboo Grove", cost = 7500, income = 60, unlock = 12, req = { "expand1" }, x = -64, z = 24 },
-	{ id = "training", name = "Training Ground", cost = 8500, income = 60, unlock = 12, req = { "expand1" }, x = 62, z = 8 },
-	{ id = "mainhall4", name = "Sect Palace", cost = 11000, income = 100, unlock = 13, req = { "mainhall3" }, x = 0, z = -30, feature = "Main Hall level 4" },
-	{ id = "bell", name = "Bell Tower", cost = 12000, income = 90, unlock = 14, req = { "expand1" }, x = -52, z = -50 },
-	{ id = "koi", name = "Koi Pond", cost = 13000, income = 90, unlock = 14, req = { "expand1" }, x = 52, z = -50 },
-	{ id = "quarters2", name = "Grand Quarters", cost = 15000, income = 10, unlock = 15, req = { "quarters1" }, x = 30, z = 40, feature = "+1 disciple slot" },
+	{ id = "bamboo", name = "Bamboo Grove", cost = 7500, income = 60, unlock = 12, req = { "expand1" }, x = -80, z = 0, district = "fields" },
+	{ id = "training", name = "Training Ground", cost = 8500, income = 60, unlock = 12, req = { "expand1" }, x = 74, z = 8, district = "dao" },
+	{ id = "mainhall4", name = "Sect Palace", cost = 11000, income = 100, unlock = 13, req = { "mainhall3" }, x = 0, z = -30, feature = "Main Hall level 4", district = "heart" },
+	{ id = "bell", name = "Bell Tower", cost = 12000, income = 90, unlock = 14, req = { "expand2" }, x = 40, z = -74, district = "heart" },
+	{ id = "koi", name = "Koi Pond", cost = 13000, income = 90, unlock = 14, req = { "expand1" }, x = -74, z = 26, district = "fields" },
+	{ id = "quarters2", name = "Grand Quarters", cost = 15000, income = 10, unlock = 15, req = { "quarters1", "expand1" }, x = -58, z = -62, feature = "+1 disciple slot", district = "disciples" },
 	{ id = "expand2", name = "Expand the Peak II", cost = 18000, income = 0, unlock = 16, req = { "expand1" }, x = 14, z = 8, feature = "Your island grows again" },
-	{ id = "pagoda1", name = "Pagoda", cost = 21000, income = 150, unlock = 17, req = { "expand2" }, x = 0, z = -60 },
-	{ id = "library", name = "Scripture Library", cost = 23000, income = 170, unlock = 18, req = { "expand2" }, x = 60, z = 46 },
-	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = -60, z = 46 },
-	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 12, z = -66 },
-	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4" }, x = 0, z = -30, feature = "Main Hall final level" },
+	{ id = "pagoda1", name = "Pagoda", cost = 21000, income = 150, unlock = 17, req = { "expand2" }, x = 0, z = -60, district = "heart" },
+	{ id = "library", name = "Scripture Library", cost = 23000, income = 170, unlock = 18, req = { "expand2" }, x = -26, z = -76, district = "heart" },
+	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = 64, z = -26, district = "dao" },
+	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 12, z = -66, district = "heart" },
+	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Main Hall final level", district = "heart" },
 }
 
--- island radius by expansion level (0, 1, 2)
-Config.ISLAND_RADII = { 62, 76, 90 }
+-- The island grows lobe by lobe (owner 2026-10-21: "they go little by little, not full diameter"):
+-- the base disc keeps ISLAND_RADIUS, each expansion adds lobes of land beside the district it
+-- grows. `exp` = the expansion level that adds it; x, z, r in studs (peak frame). The farthest lobe
+-- edge (ISLAND_REACH) stays clear of the neighbours at PLOT_RADIUS 215 (east/west reach about 100; the lobes behind reach ~110, away from every neighbour).
+Config.ISLAND_LOBES = {
+	{ x = -70, z = 6, r = 34, exp = 1 }, -- Spirit Fields grow west (bamboo, koi)
+	{ x = -60, z = -52, r = 30, exp = 1 }, -- the Disciples' corner, back left (both quarters)
+	{ x = 70, z = 8, r = 28, exp = 2 }, -- Alchemy and Training grow east (training ground)
+	{ x = 62, z = -30, r = 26, exp = 2 }, -- ... and south-east (moon gate)
+	{ x = -26, z = -78, r = 26, exp = 2 }, -- the summit behind the Main Hall (library)
+	{ x = 14, z = -80, r = 26, exp = 2 }, -- (pagodas)
+	{ x = 40, z = -74, r = 18, exp = 2 }, -- (bell tower; the Celestial Palace's back corners)
+}
+Config.ISLAND_RADII = { 62, 62, 62 } -- kept for old readers: the base disc no longer grows
+function Config.expansionLevel(owned)
+	return (owned.expand1 and 1 or 0) + (owned.expand2 and 1 or 0)
+end
 function Config.islandRadius(owned)
-	return Config.ISLAND_RADII[1 + (owned.expand1 and 1 or 0) + (owned.expand2 and 1 or 0)]
+	return Config.ISLAND_RADIUS
+end
+function Config.islandLobes(owned)
+	local level, list = Config.expansionLevel(owned), {}
+	for _, l in Config.ISLAND_LOBES do
+		if l.exp <= level then
+			table.insert(list, l)
+		end
+	end
+	return list
+end
+-- Roads (always there, free): the plaza ring and paths from it into each district; `exp` = the
+-- expansion that adds that stretch. The avenue itself is the Stone Path pad.
+Config.ROAD_RING = 21
+Config.ROADS = {
+	{ exp = 0, { -15, 15 }, { -28, 22 }, { -40, 22 } }, -- Spirit Fields
+	{ exp = 1, { -40, 22 }, { -62, 22 } },
+	{ exp = 0, { 21, 0 }, { 33, -5 } }, -- Alchemy and Training
+	{ exp = 2, { 33, -5 }, { 44, -17 }, { 60, -7 } },
+	{ exp = 0, { -21, 0 }, { -34, 0 } }, -- the Disciple Hall's door
+}
+-- District bonus (layout A): each OTHER owned qi building in the same district adds this share
+-- to a building's income, so where you build matters. Economy sim 2026-10-21: realm 10 a day
+-- sooner, the fast-then-hard steps kept; never above 0.10 (0.20 flattens D25's step).
+Config.DISTRICT_BONUS = 0.05
+Config.DISTRICT_NAMES = { fields = "Fields", dao = "Alchemy", disciples = "Disciple" }
+-- the price card's line for a district building (nil for the heart): "+5% per Fields building"
+function Config.districtLine(pad)
+	local name = pad.district and Config.DISTRICT_NAMES[pad.district]
+	if not name or pad.income <= 0 then
+		return nil
+	end
+	return string.format("+%d%% per %s building", math.floor(Config.DISTRICT_BONUS * 100 + 0.5), name)
+end
+function Config.districtMult(owned, pad)
+	if not pad.district or pad.district == "heart" or pad.income <= 0 then -- the heart is the hub, not a resource district
+		return 1
+	end
+	local n = 0
+	for _, other in Config.PADS do
+		if other ~= pad and other.district == pad.district and other.income > 0 and owned[other.id] then
+			n += 1
+		end
+	end
+	return 1 + Config.DISTRICT_BONUS * n
 end
 -- highest Main Hall level owned (0 = none)
 function Config.mainHallLevel(owned)
@@ -171,10 +233,10 @@ Config.WORKER_MAX = 3
 Config.WORKER_BONUS = 0.5 -- simmed (research 2026-10-21_economy_math): ~9% faster climb; above 1.0 eats the hard part
 Config.WORKER_COST = { 0.5, 1, 2 }
 Config.WORKERS = {
-	garden = { name = "Farmer", x = -28, z = 21 },
-	vein1 = { name = "Miner", x = -16, z = 33 },
-	furnace = { name = "Alchemist", x = 30, z = 14 },
-	training = { name = "Fighter", x = 50, z = 6 },
+	garden = { name = "Farmer", x = -24, z = 44 },
+	vein1 = { name = "Miner", x = -12, z = 22 },
+	furnace = { name = "Alchemist", x = 26, z = 37 },
+	training = { name = "Fighter", x = 61.6, z = 6.6 },
 }
 function Config.workerCost(pad, n, realm)
 	return math.floor(pad.cost * Config.WORKER_COST[n] * Config.costMult(realm))
@@ -252,8 +314,8 @@ Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receip
 Config.SHOP_PEAK_PADS = {
 	{ key = "x2", x = 15, fromRim = 8 }, -- right of the path, the first thing on the peak
 	{ key = "vip", x = -15, fromRim = 8 }, -- left of it, under the arch whose name turns gold
-	{ key = "pill", x = 20, z = -10, needs = "furnace" }, -- the furnace brews this pill; here it is now
-	{ key = "auto", x = 44, z = -8, needs = "array" }, -- the orbs come from the Gathering Array
+	{ key = "pill", x = 40, z = 22, needs = "furnace" }, -- the furnace brews this pill; beside it (layout A)
+	{ key = "auto", x = 32, z = -12, needs = "array" }, -- the orbs come from the Gathering Array, beside it (layout A)
 }
 -- (x, z) of a SHOP_PEAK_PADS entry on an island of `radius`
 function Config.shopPeakSpot(e, radius)
@@ -316,7 +378,7 @@ Config.PALETTES = {
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
 Config.REALM_STORM = Color3.fromRGB(70, 82, 112) -- realm 9+ storm cloud puffs: slate blue (owner pick A: solid puffs, not a particle haze)
-Config.REALM_FALL_ANGLE = 0.35 -- the realm 8 waterfall, front right (the first one is at the back left)
+Config.REALM_FALL_ANGLE = 0.95 -- the realm 8 waterfall, front right beside the first one (twin falls clear of every lobe)
 Config.REALM_TINT = {
 	[6] = Color3.fromRGB(185, 166, 255), -- Void Refinement: violet
 	[7] = Color3.fromRGB(150, 225, 190), -- Body Integration: jade
