@@ -897,9 +897,18 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		local r = radius * rng:NextNumber(1.15, 1.35)
 		local s = rng:NextNumber(2.5, 5)
 		local at = cf * CFrame.new(math.cos(a) * r, rng:NextNumber(-14, -4), math.sin(a) * r)
-		P(m, Vector3.new(s, s * 0.45, s), at, PAL.grass)
-		P(m, Vector3.new(s * 0.85, s * 0.9, s * 0.85), at * CFrame.new(0, -s * 0.6, 0) * CFrame.Angles(0, rng:NextNumber(0, 3), 0.15), Color3.fromHex("8E7C6C"))
-		P(m, Vector3.new(s * 0.45, s * 0.6, s * 0.45), at * CFrame.new(0, -s * 1.2, 0) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Color3.fromHex("5A5670"))
+		-- a lawn cap in the island's own grass on a faceted rock that narrows to a point, with a
+		-- small spirit crystal under it (the plain boxes read as cubes, review 2026-10-21)
+		local cap = cylY(m, s * 0.3, s * 1.1, at, useTerrain and LAWN or PAL.grass)
+		if useTerrain then
+			cap.Material = Enum.Material.LeafyGrass
+		end
+		for j = 0, 2 do
+			local w = s * (0.95 - j * 0.3)
+			P(m, Vector3.new(w, s * 0.5, w), at * CFrame.new(0, -s * (0.35 + j * 0.42), 0) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 3), rng:NextNumber(-0.15, 0.15)), Color3.fromHex("8E7C6C"):Lerp(Color3.fromHex("5A5670"), j / 2))
+		end
+		local gem = P(m, Vector3.new(s * 0.18, s * 0.6, s * 0.18), at * CFrame.new(0, -s * 1.45, 0) * CFrame.Angles(0, math.rad(45), 0), QI, Enum.Material.Glass)
+		gem.CastShadow = false
 	end
 	-- boulders and grass tufts on the top
 	for i = 1, 8 do
