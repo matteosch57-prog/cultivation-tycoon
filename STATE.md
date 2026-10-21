@@ -10,16 +10,16 @@ checked in Studio Play (ROADMAP).
 - **Sync:** Rojo port 34875 is connected from the Studio plugin (scripts in Studio match `src/`).
 - **Git:** GitHub `matteosch57-prog/cultivation-tycoon` (private), branch `main`; history = `git log`.
 - **Open forks:** Q1 music bed.
-- **Known risks:** part count of a full peak (BACKLOG "Performance"); the store skybox (ART_BIBLE).
+- **Known risks:** phone numbers not measured yet (BACKLOG "Performance"); the store skybox (ART_BIBLE).
 
-- **B01 step 2 save safety:** built and checked in Studio (mock store tests + a real Play join/leave
-  on the `_studio` store); not committed yet.
+- **B01 step 2 save safety:** in `integration`, extended by D26 (one save in flight, budgeted
+  autosave, rejoin message on a failed load, ServerHealth; R17).
 
-- **B01 step 3 phone performance** (branch `phone-perf`): measured in Studio Edit, a full peak is ~750k
-  triangles in ~30 draw calls; `Lowpoly` swaps small balls / cylinders for two shared low-poly meshes
-  (-71% triangles on a whole-peak view, same look, D20); the owner uploaded both meshes and their
-  ids are in Config. `/perf` and `/clouds` (owner only) log the phone numbers.
+- **B01 step 3 phone performance:** in `integration`. `Lowpoly` (D20, uploaded meshes) and the D26
+  rules (R16: timed frame jobs, nothing animates off screen). Studio: a full peak with the new
+  building Kit is ~192k triangles / 33 draw calls on a whole-peak view; Play 60 fps, every frame job
+  under 0.1 ms. Not yet measured on the owner's phone (`/perf`, `/clouds`).
 
 ## Next action
-Merge `phone-perf` (after save-safety), publish, then on the phone: `/perf`, walk a full peak,
-`/clouds`, `/perf` again, and send the console rows.
+Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
+`[Perf]` console rows (they close ROADMAP "Phone performance").

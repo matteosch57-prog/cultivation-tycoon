@@ -53,3 +53,13 @@ recording can compare the same view with and without.
 Sources: create.roblox.com/docs/performance-optimization/improve (instancing),
 /docs/reference/engine/classes/EditableMesh and GenerationService (no replication),
 /docs/workspace/streaming and /docs/workspace/streaming/slim.
+
+## Later the same day: D26 checks and the building Kit
+- Studio Play (integration with D26): 60 fps, 159 draw calls / 46k triangles at spawn; `/perf` jobs
+  hud 0.04, guide 0.06, cultivators and orbs ~0 ms average; `[SRVHEALTH]` hbFps 60, DataStore
+  budgets healthy.
+- The new building Kit (Visual check), A/B in one Edit run with the old builders on the same peak:
+  7,186 -> 7,764 parts, whole-peak view 150.6k / 31 -> 191.9k triangles / 33 draw calls (+27%),
+  within budget. Main Hall 5: 1,883 blocks (~23k), 908 low-poly cylinders (~33k), 574 low-poly balls
+  (~46k). Close views move with Studio's Automatic quality: compare whole-peak views only.
+

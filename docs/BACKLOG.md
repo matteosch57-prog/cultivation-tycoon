@@ -4,6 +4,8 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 
 ## Performance
 - Phone numbers for a full peak and the cloud overdraw A/B (`/perf`, `/clouds`) are not in yet.
+- Pad price cards (`Build.client.luau`) rewrite text, colour and scale every 0.15 s: write only on a
+  change (R16 rule 4) and add PerfMark "padcards".
 - Streaming target radius: at the default every peak stays loaded on a phone (owner call: smaller =
   far peaks pop out).
 
