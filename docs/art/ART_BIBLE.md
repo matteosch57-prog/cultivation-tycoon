@@ -105,6 +105,9 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
 - Life (client): a raised-hand mudra now and then, a qi surge every 14 to 28 s (deep breath, orbs and
   circles race, the rim brightens a little), a small bow to a visitor. Timers restart when a figure
   comes into view, or every overdue surge fires at once.
+- Flying pose (thumbnails, showcases): `Cultivators.build(..., { pose = "fly" })` stands the disciple
+  on a big spirit sword in the rarity colour (wind sparkles off the hilt), right hand forward in a sword
+  mudra, left arm trailing back; no ground circles. Capture `characters_flying.jpg`.
 - Layer gotchas: an emitter on an Attachment emits from one point, inside the body, where the avatar
   hides it (motes rise from an invisible ring part instead); a flat ground sprite needs a positive
   ZOffset or the floor hides it; fire wisps and beam ribbons were tried and dropped (hidden, or faint

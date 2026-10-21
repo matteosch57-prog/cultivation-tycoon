@@ -92,6 +92,22 @@ local POSE = {
 	RightElbow = CFrame.Angles(math.rad(95), 0, 0),
 }
 
+-- Flying (owner 2026-10-22: "a flying animation too, for the thumbnails for example"): standing on a
+-- spirit sword, leaning into the wind, the right hand forward in a sword mudra, the left arm trailing
+-- back. Used by Cultivators.build with opts.pose = "fly".
+local FLY_POSE = {
+	Waist = CFrame.Angles(math.rad(-8), 0, 0),
+	RightShoulder = CFrame.Angles(math.rad(75), 0, math.rad(8)),
+	RightElbow = CFrame.Angles(math.rad(15), 0, 0),
+	-- the left arm trails back in the wind (an elbow bent forward read as a boxing guard)
+	LeftShoulder = CFrame.Angles(math.rad(-35), 0, math.rad(-18)),
+	LeftElbow = CFrame.Angles(math.rad(20), 0, 0),
+	LeftHip = CFrame.Angles(math.rad(12), 0, 0),
+	RightHip = CFrame.Angles(math.rad(-12), 0, 0),
+	RightKnee = CFrame.Angles(math.rad(-15), 0, 0),
+}
+local POSES = { seated = POSE, fly = FLY_POSE }
+
 local function P(parent, size, cf, color, mat, shape)
 	local p = Instance.new("Part")
 	p.Anchored = true
@@ -204,7 +220,7 @@ end
 
 -- Pose the rig by walking its joint graph from the root: compute every part's target CFrame
 -- first, then disable the joints and anchor (new rigs have AnimationConstraints, not Motor6Ds).
-local function pose(m)
+local function pose(m, rot)
 	local root = m:FindFirstChild("HumanoidRootPart")
 	local joints = {}
 	for _, j in m:GetDescendants() do
@@ -221,7 +237,7 @@ local function pose(m)
 		placed = false
 		for _, e in joints do
 			if at[e.a] and not at[e.b] then
-				at[e.b] = jointChild(e.j, at[e.a], POSE[e.j.Name] or CFrame.identity)
+				at[e.b] = jointChild(e.j, at[e.a], rot[e.j.Name] or CFrame.identity)
 				placed = true
 			elseif at[e.b] and not at[e.a] then
 				-- accessory welds run Handle -> body part: place the handle from the body
@@ -251,8 +267,8 @@ end
 -- posed templates, one per look and tier, built once per server and cloned
 local templates, pending = {}, {}
 
-local function template(look, tier)
-	local key = look .. tier
+local function template(look, tier, poseName)
+	local key = look .. tier .. poseName
 	if templates[key] then
 		return templates[key]
 	end
@@ -268,8 +284,8 @@ local function template(look, tier)
 		hum.RequiresNeck = false
 		hum.BreakJointsOnDeath = false
 		m:PivotTo(CFrame.identity)
-		pose(m)
-		-- sit the lowest point of the folded legs on the cushion
+		pose(m, POSES[poseName])
+		-- sit the lowest point of the folded legs on the cushion (a flyer's feet on its sword)
 		local low = math.huge
 		for _, p in m:GetDescendants() do
 			if p:IsA("BasePart") and p.Name ~= "Handle" then
@@ -278,7 +294,7 @@ local function template(look, tier)
 		end
 		for _, p in m:GetDescendants() do
 			if p:IsA("BasePart") then
-				p.CFrame += Vector3.new(0, SEAT - low, 0)
+				p.CFrame += Vector3.new(0, (poseName == "fly" and 0 or SEAT) - low, 0)
 			end
 		end
 		templates[key] = m
@@ -367,7 +383,7 @@ end
 -- the body's rim glow (a Highlight) comes with the avatar.
 local ORBS = { 0, 0, 3, 4, 5, 5, 7, 7, 9 }
 local SWORDS = { 0, 0, 0, 0, 3, 5, 7, 7, 9 }
-local function aura(m, f, color, tier)
+local function aura(m, f, color, tier, flying)
 	if tier < 2 then
 		return
 	end
@@ -380,7 +396,9 @@ local function aura(m, f, color, tier)
 	local shell = P(m, Vector3.new(4.4, 0.2, 4.4), f * CFrame.new(0, 1.3, 0), color)
 	shell.Transparency = 1
 	shell.Name = "AuraShell"
-	circle(m, "SigilCircle", 4.6 + tier * 0.6, f * CFrame.new(0, 0.06, 0), color).Transparency = 0.1
+	if not flying then
+		circle(m, "SigilCircle", 4.6 + tier * 0.6, f * CFrame.new(0, 0.06, 0), color).Transparency = 0.1
+	end
 	if tier >= 3 then
 		emitter(shell, "Motes", {
 			Texture = SPARKLE,
@@ -439,7 +457,7 @@ local function aura(m, f, color, tier)
 			meshPart(m, "Sword", SWORD.size, cf, vivid(color), SWORD.mesh, nil, SWORD.scale)
 		end
 	end
-	if tier >= 6 then
+	if tier >= 6 and not flying then
 		circle(m, "SigilCircle2", 8.5, f * CFrame.new(0, 0.05, 0), color).Transparency = 0.4
 	end
 	if tier >= 8 then
@@ -479,7 +497,9 @@ end
 -- Build one cultivator. look: one of LOOKS (or an index), rarity: a Config.RARITIES entry.
 -- Returns the model at once (cushion + aura); the avatar arrives a moment later, once its
 -- catalog assets load, unless the model was destroyed meanwhile.
-function Cultivators.build(parent, cf, look, rarity, rarities)
+function Cultivators.build(parent, cf, look, rarity, rarities, opts)
+	local poseName = opts and opts.pose or "seated"
+	local flying = poseName == "fly"
 	if typeof(look) == "number" then
 		look = Cultivators.LOOKS[(look - 1) % #Cultivators.LOOKS + 1]
 	end
@@ -488,19 +508,38 @@ function Cultivators.build(parent, cf, look, rarity, rarities)
 	m.Name = "Cultivator_" .. look
 	m:SetAttribute("Look", look)
 	m:SetAttribute("Rarity", rarity.name)
+	m:SetAttribute("Pose", poseName)
 	-- the cushion rests on the ground: the cultivator floats above it (client); from Dao Ancestor up a
-	-- lotus in bloom (its stem sinks under the floor)
-	if tier >= 7 then
+	-- lotus in bloom (its stem sinks under the floor). A flyer stands on a big spirit sword lying
+	-- point forward (-Z), its blade glowing in the rarity colour, wind streaming off it.
+	if flying then
+		local k = 2.1
+		local mount = meshPart(m, "MountSword", SWORD.size * k, cf * CFrame.new(0, 0.2, 0) * CFrame.Angles(math.rad(-90), 0, 0), vivid(rarity.color), SWORD.mesh, nil, SWORD.scale * k)
+		local wake = Instance.new("Attachment")
+		wake.Position = Vector3.new(0, -SWORD.size.Y * k / 2, 0) -- the hilt end, behind the rider
+		wake.Parent = mount
+		emitter(wake, "Wind", {
+			Texture = SPARKLE,
+			Color = seq(rarity.color),
+			LightEmission = 1,
+			Size = NumberSequence.new(0.5, 0),
+			Speed = NumberRange.new(6, 9),
+			Lifetime = NumberRange.new(0.4, 0.7),
+			SpreadAngle = Vector2.new(12, 12),
+			EmissionDirection = Enum.NormalId.Bottom,
+			Rate = 22,
+		})
+	elseif tier >= 7 then
 		local k = 4.9 / LOTUS.native.X
 		local size = LOTUS.native * k
 		meshPart(m, "Cushion", size, cf * CFrame.new(0, 1.25 - size.Y / 2, 0), WHITE, LOTUS.mesh, LOTUS.tex, Vector3.one * k)
 	else
 		P(m, Vector3.new(0.5, 3.2, 3.2), cf * CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2), CUSHION, nil, Enum.PartType.Cylinder).Name = "Cushion"
 	end
-	aura(m, cf, rarity.color, tier)
+	aura(m, cf, rarity.color, tier, flying)
 	m.Parent = parent
 	task.spawn(function()
-		local t = template(look, tier)
+		local t = template(look, tier, poseName)
 		if not t or not m.Parent then
 			return -- the platform was rebuilt while the avatar loaded
 		end
