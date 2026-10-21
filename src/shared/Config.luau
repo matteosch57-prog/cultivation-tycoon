@@ -91,6 +91,10 @@ Config.TIDE_INTERVAL = 600 -- s from one tide's start to the next
 Config.TIDE_DURATION = 90
 Config.TIDE_MULT = 2
 Config.TIDE_WARN = 30 -- s of heads-up before a tide
+-- Playtime gifts: claimable after this many seconds of play in one session (research
+-- 2026-10-21_tycoon_study); each pays GIFT_VALUE[i] seconds of income (no tide, no pill)
+Config.GIFT_TIMES = { 300, 900, 1800 }
+Config.GIFT_VALUE = { 120, 300, 600 }
 Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
 
 function Config.maxDisciples(owned)

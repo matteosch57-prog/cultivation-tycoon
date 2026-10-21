@@ -50,8 +50,8 @@ doc. Treat game details below as community-reported.
 | # | Idea | From | Fits us? | Status |
 |---|---|---|---|---|
 | 1 | **Spirit Tide**: a server-wide 2x qi window on a timer, with a 30 s heads-up | Grow a Garden weather and event timers | Yes: calm, shared, no UI screen | Built on branch `tycoon-ideas` (ECONOMY, Config `TIDE_*`) |
-| 2 | **Playtime gifts** at 5 / 15 / 30 min of a session | DevForum, GaG | Yes, pushes past the 8 min benchmark | Mock first (R4): `docs/art/mocks/tycoon_ideas.html` |
-| 3 | **Tide countdown on the HUD** (when the next tide comes) | GaG event countdowns | Yes, makes #1 a goal | Mock first |
+| 2 | **Playtime gifts** at 5 / 15 / 30 min of a session | DevForum, GaG | Yes, pushes past the 8 min benchmark | Owner picked mock A (gift button); built on `tycoon-ideas` |
+| 3 | **Tide countdown on the HUD** (when the next tide comes) | GaG event countdowns | Yes, makes #1 a goal | Owner picked mock A (line under the counter); built |
 | 4 | **Each realm faster, not slower**: today costs x8 and income x3 per realm, so a realm takes ~2.7x longer than the last (disciples aside). Rebirth games make each run shorter or equal | Classic rebirth, Sell Lemons | Needs a pacing check | For B01 step 5 (pacing sim), owned by the First session thread |
 | 5 | **Breakthrough perk: Remote build** (buy an affordable pad from the Main Hall without walking) after realm 2 | Sell Lemons Powers | Good for phones and calm players | Later; mock first |
 | 6 | **Offline before/after** on return (what grew, not only the number) | GaG offline growth | Yes | B01 step 6 already plans the offline screen |
