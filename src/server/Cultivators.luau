@@ -371,20 +371,11 @@ local function aura(m, f, color, tier)
 			local orb = P(m, Vector3.new(0.3, 0.3, 0.3), f * CFrame.new(math.cos(a) * 2.8, 2.6 + (i % 2) * 0.5, math.sin(a) * 2.8), vivid(color))
 			orb.Transparency = 1
 			orb.Name = "AuraOrb" -- not "QiOrb": Juice bobs every QiOrb (the collectible orbs)
-			emitter(orb, "Glow", { Texture = GLOW, Color = seq(color), LightEmission = 1, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(1.1), Transparency = NumberSequence.new(0.15), Lifetime = NumberRange.new(0.3), Rate = 30 })
-			emitter(orb, "Heart", { Texture = GLOW, Color = ColorSequence.new(WHITE), LightEmission = 1, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(0.4), Lifetime = NumberRange.new(0.3), Rate = 30 })
-			local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
-			t0.Position, t1.Position = Vector3.new(0, 0.12, 0), Vector3.new(0, -0.12, 0)
-			t0.Parent, t1.Parent = orb, orb
-			local trail = Instance.new("Trail")
-			trail.Attachment0, trail.Attachment1 = t0, t1
-			trail.Color = seq(color)
-			trail.LightEmission = 1
-			trail.Lifetime = 0.45
-			trail.Transparency = NumberSequence.new(0.35, 1)
-			trail.WidthScale = NumberSequence.new(1, 0)
-			trail.FaceCamera = true
-			trail.Parent = orb
+			-- a soft halo, a twinkling star heart, and sparkles left behind as a tail (a Trail drew
+			-- glassy shards in Play)
+			emitter(orb, "Glow", { Texture = GLOW, Color = seq(color), LightEmission = 1, Brightness = 3, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(1.3), Transparency = NumberSequence.new(0), Lifetime = NumberRange.new(0.3), Rate = 40 })
+			emitter(orb, "Heart", { Texture = SPARKLE, Color = ColorSequence.new(vivid(color):Lerp(WHITE, 0.55)), LightEmission = 1, Brightness = 4, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(0.8), Lifetime = NumberRange.new(0.3), Rate = 40, Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90) })
+			emitter(orb, "Tail", { Texture = SPARKLE, Color = seq(color), LightEmission = 1, Brightness = 3, Speed = NumberRange.new(0), Size = NumberSequence.new(0.35, 0), Lifetime = NumberRange.new(0.5, 0.7), Rate = 18 })
 		end
 	end
 	if tier >= 4 then
@@ -407,7 +398,8 @@ local function aura(m, f, color, tier)
 	if tier >= 5 then
 		-- spirit swords in a fan behind the back, hilts toward the spine, tips out
 		local n = SWORDS[tier]
-		local spread = math.rad(n >= 7 and 75 or (n >= 5 and 60 or 40))
+		-- 65 degrees at most: wider, the outer swords crossed the shoulders and the face (Play 2026-10-22)
+		local spread = math.rad(n >= 7 and 65 or (n >= 5 and 55 or 40))
 		for i = 1, n do
 			local ang = -spread + 2 * spread * (i - 1) / (n - 1)
 			local cf = f * CFrame.new(0, 3.3, 1.7) * CFrame.Angles(0, 0, ang) * CFrame.new(0, 0.6 + SWORD.size.Y / 2, 0)

@@ -82,25 +82,23 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
   hanfu (layered clothing, which any experience may put on an NPC), hair and beard. Lineup mock
   [cultivators_avatars.jpg](mocks/cultivators_avatars.jpg); the earlier part-built mock
   [cultivators_lineup.jpg](mocks/cultivators_lineup.jpg) set the colour and aura rules.
-- Bodies and faces: Roblox's own Man and Woman bodies (shaped limbs and hands) and dynamic heads (Man
-  Face, Woman Face, Classic Male Face, Old Man Jenkins). The blocky default body with the classic smile
-  decal read cheap; a dynamic head's FaceControls let the client close the eyes in meditation, open
-  them now and then and open them with a faint smile to watch a close player.
-  Capture: [cultivators_vivid.jpg](mocks/cultivators_vivid.jpg).
-- Four looks cycled by slot: sword disciple (black ponytail), lotus maiden (buns with hairpins),
-  pill monk (shaved head with a strategist's moustache, since a bare default head read as a failed load),
-  elder sage (white crown hair and beard).
+- Bodies and faces (owner pick A + C, 2026-10-21, mocks `characters_AC2_*.jpg`): Roblox's Man and Woman
+  bodies and ONE anime dynamic head for everyone (Anime Black, 14506610025): one cohesive style reads
+  premium, a mix of catalog faces read cheap. FaceControls let the client close the eyes in meditation,
+  open them now and then and smile at a close player. Hands meet in the lap (a mudra), which also hides
+  the blocky hands. Each look carries a signature item: sword, fan, flute, guqin.
+- Four looks cycled by slot: sword disciple (black cultivator hair), lotus maiden (buns with hairpins),
+  pill monk (cultivator hair), elder sage (white cultivator hair and beard).
 - The rarity owns the robe: white, green, blue, purple, gold, Celestial teal (azure hanfu), Dao Ancestor
   crimson (robe under a red cloak), Heavenly Emperor red-gold, Primordial white under a white cloak. A
-  dark robe hides the rarity, so every robe is checked in a capture before it ships (the long robe green
-  and blue read black). Top tiers: [cultivators_premium_auras.jpg](mocks/cultivators_premium_auras.jpg).
-- Premium aura = several soft layers at low rates, in the rarity hue pushed to full saturation
-  (lightening only 20% at the edge, half additive: fading 60% to white, fully additive, read pale), one layer more per
-  rarity: Inner a turning qi sigil on the ground, Core rising motes, Elder a halo ring behind the head,
-  Immortal qi orbs with trails, Celestial a second wider sigil, Dao Ancestor an outer halo, Heavenly
-  Emperor a ring pulse on each breath, Primordial runs through every colour. Orbs 3 / 5 / 7 / 7 / 9 from
-  Immortal, at chest height. Built-in textures only (`rbxasset://textures/particles/`: vortex,
-  shockwave ring, glow, sparkles), so nothing to upload. No Light instances (R3).
+  dark robe hides the rarity, so every robe is checked in a capture before it ships.
+- Aura ladder, every piece in the rarity colour and made of light (glowing meshes and particles, no
+  Lights, R3): Inner a magic circle on the ground; Core orbs of light (a halo, a star heart, a sparkle
+  tail; never solid balls) and a rim glow (Highlight); Elder the circle again as a halo behind the head;
+  Immortal a fan of spirit swords behind the back (3, then 5 / 7 / 7 / 9); Celestial a second wider
+  circle; Dao Ancestor a lotus seat; Heavenly Emperor a ring pulse on each breath; Primordial runs through
+  every colour. Circle, swords and lotus are free Creator Store meshes drawn through SpecialMesh
+  (Cultivators.luau names the ids). Captures: `characters_play_*.jpg`.
 - Layer gotchas: an emitter on an Attachment emits from one point, inside the body, where the avatar
   hides it (motes rise from an invisible ring part instead); a flat ground sprite needs a positive
   ZOffset or the floor hides it; fire wisps and beam ribbons were tried and dropped (hidden, or faint
