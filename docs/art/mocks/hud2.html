@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:100vw;height:100vh;background:url('../look/3_sky_clouds_showcase.jpg') center/cover}
+.rbx{position:absolute;top:8px;left:12px;display:flex;gap:8px}.rbx i{width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.rbxR{position:absolute;top:8px;right:12px}.rbxR i{display:block;width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.stick{position:absolute;left:5%;bottom:8%;width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.jump{position:absolute;right:5%;bottom:8%;width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.pc .stick,.pc .jump{display:none}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) #1b1420;paint-order:stroke fill;letter-spacing:.5px}
+.toy{border:var(--bw) solid #1b1420;border-radius:var(--br);box-shadow:0 var(--sh) 0 #1b1420;position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:12%;height:22%;border-radius:999px;background:rgba(255,255,255,.35)}
+.lbl{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font:600 12px sans-serif;color:#fff;background:rgba(0,0,0,.55);padding:3px 10px;border-radius:6px}
+</style></head>
+<body><div class="scene" id="s"><div class="rbx"><i></i><i></i></div><div class="rbxR"><i></i></div><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const pc=q.get('size')==='pc';
+document.getElementById('s').classList.toggle('pc',pc);
+const k=pc?1.3:1, px=v=>Math.round(v*k)+'px';
+const S=document.documentElement.style;S.setProperty('--sw',px(5));S.setProperty('--bw',px(3));S.setProperty('--br',px(14));S.setProperty('--sh',px(4));
+document.getElementById('lbl').textContent='C: simple Roblox style'+(pc?' (computer)':' (phone)');
+const qiIcon=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/><circle cx="22" cy="34" r="4" fill="#fff" opacity=".8"/></svg>`;
+const disc=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="#1b1420"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="#1b1420" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="#1b1420"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#5096ff" stroke="#1b1420" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const bag=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M22 18c0-8 20-8 20 0" fill="none" stroke="#1b1420" stroke-width="5"/><path d="M12 22h40l-4 34H16z" fill="#ffcf4d" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M26 34h12M32 28v14" stroke="#b8352b" stroke-width="5" stroke-linecap="round"/></svg>`;
+const gift=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="10" y="26" width="44" height="30" rx="4" fill="#e65b4f" stroke="#1b1420" stroke-width="5"/><rect x="6" y="18" width="52" height="12" rx="3" fill="#ff7a6b" stroke="#1b1420" stroke-width="5"/><path d="M32 18v38" stroke="#ffd34d" stroke-width="7"/><path d="M32 18c-10-12-18-4-10 0M32 18c10-12 18-4 10 0" fill="none" stroke="#1b1420" stroke-width="4"/></svg>`;
+const sideBtn=(icon,label,color,badge)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:${px(1)}">
+  <div class="toy" style="width:${px(54)};height:${px(54)};background:${color};display:flex;align-items:center;justify-content:center">${icon(px(40))}
+   ${badge?`<span class="big" style="position:absolute;top:${px(-8)};right:${px(-8)};background:#e33;border:${px(3)} solid #1b1420;border-radius:999px;min-width:${px(22)};height:${px(22)};font-size:${px(13)};display:flex;align-items:center;justify-content:center;--sw:${px(3)}">${badge}</span>`:''}</div>
+  <span class="big" style="font-size:${px(13)};--sw:${px(4)}">${label}</span></div>`;
+document.getElementById('hud').innerHTML=`
+ <div style="position:absolute;top:${px(10)};left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:${px(6)}">
+   ${qiIcon(px(46))}
+   <div style="display:flex;flex-direction:column;line-height:.95">
+     <span class="big" style="font-size:${px(38)}">1,774</span>
+     <span class="big" style="font-size:${px(16)};color:#9ff5c8;--sw:${px(4)}">+19/s</span>
+   </div>
+   <span class="big" style="font-size:${px(18)};color:#ffe36b;--sw:${px(4)};transform:translate(${px(4)},${px(-16)}) rotate(-8deg)">+19</span>
+ </div>
+ <div style="position:absolute;left:${px(12)};top:50%;transform:translateY(-55%);display:flex;flex-direction:column;gap:${px(10)}">
+   ${sideBtn(disc,'Disciples','#9fd0ff','4')}${sideBtn(bag,'Shop','#ffe8a3')}${sideBtn(gift,'Gifts','#ffb3a8','!')}
+ </div>
+ <div style="position:absolute;left:50%;bottom:${pc?px(18):'4%'};transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:${px(2)}">
+   <span class="big" style="font-size:${px(15)};color:#ffe9a8;--sw:${px(4)}">Qi Condensation</span>
+   <div class="toy" style="width:${px(260)};height:${px(24)};background:#3a2d40;border-radius:999px;overflow:hidden;box-shadow:0 ${px(3)} 0 #1b1420">
+     <div style="width:33%;height:100%;background:#59d39f;border-right:${px(3)} solid #1b1420"></div>
+     <span class="big" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:${px(14)};--sw:${px(4)}">5 / 15 built</span>
+   </div>
+ </div>
+ <div class="toy" style="position:absolute;right:${pc?px(20):'calc(5% + 126px)'};bottom:${pc?px(20):'9%'};background:#b06bff;padding:${px(6)} ${px(16)};display:flex;align-items:center;gap:${px(8)};transform:rotate(-2deg)">
+   ${disc(px(34))}
+   <div style="display:flex;flex-direction:column;line-height:1"><span class="big" style="font-size:${px(20)}">Recruit</span>
+   <span class="big" style="font-size:${px(14)};color:#c9ffe4;--sw:${px(4)};display:flex;align-items:center;gap:3px">${qiIcon(px(16))}3.5K</span></div>
+ </div>
+ <div style="position:absolute;right:${px(14)};top:${pc?px(70):px(60)};display:flex;align-items:center;gap:${px(6)};transform:rotate(2deg)">
+   <span class="big" style="font-size:${px(22)};color:#ffe36b;--sw:${px(4)}">&#10148;</span>
+   <div style="display:flex;flex-direction:column;line-height:1"><span class="big" style="font-size:${px(14)};--sw:${px(4)}">Next: West Wall</span>
+   <span class="big" style="font-size:${px(13)};color:#ffb3a8;--sw:${px(4)}">400 Qi</span></div>
+ </div>`;
+</script></body></html>

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+build/
+
+# Rojo
+sourcemap.json

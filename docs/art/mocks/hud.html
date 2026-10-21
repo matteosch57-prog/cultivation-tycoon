@@ -1,0 +1,85 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fondamento&family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--lac:#2a1c1f;--lac2:#3b2629;--gold:#d4a445;--goldL:#f3d58a;--jade:#6fb59c;--jadeL:#bfe8d6;--red:#b8352b;--cream:#ffe9b8}
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Montserrat,sans-serif;color:#fff}
+.scene{position:relative;width:100vw;height:100vh;background:url('../look/3_sky_clouds_showcase.jpg') center/cover}
+/* Roblox native chrome (for clearance only) */
+.rbx{position:absolute;top:8px;left:12px;display:flex;gap:8px}
+.rbx i{width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.rbxR{position:absolute;top:8px;right:12px}.rbxR i{display:block;width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.stick{position:absolute;left:5%;bottom:8%;width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.jump{position:absolute;right:5%;bottom:8%;width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.pc .stick,.pc .jump{display:none}
+/* material: lacquer panel, lit-top bevel, gold inlay lit on one side */
+.lac{background:linear-gradient(180deg,#3d2a2d 0%,#2a1c1f 55%,#21161a 100%);border-radius:14px;
+  box-shadow:inset 0 1px 0 rgba(255,236,190,.28),inset 0 -2px 0 rgba(0,0,0,.45),0 3px 10px rgba(0,0,0,.35);position:relative}
+.lac::before{content:"";position:absolute;inset:3px;border-radius:11px;border:1.5px solid transparent;
+  background:linear-gradient(135deg,var(--goldL),var(--gold) 40%,#7a5a22) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.qi{font-weight:800;color:#bfeeff;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+.gold{background:linear-gradient(180deg,#fff2c4,#e7bd5c 60%,#a87a2a);-webkit-background-clip:text;color:transparent;font-family:Fondamento,serif}
+.rate{color:#c9f5d6;font-weight:700}
+.inset{background:rgba(0,0,0,.35);box-shadow:inset 0 2px 3px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,236,190,.12);border-radius:999px}
+.btn{background:linear-gradient(180deg,#d4493b,#b8352b 55%,#8e2620);border-radius:14px;font-weight:800;text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,220,200,.45),inset 0 -3px 0 rgba(0,0,0,.35),0 3px 8px rgba(0,0,0,.35);position:relative}
+.btn::before{content:"";position:absolute;inset:3px;border-radius:11px;border:1.5px solid rgba(243,213,138,.85);pointer-events:none}
+.tab{border-radius:9px;padding:4px 7px;font-size:11px;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(0,0,0,.2));box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.chip{display:flex;align-items:center;gap:6px}
+.lbl{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font:600 12px Montserrat;color:#fff;background:rgba(0,0,0,.55);padding:3px 10px;border-radius:6px}
+.toast{font-weight:800;text-shadow:0 2px 0 rgba(0,0,0,.5),0 0 8px rgba(0,0,0,.4)}
+</style></head>
+<body><div class="scene" id="s"><div class="rbx"><i></i><i></i></div><div class="rbxR"><i></i></div><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const opt=q.get('opt')||'A';const pc=q.get('size')==='pc';
+document.getElementById('s').classList.toggle('pc',pc);
+const k=pc?1.25:1; const px=v=>Math.round(v*k)+'px';
+const dis=[['Core Disciple','+60%','#5096ff'],['Inner Disciple','+25%','#5ac878'],['Inner Disciple','+25%','#5ac878'],['Outer Disciple','+10%','#c8c8c8']];
+const hud=document.getElementById('hud');
+const beads=(n,of)=>Array.from({length:of},(_,i)=>`<span style="display:inline-block;width:${px(9)};height:${px(9)};margin:0 ${px(1.5)};border-radius:50%;
+  background:${i<n?'radial-gradient(circle at 35% 30%,#e3fff3,#6fb59c 60%,#2f6b5a)':'rgba(0,0,0,.4)'};box-shadow:${i<n?'0 0 0 1px rgba(20,60,50,.6)':'inset 0 1px 2px rgba(0,0,0,.6)'}"></span>`).join('');
+if(opt==='A'){
+ document.getElementById('lbl').textContent='A: lacquer corner plate'+(pc?' (computer)':' (phone)');
+ hud.innerHTML=`
+ <div class="lac" style="position:absolute;top:${pc?'64px':'56px'};left:12px;padding:${px(8)} ${px(14)} ${px(10)};min-width:${px(190)}">
+   <div class="qi" style="font-size:${px(26)};line-height:1">1.77K <span style="font-size:${px(15)}">Qi</span></div>
+   <div class="rate" style="font-size:${px(12)};margin-top:2px">+19 Qi/s</div>
+   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:${px(6)}"><span class="gold" style="font-size:${px(14)}">Qi Condensation</span><span style="font-size:${px(10)};color:#e9d9b8">5/15</span></div>
+   <div class="inset" style="height:${px(7)};margin-top:3px;overflow:hidden"><div style="width:33%;height:100%;background:linear-gradient(180deg,#bfe8d6,#6fb59c);border-radius:999px"></div></div>
+ </div>
+ <div class="lac" style="position:absolute;top:${pc?'64px':'56px'};right:${pc?'64px':'60px'};padding:${px(7)} ${px(12)};font-size:${px(12)}">
+   <span style="color:#e9d9b8">Next</span> <b style="color:#fff">West Wall</b> <span class="inset" style="padding:2px 8px;margin-left:4px;color:#ffb3a8">400 Qi</span> <span style="color:#bfe8d6">&#8599; 24m</span>
+ </div>
+ <div style="position:absolute;left:12px;top:${pc?'190px':'150px'};display:flex;flex-direction:column;gap:${px(4)}">
+   ${dis.map(d=>`<div class="tab chip" style="font-size:${px(11)};background:linear-gradient(180deg,${d[2]}55,rgba(20,14,16,.75));box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 0 1px ${d[2]}66"><span style="color:#fff">${pc?d[0]:d[0].split(' ')[0]}</span><span style="color:${d[2]};margin-left:auto;padding-left:8px;filter:brightness(1.35)">${d[1]}</span></div>`).join('')}
+   <div class="tab" style="font-size:${px(10)};color:#e9d9b8">4/5 disciples</div>
+ </div>
+ <div class="btn" style="position:absolute;right:${pc?'24px':'calc(5% + 120px)'};bottom:${pc?'24px':'9%'};width:${px(150)};padding:${px(8)} 0;font-size:${px(14)}">Recruit<br><span style="font-size:${px(11)};font-weight:700;color:#ffe2b0">3.50K Qi</span></div>
+ <div class="toast" style="position:absolute;left:50%;top:${pc?'30%':'34%'};transform:translateX(-50%);font-size:${px(20)};color:#bfe8d6">Built: Herb Garden</div>`;
+}else{
+ document.getElementById('lbl').textContent='B: hanging plaque + jade beads'+(pc?' (computer)':' (phone)');
+ hud.innerHTML=`
+ <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+   <div style="display:flex;gap:${px(80)}"><span style="width:2px;height:${px(8)};background:#6b4a2b"></span><span style="width:2px;height:${px(8)};background:#6b4a2b"></span></div>
+   <div class="lac" style="padding:${px(6)} ${px(26)} ${px(8)};text-align:center;min-width:${px(230)}">
+     <div class="qi" style="font-size:${px(28)};line-height:1">1.77K <span style="font-size:${px(15)}">Qi</span></div>
+     <div class="rate" style="font-size:${px(12)};margin-top:2px">+19 Qi/s</div>
+   </div>
+   <div class="lac" style="margin-top:${px(4)};display:flex;align-items:center;gap:${px(8)};padding:${px(4)} ${px(10)};border-radius:999px">
+     <span class="gold" style="font-size:${px(13)};text-shadow:none">Qi Condensation</span>
+     <span class="inset" style="padding:${px(3)} ${px(6)};line-height:0">${beads(5,15)}</span>
+   </div>
+ </div>
+ <div class="lac chip" style="position:absolute;top:${pc?'150px':'118px'};left:50%;transform:translateX(-50%);padding:${px(5)} ${px(12)};font-size:${px(12)};white-space:nowrap">
+   <span style="color:#bfe8d6">&#8601;</span><span style="color:#e9d9b8">Next</span><b>West Wall</b><span style="color:#ffb3a8">400 Qi</span>
+ </div>
+ <div class="lac" style="position:absolute;left:${pc?'16px':'12px'};${pc?'bottom:24px':'top:62px'};padding:${px(7)} ${px(9)};display:flex;flex-direction:column;gap:${px(4)}">
+   <div class="gold" style="font-size:${px(13)}">Disciples 4/5</div>
+   ${dis.map(d=>`<div class="chip" style="font-size:${px(11)};font-weight:700"><span style="color:${d[2]};filter:brightness(1.3)">${d[0]}</span><span style="margin-left:auto;padding-left:10px;color:#fff">${d[1]}</span></div>`).join('')}
+ </div>
+ <div class="btn" style="position:absolute;right:${pc?'24px':'12px'};top:${pc?'42%':'38%'};width:${px(132)};padding:${px(9)} 0;font-size:${px(14)}">Recruit<br><span style="font-size:${px(11)};font-weight:700;color:#ffe2b0">3.50K Qi</span></div>
+ <div class="toast" style="position:absolute;left:50%;top:${pc?'34%':'40%'};transform:translateX(-50%);font-size:${px(20)};color:#bfe8d6">Built: Herb Garden</div>`;
+}
+</script></body></html>
