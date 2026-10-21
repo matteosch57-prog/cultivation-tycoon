@@ -29,6 +29,24 @@ Normal: `start-rojo.bat` (port 34875), then Connect in the Studio Rojo plugin.
 Fallback used before Rojo existed: `python -m http.server 8765` in `src/` and an `execute_luau` that
 fetches each file and calls `ScriptEditorService:UpdateSourceAsync` (HTTP requests are enabled).
 
+## Branches and integration merges
+- Each thread works on its own branch (`economy`, `shop`, `pads`, `cultivators`, `reincarnation`,
+  `perf-health`, ...), usually in its own worktree, and rebases on `origin/integration` before asking
+  for a merge. `integration` is the branch Rojo serves from the main checkout
+  (`C:\Work\cultivation-tycoon`) and the one Studio tests; `main` only gets `integration` once the
+  owner has playtested it.
+- One thread at a time owns merges into `integration`. Recipe: `git fetch origin`; check
+  `git diff --name-only HEAD...origin/<branch>` against `git status` (another thread's uncommitted
+  edits in the main checkout must never be lost); `git merge --no-edit origin/<branch>`; push; tell
+  the coordinator the new tip.
+- Overlap with someone's uncommitted file: copy it to a backup file AND `git stash push -m <unique
+  tag> -- <file>` (never a bare `git stash` / `pop`: the stash is shared by every worktree), then merge.
+- D-number clash in DECISIONS: keep the one already on `integration`, renumber the newcomer, and fix
+  every `Dnn` it cites in code comments and docs (grep only that branch's lines).
+- After a merge that touches `Config.luau`, run `python tools/sim_pacing.py --runs 3` (it parses
+  Config, so a broken pad line fails loudly) and, for economy keys, `tools/sim_economy.py`.
+- A GitHub "remote unpack failed" on push is server-side: retry with backoff (2, 4, 8, 16 s).
+
 ## World layout
 Hub at the origin, 6 peaks at `PLOT_RADIUS` (215) around it, all standing at world y = `BASE_Y` (2).
 Each peak's `frame` has +Z facing the hub. `buildGrounds(plot, radius)` rebuilds island, terrain,

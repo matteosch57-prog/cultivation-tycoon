@@ -11,8 +11,9 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 - A pad opens once `unlock` buildings are owned (any of them) and its `req` pads are owned. This keeps
   3 to 5 pads open at once so players choose (D11).
 - Cost x `costMult(realm)`; income x `incomeMult(realm)`. `costMult` steps by `REALM_COST_MULT` per
-  realm up to `REALM_COST_LATE_FROM`, then by `REALM_COST_LATE`, so late realms stretch gently
-  instead of hitting a wall (research 2026-10-21_economy_math).
+  realm up to `REALM_COST_LATE_FROM`, then by `REALM_COST_LATE`: the first realms are quick laps, then
+  each realm takes ~2 to 3x the last, and realm 10 is the long goal of one life (D25, research
+  2026-10-21_economy_math).
 - Buying is a server position check every 0.1 s (`checkPads`), not `.Touched` (D10).
 - Feature pads carry a `feature` line shown on the price card.
 
@@ -29,8 +30,9 @@ shrinks the island back.
 - **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`
   per disciple recruited in this realm, `data.realmRecruits`, which a breakthrough resets), rolls `RARITIES`. The best `maxDisciples`
   work; the rest rest until slots open. The roll is never sold for Robux (RULES R8); the Shop sells
-  a few FIXED rarities (Elder, Immortal, Celestial once per player), never Dao Ancestor or above
-  (D28, MONETIZATION).
+  FIXED rarities behind realm gates and per-player limits, priced to their pacing impact (D28,
+  MONETIZATION "Disciples for sale" and "Disciple price ladder"). Bought ones are kept in
+  `data.boughtDisciples`, are never trimmed from the list, and survive breakthroughs and reincarnation.
 - **Disciple slots:** `MAX_DISCIPLES` + one per owned pad in `SLOT_PADS` + `VIP_SLOTS` with the VIP pass.
 - **Pill** (Alchemy Furnace): one brewed every `PILL_INTERVAL`; using it doubles qi/s for `PILL_DURATION`.
 - **Qi orbs** (Qi Gathering Array): one every `ORB_INTERVAL`, up to `ORB_MAX`; worth `ORB_VALUE` seconds
@@ -54,7 +56,10 @@ tide under the qi counter (owner picked mock A for both, 2026-10-21).
 for an active, a casual and an idle player (`--set KEY=VALUE` tries a value first, `--trace` lists
 every purchase). `python tools/sim_economy.py` plays the whole climb (realms 1 to 12, real days of
 sessions with offline qi, tide, gifts, optional passes) and reports minutes and the day per realm;
-`--waits` shows how long players stand with nothing to buy. Evidence and the sweep: `docs/research/2026-10-21_first_session_onboarding.md`.
+`--waits` shows how long players stand with nothing to buy, `--passes 2x,vip,orbs` a paying player,
+`--bought 9` a Shop disciple; `simulate(..., reinc=dict(...))` plays several lives of reincarnation.
+Evidence: `docs/research/2026-10-21_first_session_onboarding.md` (first session) and
+`docs/research/2026-10-21_economy_math.md` (the whole climb, passes, Robux disciples, reincarnation).
 
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,
