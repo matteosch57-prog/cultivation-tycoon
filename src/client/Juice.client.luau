@@ -301,6 +301,12 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		if c then
 			pillar(c + Vector3.new(0, 1, 0), Color3.fromHex("9FF5C8"), 60, 2)
 		end
+	elseif kind == "tide" then
+		Sfx.play("gong", { volume = 0.6 })
+		local c = plotCentre()
+		if c then
+			pillar(c + Vector3.new(0, 1, 0), Color3.fromHex("9FD0FF"), 50, 2)
+		end
 	elseif kind == "breakthrough" then
 		Sfx.play("thunder")
 		task.delay(0.15, function()

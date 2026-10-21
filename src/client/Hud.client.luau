@@ -761,6 +761,12 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 	elseif kind == "expand" then
 		toast("Your peak grows! New land to build on", Color3.fromHex("9FF5C8"), 3)
 		return
+	elseif kind == "tideSoon" then
+		toast(string.format("A Spirit Tide rises in %d s", a), Color3.fromHex("9FD0FF"), 3)
+		return
+	elseif kind == "tide" then
+		toast(string.format("Spirit Tide! Every sect earns 2x Qi for %d s", a), Color3.fromHex("9FD0FF"), 4)
+		return
 	end
 	if kind == "built" then
 		toast("Built: " .. a, Color3.fromHex("9FF5C8"), 1.6)

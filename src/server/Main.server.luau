@@ -294,7 +294,13 @@ local function boosted(data)
 	return (data.boostUntil or 0) > workspace:GetServerTimeNow()
 end
 
-local function rate(data)
+-- Spirit Tide: a server-wide event, every peak on the server earns TIDE_MULT x while it lasts
+local function tideOn()
+	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
+end
+
+-- `away` = offline qi, which never counts the live tide
+local function rate(data, away)
 	local base = Config.BASE_RATE
 	for id in data.owned do
 		local pad = Config.padById(id)
@@ -302,7 +308,8 @@ local function rate(data)
 			base += pad.income
 		end
 	end
-	return base * Config.incomeMult(data.realm) * discipleMult(data) * (boosted(data) and 2 or 1)
+	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
+	return base * Config.incomeMult(data.realm) * discipleMult(data) * (boosted(data) and 2 or 1) * tide
 end
 
 local function publish(player)
@@ -692,7 +699,7 @@ local function onJoin(player)
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP)
 	local offlineGain = 0
 	if away > 60 then
-		offlineGain = math.floor(rate(data) * away)
+		offlineGain = math.floor(rate(data, true) * away)
 		data.qi += offlineGain
 	end
 
@@ -964,11 +971,39 @@ task.spawn(function()
 	end
 end)
 
+-- Spirit Tide schedule: TideNext / TideUntil are Workspace attributes (server time) so clients
+-- can draw it; a heads-up goes out TIDE_WARN s before it starts
+local tideWarned = false
+workspace:SetAttribute("TideNext", workspace:GetServerTimeNow() + Config.TIDE_FIRST)
+local function tideTick()
+	local now = workspace:GetServerTimeNow()
+	local nextAt = workspace:GetAttribute("TideNext")
+	if not tideWarned and now >= nextAt - Config.TIDE_WARN then
+		tideWarned = true
+		notify:FireAllClients("tideSoon", math.max(1, math.ceil(nextAt - now)))
+	end
+	if now >= nextAt then
+		tideWarned = false
+		workspace:SetAttribute("TideUntil", now + Config.TIDE_DURATION)
+		workspace:SetAttribute("TideNext", now + Config.TIDE_INTERVAL)
+		notify:FireAllClients("tide", Config.TIDE_DURATION)
+		local n = 0
+		for _ in sessions do
+			n += 1
+		end
+		print(string.format("[Tycoon] spirit tide started, %d players", n))
+	end
+end
+
 -- income tick + autosave
 local sinceSave = 0
 while true do
 	local dt = task.wait(1)
 	sinceSave += dt
+	local okTide, tideErr = pcall(tideTick)
+	if not okTide then
+		warn("[Tycoon] spirit tide tick failed:", tideErr)
+	end
 	for player, s in sessions do
 		local d = s.data
 		d.qi += rate(d) * dt
