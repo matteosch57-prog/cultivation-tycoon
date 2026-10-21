@@ -117,3 +117,33 @@ Already logged: funnel steps with minutes played, realm reached, recruits, sourc
 them against section 4: minutes per realm by realm (median), the share of players whose last session
 ends inside a realm vs right after a breakthrough, and recruits per realm. If players leave in realm
 6 to 8 rather than at 3 to 5, the late step (4.5) is still too steep.
+
+## 8. Owner direction and the shipped curve (D24)
+The owner's call on section 4: "first realms should be fast, then it should get hard. After realm 10
+we will offer reincarnation." So realm 10 is the long goal of one life, and the x4.5 taper above was
+replaced by costs x5 per realm through realm 5, then x10 (recruit reset kept).
+
+| realm | hooked | regular | casual |
+|---|---|---|---|
+| 1 | 9.4 min, day 1 | 9.4 min, day 1 | 10 min, day 1 |
+| 2 | 5.7 | 5.7 | 8.2 |
+| 3 | 6.0 | 6.0 | 8.4, day 2 |
+| 4 | 8.2 | 7.6 | 8.5 |
+| 5 | 11, day 1 | 9.0, day 1 | 9.0, day 3 |
+| 6 | 24 | 25, day 2 | 17, day 4 |
+| 7 | 60 | 54 | 31, day 5 |
+| 8 | 149, day 2 (L 9 min) | 104, day 4 | 54, day 8 |
+| 9 | 395, day 4 (L 16 min) | 270, day 9 | 135, day 15 |
+| 10 | 1218, day 11 (L 50 min) | 744, day 21 (L 30 min) | 380, day 34 |
+
+- The five named realms all fall in the first ~45 minutes of play (day 1 for most).
+- Realm 6 to 10 each take ~2 to 3x the last: the hard part. Realm 10 is a three week goal for a
+  regular player, which is where the D7 to D30 "long goal" sits (Roblox retention doc).
+- Online waits grow late (longest 30 to 50 min in realm 10): the climb leans on offline qi and
+  return visits there. If live data shows players leaving in realm 8 to 9, lower `REALM_COST_LATE`
+  (x8 gave realm 10 at day 10 for a regular player in the sweep).
+- With 2x + VIP + auto orbs: realms 2 to 5 at 5 to 7 min, realm 10 at day 11 (regular). The passes
+  halve the hard part; they skip nothing.
+- Recruits stay alive: ~1,200 rolls a month (regular), 83% roll a Celestial or Dao Ancestor.
+- sim_pacing (active): realm 2 at 11 min, realm 3 at 17, realm 4 at 24 of total play.
+

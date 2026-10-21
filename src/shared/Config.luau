@@ -32,10 +32,12 @@ Config.REALMS = {
 	"Soul Transformation",
 }
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
-Config.REALM_COST_MULT = 8 -- costs x8 per realm up to REALM_COST_LATE_FROM
--- after that costs step by REALM_COST_LATE: with disciples near their slot cap, a realm then takes
--- ~1.3x the last instead of ~2.4x (no wall of days at realm 8+; research 2026-10-21_economy_math, Q3)
-Config.REALM_COST_LATE = 4.5
+-- Owner direction (D24): the first realms are fast laps, then it gets hard; realm 10 is the long goal
+-- (reincarnation comes after it). Costs x5 per realm up to REALM_COST_LATE_FROM (realms 2 to 5 take
+-- ~5 to 10 min each), then x10 per realm (realm 10 lands ~day 21 for 2 x 30 min a day;
+-- tools/sim_economy.py, research 2026-10-21_economy_math)
+Config.REALM_COST_MULT = 5
+Config.REALM_COST_LATE = 10
 Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
 
@@ -125,7 +127,7 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
-Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, Q3)
+Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, D24)
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
