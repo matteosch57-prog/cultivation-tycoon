@@ -146,12 +146,18 @@ local function ornaments(look, tier)
 	return list
 end
 
+local TROUSERS = Color3.fromHex("2B2530")
+
 local function describe(look, tier)
 	local spec = LOOK[look]
 	local d = Instance.new("HumanoidDescription")
-	for _, k in { "HeadColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor", "TorsoColor" } do
+	for _, k in { "HeadColor", "LeftArmColor", "RightArmColor", "TorsoColor" } do
 		d[k] = SKIN
 	end
+	-- The catalog robes are tops: they stop at the hips, so the folded legs showed bare skin (owner
+	-- 2026-10-22: "why are legs out of clothing"). The legs are dark trousers instead; a classic hanfu
+	-- pants texture was tried and painted white stripes down the shins.
+	d.LeftLegColor, d.RightLegColor = TROUSERS, TROUSERS
 	for k, id in spec.body do
 		d[k] = id
 	end
