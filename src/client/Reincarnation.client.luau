@@ -270,8 +270,9 @@ local function buildKarma(body)
 			st.Parent = pip
 			pips[l] = pip
 		end
+		Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 5 }) -- the pips clear the button
 		local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(70), px(26)), JADE, px(9))
-		pHolder.LayoutOrder = 5
+		pHolder.LayoutOrder = 6
 		local price = text(pBtn, "", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		local function buy()
 			if busy then
