@@ -8,7 +8,9 @@ checked in Studio Play (ROADMAP).
 - **Studio:** place 115564708369657 "Cultivation Tycoon". Scripts match `src/`. Place-only edits
   (Lighting, ActiveSky, Showcase island) persist only when Mattéo saves the place.
 - **Sync:** Rojo port 34875 is connected from the Studio plugin (scripts in Studio match `src/`).
-- **Git:** GitHub `matteosch57-prog/cultivation-tycoon` (private), branch `main`; history = `git log`.
+- **Git:** GitHub `matteosch57-prog/cultivation-tycoon` (private). Every thread's work is merged on
+  `integration` (what Rojo serves and Studio tests); `main` gets it after the owner's playtest. How
+  merges work: TECH "Branches and integration merges"; history = `git log`.
 - **Open forks:** Q1 music bed.
 - **Known risks:** phone numbers not measured yet (BACKLOG "Performance"); the store skybox (ART_BIBLE).
 
@@ -32,6 +34,12 @@ checked in Studio Play (ROADMAP).
 - **Endless progression (D29, D31, on integration):** reincarnation from realm 10, Past Lives,
   karma and the Karma Shop are built and checked in Studio Play (mock save); Spirit Tide and playtime
   gifts (D30) too. Left: per-realm visuals and the two later Karma Shop nodes (ROADMAP M3).
+
+- **Economy** (D25, ECONOMY, research `2026-10-21_economy_math.md`): realms 2 to 5 are ~5 to 10 min
+  laps, then each realm ~2 to 3x the last; a regular player (2 x 30 min a day) reaches realm 10 about
+  day 7 and finishes it about day 20; recruit price restarts each realm. Sims: `tools/sim_economy.py`
+  (whole climb, passes, Robux disciples, reincarnation lives at ~5 to 7 days each with x3).
+  Simulated only: real pacing waits for the first live batch (funnel and realm events).
 
 - **Shop** (D24, D28; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), a "Sect
   Market" island on every peak with step-on pads, 3 passes and 10 products granted through saved

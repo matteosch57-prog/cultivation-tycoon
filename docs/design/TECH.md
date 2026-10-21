@@ -46,6 +46,11 @@ fetches each file and calls `ScriptEditorService:UpdateSourceAsync` (HTTP reques
 - After a merge that touches `Config.luau`, run `python tools/sim_pacing.py --runs 3` (it parses
   Config, so a broken pad line fails loudly) and, for economy keys, `tools/sim_economy.py`.
 - A GitHub "remote unpack failed" on push is server-side: retry with backoff (2, 4, 8, 16 s).
+- Worktrees left after the first session (2026-10-21), all merged into `integration`, safe to remove
+  with `git worktree remove <path>` once their threads are closed: `C:\Work\ct-cultivators`
+  (has one untracked mock, `docs/art/mocks/cultivators_all.gif`: keep or copy it first),
+  `C:\Work\ct-economy`, `C:\Work\ct-pads`, `C:\Work\cultivation-tycoon-perf`,
+  `C:\Work\cultivation-tycoon-reinc`. Their branches stay on origin.
 
 ## World layout
 Hub at the origin, 6 peaks at `PLOT_RADIUS` (215) around it, all standing at world y = `BASE_Y` (2).
