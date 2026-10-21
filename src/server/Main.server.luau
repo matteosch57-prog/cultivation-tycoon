@@ -345,8 +345,12 @@ local function maxDisciples(s)
 	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip) + dao(s.data, "seat")
 end
 
--- karma a reincarnation would pay now (Soul Echo included)
+-- karma a reincarnation would pay now (Soul Echo included); only a life deeper than every one
+-- before pays (D37: a reset at the same depth takes minutes, so it must not be a karma faucet)
 local function karmaGain(d, share)
+	if d.realm <= (d.soulPeak or 0) then
+		return 0
+	end
 	return math.floor(Config.karmaFor(math.max(d.realm, Config.REINC_REALM), share) * (1 + Config.DAO_ECHO * dao(d, "echo")))
 end
 
@@ -1129,9 +1133,7 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
-	-- Rebirth Gate lands deeper, always below the REINC_REALM gate (never free to repeat)
-	local landing = Config.DAO_REBIRTH_REALMS[dao(d, "rebirth")] or 1
-	d.realm = math.clamp(landing, 1, Config.REINC_REALM - 1)
+	d.realm = 1 -- always below the REINC_REALM gate (D37 removed the Rebirth Gate node)
 	d.owned = {}
 	d.workers = {}
 	if dao(d, "foundation") > 0 then

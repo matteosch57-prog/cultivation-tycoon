@@ -130,3 +130,11 @@ the log as a D-number.
   prompts) and tycoon practice (upgrades beside what they upgrade); no public data compares pads
   with a screen, so the `Shop` event's sources are how we measure it. Research
   `docs/research/2026-10-21_shop_placement.md`; mocks `docs/art/mocks/shop_layout_*.png`.
+- **D37** First reincarnation at realm 2 (owner: "40m is long to hook. 5-10m is good"; he asked to
+  "get to the loop FAST"). `REINC_REALM` 2, `PAST_LIVES_MULT` 1.5 (x2 or x3 kept every life under ~1 h
+  forever, so it never got hard), karma `KARMA_GROWTH` ^ depth and paid only for a new record depth
+  (with the gate at realm 2 and Old Foundations a reset takes minutes, so a repeat must pay nothing).
+  The Rebirth Gate node is gone (a landing below realm 2 is realm 1); Old Foundations costs 8 and
+  Heavenly Hands 5, because every life replays the early realms. Rhythm (2 x 30 min a day): first new
+  life ~10 min, lives 10, 14, 20, 27 ... ~75 min by life 9 (day 6), ~4 h by life 14 (day 16).
+  Evidence: `docs/research/2026-10-21_economy_math.md` section 11.

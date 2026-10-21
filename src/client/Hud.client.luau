@@ -705,7 +705,9 @@ local function refreshStatic()
 	ui.rate.Text = "+" .. compact(player:GetAttribute("Rate") or 0) .. "/s"
 	ui.realm.Text = player:GetAttribute("RealmName") or ""
 	local realmNow = player:GetAttribute("Realm") or 1
-	ui.rebirth.Text = realmNow >= Config.REINC_REALM and "Rebirth!" or string.format("Rebirth %d/%d", realmNow, Config.REINC_REALM)
+	-- a new life pays once this one goes deeper than every life before (D37)
+	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
+	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("Rebirth %d/%d", realmNow, target)
 	ui.recruitCost.Text = compact(player:GetAttribute("RecruitCost") or 0)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
@@ -859,7 +861,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	-- the Rebirth chip wobbles gold once a new life is open
-	if (player:GetAttribute("Realm") or 1) >= Config.REINC_REALM then
+	if (player:GetAttribute("Realm") or 1) >= math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1) then
 		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
 		ui.rebirthBtn.BackgroundColor3 = GOLD
 	else

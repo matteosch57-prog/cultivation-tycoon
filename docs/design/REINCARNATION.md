@@ -12,18 +12,19 @@ A new life after realm 10 (D29). Numbers live in `Config.luau`; research and pac
 - **Keeps:** `soulPeak` (deepest realm of any finished life), `karma`, `lives`, passes, `best`.
 
 ## Past Lives (power)
-`Config.pastLivesMult(soulPeak)` = `PAST_LIVES_MULT` ^ (soulPeak - 9), on every qi source that goes
-through `rate` (live and offline). It changes only when a life ends deeper than any before.
+`Config.pastLivesMult(soulPeak)` = `PAST_LIVES_MULT` ^ (soulPeak - (`REINC_REALM` - 1)), on every qi
+source that goes through `rate` (live and offline). The gate is realm 2 (D37): the first new life
+comes ~10 min in and each later life runs a little longer than the last. It changes only when a life ends deeper than any before.
 
 ## Karma (choices)
-`Config.karmaFor(realm, builtShare)` paid at each reincarnation: ~10 at realm 10, x2.15 per realm deeper,
-and the share of the current realm's pads counts (x(1 + `DAO_ECHO` x Soul Echo level)).
+`Config.karmaFor(realm, builtShare)` = `KARMA_GROWTH` ^ (realms past the gate + builtShare): 1 at the
+gate, ~25 eight realms deeper (x(1 + `DAO_ECHO` x Soul Echo level)). Paid only when the life ends
+deeper than every life before (D37): a reset at the same depth takes minutes, so it pays nothing.
 
 ## Karma Shop (the Dao Tree, owner: "a karma shop")
 `Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
 `data.dao`, published as `Dao_<key>`. Sworn Bond (+1 disciple follows you per level), Disciple Seat
-(+1 slot), Old Foundations (a new life starts with every building of its landing realm), Rebirth Gate
-(a new life lands at `DAO_REBIRTH_REALMS[level]`, realm 3 then 5, always below the gate), Elixir Mastery
+(+1 slot), Old Foundations (a new life starts with every building of realm 1), Elixir Mastery
 (a brewed pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline
 cap per level), Soul Echo (+`DAO_ECHO` karma per level), Heavenly Hands (a gold hand on the HUD "Next"
 card builds that pad from anywhere: remote `HandsBuild(padId)`, the server checks the node, the owner,

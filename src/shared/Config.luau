@@ -55,31 +55,30 @@ Config.REALMS = {
 -- start a new life at realm 1. Past Lives: every realm above REINC_REALM - 1 reached in a FINISHED
 -- life (`soulPeak`, monotonic) multiplies all qi by PAST_LIVES_MULT in later lives. Karma is paid
 -- per reincarnation from how deep that life went; SWORN_BASE best disciples follow into the next life.
-Config.REINC_REALM = 10
-Config.PAST_LIVES_MULT = 3
+-- D37 (owner: "40m is long to hook, 5-10m is good"): the gate is realm 2, so the first new life
+-- comes ~10 min in; x1.5 per realm deeper keeps each life a little longer than the last (10, 14,
+-- 20 ... ~75 min by life 9, ~4 h by life 14 for 2 x 30 min a day; research 2026-10-21_economy_math).
+Config.REINC_REALM = 2
+Config.PAST_LIVES_MULT = 1.5
 Config.SWORN_BASE = 1
 function Config.pastLivesMult(soulPeak)
 	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))
 end
--- ~10 at realm 10, x2.15 per realm deeper (a realm costs x10: the cube root of the qi it took);
+-- Karma: KARMA_GROWTH ^ (realms past the gate), 1 at the gate, ~25 eight realms deeper, so the whole
+-- Karma Shop takes about two weeks of lives. Paid only for a NEW record depth (D37): with the gate at
+-- realm 2 and Old Foundations a reset is minutes, so repeating it must pay nothing.
 -- `built` = share of this realm's pads owned (0..1) so progress inside a realm counts too
 -- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
 	{ key = "sworn", name = "Sworn Bond", line = "+1 disciple follows you", costs = { 10, 30 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
-	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 20 } },
-	-- `lines` = the line shown for the NEXT level (the last one once maxed)
-	{ key = "rebirth", name = "Rebirth Gate", line = "Lives start at realm 3", lines = { "Lives start at realm 3", "Lives start at realm 5" }, costs = { 40, 100 } },
+	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 8 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
-	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 20 } },
+	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
 }
--- Rebirth Gate: the realm a new life lands at, per level. Always below REINC_REALM (the landing
--- must never pass its own gate, or reincarnating becomes free to repeat); economy check 2026-10-21:
--- a resetter at the gate earns ~4 karma/h whatever the landing, going deeper wins from life 3.
-Config.DAO_REBIRTH_REALMS = { 3, 5 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
 Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
@@ -93,8 +92,9 @@ function Config.daoNode(key)
 	return nil
 end
 
+Config.KARMA_GROWTH = 1.5
 function Config.karmaFor(realm, built)
-	return math.floor(10 * 10 ^ ((realm - Config.REINC_REALM + (built or 0)) / 3))
+	return math.floor(Config.KARMA_GROWTH ^ (realm - Config.REINC_REALM + (built or 0)))
 end
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 -- Owner direction (D25): the first realms are fast laps, then it gets hard; realm 10 is the long goal
