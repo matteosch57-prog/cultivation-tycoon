@@ -10,6 +10,8 @@
 | ServerScriptService.Server.Style | `src/server/Style.luau` | hero-quality geometry (halls, roofs, islands, clouds) |
 | StarterPlayerScripts.Client.Hud | `src/client/Hud.client.luau` | HUD (mock C), phone/computer layouts |
 | StarterPlayerScripts.Client.Build | `src/client/Build.client.luau` | price cards, beacons, previews, build animation |
+| ServerScriptService.Server.Telemetry | `src/server/Telemetry.luau` | analytics catalogue, funnel, economy events |
+| StarterPlayerScripts.Client.Guide | `src/client/Guide.client.luau` | the guide trail to the next pad |
 | StarterPlayerScripts.Client.Juice | `src/client/Juice.client.luau` | floating qi, orbs, fly-to, event sounds and light |
 
 Place-only content (not in Rojo): Lighting and `ActiveSky`, `ServerStorage.Sky_Original`, the Edit

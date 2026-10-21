@@ -7,9 +7,6 @@ the log as a D-number.
 - **Q1** Music bed: Guzheng (1), Temple Of Lihangin (2) or Harmonious Cycles (3). The owner picks by
   ear with the Workspace attribute `MusicTrack`.
 
-- **Q2** Guide arrow look (B01 step 5): A jade trail of chevrons on the ground, B a spirit wisp that
-  flies ahead, C a gold arrow bouncing over the next pad (`docs/art/mocks/guide_A..C.jpg`). Built only
-  after the owner picks (R4).
 - **Q3** Realm pacing after the first breakthrough: today realms 2 and 3 go faster than realm 1
   (disciples carry over). Keep (rebirth games shorten runs) or raise the realm cost ratio
   (sweep in `docs/research/2026-10-21_first_session_onboarding.md`).
@@ -55,3 +52,6 @@ the log as a D-number.
   every first-session milestone is an onboarding funnel step with its time, plus session ends, recruit
   results and the qi economy (TECH "Telemetry"). Measured from the first build, as Gladiator RNG learned
   (its R23): the batch shows where players stop, which no model predicts.
+- **D22** Guide arrow = mock A (owner pick of A / B / C, `docs/art/mocks/guide_A..C.jpg`): a jade
+  chevron trail on the ground, the most common tycoon guide and the only one of the three that still
+  points the way when the pad is behind the player. Plain objects, so no new light exception (R3).

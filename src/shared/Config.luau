@@ -79,6 +79,10 @@ function Config.mainHallLevel(owned)
 	return 0
 end
 
+-- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
+Config.GUIDE_BUILT = 5 -- always shown in realm 1 until this many buildings stand
+Config.GUIDE_IDLE = 20 -- afterwards only after this many seconds standing still
+
 -- Features
 Config.PILL_INTERVAL = 180 -- seconds between pills from the Alchemy Furnace
 Config.PILL_DURATION = 60 -- seconds of 2x qi
