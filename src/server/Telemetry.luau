@@ -1,0 +1,265 @@
+-- Analytics (B01 step 7): the first-session funnel, session ends, recruits and the qi economy.
+-- EVENTS is the catalogue: every custom event name, its fields and the question it answers.
+-- Fields are built here from positional values, so a call site can never send a key Roblox ignores
+-- (only CustomField01..03 are read) or an unbounded value (a UserId, free text). 100 names per
+-- experience and a name is permanent once a published server sends it: prefer a new field value.
+-- Roblox drops every event sent from Studio, so Studio prints them instead.
+local AnalyticsService = game:GetService("AnalyticsService")
+local RunService = game:GetService("RunService")
+
+local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+
+local Telemetry = {}
+
+local STUDIO = RunService:IsStudio()
+local KEYS = {
+	Enum.AnalyticsCustomFieldKeys.CustomField01.Name,
+	Enum.AnalyticsCustomFieldKeys.CustomField02.Name,
+	Enum.AnalyticsCustomFieldKeys.CustomField03.Name,
+}
+
+Telemetry.EVENTS = {
+	FunnelTime = {
+		fields = { "step (FUNNEL name)", "minutes played when it landed (minuteBucket)" },
+		question = "How long does a new player take to reach each funnel step (does the guide arrow speed it up)?",
+	},
+	SessionEnd = {
+		fields = { "buildings owned this realm (builtBucket)", "session minutes (minuteBucket)", "first | return" },
+		question = "Where do players stop, and does a first session end earlier than a return visit?",
+	},
+	Recruit = {
+		fields = { "rarity name", "realm (realmBucket)", "kept | benched" },
+		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
+	},
+	Feature = {
+		fields = { "pill | orb", "realm (realmBucket)" },
+		question = "Are the pill and the qi orbs used, or ignored?",
+	},
+}
+
+-- The onboarding funnel: one-time per player, steps in order. A step counts once it is true now or
+-- the player has broken through (a breakthrough resets the owned pads but every earlier step happened).
+Telemetry.FUNNEL = {
+	{
+		name = "Joined",
+		done = function()
+			return true
+		end,
+	},
+	{
+		name = "First building",
+		done = function(_, built)
+			return built >= 1
+		end,
+	},
+	{
+		name = "Main Hall",
+		done = function(d)
+			return d.owned.mainhall1 == true
+		end,
+	},
+	{
+		name = "Five buildings",
+		done = function(_, built)
+			return built >= 5
+		end,
+	},
+	{
+		name = "Disciple Hall",
+		done = function(d)
+			return d.owned.hall == true
+		end,
+	},
+	{
+		name = "First recruit",
+		done = function(d)
+			return (d.recruited or 0) >= 1
+		end,
+	},
+	{
+		name = "First expansion",
+		done = function(d)
+			return d.owned.expand1 == true
+		end,
+	},
+	{
+		name = "Celestial Palace",
+		done = function(d)
+			return d.owned.mainhall5 == true
+		end,
+	},
+	{
+		name = "Breakthrough",
+		done = function(d)
+			return (d.best or 1) >= 2
+		end,
+	},
+}
+
+-- Buckets keep every field value inside a small fixed set (8,000 combinations per event at most).
+local MINUTES = { 1, 2, 3, 5, 10, 20, 40, 80 }
+function Telemetry.minuteBucket(sec)
+	local m = sec / 60
+	local lo = 0
+	for _, hi in MINUTES do
+		if m < hi then
+			return lo .. "-" .. hi
+		end
+		lo = hi
+	end
+	return lo .. "+"
+end
+
+local BUILT = { 1, 3, 6, 11, 16, 21, 27 }
+function Telemetry.builtBucket(n)
+	local lo = 0
+	for _, hi in BUILT do
+		if n < hi then
+			return hi - lo == 1 and tostring(lo) or (lo .. "-" .. (hi - 1))
+		end
+		lo = hi
+	end
+	return lo .. "+"
+end
+
+function Telemetry.realmBucket(realm)
+	return realm >= 4 and "4+" or tostring(realm)
+end
+
+local function fields(...)
+	local values = { ... }
+	if #values == 0 then
+		return nil
+	end
+	local t = {}
+	for i, v in values do
+		t[KEYS[i]] = tostring(v)
+	end
+	return t
+end
+
+-- One budget for every event type (Roblox: 120 + 20 x players requests per minute per server).
+-- Over budget the event is counted, never silently lost: the count is printed once a minute.
+local budget, budgetAt, dropped = 0, 0, 0
+local function spend(player)
+	if not player.Parent then
+		return false
+	end
+	local now = os.clock()
+	if now - budgetAt >= 60 then
+		if dropped > 0 then
+			warn("[Tycoon][analytics] events over budget")
+			print("[Tycoon][analytics] dropped", dropped, "events in the last minute")
+		end
+		budget, budgetAt, dropped = 0, now, 0
+	end
+	if budget >= 100 + 15 * #game:GetService("Players"):GetPlayers() then
+		dropped += 1
+		return false
+	end
+	budget += 1
+	return true
+end
+
+local function send(what, fn, ...)
+	if STUDIO then
+		print("[Tycoon][analytics]", what, ...)
+		return
+	end
+	local ok, err = pcall(fn, ...)
+	if not ok then
+		warn("[Tycoon][analytics] send failed")
+		print("[Tycoon][analytics]", what, err)
+	end
+end
+
+function Telemetry.custom(player, name, ...)
+	assert(Telemetry.EVENTS[name], "uncatalogued event " .. tostring(name))
+	if spend(player) then
+		send(name, AnalyticsService.LogCustomEvent, AnalyticsService, player, name, 1, fields(...))
+	end
+end
+
+-- Log every funnel step that has become true, in order, and time it. `d.funnel` = steps logged
+-- (saved, so a returning player never re-logs); `d.playSec` = seconds played over every session.
+function Telemetry.funnel(player, d)
+	local built = 0
+	for id in d.owned do
+		if Config.padById(id) then
+			built += 1
+		end
+	end
+	local nextStep = (d.funnel or 0) + 1
+	local step = Telemetry.FUNNEL[nextStep]
+	while step and (step.done(d, built) or ((d.best or 1) >= 2)) do
+		d.funnel = nextStep
+		if spend(player) then
+			send(
+				"funnel " .. step.name,
+				AnalyticsService.LogOnboardingFunnelStepEvent,
+				AnalyticsService,
+				player,
+				nextStep,
+				step.name
+			)
+		end
+		Telemetry.custom(player, "FunnelTime", step.name, Telemetry.minuteBucket(d.playSec or 0))
+		nextStep += 1
+		step = Telemetry.FUNNEL[nextStep]
+	end
+end
+
+-- Qi flows. Sinks are sent per purchase; income is summed per player and sent with each autosave
+-- (one event per source per minute instead of one per second).
+function Telemetry.sink(player, d, amount, sku)
+	if amount > 0 and spend(player) then
+		send(
+			"sink " .. sku,
+			AnalyticsService.LogEconomyEvent,
+			AnalyticsService,
+			player,
+			Enum.AnalyticsEconomyFlowType.Sink,
+			"Qi",
+			math.floor(amount),
+			math.floor(d.qi),
+			Enum.AnalyticsEconomyTransactionType.Gameplay.Name,
+			sku
+		)
+	end
+end
+
+function Telemetry.source(player, d, amount, sku, timed)
+	if amount >= 1 and spend(player) then
+		local kind = timed and Enum.AnalyticsEconomyTransactionType.TimedReward
+			or Enum.AnalyticsEconomyTransactionType.Gameplay
+		send(
+			"source " .. sku,
+			AnalyticsService.LogEconomyEvent,
+			AnalyticsService,
+			player,
+			Enum.AnalyticsEconomyFlowType.Source,
+			"Qi",
+			math.floor(amount),
+			math.floor(d.qi),
+			kind.Name,
+			sku
+		)
+	end
+end
+
+function Telemetry.realm(player, realm)
+	if spend(player) then
+		send(
+			"realm " .. realm,
+			AnalyticsService.LogProgressionEvent,
+			AnalyticsService,
+			player,
+			"Realm",
+			Enum.AnalyticsProgressionType.Complete,
+			realm - 1,
+			Config.realmName(realm - 1)
+		)
+	end
+end
+
+return Telemetry

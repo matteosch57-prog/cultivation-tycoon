@@ -32,7 +32,7 @@ Config.REALMS = {
 }
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 Config.REALM_COST_MULT = 8 -- costs x8 per realm
-Config.BREAKTHROUGH_COST = 45000
+Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.
@@ -84,6 +84,10 @@ function Config.mainHallLevel(owned)
 	end
 	return 0
 end
+
+-- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
+Config.GUIDE_BUILT = 5 -- always shown in realm 1 until this many buildings stand
+Config.GUIDE_IDLE = 20 -- afterwards only after this many seconds standing still
 
 -- Features
 Config.PILL_INTERVAL = 180 -- seconds between pills from the Alchemy Furnace

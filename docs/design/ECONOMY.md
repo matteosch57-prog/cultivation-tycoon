@@ -44,6 +44,11 @@ claimed (server `ClaimGift`) for `GIFT_VALUE[i]` seconds of income, counted with
 first session past the ~8 minute benchmark (research 2026-10-21_tycoon_study). The HUD shows the next
 tide under the qi counter (owner picked mock A for both, 2026-10-21).
 
+## Pacing
+`python tools/sim_pacing.py` replays these rules from Config and prints the minutes to each milestone
+for an active, a casual and an idle player (`--set KEY=VALUE` tries a value first, `--trace` lists
+every purchase). Evidence and the sweep: `docs/research/2026-10-21_first_session_onboarding.md`.
+
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,
 owned pads, qi and the pill reset; disciples stay. Names in `REALMS`.

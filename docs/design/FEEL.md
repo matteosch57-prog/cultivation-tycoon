@@ -8,6 +8,9 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   pulsing ring) calls the player; beams fade when the camera is close.
 - Price card: HUD style (outlined text, no panel): name, feature line, price; "Need X more" when
   standing on a pad you cannot afford.
+- Guide trail (`Guide.client.luau`, D22): jade chevrons painted on the ground from the feet to the
+  HUD's "Next:" pad, drifting toward it; always in realm 1 until `GUIDE_BUILT` buildings, then only
+  after `GUIDE_IDLE` s standing still. Objects, not light (R3).
 - Within 18 studs a jade hologram of the building fades in where it will stand.
 - Buying: the pad sinks, coins + chime; the building rises bottom to top (Quint out), sparks, a warm
   light flash and a chime when it lands; a temple bell for a Main Hall level.

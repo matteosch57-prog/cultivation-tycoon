@@ -7,6 +7,10 @@ the log as a D-number.
 - **Q1** Music bed: Guzheng (1), Temple Of Lihangin (2) or Harmonious Cycles (3). The owner picks by
   ear with the Workspace attribute `MusicTrack`.
 
+- **Q3** Realm pacing after the first breakthrough: today realms 2 and 3 go faster than realm 1
+  (disciples carry over). Keep (rebirth games shorten runs) or raise the realm cost ratio
+  (sweep in `docs/research/2026-10-21_first_session_onboarding.md`).
+
 ## Log (all 2026-10-21, the first session)
 - **D1** Theme: cultivation. Compared against aquarium (an old leader, fading), pet shop (the live
   leader, direct competition), wizard (open but combat-heavy). Cultivation is niche, but the owner
@@ -47,3 +51,12 @@ the log as a D-number.
   buildings into unique meshes (one upload per building and level, no reuse), every small ball and
   cylinder becomes a clone of one low-poly mesh: two uploads, -71% triangles on a whole-peak view (Studio Edit), no
   visible change. Not a generated-art mesh (D5): two geometric primitives written by a script.
+- **D21** First session (B01 step 5 and the telemetry half of step 7): the first 5 minutes stay as they
+  are (a building every 20 to 30 s, the Main Hall at about a minute, like the tycoons researched);
+  `BREAKTHROUGH_COST` 45,000 -> 300,000 so the gold pad is a few minutes' goal, not an instant buy;
+  every first-session milestone is an onboarding funnel step with its time, plus session ends, recruit
+  results and the qi economy (TECH "Telemetry"). Measured from the first build, as Gladiator RNG learned
+  (its R23): the batch shows where players stop, which no model predicts.
+- **D22** Guide arrow = mock A (owner pick of A / B / C, `docs/art/mocks/guide_A..C.jpg`): a jade
+  chevron trail on the ground, the most common tycoon guide and the only one of the three that still
+  points the way when the pad is behind the player. Plain objects, so no new light exception (R3).
