@@ -152,15 +152,16 @@ local lastOpen = {}
 local PAD_REACH = 2.6
 local function buildPads(folder, baseY)
 	local pads = {}
-	local P, PAL = api.styleP, api.palette
+	local P = api.styleP
 	local purple = Color3.fromHex("9B6BE0")
 	for i, key in Config.SHOP_PADS do
 		-- between the bridge mouths (bridges leave at multiples of 360/PLOT_COUNT degrees)
 		local a = (i - 0.5) / Config.PLOT_COUNT * math.pi * 2
 		local at = CFrame.new(math.cos(a) * Config.SHOP_PAD_RADIUS, baseY, math.sin(a) * Config.SHOP_PAD_RADIUS)
-		local rim = P(folder, Vector3.new(0.4, 5.4, 5.4), at * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.stone, nil, Enum.PartType.Cylinder)
+		-- an invisible anchor: Build.client draws the pad (tag "StepPad")
 		local p = P(folder, Vector3.new(0.5, 4, 4), at * CFrame.new(0, 0.27, 0) * CFrame.Angles(0, 0, math.pi / 2), purple, nil, Enum.PartType.Cylinder)
-		rim.Name = "ShopPadRim"
+		p.Transparency = 1
+		p.CastShadow = false
 		p.Name = "ShopPad_" .. key
 		p.CanCollide = false
 		p.CanTouch = false

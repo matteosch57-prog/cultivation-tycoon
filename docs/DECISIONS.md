@@ -72,3 +72,9 @@ the log as a D-number.
   the top rarities stay a chase (before, recruits stopped after realm 1). Realm 10 is the long goal:
   ~day 21 for two 30 min sessions a day, ~day 11 with the three passes
   (`docs/research/2026-10-21_economy_math.md`). Reincarnation after realm 10 is not designed yet.
+- **D26** Step-on pads = concept C "Formation" (owner pick of A Jade Seal / B Lotus / C Formation in a
+  playable 3D mock, `docs/art/mocks/pads_formation_mock.html`; "C amazing, with nice premium light, text
+  clear and easy, normalize colors"). Research (`docs/research/2026-10-21_pad_feel.md`): pad tycoons
+  rarely preview the building, so the gathering preview is where this game stands out. Pads are drawn
+  by the client from a tagged anchor so build, breakthrough and shop pads share one look and one
+  colour set (`PadLook`). The pad's light is the R3 pad-beacon exception.

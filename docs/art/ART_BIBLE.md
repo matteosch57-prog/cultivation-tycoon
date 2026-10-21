@@ -87,7 +87,8 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
 ## Light (RULES R3)
 Scene light comes only from the sky or a visible lamp holding a real Light (stone lanterns, braziers,
 the cauldron fire, the spirit crystals and orbs, which are glowing objects). Gameplay markers are the
-one exception the owner asked for: pad beacons (green / red beams) and short event flashes.
+one exception the owner asked for: pad beacons (beams, the glowing rune rings and the light in
+each pad's gold heart, colours from `PadLook`) and short event flashes.
 
 ## UI
 The HUD language is mock C (approved): no panels, chunky Fredoka One text with a dark outline, toy

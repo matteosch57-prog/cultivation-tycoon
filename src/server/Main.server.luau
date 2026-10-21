@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
@@ -436,16 +437,17 @@ end
 local refreshPads -- forward
 local PAD_COLOR = Color3.fromHex("6FB59C") -- jade
 
-local function makePad(player, s, pad, cost, label, income, onBuy)
-	-- a carved stone disc with a jade inlay (no neon: the pad is an object, not a light)
+local function makePad(player, s, pad, cost, label, income, onBuy, kind)
+	-- An invisible anchor: every client draws the pad itself (Build.client, tag "StepPad").
 	local at = s.plot.frame * CFrame.new(pad.x, 0, pad.z)
-	local rim = Style.P(s.plot.built, Vector3.new(0.4, 5.4, 5.4), at * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.pi / 2), Style.PAL.stone, nil, Enum.PartType.Cylinder)
 	local p = Style.P(s.plot.built, Vector3.new(0.5, 4, 4), at * CFrame.new(0, 0.27, 0) * CFrame.Angles(0, 0, math.pi / 2), PAD_COLOR, nil, Enum.PartType.Cylinder)
+	p.Transparency = 1
+	p.CastShadow = false
 	p.CanCollide = false
 	p.CanTouch = false
 	p.Name = "Pad_" .. (pad.id or "x")
-	rim.Name = "PadRim"
-	rim.Parent = p -- destroyed together with the pad
+	p:SetAttribute("PadKind", kind or "build")
+	CollectionService:AddTag(p, "StepPad")
 	-- the client draws the price card and the preview from these
 	p:SetAttribute("Title", label)
 	p:SetAttribute("Cost", cost)
@@ -655,7 +657,7 @@ refreshPads = function(player, s)
 			refreshPads(player, s)
 			publish(player)
 			notify:FireAllClients("breakthrough", player.DisplayName, nextName)
-		end)
+		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 	end
 end
