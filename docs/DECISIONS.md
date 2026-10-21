@@ -39,3 +39,6 @@ the log as a D-number.
 - **D18** Organised like the other projects: START_HERE/STATE/docs layout, Rojo port 34875
   (Heavenly 34872, Gladiator 34873, Follows 34874), vault folder `8_Roblox_Cultivation_Tycoon`,
   private GitHub repo `matteosch57-prog/cultivation-tycoon` (was Q2).
+- **D19** Save safety (B01 step 2): one record per player with a per-join session lock, released on
+  leave; a save lands only while it holds the lock. A player whose lock stays held plays without saving
+  rather than risk an overwrite (a kick-and-rejoin message is a possible later polish).

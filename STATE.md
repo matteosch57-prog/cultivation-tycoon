@@ -7,11 +7,13 @@ checked in Studio Play (ROADMAP).
 ## Where things stand
 - **Studio:** place 115564708369657 "Cultivation Tycoon". Scripts match `src/`. Place-only edits
   (Lighting, ActiveSky, Showcase island) persist only when Mattéo saves the place.
-- **Sync:** Rojo port 34875 is configured (`start-rojo.bat`); the first connect from the Studio plugin
-  has not happened yet. Until then the HTTP fallback in TECH "Sync" was used.
+- **Sync:** Rojo port 34875 is connected from the Studio plugin (scripts in Studio match `src/`).
 - **Git:** GitHub `matteosch57-prog/cultivation-tycoon` (private), branch `main`; history = `git log`.
 - **Open forks:** Q1 music bed.
 - **Known risks:** part count of a full peak (BACKLOG "Performance"); the store skybox (ART_BIBLE).
 
+- **B01 step 2 save safety:** built and checked in Studio (mock store tests + a real Play join/leave
+  on the `_studio` store); not committed yet.
+
 ## Next action
-Mattéo: connect the Studio Rojo plugin on 34875 (`start-rojo.bat`). Then B01 step 2: save safety.
+Mattéo: review and commit the save safety change. Then B01 step 3: phone performance.

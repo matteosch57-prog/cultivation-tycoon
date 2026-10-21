@@ -27,7 +27,16 @@ trees, waterfall, bridge and arch when the island grows or shrinks.
 
 ## Data
 DataStore `CultivationTycoon_v1`; Studio uses `CultivationTycoon_v1_studio` so tests never touch live
-saves. Saved on leave, every `AUTOSAVE` s and on close. A failed load disables saving for that session.
+saves. Saved on leave, every `AUTOSAVE` s and on close (close waits for every pending save).
+
+`SaveStore.luau` owns the record `{ v, data, lock = { id, t } }`. Each join gets its own session id and
+takes the lock on load (UpdateAsync); every save lands only while the record still carries that id,
+and leave/close releases it. So a slow save from an old server or an earlier visit can never
+overwrite a newer session. A lock not refreshed for `SAVE_LEASE` s (a crashed server) is taken over;
+a live one is retried `SAVE_LOCK_WAITS` times, `SAVE_LOCK_WAIT` s apart. Every DataStore call gets
+`SAVE_RETRIES` attempts with backoff. Record format = `DATA_VERSION`; `migrate()` lifts older records
+(v0 = the bare data table). A record newer than this server, a failed load or a lock that stays held
+disables saving for that session. Errors log as `[Tycoon][save] event=<name> user=<id> ...`.
 
 ## Studio test hooks (Studio only, ServerStorage)
 `DebugGrant(player, qi)` · `DebugReset(player)` · `DebugSet(player, key, value)` (`orbNow` spawns an

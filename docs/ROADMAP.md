@@ -12,7 +12,7 @@ Tick a line only when it is built, checked in Studio Play, and (where it says so
 
 ## M2 Publish (one week, brief [B01](../briefs/B01_PUBLISH_WEEK.md))
 - [x] Project organised: docs, Rojo port, vault, git + GitHub
-- [ ] Save safety: session lock, retries, data version, error logging
+- [x] Save safety: session lock, retries, data version, error logging
 - [ ] Phone performance: heavy buildings baked to meshes; tested on the owner's phone
 - [ ] Robux products + purchase screens + recruit odds shown
 - [ ] First 5 minutes: guide arrow, pacing tuned for realms 1 to 3
