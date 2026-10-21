@@ -58,4 +58,5 @@ sessions with offline qi, tide, gifts, optional passes) and reports minutes and 
 
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,
-owned pads, qi and the pill reset; disciples stay. Names in `REALMS`.
+owned pads, qi and the pill reset; disciples stay. Names in `REALMS` (10 names, then "Immortal Realm N").
+From `REINC_REALM` a player may reincarnate instead: [REINCARNATION](REINCARNATION.md).

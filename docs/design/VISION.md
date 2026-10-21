@@ -22,6 +22,7 @@ multiply, disciples stay.
 | Pads, buildings, realms, features, numbers | [ECONOMY](ECONOMY.md) |
 | Sound, motion, light, buying feel | [FEEL](FEEL.md) |
 | Robux products | [MONETIZATION](MONETIZATION.md) |
+| Reincarnation, Past Lives, karma | [REINCARNATION](REINCARNATION.md) |
 | Code layout, sync, data, performance | [TECH](TECH.md) |
 | The look | [ART_BIBLE](../art/ART_BIBLE.md) |
 

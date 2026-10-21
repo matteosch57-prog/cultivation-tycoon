@@ -91,3 +91,14 @@ the log as a D-number.
   every tier Elder to Primordial (owner pick C, "price accordingly"), with the economy check's
   guard-rails: Celestial and above once per player and gated by realm (3 / 5 / 7 / 9), bought ones
   permanent, rolled ones keep a "first pulled" mark, price ladder in MONETIZATION.
+- **D29** Reincarnation after realm 10 (owner: "make people advance infinitely"; "I trust you, build
+  those"). A new life starts at realm 1 from `REINC_REALM`. Power = Past Lives: x`PAST_LIVES_MULT`
+  qi per realm above 9 reached in a finished life (`soulPeak`, monotonic, so only a new record raises
+  it; x3 buys back about one realm of the x10 cost step). Choices = karma per life
+  (`Config.karmaFor`, ~the cube root of that life's qi) for a Dao Tree (next round, mock first). The
+  `SWORN_BASE` best disciple follows into the new life; the rest reset. Realms 6 to 10 named (Void
+  Refinement to True Immortal), then "Immortal Realm N". Landing (realm 1) stays below the gate so
+  the reset is never free to repeat (Heavenly RNG lesson). Shop-bought disciples are permanent and
+  take no sworn seat. Economy check kept x3 and realm 10: a regular player's later lives take 5 to 7
+  days each and stay that length at any depth (x2 walls). Research and pacing:
+  `docs/research/2026-10-21_reincarnation_design.md`; system: [REINCARNATION](design/REINCARNATION.md).
