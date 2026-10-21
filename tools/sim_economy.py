@@ -61,7 +61,10 @@ KINDS = {
 }
 
 
-def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
+def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=()):
+    """reinc (proposal, branch reincarnation) = dict(lives, pl_base, sworn, start): reincarnate on
+    reaching realm max(10, peak + 1); Past Lives = pl_base ^ max(0, peak - 9) on all qi; the `sworn`
+    best disciples follow; start = "none" | "built1" (realm 1 pads owned) | "r3" | "r5"."""
     rng = random.Random(seed)
     k = KINDS[kind]
     st = PLAY[k["play"]]
@@ -69,12 +72,26 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
     # game passes (branch shop): 2x qi on live AND offline income, VIP +1 slot, orbs fly to you
     x2, vip = (2 if "2x" in passes else 1), (1 if "vip" in passes else 0)
     orb_every = 1 if "orbs" in passes else st["orb_every"]
-    realm, qi, owned, disciples, recruited = 1, 0.0, set(), [], 0
+    realm, qi, owned, disciples, recruited = 1, 0.0, set(), list(bought), 0  # bought = Shop disciples (bonus each)
     pill_timer, pill_ready, boost = 0.0, False, 0.0
     orb_timer, orbs = 0.0, 0
     played = 0  # seconds of play since the first join
     out = {}  # realm -> dict(play_s, day, wait_s, longest_wait_s, recruits, dmult)
     cur = dict(start=0, wait=0, longest=0, gap=0, recruits=0)
+    peak, life, life_qi, life_day, lives_out, catchup = 1, 1, 0.0, 0, [], None
+    life_target = max(10, peak + 1)
+
+    def pl():
+        return reinc["pl_base"] ** max(0, peak - 9) if reinc else 1
+
+    def cm(r):
+        late_from = int(cfg["REALM_COST_LATE_FROM"])
+        return cfg["REALM_COST_MULT"] ** (min(r, late_from) - 1) * cfg["REALM_COST_LATE"] ** max(0, r - late_from)
+
+    def earn(x):
+        nonlocal qi, life_qi
+        qi += x
+        life_qi += x
 
     def max_disc():
         return cfg["MAX_DISCIPLES"] + vip + sum(1 for s in cfg["slot_pads"] if s in owned)
@@ -83,11 +100,10 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
         return 1 + sum(sorted(disciples, reverse=True)[:max_disc()])
 
     def base_rate():
-        return (cfg["BASE_RATE"] + sum(pads[i]["income"] for i in owned)) * cfg["REALM_INCOME_MULT"] ** (realm - 1) * dmult()
+        return (cfg["BASE_RATE"] + sum(pads[i]["income"] for i in owned)) * cfg["REALM_INCOME_MULT"] ** (realm - 1) * dmult() * pl()
 
     def cmult():  # Config.costMult
-        late_from = int(cfg["REALM_COST_LATE_FROM"])
-        return cfg["REALM_COST_MULT"] ** (min(realm, late_from) - 1) * cfg["REALM_COST_LATE"] ** max(0, realm - late_from)
+        return cm(realm)
 
     def open_pads():
         n = len(owned)
@@ -105,7 +121,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
     for day in range(days):
         for _ in range(k["per_day"]):
             if played:  # offline since the last session
-                qi += base_rate() * x2 * min(session_gap, cfg["OFFLINE_CAP"])
+                earn(base_rate() * x2 * min(session_gap, cfg["OFFLINE_CAP"]))
             tide_phase = rng.uniform(0, cfg["TIDE_INTERVAL"])  # joins a server mid-cycle
             gift_i, walking = 0, None
             for s in range(int(k["session"] * 60)):
@@ -113,7 +129,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
                 tp = (s + tide_phase) % cfg["TIDE_INTERVAL"]
                 tide = cfg["TIDE_MULT"] if tp < cfg["TIDE_DURATION"] else 1
                 r = base_rate() * x2 * (2 if boost > 0 else 1) * tide
-                qi += r
+                earn(r)
                 boost = max(0, boost - 1)
                 if "furnace" in owned and not pill_ready:
                     pill_timer += 1
@@ -125,10 +141,10 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
                     if orb_timer >= cfg["ORB_INTERVAL"]:
                         orb_timer, orbs = 0, min(cfg["ORB_MAX"], orbs + 1)
                 if orbs and s % orb_every == 0:
-                    qi += orbs * int(r * cfg["ORB_VALUE"])
+                    earn(orbs * int(r * cfg["ORB_VALUE"]))
                     orbs = 0
                 if gift_i < len(cfg["GIFT_TIMES"]) and s >= cfg["GIFT_TIMES"][gift_i]:
-                    qi += base_rate() * cfg["GIFT_VALUE"][gift_i]
+                    earn(base_rate() * cfg["GIFT_VALUE"][gift_i])
                     gift_i += 1
 
                 bought = False
@@ -142,7 +158,22 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
                         realm += 1
                         qi, owned, pill_ready, pill_timer, boost = 0.0, set(), False, 0, 0
                         cur = dict(start=played, wait=0, longest=0, gap=0, recruits=0)
-                        if realm > realms:
+                        if reinc and life > 1 and realm == old_peak:
+                            catchup = day + 1 - life_day  # days into this life to re-reach the old peak
+                        peak = max(peak, realm)
+                        if reinc and realm >= life_target:
+                            karma = int(10 * (life_qi / (cfg["BREAKTHROUGH_COST"] * cm(10))) ** (1 / 3))
+                            lives_out.append(dict(life=life, realm=realm, day=day + 1, days=day + 1 - life_day,
+                                                  karma=karma, pl=pl(), catchup_day=catchup))
+                            if life >= reinc["lives"]:
+                                return lives_out
+                            old_peak, life, life_qi, life_day, catchup = peak, life + 1, 0.0, day + 1, None
+                            life_target = max(10, peak + 1)
+                            realm = {"r3": 3, "r5": 5}.get(reinc["start"], 1)
+                            if reinc["start"] == "built1":
+                                owned = {p["id"] for p in cfg["pads"]}
+                            disciples = sorted(disciples, reverse=True)[:reinc["sworn"]]
+                        elif not reinc and realm > realms:
                             return out
                         continue
                     target_cost = bt
@@ -175,7 +206,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=()):
                 elif qi < target_cost:
                     cur["wait"] += 1  # nothing affordable: the player is waiting
                     cur["gap"] += 1
-    return out
+    return lives_out if reinc else out
 
 
 def fmt_min(s):
@@ -191,6 +222,7 @@ def main():
     ap.add_argument("--set", action="append", default=[], help="KEY=VALUE override")
     ap.add_argument("--rarity", action="append", default=[], help='"Name=weight:bonus" adds a rarity')
     ap.add_argument("--passes", default="", help="owned game passes, e.g. 2x,vip,orbs")
+    ap.add_argument("--bought", default="", help="bonuses of Shop-bought disciples owned from the start, e.g. 9")
     ap.add_argument("--waits", action="store_true", help="print the waiting columns")
     a = ap.parse_args()
     cfg = extra_keys(load_config())
@@ -204,7 +236,7 @@ def main():
     print("per realm: play minutes in that realm | day it ends (median of %d runs, '-' = not within %d days)" % (a.runs, a.days))
     if a.waits:
         print("  w = %% of that realm's play with nothing affordable, L = longest wait in minutes, d = disciple mult")
-    res = {kd: [simulate(cfg, kd, seed, a.realms, a.days, a.passes.split(",")) for seed in range(a.runs)] for kd in KINDS}
+    res = {kd: [simulate(cfg, kd, seed, a.realms, a.days, a.passes.split(","), bought=[float(b) for b in a.bought.split(",") if b]) for seed in range(a.runs)] for kd in KINDS}
     head = "%-6s" % "realm" + "".join("%26s" % ("%s (%dm x%d/day)" % (kd, KINDS[kd]["session"], KINDS[kd]["per_day"])) for kd in KINDS)
     print(head)
     for rm in range(1, a.realms + 1):
