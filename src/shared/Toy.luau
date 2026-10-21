@@ -174,8 +174,24 @@ function Icon:qi(cx, cy, s)
 	self:detail(cx - 9 * s, cy + 3 * s, 4 * s, Color3.new(1, 1, 1), 0.2)
 end
 
--- Item icons for the shop (one drawing per key)
+-- the karma orb (reincarnation currency): a purple orb with a light swirl; same box rules as qi
+function Icon:karma(cx, cy, s)
+	s = s or 1
+	self:circle(cx, cy, 22 * s, Color3.fromHex("9A6BFF"))
+	self:detail(cx + 4 * s, cy + 3 * s, 12 * s, Color3.fromHex("D9B8FF"))
+	self:detail(cx + 7 * s, cy + 5 * s, 5 * s, Color3.fromHex("9A6BFF"))
+	self:detail(cx - 9 * s, cy - 9 * s, 4 * s, Color3.new(1, 1, 1), 0.15)
+end
+
+-- Item icons for the shop (one drawing per key). Every currency has one: "qi", "karma" (R4 owner
+-- rule: an amount of a currency always shows its icon)
 local ICONS = {}
+function ICONS.qi(ic)
+	ic:qi(32, 34, 0.95)
+end
+function ICONS.karma(ic)
+	ic:karma(32, 32, 1.1)
+end
 function ICONS.x2(ic)
 	ic:qi(26, 28, 0.85)
 	return "2x"

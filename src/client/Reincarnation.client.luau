@@ -123,20 +123,32 @@ function DRAW.meditation(ic)
 	ic:detail(40, 26, 16, Color3.fromHex(TILE.meditation))
 end
 function DRAW.echo(ic)
-	ic:circle(32, 32, 22, Color3.fromHex("9A6BFF"))
-	ic:circle(32, 32, 13, Color3.fromHex("D9B8FF"))
-	ic:circle(32, 32, 5, Color3.fromHex("FFFFFF"))
+	ic:karma(22, 40, 0.6)
+	ic:karma(42, 26, 0.75)
+end
+
+-- an amount of a currency: its icon, then the number (owner: every currency always shows its icon)
+local function amount(parent, key, size, color, props)
+	local row = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
+	for k, v in props or {} do
+		row[k] = v
+	end
+	Toy.list(row, true, math.floor(size * 0.2))
+	Toy.icon(row, key, math.floor(size * 1.25), { LayoutOrder = 1 })
+	local t = text(row, "", size, color, { LayoutOrder = 2 })
+	return t, row
 end
 
 local function refreshKarma()
 	local have = player:GetAttribute("Karma") or 0
-	ui.karma.Text = commas(have) .. " Karma"
+	ui.karma.Text = commas(have)
 	for _, t in ui.tiles do
 		local lv = player:GetAttribute("Dao_" .. t.node.key) or 0
 		local cost = t.node.costs[lv + 1]
 		for i, pip in t.pips do
 			pip.BackgroundColor3 = i <= lv and GOLD or Color3.fromHex("3A2D40")
 		end
+		t.priceIcon.Visible = cost ~= nil
 		if not cost then
 			t.price.Text = "Max"
 			t.button.BackgroundColor3 = LOCKED
@@ -194,9 +206,9 @@ local function refresh()
 
 	-- what a new life gives: two numbers
 	local shownNext = ready and nextMult or math.max(nextMult, Config.pastLivesMult(gate))
-	ui.g1.Visible = shownNext > now
-	ui.g1.Text = mult(shownNext) .. " Qi"
-	ui.g2.Text = "+" .. commas(gain) .. " Karma"
+	ui.g1row.Visible = shownNext > now
+	ui.g1.Text = mult(shownNext)
+	ui.g2.Text = "+" .. commas(gain)
 
 	-- the button
 	local armed = os.clock() < armedUntil
@@ -242,7 +254,7 @@ end
 -- the Karma Shop page: one tile per node (icon, name, a short line, level pips, price)
 local function buildKarma(body)
 	head(body, "Karma Shop")
-	ui.karma = text(body, "", px(20), KARMA, { LayoutOrder = 2 })
+	ui.karma = amount(body, "karma", px(22), KARMA, { LayoutOrder = 2 })
 	ui.tiles = {}
 	local rows = {}
 	for i = 1, 2 do
@@ -273,7 +285,8 @@ local function buildKarma(body)
 		Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 5 }) -- the pips clear the button
 		local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(70), px(26)), JADE, px(9))
 		pHolder.LayoutOrder = 6
-		local price = text(pBtn, "", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local price, priceRow = amount(pBtn, "karma", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local priceIcon = priceRow:FindFirstChildWhichIsA("Frame")
 		local function buy()
 			if busy then
 				return
@@ -288,7 +301,7 @@ local function buildKarma(body)
 		end
 		btn.Activated:Connect(buy)
 		pBtn.Activated:Connect(buy)
-		table.insert(ui.tiles, { node = node, pips = pips, price = price, button = pBtn })
+		table.insert(ui.tiles, { node = node, pips = pips, price = price, priceIcon = priceIcon, button = pBtn })
 	end
 end
 
@@ -329,8 +342,8 @@ build = function()
 	ui.next = text(body, "", px(24), Color3.new(1, 1, 1), { LayoutOrder = 6 })
 	local gains = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 9, Rotation = 1.5 })
 	Toy.list(gains, true, px(26))
-	ui.g1 = text(gains, "", px(22), GOLD, { LayoutOrder = 1 })
-	ui.g2 = text(gains, "", px(22), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
+	ui.g1, ui.g1row = amount(gains, "qi", px(24), GOLD, { LayoutOrder = 1 })
+	ui.g2 = amount(gains, "karma", px(24), KARMA, { LayoutOrder = 2 })
 
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(46)), GO, px(14))
