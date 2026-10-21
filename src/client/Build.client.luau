@@ -15,6 +15,7 @@ local sect = workspace:WaitForChild("Sect")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Sfx = require(Shared:WaitForChild("Sfx"))
 local PadLook = require(Shared:WaitForChild("PadLook"))
+local Toy = require(Shared:WaitForChild("Toy"))
 
 local PREVIEW_RANGE = 18 -- studs (horizontal) from the pad centre where the preview wakes
 local REACH = 2.6 -- the server buys inside this (Main PAD_REACH)
@@ -272,7 +273,31 @@ local function makeCard(pad, kind)
 	if feature then
 		text(2, 15, PadLook.TEXT.line).Text = feature -- feature buildings say what they DO
 	end
-	local costText = text(3, 26, PadLook.textColor(kind, true))
+	-- the price always shows its currency icon (owner rule): [Need] (qi drop) 1.2K [more]
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.AutomaticSize = Enum.AutomaticSize.XY
+	row.Size = UDim2.new()
+	row.LayoutOrder = 3
+	local rl = Instance.new("UIListLayout")
+	rl.FillDirection = Enum.FillDirection.Horizontal
+	rl.VerticalAlignment = Enum.VerticalAlignment.Center
+	rl.SortOrder = Enum.SortOrder.LayoutOrder
+	rl.Padding = UDim.new(0, 4)
+	rl.Parent = row
+	row.Parent = f
+	local function part(order, str)
+		local t = text(order, 26, PadLook.textColor(kind, true))
+		t.Text = str
+		t.Parent = row
+		return t
+	end
+	local need = part(1, "Need")
+	local ic = Toy.Icon.new(row, 30, { LayoutOrder = 2 })
+	ic:qi(32, 32, 1)
+	local amount = part(3, "")
+	local more = part(4, "more")
+	local costText = { need = need, amount = amount, more = more }
 	local sc = Instance.new("UIScale")
 	sc.Name = "DistanceScale"
 	sc.Parent = f
@@ -420,7 +445,10 @@ local function setReady(rec, ok)
 		rec.beacon.motes.Rate = ok and 9 or 3
 	end
 	if rec.costText then
-		rec.costText.TextColor3 = PadLook.textColor(rec.kind, ok)
+		local tcol = PadLook.textColor(rec.kind, ok)
+		for _, t in rec.costText do
+			t.TextColor3 = tcol
+		end
 	end
 end
 
@@ -766,6 +794,9 @@ RunService.Heartbeat:Connect(function(dt)
 			rec.cardLow = near
 			TweenService:Create(rec.card, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, near and 2.6 or 5.5, 0) }):Play()
 		end
-		rec.costText.Text = (onPad and not ok) and ("Need " .. fmt(rec.cost - qi) .. " more") or (fmt(rec.cost) .. " Qi")
+		local need = onPad and not ok
+		rec.costText.need.Visible = need
+		rec.costText.more.Visible = need
+		rec.costText.amount.Text = need and fmt(rec.cost - qi) or fmt(rec.cost)
 	end
 end)

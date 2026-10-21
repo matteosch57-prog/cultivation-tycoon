@@ -14,7 +14,7 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Ready pads breathe (light pulse, a ground ring pulsing outward). The moment a pad becomes affordable:
   a soft ding, a ripple and a quick spin.
 - Price card: HUD style (outlined text, no panel), drawn on top: name, feature line, price in the
-  kind's colour; "Need X more" in red when standing on a pad you cannot afford. Shop cards
+  kind's colour with its currency icon (the qi drop; shop cards the Robux mark); "Need X more" in red when standing on a pad you cannot afford. Shop cards
   (`Shop.client`) use the same sizes and colours.
 - Guide trail (`Guide.client.luau`, D22): jade chevrons painted on the ground from the feet to the
   HUD's "Next:" pad, drifting toward it; always in realm 1 until `GUIDE_BUILT` buildings, then only
