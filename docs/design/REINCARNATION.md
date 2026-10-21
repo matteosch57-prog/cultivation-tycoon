@@ -22,9 +22,10 @@ and the share of the current realm's pads counts. Spent in the Dao Tree (not bui
 ## Screen and HUD
 - HUD: a "Rebirth 3/10" chip beside the realm name above the progress bar; gold and wobbling from
   realm 10 ("Rebirth!"). It opens `Reincarnation.client.luau`.
-- Screen (Shop language, no board): the road of realms 1 to 10 as dots (done jade, now gold), the
-  NEXT step (build N more, break through, or reincarnate), what a new life gives (Past Lives before
-  and after, karma, the sworn disciple), and a Reincarnate button that needs a second tap within 4 s.
+- Screen (Shop language, no board, as little text as possible: owner "too much text"): the road of
+  realms 1 to 10 as dots (done jade, now gold), one NEXT line (build N more, break through, or
+  reincarnate), two numbers (the Past Lives multiplier a new life would give, the karma), and a
+  Reincarnate button that needs a second tap within 4 s.
 - Player attributes: `Lives`, `Karma`, `SoulPeak`, `PastLives`, `NextPastLives`, `ReincKarma`.
 
 ## Telemetry
