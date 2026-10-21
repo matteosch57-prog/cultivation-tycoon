@@ -277,11 +277,11 @@ function Builders.moongate(ctx, pad)
 	Kit.moonGate(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2))
 end
 function Builders.pagoda1(ctx)
-	Style.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 1, 2, 5)
+	Kit.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 1, 2, 5)
 end
 
 function Builders.pagoda2(ctx)
-	Style.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 3, 5, 5)
+	Kit.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 3, 5, 5)
 end
 
 function Builders.array(ctx, pad)

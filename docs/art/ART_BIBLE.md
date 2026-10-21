@@ -66,7 +66,8 @@ bays, one or two roofs). Learned from studying reference temple halls (2026-10-2
   walls use `Plaster`.
 - One method everywhere: the Main Hall levels, Disciple Hall, Quarters, Library and Peak Shrine all
   call `Kit.hall`; gates (`Kit.gate`: the Sect Gate, the peak entrance, the Sect Market), the furnace
-  pavilion (`Kit.pavilion`), the Bell Tower and the Moon Gate are built from the same column, bracket,
+  pavilion (`Kit.pavilion`), the Bell Tower, the Moon Gate and the pagoda (`Kit.pagoda`, also the
+  Main Hall level 5 towers) are built from the same column, bracket,
   railing, panel and tile-end pieces under a kit roof (`ClayRoofTiles`, round tile ends).
 - Name boards (`Kit.plaque`): a dark board in a gold frame, the name in gold Fantasy. A one-roof hall
   hangs it in the middle bay (odd bay counts only), a two-roof hall on the upper storey between the
@@ -74,7 +75,7 @@ bays, one or two roofs). Learned from studying reference temple halls (2026-10-2
   board's Back face (its +Z side, toward the viewer) with SizingMode PixelsPerStud. Captures 70, 71 (Play).
 - Moon Gate: the ring is cut from blocks whose outer corners sit on the circle, and the wall between
   ring and square is strips whose ends hide under the ring (24 long blocks read as a cog wheel).
-Captures: [captures/57 to 60](captures/), before/after [63 to 69](captures/).
+Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/).
 
 ## Cultivators (disciples on the platform)
 - Real R15 Roblox avatars built by `src/server/Cultivators.luau` from a HumanoidDescription: catalog
