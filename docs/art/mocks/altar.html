@@ -1,0 +1,76 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Heavenly Altar mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Heavenly Altar (king of the hill at the hub) HUD mocks, R4. ?opt=A|B|C. Phone 844x390.
+     Rendered to altar_<opt>_phone.jpg with Edge headless. The 3D altar is sketched over a hub capture. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420}
+.scene{position:relative;width:100vw;height:100vh;background:url('altar_bg.jpg') center/cover}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:4px var(--ink);paint-order:stroke fill;letter-spacing:.4px;line-height:1.05}
+.toy{border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38)}
+.stick{position:absolute;left:5%;bottom:8%;width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:5%;bottom:8%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.lbl{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50;white-space:nowrap}
+.abs{position:absolute}
+</style></head>
+<body><div class="scene" id="s"><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const palm=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M20 58V30l-6-10c-2-4 3-7 6-3l6 9V10c0-5 7-5 7 0v16-20c0-5 7-5 7 0v20-16c0-5 7-5 7 0v20-12c0-5 7-5 7 0v26c0 12-8 20-20 20z" fill="#ffe1c4" stroke="${INK}" stroke-width="4.5" stroke-linejoin="round"/><path d="M4 34h8M2 44h10M6 24h6" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>`;
+const crown=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M8 50L4 18l16 14 12-22 12 22 16-14-4 32z" fill="#ffd34d" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><circle cx="32" cy="38" r="5" fill="#ff6b5e"/></svg>`;
+// the altar sketched into the hub: jade disc, gold rim, sky beam, rival avatars as dots
+const altar=`<svg class="abs" style="left:0;top:0" width="100%" height="100%" viewBox="0 0 844 390" preserveAspectRatio="none">
+ <defs><linearGradient id="beam" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff6c8" stop-opacity="0"/><stop offset="1" stop-color="#fff6c8" stop-opacity=".55"/></linearGradient></defs>
+ <rect x="392" y="0" width="60" height="232" fill="url(#beam)"/>
+ <ellipse cx="422" cy="246" rx="118" ry="30" fill="#2f6f5a" stroke="#ffd34d" stroke-width="5"/>
+ <ellipse cx="422" cy="240" rx="108" ry="25" fill="#59d39f"/>
+ <ellipse cx="422" cy="240" rx="60" ry="13" fill="none" stroke="#e8fff4" stroke-width="3" stroke-dasharray="10 8"/>
+ ${[[380,226,'#5096ff'],[452,222,'#ff6b5e'],[420,214,'#ffd34d']].map(([x,y,c])=>`<rect x="${x-9}" y="${y-30}" width="18" height="30" rx="7" fill="${c}" stroke="${INK}" stroke-width="3"/><circle cx="${x}" cy="${y-38}" r="9" fill="#f2cfae" stroke="${INK}" stroke-width="3"/>`).join('')}
+ <path d="M468 196l18-8M470 206l20 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>`;
+// common: qi counter top left (as the live HUD)
+const qiTop=`<div class="abs" style="left:14px;top:10px;display:flex;align-items:center;gap:6px">${qi(34)}<span class="big" style="font-size:34px">48.2K</span><span class="big" style="font-size:15px;color:#9ff5c8">+1.4K/s</span></div>`;
+const palmBtn=(right,bottom,size,cd)=>`<div class="abs toy" style="right:${right}px;bottom:${bottom}px;width:${size}px;height:${size}px;border-radius:50%;background:#ff9f43;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  ${palm(size*.58)}${cd?`<div class="abs" style="inset:0;border-radius:50%;background:conic-gradient(rgba(27,20,32,.55) 0 40%,transparent 40% 100%)"></div>`:''}</div>
+  <span class="big abs" style="right:${right+size/2-28}px;bottom:${bottom-20}px;font-size:14px">Palm Strike</span>`;
+let hud='', lbl='';
+if(opt==='A'){
+ // A: claim ring in the top centre, leader name inside; Palm Strike above the jump button
+ const pct=0.62;
+ hud=altar+qiTop+`
+ <div class="abs" style="left:50%;top:8px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+  <svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="34" fill="rgba(27,20,32,.55)" stroke="${INK}" stroke-width="9"/><circle cx="43" cy="43" r="34" fill="none" stroke="#ffd34d" stroke-width="6" stroke-dasharray="${2*Math.PI*34*pct} 999" transform="rotate(-90 43 43)" stroke-linecap="round"/></svg>
+  <span class="big abs" style="top:24px;font-size:30px">8s</span>
+  <span class="big" style="font-size:17px;color:#ffe36b;margin-top:2px">Heavenly Altar</span>
+  <span class="big" style="font-size:14px">Mei holds it</span></div>
+ ${palmBtn(40,128,74,false)}`;
+ lbl='A: claim ring top centre + Palm Strike above Jump';
+}else if(opt==='B'){
+ // B: one bar under the qi line, contested state shown; Palm Strike replaces Jump on the altar
+ hud=altar+qiTop+`
+ <div class="abs toy" style="left:50%;top:12px;transform:translateX(-50%);width:300px;height:40px;background:#3a2c44;overflow:hidden;border-radius:999px">
+  <div style="width:45%;height:100%;background:repeating-linear-gradient(135deg,#ffd34d 0 14px,#ffbe2e 14px 28px)"></div>
+  <span class="big abs" style="inset:0;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px">${crown(22)} Contested! 9s left</span></div>
+ <span class="big abs" style="left:50%;top:58px;transform:translateX(-50%);font-size:13px;color:#ffb3a8">3 on the altar: push them off</span>
+ <div class="abs" style="right:5%;bottom:8%;width:84px;height:84px"></div>
+ ${palmBtn(36,30,92,true)}`;
+ lbl='B: one bar under the counter, Palm Strike takes the Jump spot (shown on cooldown)';
+}else{
+ // C: nothing big in the HUD; the timer floats over the altar in the world; fallen state as a toast
+ hud=altar+qiTop+`
+ <div class="abs" style="left:50%;top:118px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+  <span class="big" style="font-size:26px;color:#ffe36b">${''}12s</span>
+  <div style="width:120px;height:10px;border:3px solid ${INK};border-radius:999px;background:#3a2c44;overflow:hidden"><div style="width:40%;height:100%;background:#ffd34d"></div></div></div>
+ <div class="abs toy" style="left:50%;bottom:16px;transform:translateX(-50%);background:#fff4dc;padding:6px 16px;display:flex;gap:8px;align-items:center">
+  <span style="font:700 16px Fredoka;color:${INK}">You fell! Back in when someone claims it</span></div>
+ <span class="big abs" style="left:50%;top:62px;transform:translateX(-50%);font-size:15px;color:#9ff5c8">Reward: 5 min of your Qi + a crown</span>`;
+ lbl='C: timer floats over the altar (world), HUD stays clean; shown: the fallen toast (no Palm button)';
+}
+document.getElementById('hud').innerHTML=hud;document.getElementById('lbl').textContent=lbl;
+</script></body></html>
