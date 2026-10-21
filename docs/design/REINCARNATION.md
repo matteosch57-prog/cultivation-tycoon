@@ -29,3 +29,9 @@ and the share of the current realm's pads counts. Spent in the Dao Tree (not bui
 
 ## Telemetry
 `Reincarnate` event: life that ended, realm reached, hours in that life.
+
+## Checked
+Studio Play on integration (mock save), 2026-10-21: the chip reads "Rebirth 1/10", gold "Rebirth!" at
+realm 10; a reincarnation from realm 10 gave life 2, +10 karma, Past Lives x3 (rate x3), kept the
+strongest disciple (sworn) and the Shop-bought one, and a second call was refused. Captures:
+`docs/art/captures/reinc_screen_realm1.jpg`, `reinc_screen_realm10.jpg`, `reinc_screen_life2.jpg`.
