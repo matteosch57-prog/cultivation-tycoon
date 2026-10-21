@@ -173,9 +173,10 @@ Config.SHOP_PRODUCTS = {
 	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
 	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
 	-- when full). Every tier from Elder up is sold (owner, D28), priced by the owner as a ladder.
-	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder" },
-	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal" },
-	-- `limit` = times one player may buy it: the chase tiers once each; `minRealm` = on sale only from
+	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
+	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
+	-- `limit` = times one player may buy it: the chase tiers once each, Elder / Immortal one sect's
+	-- worth (bought disciples are never trimmed, so this bounds the list and the save); `minRealm` = on sale only from
 	-- that realm (bought from the start they would flatten the early climb: economy check, D28)
 	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
 	{ key = "dao", id = 0, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
