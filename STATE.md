@@ -9,10 +9,9 @@ checked in Studio Play (ROADMAP).
   (Lighting, ActiveSky, Showcase island) persist only when Mattéo saves the place.
 - **Sync:** Rojo port 34875 is configured (`start-rojo.bat`); the first connect from the Studio plugin
   has not happened yet. Until then the HTTP fallback in TECH "Sync" was used.
-- **Git:** `git init` done, nothing committed. No GitHub repo yet (DECISIONS Q2).
-- **Open forks:** Q1 music bed, Q2 GitHub repo.
+- **Git:** GitHub `matteosch57-prog/cultivation-tycoon` (private), branch `main`; history = `git log`.
+- **Open forks:** Q1 music bed.
 - **Known risks:** part count of a full peak (BACKLOG "Performance"); the store skybox (ART_BIBLE).
 
 ## Next action
-Mattéo: create the GitHub repo (or `gh auth login`) and make the first commit; connect Rojo on 34875.
-Then B01 day 1: save safety.
+Mattéo: connect the Studio Rojo plugin on 34875 (`start-rojo.bat`). Then B01 step 2: save safety.

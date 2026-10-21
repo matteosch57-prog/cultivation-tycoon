@@ -6,8 +6,6 @@ the log as a D-number.
 ## Open
 - **Q1** Music bed: Guzheng (1), Temple Of Lihangin (2) or Harmonious Cycles (3). The owner picks by
   ear with the Workspace attribute `MusicTrack`.
-- **Q2** GitHub: a private repo `matteosch57-prog/cultivation-tycoon` (needs `gh auth login` or a
-  repo made on github.com), then the first commit by the owner.
 
 ## Log (all 2026-10-21, the first session)
 - **D1** Theme: cultivation. Compared against aquarium (an old leader, fading), pet shop (the live
@@ -39,4 +37,5 @@ the log as a D-number.
 - **D17** First Robux products: 2x Qi, VIP Sect, Auto-collect orbs, Qi packs, Instant pill
   ([MONETIZATION](design/MONETIZATION.md)).
 - **D18** Organised like the other projects: START_HERE/STATE/docs layout, Rojo port 34875
-  (Heavenly 34872, Gladiator 34873, Follows 34874), vault folder `8_Roblox_Cultivation_Tycoon`.
+  (Heavenly 34872, Gladiator 34873, Follows 34874), vault folder `8_Roblox_Cultivation_Tycoon`,
+  private GitHub repo `matteosch57-prog/cultivation-tycoon` (was Q2).

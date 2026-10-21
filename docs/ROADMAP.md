@@ -11,7 +11,7 @@ Tick a line only when it is built, checked in Studio Play, and (where it says so
 - [x] Juice: sounds, floating qi, fly-to counter, light events
 
 ## M2 Publish (one week, brief [B01](../briefs/B01_PUBLISH_WEEK.md))
-- [ ] Project organised: docs, Rojo port, vault, git + GitHub (owner)
+- [x] Project organised: docs, Rojo port, vault, git + GitHub
 - [ ] Save safety: session lock, retries, data version, error logging
 - [ ] Phone performance: heavy buildings baked to meshes; tested on the owner's phone
 - [ ] Robux products + purchase screens + recruit odds shown
