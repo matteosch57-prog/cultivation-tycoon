@@ -11,7 +11,6 @@ local Toy = {}
 Toy.S = 1
 Toy.INK = Color3.fromHex("1B1420")
 Toy.FONT = Font.fromEnum(Enum.Font.FredokaOne)
-Toy.ROBUX = utf8.char(0xE002) -- Roblox fonts draw the Robux mark for this code point
 
 function Toy.px(v)
 	return math.floor(v * Toy.S + 0.5)
@@ -231,6 +230,32 @@ local function disciple(ic, robe)
 	ic:circle(32, 29, 13, Color3.fromHex("F2CFAE"))
 	ic:rect(32, 21, 24, 7, Toy.INK, 3, 0, false).ZIndex = 3
 	ic:rect(32, 47, 8, 12, Color3.new(1, 1, 1), 2, 0, false).ZIndex = 3
+end
+
+-- Currency marks (owner rule: every price or amount shows its currency's icon)
+function Toy.qiIcon(parent, size, props)
+	local ic = Icon.new(parent, size, props)
+	ic:qi(32, 30, 1)
+	return ic.box
+end
+function Toy.robuxIcon(parent, size, props)
+	local ic = Icon.new(parent, size, props)
+	ic:rect(32, 32, 46, 46, Color3.new(1, 1, 1), 13)
+	ic:rect(32, 32, 18, 18, Toy.INK, 3, 0, false).ZIndex = 3
+	return ic.box
+end
+
+-- An amount with its currency icon in front: returns (row, label). `currency` = "qi" | "robux"
+function Toy.amount(parent, currency, size, color, props)
+	local row = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
+	for k, v in props or {} do
+		row[k] = v
+	end
+	Toy.list(row, true, math.max(2, math.floor(size * 0.2)))
+	local icon = (currency == "qi" and Toy.qiIcon or Toy.robuxIcon)(row, math.floor(size * 1.15), { LayoutOrder = 1 })
+	icon.Name = "Currency"
+	local label = Toy.text(row, "", size, color, { LayoutOrder = 2 })
+	return row, label
 end
 
 -- Draws icon `key` in a size x size box; returns the box. A shop item with a `rarity` draws that
