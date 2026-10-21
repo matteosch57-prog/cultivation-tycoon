@@ -10,15 +10,11 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
   far peaks pop out).
 
 ## Look
+- Name board text is not checked in Play yet (Edit `screen_capture` draws no SurfaceGui), nor the
+  lawn after the `paintGround` fix (grounds are built by Main at runtime).
+- Pagoda (and the Main Hall level 5 towers) still use `Style.pagoda`, not the kit.
 - Our own skybox (the Creator Store one is a re-upload that could be moderated).
-- Moon gate reads as a white cog wheel (ring corners stick out as teeth) and skewed from some angles.
-- Name plaques are blank on every hall and the Sect Gate (visual check 2026-10-21, captures 27/28).
-- About half the visible lawn on a full peak is bare earth: `paintGround` paints each part's
-  grid-snapped box, bigger than the part (raycast count 49%, captures 27/29).
-- Full-size island (r = 90) reads as a table top: the rock body stays ~0.77 x radius (capture 32).
-- Kit (`Kit.luau`) is not yet used by the Peak Shrine, Library, Bell Tower, gates and pavilions.
 - HUD: the disciples card is a panel (R4 says no panels); the far price card's feature line is ~8 px.
-- Incense haze smears the courtyard; the Qi Array orb blows out to a white disc.
 
 ## Cultivators
 - Heavenly Emperor maiden robe (Chang'e Amber) reads pale gold, not orange: swap the id in `ROBES`.

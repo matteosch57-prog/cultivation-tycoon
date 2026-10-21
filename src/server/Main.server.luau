@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
 local Style = require(script.Parent:WaitForChild("Style"))
+local Kit = require(script.Parent:WaitForChild("Kit"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
@@ -197,7 +198,7 @@ local function buildGrounds(plot, radius)
 	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
 	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
 	-- entrance archway carrying the owner's name
-	local sign = Style.archway(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
+	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
 	sign.Name = "Sign"
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
@@ -229,7 +230,9 @@ end
 -- Terrain grass blades grow through anything standing on them (stairs, stone floors), so
 -- the ground under a structure turns to packed earth, which has no blades.
 -- Only the parts that actually touch the ground are painted (plinths, steps, paths), so a
--- courtyard between buildings keeps its grass.
+-- courtyard between buildings keeps its grass. Only bladed Grass (the meadow patches) is
+-- painted: the LeafyGrass lawn has no blades, and painting it left half the lawn bare earth
+-- (each part paints its box snapped OUT to the 4-stud grid; visual check 2026-10-21).
 local function paintGround(model)
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") and part.Transparency < 1 then
@@ -245,7 +248,6 @@ local function paintGround(model)
 			if touches and (ex.X > 0.8 or ex.Z > 0.8) then
 				local region = Region3.new(Vector3.new(p.X - ex.X, BASE_Y - 8, p.Z - ex.Z), Vector3.new(p.X + ex.X, BASE_Y + 4, p.Z + ex.Z)):ExpandToGrid(4)
 				workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, Enum.Material.Ground)
-				workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, Enum.Material.Ground)
 			end
 		end
 	end
@@ -433,7 +435,7 @@ local function publish(player)
 end
 
 local function ctxFor(s, folder)
-	return { folder = folder or s.plot.built, frame = s.plot.frame, pal = Config.PALETTES[(s.data.realm - 1) % #Config.PALETTES + 1] }
+	return { folder = folder or s.plot.built, frame = s.plot.frame, pal = Config.PALETTES[(s.data.realm - 1) % #Config.PALETTES + 1], sect = s.plot.labelText }
 end
 
 -- Build one pad's structure into its own Model (so clients can animate or preview it whole).
@@ -463,8 +465,8 @@ local function buildPreview(s, pad, parent)
 			d.CanQuery = false
 			d.CanTouch = false
 			d.CastShadow = false
-		elseif d:IsA("Light") or d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Smoke") then
-			d.Enabled = false
+		elseif d:IsA("Light") or d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Smoke") or d:IsA("SurfaceGui") then
+			d.Enabled = false -- (a SurfaceGui draws even on an invisible part: the name boards)
 		end
 	end
 	m.Parent = parent
@@ -1281,6 +1283,7 @@ Shop.init({
 	end,
 	remotes = remotes,
 	style = Style,
+	kit = Kit,
 	styleP = Style.P,
 	palette = Style.PAL,
 	cultivators = Cultivators,

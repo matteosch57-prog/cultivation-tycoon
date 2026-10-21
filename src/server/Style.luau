@@ -726,13 +726,17 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		local n = math.max(3, math.floor(ringR / 3.2))
 		-- warm sandstone near the grass, fading to a cool slate that melts into the clouds
 		local col = Color3.fromHex("A08A74"):Lerp(Color3.fromHex("5A5670"), (k / (layers - 1)) ^ 0.8)
+		-- chunks grow with the island and sit with their outer face on the ring (centred at 0.72 x
+		-- ring and capped at 14 studs, the body ended at ~0.77 x radius: a table top at r = 90)
+		local cap = math.max(14, radius * 0.22)
 		for i = 1, n do
 			local a = i / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
-			local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, 14)
-			local at = cf * CFrame.new(math.cos(a) * ringR * 0.72, y, math.sin(a) * ringR * 0.72)
+			local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, cap)
+			local cr = ringR - s * 0.55
+			local at = cf * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr)
 			P(m, Vector3.new(s, h, s), at * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6), rng:NextNumber(-0.12, 0.12)), col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)))
 		end
-		cylY(m, h, ringR * 1.5, cf * CFrame.new(0, y, 0), col)
+		cylY(m, h, ringR * 1.8, cf * CFrame.new(0, y, 0), col)
 	end
 	-- hanging spires
 	for i = 1, 4 do
@@ -934,7 +938,8 @@ function Style.qiArray(parent, cf, r)
 		P(m, Vector3.new(0.9, 3.6, 0.9), at * CFrame.new(0, 3, 0), PAL.stoneLight)
 		if i % 2 == 0 then
 			cylY(m, 0.7, 1.6, at * CFrame.new(0, 5.1, 0), Color3.fromHex("7A5A3A"), Enum.Material.Metal)
-			local ember = P(m, Vector3.new(1, 0.2, 1), at * CFrame.new(0, 5.5, 0), Color3.fromRGB(255, 140, 60), Enum.Material.Neon)
+			-- a round bed of coals, darker than a lamp flame (a flat bright square read as a blown highlight)
+			local ember = P(m, Vector3.new(0.25, 1.3, 1.3), at * CFrame.new(0, 5.5, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(214, 92, 40), Enum.Material.Neon, Enum.PartType.Cylinder)
 			local fire = Instance.new("Fire")
 			fire.Size = 1.6
 			fire.Heat = 4
@@ -952,7 +957,12 @@ function Style.qiArray(parent, cf, r)
 		local ra = math.rad(a)
 		rod(m, (cf * CFrame.new(math.cos(ra) * 1.8, 0.9, math.sin(ra) * 1.8)).Position, (cf * CFrame.new(0, 4.4, 0)).Position, 0.35, Color3.fromHex("7A5A3A"))
 	end
-	local orb = P(m, Vector3.new(2.4, 2.4, 2.4), cf * CFrame.new(0, 5.8, 0), PAL.jade:Lerp(Color3.new(1, 1, 1), 0.35), Enum.Material.Neon, Enum.PartType.Ball)
+	-- a deep jade glowing core inside a clear jade shell: the orb reads as a gem, not a white disc
+	-- (a big light-jade Neon ball blew out under bloom)
+	local orb = P(m, Vector3.new(1.5, 1.5, 1.5), cf * CFrame.new(0, 5.8, 0), Color3.fromHex("2E9A78"), Enum.Material.Neon, Enum.PartType.Ball)
+	local gem = P(m, Vector3.new(2.4, 2.4, 2.4), cf * CFrame.new(0, 5.8, 0), PAL.jade, Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+	gem.Transparency = 0.45
+	gem.Reflectance = 0.15
 	local light = Instance.new("PointLight")
 	light.Color = PAL.jade
 	light.Range = 18

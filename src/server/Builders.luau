@@ -142,12 +142,22 @@ function Builders.platform(ctx)
 		local px, pz = math.cos(a) * 10.4, math.sin(a) * 10.4
 		cyl(ctx, 1.4, 1.2, CFrame.new(px, 2, pz), Color3.fromHex("7A5A3A"), Enum.Material.Metal)
 		local stick = part(ctx, Vector3.new(0.12, 1.4, 0.12), CFrame.new(px, 3.3, pz), Color3.fromHex("8B3A2B"))
-		local smoke = Instance.new("Smoke")
-		smoke.Size = 0.6
-		smoke.RiseVelocity = 1.2
-		smoke.Opacity = 0.08
-		smoke.Color = Color3.fromRGB(230, 230, 240)
-		smoke.Parent = stick
+		-- a thin wisp from the stick tip (legacy Smoke made a white fog patch over the courtyard)
+		local tip = Instance.new("Attachment")
+		tip.Position = Vector3.new(0, 0.7, 0)
+		tip.Parent = stick
+		local wisp = Instance.new("ParticleEmitter")
+		wisp.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		wisp.Color = ColorSequence.new(Color3.fromRGB(225, 222, 232))
+		wisp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0.7) })
+		wisp.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0.6), NumberSequenceKeypoint.new(1, 1) })
+		wisp.Lifetime = NumberRange.new(2.5, 3.5)
+		wisp.Rate = 3
+		wisp.Speed = NumberRange.new(0.8, 1.1)
+		wisp.SpreadAngle = Vector2.new(6, 6)
+		wisp.Acceleration = Vector3.new(0.15, 0, 0)
+		wisp.RotSpeed = NumberRange.new(-20, 20)
+		wisp.Parent = tip
 	end
 end
 
@@ -202,24 +212,24 @@ end
 function Builders.furnace(ctx, pad)
 	-- the alchemy cauldron under its own open pavilion
 	local at = ctx.frame * CFrame.new(pad.x, 0, pad.z)
-	Style.pavilion(ctx.folder, at, 11, 8)
-	Style.cauldron(ctx.folder, at * CFrame.new(0, 1.5, 0), 1.25)
+	local _, deckH = Kit.pavilion(ctx.folder, at, 11, 8)
+	Style.cauldron(ctx.folder, at * CFrame.new(0, deckH, 0), 1.25)
 end
 
 function Builders.hall(ctx, pad)
-	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2), { bays = 3, bay = 5.5, depth = 2, colH = 7, plinth = 1.6, name = "DiscipleHall" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2), { bays = 3, bay = 5.5, depth = 2, colH = 7, plinth = 1.6, name = "DiscipleHall", plaque = pad.name })
 end
 
 -- Disciple Quarters: small two-storey halls in the front corners (each adds a disciple slot)
 function Builders.quarters1(ctx, pad)
-	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 2, bay = 5, depth = 1, colH = 6, plinth = 1.2, name = "Quarters" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 2, bay = 5, depth = 1, colH = 6, plinth = 1.2, name = "Quarters", plaque = pad.name })
 end
 function Builders.quarters2(ctx, pad)
-	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 3, bay = 5, depth = 1, colH = 6.5, plinth = 1.4, name = "GrandQuarters" })
+	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 3, bay = 5, depth = 1, colH = 6.5, plinth = 1.4, name = "GrandQuarters", plaque = pad.name })
 end
 
-function Builders.gate(ctx)
-	Style.archway(ctx.folder, ctx.frame * CFrame.new(0, 0, 46), 16, 13)
+function Builders.gate(ctx, pad)
+	Kit.gate(ctx.folder, ctx.frame * CFrame.new(0, 0, 46), 16, 12, ctx.sect or pad.name)
 end
 
 -- the pagoda is bought in two halves that stack exactly (same baseW / tier count)
@@ -229,8 +239,8 @@ local PAGODA_AT = CFrame.new(0, 0, -74) -- behind the Main Hall, on the second e
 -- The Main Hall: one building, five levels, always at the back centre of the peak
 local MAIN_HALL_AT = CFrame.new(0, 0, -36)
 for lv = 1, 5 do
-	Builders["mainhall" .. lv] = function(ctx)
-		Kit.mainHall(ctx.folder, ctx.frame * MAIN_HALL_AT, lv)
+	Builders["mainhall" .. lv] = function(ctx, pad)
+		Kit.mainHall(ctx.folder, ctx.frame * MAIN_HALL_AT, lv, pad and pad.name)
 	end
 end
 
@@ -246,16 +256,25 @@ function Builders.training(ctx, pad)
 	Style.trainingGround(ctx.folder, facingCentre(ctx, pad.x, pad.z))
 end
 function Builders.bell(ctx, pad)
-	Style.bellTower(ctx.folder, facingCentre(ctx, pad.x, pad.z))
+	Kit.bellTower(ctx.folder, facingCentre(ctx, pad.x, pad.z), pad.name)
 end
 function Builders.koi(ctx, pad)
 	Style.koiPond(ctx.folder, facingCentre(ctx, pad.x, pad.z), 5)
 end
 function Builders.library(ctx, pad)
-	Style.library(ctx.folder, facingCentre(ctx, pad.x, pad.z, -4))
+	-- a two-roof kit hall in jade tiles, scroll racks either side of the stair
+	local at = facingCentre(ctx, pad.x, pad.z, -4)
+	Kit.hall(ctx.folder, at, { bays = 3, bay = 5.5, depth = 2, colH = 7, plinth = 1.6, two = true, tile = Color3.fromHex("2F6B5A"), name = "Library", plaque = pad.name })
+	for _, sx in { -1, 1 } do
+		local rack = at * CFrame.new(sx * 13.2, 0, 7)
+		part(ctx, Vector3.new(0.4, 4, 2.6), ctx.frame:ToObjectSpace(rack * CFrame.new(0, 2, 0)), SP.timberDark)
+		for k = 0, 3 do
+			cyl(ctx, 0.5, 0.5, ctx.frame:ToObjectSpace(rack * CFrame.new(0.4 * -sx, 0.8 + k * 0.9, 0) * CFrame.Angles(math.pi / 2, 0, 0)), Color3.fromHex("EBDDBA"))
+		end
+	end
 end
 function Builders.moongate(ctx, pad)
-	Style.moonGate(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2))
+	Kit.moonGate(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2))
 end
 function Builders.pagoda1(ctx)
 	Style.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 1, 2, 5)
@@ -270,7 +289,7 @@ function Builders.array(ctx, pad)
 end
 
 function Builders.shrine(ctx)
-	Style.hall(ctx.folder, ctx.frame * CFrame.new(0, 0, -55), { W = 14, D = 7, colH = 7, plinth = 3, name = "PeakShrine" })
+	Kit.hall(ctx.folder, ctx.frame * CFrame.new(0, 0, -55), { bays = 3, bay = 5, depth = 1, colH = 7, plinth = 3, name = "PeakShrine", plaque = "Peak Shrine" })
 end
 
 -- The peak itself (island). Built once per plot.

@@ -237,19 +237,7 @@ function Shop.buildIsland(plot)
 		end
 	end
 	-- entrance gate with the market's name, then 2x Qi right inside it (the first thing seen)
-	local sign = Style.archway(folder, f * CFrame.new(0, 0, R - 2), 9, 9)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.PixelsPerStud = 40
-	gui.Parent = sign
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.Font = Enum.Font.Fantasy
-	label.TextColor3 = Color3.fromRGB(255, 225, 150)
-	label.Text = "Sect Market"
-	label.Parent = gui
+	api.kit.gate(folder, f * CFrame.new(0, 0, R - 2), 9, 9, "Sect Market")
 	shopPad(folder, f * CFrame.new(0, 0, R - 8), "x2")
 	Style.lantern(folder, f * CFrame.new(-4.5, 0, R - 6), 0.8)
 	Style.lantern(folder, f * CFrame.new(4.5, 0, R - 6), 0.8)

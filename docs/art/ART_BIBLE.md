@@ -33,8 +33,9 @@ pass live in [captures/](captures/); HUD mocks in [mocks/](mocks/).
   patches near the rim (D14). Grass blade length and Decoration are not scriptable (Studio Properties).
 - FillCylinder snaps the surface to the 4-stud grid: the whole map stands at world y = 2 (`BASE_Y` in
   `Main.server.luau`) and every grass cylinder is centred at world y = -4 (RULES R6).
-- Under every ground-touching part the terrain turns to packed earth (`paintGround`), so blades never
-  grow through stairs and floors.
+- Under every ground-touching part the bladed Grass (meadow patches) turns to packed earth
+  (`paintGround`), so blades never grow through stairs and floors. The LeafyGrass lawn has no blades and
+  is left alone (painting it too turned half the lawn to earth, visual check 2026-10-21).
 
 ## Islands
 - Lobed top (lobes reach at most 1.05 x radius: Main clears terrain on that promise), darker lip,
@@ -63,8 +64,16 @@ bays, one or two roofs). Learned from studying reference temple halls (2026-10-2
   behind a porch, a bracket set on every column, round tile ends along every eave.
 - Detail comes from the material where it can: roofs use `ClayRoofTiles` instead of rib parts,
   walls use `Plaster`.
-- One method everywhere: the Main Hall levels, Disciple Hall and Quarters all call `Kit.hall`.
-Captures: [captures/57 to 60](captures/).
+- One method everywhere: the Main Hall levels, Disciple Hall, Quarters, Library and Peak Shrine all
+  call `Kit.hall`; gates (`Kit.gate`: the Sect Gate, the peak entrance, the Sect Market), the furnace
+  pavilion (`Kit.pavilion`), the Bell Tower and the Moon Gate are built from the same column, bracket,
+  railing, panel and tile-end pieces under a kit roof (`ClayRoofTiles`, round tile ends).
+- Name boards (`Kit.plaque`): a dark board in a gold frame, the name in gold Fantasy. A one-roof hall
+  hangs it in the middle bay (odd bay counts only), a two-roof hall on the upper storey between the
+  eaves. The text is the pad name; the Sect Gate shows the sect's name.
+- Moon Gate: the ring is cut from blocks whose outer corners sit on the circle, and the wall between
+  ring and square is strips whose ends hide under the ring (24 long blocks read as a cog wheel).
+Captures: [captures/57 to 60](captures/), before/after [63 to 69](captures/).
 
 ## Cultivators (disciples on the platform)
 - Real R15 Roblox avatars built by `src/server/Cultivators.luau` from a HumanoidDescription: catalog

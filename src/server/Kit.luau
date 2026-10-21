@@ -211,6 +211,10 @@ function Kit.hall(parent, cf, opts)
 		P(m, Vector3.new(bw - 0.4, 1.0, 0.5), deck * CFrame.new(x, colH - 0.6, wz), PAL.plaster, Enum.Material.Plaster)
 	end
 	P(m, Vector3.new(W, 0.4, D), deck * CFrame.new(0, colH + 0.2, 0), PAL.timberDark) -- ceiling
+	if opts.plaque and not opts.two and nb % 2 == 1 then
+		-- one roof: the name board hangs in the middle bay, under the architrave
+		Kit.plaque(m, deck * CFrame.new(0, colH - 0.85, D / 2 + 0.3), math.min(bw - 1.4, 5), 1.4, opts.plaque)
+	end
 	-- roofs: eave line just above the bracket tops
 	local eaveY = colH + 2.6
 	local tile = opts.tile or PAL.tile
@@ -228,6 +232,10 @@ function Kit.hall(parent, cf, opts)
 		for _, sz in { -1, 1 } do
 			P(m, Vector3.new(W2 + 0.3, 0.6, 0.4), deck * CFrame.new(0, joint + upH - 0.2, sz * (D2 / 2 + 0.05)), Kit.RED)
 			P(m, Vector3.new(W2 + 0.3, 0.9, 0.4), deck * CFrame.new(0, joint + upH - 1.0, sz * (D2 / 2 + 0.05)), Kit.PAINT_GREEN)
+		end
+		if opts.plaque then
+			-- two roofs: the name board sits between the eaves, on the upper storey's front
+			Kit.plaque(m, deck * CFrame.new(0, joint + 0.95, D2 / 2 + 0.25), math.min(W2 * 0.4, 6.5), 1.5, opts.plaque)
 		end
 		local top = table.clone(ro)
 		top.rise, top.over, top.rows = D2 * 0.32, 3.5, 5
@@ -252,11 +260,11 @@ local LEVELS = {
 	{ bays = 5, bay = 6, depth = 2, colH = 8, plinth = 2.4, two = true, wings = true },
 	{ bays = 6, bay = 6, depth = 2, colH = 9, plinth = 2.8, two = true, wings = true, tile = GOLD_TILE, towers = true },
 }
-function Kit.mainHall(parent, cf, level)
+function Kit.mainHall(parent, cf, level, title)
 	local L = LEVELS[math.clamp(level, 1, #LEVELS)]
 	local m = Instance.new("Model")
 	m.Name = "MainHall" .. level
-	Kit.hall(m, cf, { bays = L.bays, bay = L.bay, depth = L.depth, colH = L.colH, plinth = L.plinth, two = L.two, tile = L.tile, name = "Core" })
+	Kit.hall(m, cf, { bays = L.bays, bay = L.bay, depth = L.depth, colH = L.colH, plinth = L.plinth, two = L.two, tile = L.tile, name = "Core", plaque = title })
 	local coreHalf = (L.bays * L.bay + 7) / 2
 	if L.wings then
 		for _, sx in { -1, 1 } do
@@ -269,6 +277,198 @@ function Kit.mainHall(parent, cf, level)
 			Style.pagoda(m, cf * CFrame.new(sx * 22, 0, -16), 6, 1, 3, 3)
 		end
 	end
+	m.Parent = parent
+	return m
+end
+
+-- Name board: a dark board in a gold frame with the name in gold. cf = the board's centre,
+-- front facing +Z. Returns the board (callers that rename it later find the TextLabel "Name").
+function Kit.plaque(parent, cf, w, h, text)
+	P(parent, Vector3.new(w + 0.4, h + 0.4, 0.2), cf * CFrame.new(0, 0, -0.15), PAL.gold)
+	local board = P(parent, Vector3.new(w, h, 0.3), cf, PAL.timberDark)
+	board.Name = "Plaque"
+	if text then
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Front
+		gui.PixelsPerStud = 40
+		gui.LightInfluence = 0.6 -- stays readable in the porch shade
+		gui.Parent = board
+		local label = Instance.new("TextLabel")
+		label.Name = "Name"
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.TextScaled = true
+		label.Font = Enum.Font.Fantasy
+		label.TextColor3 = Color3.fromRGB(255, 225, 150)
+		label.Text = text
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft = UDim.new(0.06, 0)
+		pad.PaddingRight = UDim.new(0.06, 0)
+		pad.PaddingTop = UDim.new(0.12, 0)
+		pad.PaddingBottom = UDim.new(0.12, 0)
+		pad.Parent = label
+		label.Parent = gui
+	end
+	return board
+end
+
+-- Columns with bracket sets at every (x, z) under `base`; shared by the gate, the pavilion and
+-- the bell tower. Returns the eave height above `base` (just over the bracket tops).
+local function columnsWithBrackets(parent, base, xs, zs, colH, bracketScale)
+	for _, x in xs do
+		for _, z in zs do
+			local top = Kit.column(parent, base * CFrame.new(x, 0, z), colH, 1.1)
+			Kit.bracket(parent, top, bracketScale)
+		end
+	end
+	return colH + 0.45 + (0.4 + 6 * 0.32) * bracketScale
+end
+
+local function kitRoof(parent, cf, W, D, rise, over, rows)
+	Style.roof(parent, cf, W, D, { rise = rise, over = over, rows = rows, kit2 = true, corbels = false, tileEnds = true, ridge = PAL.tile:Lerp(Color3.new(0, 0, 0), 0.3) })
+end
+
+-- Gate (paifang): two kit columns on stone drums, a red double beam with the painted frieze
+-- and the name board between, bracket sets along the top, one kit roof with tile ends.
+-- Returns the plaque board (front = +Z of cf).
+function Kit.gate(parent, cf, width, height, text)
+	local m = Instance.new("Model")
+	m.Name = "Gate"
+	for _, sx in { -1, 1 } do
+		local at = cf * CFrame.new(sx * width / 2, 0, 0)
+		P(m, Vector3.new(2.6, 1.0, 2.6), at * CFrame.new(0, 0.5, 0), PAL.stone)
+		P(m, Vector3.new(1.0, 2.6, 3.8), at * CFrame.new(0, 1.3, 0), PAL.stoneLight) -- drum braces
+	end
+	local eave = columnsWithBrackets(m, cf, { -width / 2, width / 2 }, { 0 }, height, 0.8)
+	local span = width + 2.4
+	-- upper beam on the column tops, the painted frieze, lower beam under the board
+	P(m, Vector3.new(span, 0.9, 1.0), cf * CFrame.new(0, height - 0.15, 0), Kit.RED)
+	P(m, Vector3.new(span + 0.1, 0.18, 1.1), cf * CFrame.new(0, height - 0.65, 0), PAL.gold)
+	P(m, Vector3.new(width - 1, 1.5, 0.7), cf * CFrame.new(0, height - 1.55, 0), Kit.PAINT_GREEN)
+	P(m, Vector3.new(width - 0.6, 0.8, 0.9), cf * CFrame.new(0, height - 2.7, 0), Kit.RED)
+	P(m, Vector3.new(width - 0.5, 0.15, 1.0), cf * CFrame.new(0, height - 3.15, 0), PAL.gold)
+	-- more bracket sets riding the upper beam between the columns
+	local n = math.max(1, math.floor(width / 4))
+	for k = 1, n - 1 do
+		Kit.bracket(m, cf * CFrame.new(-width / 2 + k * width / n, height + 0.3, 0), 0.8)
+	end
+	local plaque = Kit.plaque(m, cf * CFrame.new(0, height - 1.6, 0.55), math.min(7, width * 0.5), 1.6, text)
+	kitRoof(m, cf * CFrame.new(0, eave, 0), span + 1.6, 3, 2, 1.6, 3)
+	m.Parent = parent
+	return plaque
+end
+
+-- Open pavilion: a kit platform (railing round three sides), four columns with bracket sets, a
+-- red frame and one square kit roof. Returns the model and the deck height.
+function Kit.pavilion(parent, cf, w, colH)
+	local m = Instance.new("Model")
+	m.Name = "Pavilion"
+	local h = 1.2
+	local deck = Kit.platform(m, cf, w + 3, w + 3, h, 4.5)
+	local eave = columnsWithBrackets(m, deck, { -w / 2, w / 2 }, { -w / 2, w / 2 }, colH, 0.8)
+	for _, s in { -1, 1 } do
+		P(m, Vector3.new(w + 1.1, 0.8, 0.8), deck * CFrame.new(0, colH + 0.05, s * w / 2), Kit.RED)
+		P(m, Vector3.new(0.8, 0.8, w + 1.1), deck * CFrame.new(s * w / 2, colH + 0.05, 0), Kit.RED)
+		P(m, Vector3.new(w + 1.2, 0.18, 0.9), deck * CFrame.new(0, colH - 0.42, s * w / 2), PAL.gold)
+		P(m, Vector3.new(0.9, 0.18, w + 1.2), deck * CFrame.new(s * w / 2, colH - 0.42, 0), PAL.gold)
+	end
+	P(m, Vector3.new(w + 0.6, 0.3, w + 0.6), deck * CFrame.new(0, colH + 0.6, 0), PAL.timberDark) -- ceiling
+	kitRoof(m, deck * CFrame.new(0, eave, 0), w + 1, w + 1, w * 0.3, 3, 5)
+	m.Parent = parent
+	return m, h
+end
+
+-- Bell tower: a kit platform, a stone lower storey with a lattice door and the name board, a
+-- railed upper deck on kit columns holding the bronze bell, one square kit roof.
+function Kit.bellTower(parent, cf, text)
+	local m = Instance.new("Model")
+	m.Name = "BellTower"
+	local deck = Kit.platform(m, cf, 12, 12, 1.4, 4.5)
+	P(m, Vector3.new(8, 5, 8), deck * CFrame.new(0, 2.5, 0), PAL.stoneLight) -- solid lower storey
+	Kit.panel(m, deck * CFrame.new(0, 0, 4.05), 2.6, 3.4, nil)
+	P(m, Vector3.new(9, 0.5, 9), deck * CFrame.new(0, 5.25, 0), Kit.RED) -- upper deck
+	P(m, Vector3.new(9.1, 0.15, 9.1), deck * CFrame.new(0, 4.95, 0), PAL.gold)
+	if text then
+		Kit.plaque(m, deck * CFrame.new(0, 4.25, 4.2), 4.6, 1.0, text)
+	end
+	local upper = deck * CFrame.new(0, 5.5, 0)
+	local c = 3.6
+	local eave = columnsWithBrackets(m, upper, { -c, c }, { -c, c }, 6, 0.7)
+	for _, s in { { -1, -1, 1, -1 }, { 1, -1, 1, 1 }, { 1, 1, -1, 1 }, { -1, 1, -1, -1 } } do
+		Kit.railing(m, (upper * CFrame.new(s[1] * c, 0, s[2] * c)).Position, (upper * CFrame.new(s[3] * c, 0, s[4] * c)).Position, 1.6)
+	end
+	for _, s in { -1, 1 } do
+		P(m, Vector3.new(c * 2 + 1, 0.7, 0.7), upper * CFrame.new(0, 6.05, s * c), Kit.RED)
+		P(m, Vector3.new(0.7, 0.7, c * 2 + 1), upper * CFrame.new(s * c, 6.05, 0), Kit.RED)
+	end
+	-- the bronze bell hanging from a beam, and the striker log
+	local bronze = Color3.fromHex("7A5A3A")
+	P(m, Vector3.new(c * 2, 0.5, 0.5), upper * CFrame.new(0, 5.6, 0), PAL.timberDark)
+	cylY(m, 2.8, 2.4, upper * CFrame.new(0, 3.7, 0), bronze, Enum.Material.Metal)
+	cylY(m, 0.4, 2.8, upper * CFrame.new(0, 2.35, 0), PAL.gold, Enum.Material.Metal)
+	P(m, Vector3.new(2.4, 2.4, 2.4), upper * CFrame.new(0, 5, 0), bronze, Enum.Material.Metal, Enum.PartType.Ball)
+	P(m, Vector3.new(0.5, 0.5, 3.6), upper * CFrame.new(2.4, 3.4, 0), PAL.timber)
+	P(m, Vector3.new(c * 2 + 0.6, 0.3, c * 2 + 0.6), upper * CFrame.new(0, 6.55, 0), PAL.timberDark) -- ceiling
+	kitRoof(m, upper * CFrame.new(0, eave, 0), 9, 9, 3.4, 2.4, 5)
+	m.Parent = parent
+	return m
+end
+
+-- Moon gate: a plaster wall with a round opening framed by a stone ring, under a kit roof.
+-- The ring is cut from short blocks whose outer corners sit on the circle (no teeth); the wall
+-- between ring and square is filled with strips whose inner ends hide under the ring
+-- (horizontal strips at the sides, vertical ones above and below).
+function Kit.moonGate(parent, cf)
+	local m = Instance.new("Model")
+	m.Name = "MoonGate"
+	local R, band = 4.6, 1.0 -- opening radius, ring width
+	local Ro = R + band
+	local cy = Ro -- the ring stands on the ground
+	local half, H = 12, 12.4 -- wall half-width and height
+	local thick = 1.4
+	local plaster = Enum.Material.Plaster
+	local n = 32
+	local L = 2 * Ro * math.tan(math.pi / n)
+	local rc = R + band / 2
+	for i = 0, n - 1 do
+		local a = (i + 0.5) / n * math.pi * 2
+		P(m, Vector3.new(band, L, thick + 0.4), cf * CFrame.new(math.cos(a) * rc, cy + math.sin(a) * rc, 0) * CFrame.Angles(0, 0, a), PAL.stoneLight)
+	end
+	-- side panels and the band over the ring
+	for _, sx in { -1, 1 } do
+		P(m, Vector3.new(half - Ro, H, thick), cf * CFrame.new(sx * (Ro + half) / 2, H / 2, 0), PAL.plaster, plaster)
+	end
+	P(m, Vector3.new(Ro * 2, H - 2 * Ro, thick), cf * CFrame.new(0, (H + 2 * Ro) / 2, 0), PAL.plaster, plaster)
+	-- fill between the ring and its square (the ring's foot is on the ground: nothing below)
+	local k = Ro * math.sqrt(0.5)
+	local rows = math.ceil(2 * k / 0.6)
+	local sh = 2 * k / rows
+	for i = 0, rows - 1 do
+		local d = -k + (i + 0.5) * sh
+		local e = math.sqrt(rc ^ 2 - d ^ 2)
+		local len = Ro - e
+		for _, s in { -1, 1 } do
+			P(m, Vector3.new(len, sh + 0.02, thick), cf * CFrame.new(s * (e + len / 2), cy + d, 0), PAL.plaster, plaster)
+		end
+		for _, s in { -1, 1 } do
+			P(m, Vector3.new(sh + 0.02, len, thick), cf * CFrame.new(d, cy + s * (e + len / 2), 0), PAL.plaster, plaster)
+		end
+	end
+	local cs = Ro - k -- the upper corners, wholly outside the ring
+	for _, sx in { -1, 1 } do
+		P(m, Vector3.new(cs, cs, thick), cf * CFrame.new(sx * (k + cs / 2), cy + k + cs / 2, 0), PAL.plaster, plaster)
+		P(m, Vector3.new(cs, cy - k, thick), cf * CFrame.new(sx * (k + cs / 2), (cy - k) / 2, 0), PAL.plaster, plaster)
+		P(m, Vector3.new(half - Ro + 0.2, 0.8, thick + 0.4), cf * CFrame.new(sx * (Ro + half) / 2, 0.4, 0), PAL.stone) -- footing
+	end
+	-- coping: red band, gold line, then a long kit roof
+	P(m, Vector3.new(half * 2 + 0.2, 0.6, thick + 0.3), cf * CFrame.new(0, H + 0.3, 0), Kit.RED)
+	P(m, Vector3.new(half * 2 + 0.3, 0.15, thick + 0.4), cf * CFrame.new(0, H - 0.05, 0), PAL.gold)
+	kitRoof(m, cf * CFrame.new(0, H + 0.9, 0), half * 2 + 1.5, 2.2, 1.5, 1.3, 3)
+	-- garden stones and a sakura behind it (well back, so its crown stays off the wall)
+	for i = 1, 3 do
+		P(m, Vector3.new(2.4, 1.6, 2), cf * CFrame.new(-6 + i * 3.2, 0.8, -4 - (i % 2) * 2) * CFrame.Angles(0.2, i, 0.1), PAL.rock)
+	end
+	Style.sakura(m, cf * CFrame.new(8, 0, -8), 77)
 	m.Parent = parent
 	return m
 end
