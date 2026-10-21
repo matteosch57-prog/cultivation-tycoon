@@ -306,7 +306,14 @@ Config.PALETTES = {
 -- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
-Config.REALM_STORM = Color3.fromRGB(70, 82, 112) -- realm 9+ storm cloud puffs: slate blue (owner pick A: solid puffs, not a particle haze)
+-- Realm 9+ lightning (RealmLook.client; owner pick B, research in REINCARNATION "What each realm
+-- shows"): a strike every STORM_EVERY s per peak on screen, 2 to 4 flickers (real flashes have 2 to 4
+-- return strokes ~40 to 80 ms apart), thunder delayed by distance
+Config.STORM_EVERY = { 8, 18 }
+Config.STORM_FLICKERS = { 2, 4 }
+Config.STORM_SEE = 700 -- studs: farther peaks never strike
+Config.STORM_HEAR = 320 -- studs: thunder plays within this
+Config.STORM_SOUND_SPEED = 400 -- studs per second (thunder rolls in after the flash)
 Config.REALM_FALL_ANGLE = 0.35 -- the realm 8 waterfall, front right (the first one is at the back left)
 Config.REALM_TINT = {
 	[6] = Color3.fromRGB(185, 166, 255), -- Void Refinement: violet
