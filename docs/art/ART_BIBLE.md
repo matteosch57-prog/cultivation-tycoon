@@ -60,19 +60,26 @@ stone 9C978C · sakura F4B6C2 / E98FA6 / FAD4DC · pine 2E5B47 / 3F7A5C · lawn 
   [cultivators_lineup.jpg](mocks/cultivators_lineup.jpg) set the colour and aura rules.
 - Four looks cycled by slot: sword disciple (black ponytail), lotus maiden (buns with hairpins),
   pill monk (shaved head), elder sage (white crown hair and beard).
-- The rarity owns the robe: white, green, blue, purple, gold, then Celestial teal (azure hanfu) and Dao
-  Ancestor crimson (robe under a red cloak). A dark robe hides the rarity, so every robe is checked in a
-  capture before it ships (the long robe green and blue read black). Top tiers:
-  [cultivators_top_tiers.jpg](mocks/cultivators_top_tiers.jpg).
-- Aura grows one step per rarity: Outer none, Inner a small ForceField ground ring, Core a wide ring and
-  rising sparkles, Elder adds a halo behind the head, Immortal adds three circling qi orbs, Celestial an
-  outer ring and five orbs, Dao Ancestor a second halo and seven orbs. Orbs circle at chest height, clear
-  of the face. No Light instances (R3), at most one emitter per figure.
+- The rarity owns the robe: white, green, blue, purple, gold, Celestial teal (azure hanfu), Dao Ancestor
+  crimson (robe under a red cloak), Heavenly Emperor red-gold, Primordial white under a white cloak. A
+  dark robe hides the rarity, so every robe is checked in a capture before it ships (the long robe green
+  and blue read black). Top tiers: [cultivators_premium_auras.jpg](mocks/cultivators_premium_auras.jpg).
+- Premium aura = several soft layers at low rates, colour brightening toward white, one layer more per
+  rarity: Inner a turning qi sigil on the ground, Core rising motes, Elder a halo ring behind the head,
+  Immortal qi orbs with trails, Celestial a second wider sigil, Dao Ancestor an outer halo, Heavenly
+  Emperor a ring pulse on each breath, Primordial runs through every colour. Orbs 3 / 5 / 7 / 7 / 9 from
+  Immortal, at chest height. Built-in textures only (`rbxasset://textures/particles/`: vortex,
+  shockwave ring, glow, sparkles), so nothing to upload. No Light instances (R3).
+- Layer gotchas: an emitter on an Attachment emits from one point, inside the body, where the avatar
+  hides it (motes rise from an invisible ring part instead); a flat ground sprite needs a positive
+  ZOffset or the floor hides it; fire wisps and beam ribbons were tried and dropped (hidden, or faint
+  white arcs over the bright sky).
+- Phone budget: aura layers switch off beyond 90 studs and motion stops beyond 150 (client).
 - Pose and motion: the server poses the rig cross-legged through its joint graph and anchors it (new
   rigs have AnimationConstraints, no Motor6D); `CultivatorIdle.client.luau` animates locally within 150
-  studs: breath (rise and lean), a slow side sway, a head drift on its own rhythm, the rings and halo
-  swelling with the breath, a sparkle puff every 8 to 14 s, orbs circling (alternate directions from
-  Celestial up) and bobbing. No animation upload. An uploaded meditation animation
+  studs: breath (rise and lean), a slow side sway, a head drift on its own rhythm, a sparkle puff
+  every 8 to 14 s, the ground pulse on each in-breath, orbs circling (alternate directions from
+  Celestial up) and bobbing, the Primordial colour cycle. No animation upload. An uploaded meditation animation
   (owner uploads, R5) would be the upgrade path.
 - Templates are built once per look and rarity per server, then cloned. If a catalog item is ever
   taken down, that robe or hair goes missing until its id is replaced in `ROBES` / `LOOK`.

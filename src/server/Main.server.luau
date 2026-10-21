@@ -8,6 +8,7 @@ local Builders = require(script.Parent:WaitForChild("Builders"))
 local Style = require(script.Parent:WaitForChild("Style"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
+local Shop = require(script.Parent:WaitForChild("Shop"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -192,6 +193,14 @@ local function buildGrounds(plot, radius)
 	label.TextColor3 = Color3.fromRGB(255, 225, 150)
 	label.Text = plot.labelText or "Unclaimed Peak"
 	label.Parent = gui
+	if plot.vip then
+		-- VIP Sect pass: the owner's name in bright gold with a dark edge
+		label.TextColor3 = Color3.fromRGB(255, 205, 50)
+		local st = Instance.new("UIStroke")
+		st.Color = Color3.fromHex("3A2410")
+		st.Thickness = 3
+		st.Parent = label
+	end
 	g.Parent = plot.folder
 	plot.grounds = g
 	plot.label = label
@@ -285,10 +294,15 @@ local function defaultData()
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
--- benched, e.g. after a breakthrough resets the Quarters).
-local function discipleMult(data)
+-- benched, e.g. after a breakthrough resets the Quarters). `s.passes` = game passes owned (Shop).
+local function maxDisciples(s)
+	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip)
+end
+
+local function discipleMult(s)
+	local data = s.data
 	local m = 1
-	local max = Config.maxDisciples(data.owned)
+	local max = maxDisciples(s)
 	for i, name in data.disciples do
 		if i > max then
 			break
@@ -307,8 +321,10 @@ local function tideOn()
 	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
 end
 
--- `away` = offline qi (and gifts), which never count the live tide or a pill
-local function rate(data, away)
+-- `away` = offline qi (and gifts), which never count the live tide or a pill; the 2x Qi pass counts
+-- everywhere
+local function rate(s, away)
+	local data = s.data
 	local base = Config.BASE_RATE
 	for id in data.owned do
 		local pad = Config.padById(id)
@@ -318,7 +334,8 @@ local function rate(data, away)
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
 	local pill = (not away and boosted(data)) and 2 or 1
-	return base * Config.incomeMult(data.realm) * discipleMult(data) * pill * tide
+	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass
 end
 
 local function publish(player)
@@ -328,13 +345,14 @@ local function publish(player)
 	end
 	local d = s.data
 	player:SetAttribute("Qi", math.floor(d.qi))
-	player:SetAttribute("Rate", rate(d))
+	player:SetAttribute("Rate", rate(s))
+	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
 	player:SetAttribute("Realm", d.realm)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
 	player:SetAttribute("HasHall", d.owned.hall == true)
-	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.recruited))
+	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.realmRecruits or 0))
 	player:SetAttribute("Disciples", table.concat(d.disciples, ","))
-	player:SetAttribute("MaxDisciples", Config.maxDisciples(d.owned))
+	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
@@ -405,7 +423,7 @@ local function buildDisciples(s)
 	local ctx = ctxFor(s)
 	ctx.folder = Instance.new("Folder")
 	ctx.folder.Name = "Disciples"
-	local max = Config.maxDisciples(s.data.owned)
+	local max = maxDisciples(s)
 	for slot, name in s.data.disciples do
 		if slot > max then
 			break -- benched
@@ -631,6 +649,7 @@ refreshPads = function(player, s)
 			s.data.qi = 0
 			s.data.pillReady = false
 			s.data.pillTimer = 0
+			s.data.realmRecruits = 0
 			lightning(s)
 			rebuild(s)
 			refreshPads(player, s)
@@ -645,9 +664,10 @@ end
 local pendingSaves = 0
 
 -- `release` = the last save of this session (leave or close); later saves are skipped.
+-- Returns true when the write landed.
 local function save(s, release)
 	if not store or not s.loaded or s.released then
-		return
+		return false
 	end
 	if release then
 		s.released = true
@@ -655,8 +675,9 @@ local function save(s, release)
 	s.data.last = os.time()
 	local snapshot = deepCopy(s.data) -- the session keeps changing while UpdateAsync yields
 	pendingSaves += 1
-	SaveStore.save(store, s.userId, s.sessionId, snapshot, release)
+	local ok = SaveStore.save(store, s.userId, s.sessionId, snapshot, release)
 	pendingSaves -= 1
+	return ok
 end
 
 local function load(player, sessionId)
@@ -723,12 +744,19 @@ local function onJoin(player)
 	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId }
 	sessions[player] = s
+	Shop.onJoin(player, s) -- yields for the pass checks
+	if not player.Parent then
+		return -- onLeave already ran (it found the session) and saved
+	end
+	if plot.vip then
+		plot.radius = nil -- rebuild() below redraws the grounds with the gold arch
+	end
 
 	-- offline qi
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP)
 	local offlineGain = 0
 	if away > 60 then
-		offlineGain = math.floor(rate(data, true) * away)
+		offlineGain = math.floor(rate(s, true) * away)
 		data.qi += offlineGain
 		Telemetry.source(player, data, offlineGain, "offline", true)
 	end
@@ -772,6 +800,7 @@ local function onLeave(player)
 	save(s, true)
 	s.plot.built:ClearAllChildren()
 	s.plot.owner = nil
+	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
 	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
 end
@@ -800,18 +829,19 @@ recruitFn.OnServerInvoke = function(player)
 	if not s.data.owned.hall then
 		return { ok = false, reason = "Build the Disciple Hall first" }
 	end
-	local cost = Config.recruitCost(s.data.realm, s.data.recruited)
+	local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
 	if s.data.qi < cost then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
 	s.data.qi -= cost
-	s.data.recruited += 1
+	s.data.recruited += 1 -- lifetime (telemetry)
+	s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
 	Telemetry.sink(player, s.data, cost, "recruit")
 	local r = roll()
 	local kept = true
 	local list = s.data.disciples
-	local max = Config.maxDisciples(s.data.owned)
+	local max = maxDisciples(s)
 	local function byBonus(a, b)
 		return Config.rarity(a).bonus > Config.rarity(b).bonus
 	end
@@ -826,7 +856,7 @@ recruitFn.OnServerInvoke = function(player)
 	end
 	table.sort(list, byBonus)
 	-- keep at most as many as the largest possible sect (benched ones beyond the slots)
-	local cap = Config.MAX_DISCIPLES + #Config.SLOT_PADS
+	local cap = Config.MAX_DISCIPLES + Config.VIP_SLOTS + #Config.SLOT_PADS
 	while #list > cap do
 		table.remove(list)
 	end
@@ -862,7 +892,7 @@ giftFn.OnServerInvoke = function(player)
 	if not at or (s.playTime or 0) < at then
 		return nil
 	end
-	local gain = math.floor(rate(s.data, true) * Config.GIFT_VALUE[gi])
+	local gain = math.floor(rate(s, true) * Config.GIFT_VALUE[gi])
 	s.giftIdx = gi + 1
 	s.data.qi += gain
 	publish(player)
@@ -914,6 +944,7 @@ local function spawnOrb(s)
 	orb.Color = Color3.fromHex("9FF5D0")
 	orb.CFrame = s.plot.frame * CFrame.new(spot.X, 3.2, spot.Y)
 	orb:SetAttribute("Spot", spot.X * 1000 + spot.Y)
+	orb:SetAttribute("Age", os.clock()) -- Auto Orbs waits a moment so the orb is seen first
 	local light = Instance.new("PointLight")
 	light.Color = Color3.fromHex("6FB59C")
 	light.Range = 10
@@ -936,12 +967,15 @@ local function checkOrbs(player, s, hrp)
 	if not s.orbs then
 		return
 	end
+	-- Auto Orbs pass: while the owner stands on their own peak, every orb flies to them
+	local flat = hrp.Position - s.plot.center
+	local auto = s.passes and s.passes.auto and Vector2.new(flat.X, flat.Z).Magnitude < (s.plot.radius or Config.ISLAND_RADIUS) + 4
 	for i = #s.orbs, 1, -1 do
 		local orb = s.orbs[i]
 		if not orb.Parent then
 			table.remove(s.orbs, i)
-		elseif (orb.Position - hrp.Position).Magnitude < 4.5 then
-			local gain = math.floor(rate(s.data) * Config.ORB_VALUE)
+		elseif (orb.Position - hrp.Position).Magnitude < 4.5 or (auto and os.clock() - (orb:GetAttribute("Age") or 0) > 1.5) then
+			local gain = math.floor(rate(s) * Config.ORB_VALUE)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
@@ -988,6 +1022,10 @@ if game:GetService("RunService"):IsStudio() then
 	set.OnInvoke = function(player, key, value)
 		local s = sessions[player]
 		if s then
+			if key == "pass" then
+				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
+				return true
+			end
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
@@ -1000,8 +1038,32 @@ if game:GetService("RunService"):IsStudio() then
 	set.Parent = game:GetService("ServerStorage")
 end
 
+-- Shop: a pass bought or found on join changes what this session earns or shows
+local function passChanged(player, s, key)
+	if key == "vip" then
+		s.plot.vip = true
+		buildGrounds(s.plot, Config.islandRadius(s.data.owned)) -- redraws the arch in gold
+		buildDisciples(s) -- the extra slot seats a benched disciple
+	end
+	publish(player)
+end
+
 -- Boot -------------------------------------------------------------------------------
 buildHub()
+Shop.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	save = save,
+	canSave = function()
+		return store ~= nil
+	end,
+	notify = notify,
+	passChanged = passChanged,
+	remotes = remotes,
+	styleP = Style.P,
+	palette = Style.PAL,
+}, world:WaitForChild("Hub"), BASE_Y)
 setupLighting()
 buildPlots()
 
@@ -1073,7 +1135,7 @@ while true do
 	end
 	for player, s in sessions do
 		local d = s.data
-		local gain = rate(d) * dt
+		local gain = rate(s) * dt
 		d.qi += gain
 		s.earned = (s.earned or 0) + gain
 		s.playTime = (s.playTime or 0) + dt

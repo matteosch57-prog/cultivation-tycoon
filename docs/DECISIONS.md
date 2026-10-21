@@ -7,10 +7,6 @@ the log as a D-number.
 - **Q1** Music bed: Guzheng (1), Temple Of Lihangin (2) or Harmonious Cycles (3). The owner picks by
   ear with the Workspace attribute `MusicTrack`.
 
-- **Q3** Realm pacing after the first breakthrough: today realms 2 and 3 go faster than realm 1
-  (disciples carry over). Keep (rebirth games shorten runs) or raise the realm cost ratio
-  (sweep in `docs/research/2026-10-21_first_session_onboarding.md`).
-
 ## Log (all 2026-10-21, the first session)
 - **D1** Theme: cultivation. Compared against aquarium (an old leader, fading), pet shop (the live
   leader, direct competition), wizard (open but combat-heavy). Cultivation is niche, but the owner
@@ -63,3 +59,16 @@ the log as a D-number.
 - **D23** Studio Play uses a mock save by default (`MOCK_DATASTORE`, owner 2026-10-21: "why not using a mock data
   store like my other games"): every Play starts as a new player, so the first session (guide trail, funnel)
   is what a tester sees; the `_studio` store stays for save tests with the flag off. Gate = flag AND `IsStudio()`.
+- **D24** Shop = mock B (owner pick of A / B / C, `docs/art/mocks/shop_*_phone.jpg`) plus a world
+  shop of purple step-on pads around the hub cauldron (owner ask). The ring is on the hub because
+  every peak's ground is already planned for build pads. Prices come from Roblox at runtime, never
+  from code, because passes are regionally priced. The 2x Qi pass also doubles offline qi (economy
+  check: the three passes together give ~1.5 to 2x pace and skip no content). Design in
+  MONETIZATION "How the shop works".
+- **D25** Realm pacing (closes Q3; owner: "first realms should be fast, then it should get hard; after
+  realm 10 we will offer reincarnation"). Costs x5 per realm through realm 5, then x10
+  (`REALM_COST_MULT`, `REALM_COST_LATE`, `REALM_COST_LATE_FROM`); the recruit price's +50% steps
+  restart at each breakthrough (`data.realmRecruits`) so recruiting stays a qi sink in every realm and
+  the top rarities stay a chase (before, recruits stopped after realm 1). Realm 10 is the long goal:
+  ~day 21 for two 30 min sessions a day, ~day 11 with the three passes
+  (`docs/research/2026-10-21_economy_math.md`). Reincarnation after realm 10 is not designed yet.

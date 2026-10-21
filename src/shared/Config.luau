@@ -32,7 +32,13 @@ Config.REALMS = {
 	"Soul Transformation",
 }
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
-Config.REALM_COST_MULT = 8 -- costs x8 per realm
+-- Owner direction (D25): the first realms are fast laps, then it gets hard; realm 10 is the long goal
+-- (reincarnation comes after it). Costs x5 per realm up to REALM_COST_LATE_FROM (realms 2 to 5 take
+-- ~5 to 10 min each), then x10 per realm (realm 10 lands ~day 21 for 2 x 30 min a day;
+-- tools/sim_economy.py, research 2026-10-21_economy_math)
+Config.REALM_COST_MULT = 5
+Config.REALM_COST_LATE = 10
+Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
@@ -108,8 +114,9 @@ Config.GIFT_TIMES = { 300, 900, 1800 }
 Config.GIFT_VALUE = { 120, 300, 600 }
 Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
 
-function Config.maxDisciples(owned)
-	local n = Config.MAX_DISCIPLES
+-- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
+function Config.maxDisciples(owned, vip)
+	local n = Config.MAX_DISCIPLES + (vip and Config.VIP_SLOTS or 0)
 	for _, id in Config.SLOT_PADS do
 		if owned[id] then
 			n += 1
@@ -118,10 +125,44 @@ function Config.maxDisciples(owned)
 	return n
 end
 
+-- Shop (docs/design/MONETIZATION.md, D17; screen = mock B, D24). The owner creates every pass and
+-- product and sets its price (R5): paste the ids here. id 0 = not created yet: the item shows
+-- "Soon" and never prompts. Prices are never written here: the client reads each one from
+-- MarketplaceService (regional pricing changes them per player).
+-- `seconds` (Qi packs) = seconds of the buyer's income (no tide, no pill, like gifts).
+Config.SHOP_PASSES = {
+	{ key = "x2", id = 0, name = "2x Qi", line = "Double income forever" },
+	{ key = "auto", id = 0, name = "Auto Orbs", line = "Orbs fly to you" },
+	{ key = "vip", id = 0, name = "VIP Sect", line = "+1 disciple, gold name" },
+}
+Config.SHOP_PRODUCTS = {
+	{ key = "pill", id = 0, name = "Instant Pill", line = "2x Qi for 60 s now" },
+	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
+	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
+	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
+}
+Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
+Config.VIP_SLOTS = 1
+Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
+-- World shop: purple pads in a ring around the hub cauldron (one per key, in this order)
+Config.SHOP_PADS = { "x2", "auto", "vip", "pill", "pack2", "pack3" }
+Config.SHOP_PAD_RADIUS = 18
+
+function Config.shopItem(key)
+	for _, list in { Config.SHOP_PASSES, Config.SHOP_PRODUCTS } do
+		for _, it in list do
+			if it.key == key then
+				return it, list == Config.SHOP_PASSES
+			end
+		end
+	end
+	return nil, false
+end
+
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
-Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple ever recruited (this realm-scaled)
+Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, D25)
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
@@ -130,6 +171,8 @@ Config.RARITIES = {
 	{ name = "Immortal", weight = 0.5, bonus = 4.00, color = Color3.fromRGB(255, 200, 60) },
 	{ name = "Celestial", weight = 0.12, bonus = 9.00, color = Color3.fromRGB(110, 225, 235) },
 	{ name = "Dao Ancestor", weight = 0.03, bonus = 20.00, color = Color3.fromRGB(230, 50, 60) },
+	{ name = "Heavenly Emperor", weight = 0.008, bonus = 45.00, color = Color3.fromRGB(255, 140, 40) },
+	{ name = "Primordial", weight = 0.002, bonus = 100.00, color = Color3.fromRGB(255, 110, 220) }, -- its aura cycles every colour
 }
 
 -- Building palettes cycle with the realm.
@@ -144,15 +187,17 @@ function Config.realmName(realm)
 end
 
 function Config.costMult(realm)
-	return Config.REALM_COST_MULT ^ (realm - 1)
+	local early = math.min(realm, Config.REALM_COST_LATE_FROM) - 1
+	return Config.REALM_COST_MULT ^ early * Config.REALM_COST_LATE ^ math.max(0, realm - Config.REALM_COST_LATE_FROM)
 end
 
 function Config.incomeMult(realm)
 	return Config.REALM_INCOME_MULT ^ (realm - 1)
 end
 
-function Config.recruitCost(realm, recruited)
-	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruited * Config.RECRUIT_GROWTH))
+-- `recruits` = disciples recruited in the current realm (data.realmRecruits)
+function Config.recruitCost(realm, recruits)
+	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruits * Config.RECRUIT_GROWTH))
 end
 
 function Config.rarity(name)

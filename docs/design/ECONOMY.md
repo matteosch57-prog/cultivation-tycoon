@@ -10,7 +10,9 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 ## Pads (`Config.PADS`)
 - A pad opens once `unlock` buildings are owned (any of them) and its `req` pads are owned. This keeps
   3 to 5 pads open at once so players choose (D11).
-- Cost x `costMult(realm)`; income x `incomeMult(realm)`.
+- Cost x `costMult(realm)`; income x `incomeMult(realm)`. `costMult` steps by `REALM_COST_MULT` per
+  realm up to `REALM_COST_LATE_FROM`, then by `REALM_COST_LATE`, so late realms stretch gently
+  instead of hitting a wall (research 2026-10-21_economy_math).
 - Buying is a server position check every 0.1 s (`checkPads`), not `.Touched` (D10).
 - Feature pads carry a `feature` line shown on the price card.
 
@@ -24,7 +26,8 @@ hall, palace with wings, gold celestial palace with towers). Only the highest ow
 shrinks the island back.
 
 ## Features
-- **Recruiting** (Disciple Hall): costs qi (`recruitCost`), rolls `RARITIES`. The best `maxDisciples`
+- **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`
+  per disciple recruited in this realm, `data.realmRecruits`, which a breakthrough resets), rolls `RARITIES`. The best `maxDisciples`
   work; the rest rest until slots open. Never sold for Robux (RULES R8).
 - **Disciple slots:** `MAX_DISCIPLES` + one per owned pad in `SLOT_PADS`.
 - **Pill** (Alchemy Furnace): one brewed every `PILL_INTERVAL`; using it doubles qi/s for `PILL_DURATION`.
@@ -47,7 +50,9 @@ tide under the qi counter (owner picked mock A for both, 2026-10-21).
 ## Pacing
 `python tools/sim_pacing.py` replays these rules from Config and prints the minutes to each milestone
 for an active, a casual and an idle player (`--set KEY=VALUE` tries a value first, `--trace` lists
-every purchase). Evidence and the sweep: `docs/research/2026-10-21_first_session_onboarding.md`.
+every purchase). `python tools/sim_economy.py` plays the whole climb (realms 1 to 12, real days of
+sessions with offline qi, tide, gifts, optional passes) and reports minutes and the day per realm;
+`--waits` shows how long players stand with nothing to buy. Evidence and the sweep: `docs/research/2026-10-21_first_session_onboarding.md`.
 
 ## Realms and breakthrough
 All pads owned -> a gold breakthrough pad (`BREAKTHROUGH_COST` x `costMult`). Breaking through: realm + 1,

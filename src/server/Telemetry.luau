@@ -35,6 +35,14 @@ Telemetry.EVENTS = {
 		fields = { "pill | orb", "realm (realmBucket)" },
 		question = "Are the pill and the qi orbs used, or ignored?",
 	},
+	Shop = {
+		fields = {
+			"open | prompt | bought | closed",
+			"open: hud | pad | pill; else the item key (Config SHOP_PASSES / SHOP_PRODUCTS)",
+			"realm (realmBucket)",
+		},
+		question = "Where do players open the shop, which items get a prompt, and how many prompts end in a buy?",
+	},
 }
 
 -- The onboarding funnel: one-time per player, steps in order. A step counts once it is true now or
@@ -253,6 +261,24 @@ function Telemetry.source(player, d, amount, sku, timed)
 			math.floor(amount),
 			math.floor(d.qi),
 			kind.Name,
+			sku
+		)
+	end
+end
+
+-- Qi bought with Robux (Qi packs): an IAP source, so the dashboard splits it from play
+function Telemetry.iapSource(player, d, amount, sku)
+	if amount >= 1 and spend(player) then
+		send(
+			"source " .. sku,
+			AnalyticsService.LogEconomyEvent,
+			AnalyticsService,
+			player,
+			Enum.AnalyticsEconomyFlowType.Source,
+			"Qi",
+			math.floor(amount),
+			math.floor(d.qi),
+			Enum.AnalyticsEconomyTransactionType.IAP.Name,
 			sku
 		)
 	end

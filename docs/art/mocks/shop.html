@@ -1,0 +1,115 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Shop mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Shop screen mocks (R4). ?opt=A|B|C &size=phone|pc. Rendered to shop_<opt>_<size>.jpg with Edge headless. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420;--cream:#fff4dc;--jade:#59d39f;--gold:#ffe36b;--pink:#ffb3a8;--buy:#47d16c}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/3_sky_clouds_showcase.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.55)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) var(--ink);paint-order:stroke fill;letter-spacing:.4px;line-height:1.05}
+.toy{border:var(--bw) solid var(--ink);border-radius:var(--br);box-shadow:0 var(--sh) 0 var(--ink);position:relative}
+.board::after{display:none}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.lbl{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50;white-space:nowrap}
+.stick{position:absolute;left:5%;bottom:8%;width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:5%;bottom:8%;width:100px;height:100px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.pc .stick,.pc .jump{display:none}
+/* the HUD's left column with the new Shop button on top */
+.leftcol{position:absolute;left:var(--lx);top:50%;transform:translateY(-58%);display:flex;flex-direction:column;align-items:center;gap:var(--g)}
+.hb{width:var(--hb);height:var(--hb);display:flex;align-items:center;justify-content:center}
+.cap{font-size:var(--f13);margin-top:2px}
+.price{display:flex;align-items:center;justify-content:center;gap:4px;background:var(--buy);color:#fff}
+.close{position:absolute;width:var(--x);height:var(--x);background:#ff6b5e;display:flex;align-items:center;justify-content:center;z-index:5}
+.owned{background:#c9c2d3!important}
+.tabrow{display:flex;gap:10px}
+.tab{padding:2px 16px;font-size:var(--f15)}
+.note{position:absolute;font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:6px;z-index:40}
+</style></head>
+<body><div class="scene" id="s"><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const pc=q.get('size')==='pc';const opt=q.get('opt')||'A';
+document.getElementById('s').classList.toggle('pc',pc);
+const k=pc?1.3:1, P=v=>Math.round(v*k);const px=v=>P(v)+'px';
+const R=document.documentElement.style;
+[['--sw',4],['--bw',3],['--br',14],['--sh',4],['--hb',54],['--lx',12],['--g',10],['--x',34],['--f13',13],['--f15',15]].forEach(([a,b])=>R.setProperty(a,px(b)));
+const INK='#1b1420';
+// icons (same shapes as the HUD's Icon drawings: outlined, two-tone)
+const qi=(s,f='#6fd6ae')=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="${f}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/><circle cx="22" cy="34" r="4" fill="#fff" opacity=".8"/></svg>`;
+const robux=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4l24 14v28L32 60 8 46V18z" fill="#fff" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M32 18l12 7v14l-12 7-12-7V25z" fill="${INK}"/></svg>`;
+const ic={
+ x2:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="translate(-6 4) scale(.85)">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g><text x="44" y="56" font-family="Fredoka" font-weight="700" font-size="26" fill="#ffe36b" stroke="${INK}" stroke-width="6" paint-order="stroke" text-anchor="middle">2x</text></svg>`,
+ vip:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M8 50L5 18l15 13 12-20 12 20 15-13-3 32z" fill="#ffd34d" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><rect x="8" y="46" width="48" height="10" rx="3" fill="#ffb02e" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="35" r="5" fill="#59d39f" stroke="${INK}" stroke-width="3"/><circle cx="17" cy="28" r="3" fill="#fff" opacity=".7"/></svg>`,vipOld:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="8" y="14" width="48" height="8" rx="3" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><rect x="14" y="20" width="7" height="36" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><rect x="43" y="20" width="7" height="36" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><rect x="18" y="26" width="28" height="15" rx="3" fill="#ffd34d" stroke="${INK}" stroke-width="4"/><path d="M4 14q28-12 56 0" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/><path d="M4 14q28-12 56 0" fill="none" stroke="#3a2d40" stroke-width="3" stroke-linecap="round"/><circle cx="26" cy="33" r="2.4" fill="${INK}"/><circle cx="32" cy="33" r="2.4" fill="${INK}"/><circle cx="38" cy="33" r="2.4" fill="${INK}"/></svg>`,
+ auto:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="10" cy="16" r="5" fill="#9ff5d0" stroke="${INK}" stroke-width="3.5"/><circle cx="14" cy="48" r="6" fill="#9ff5d0" stroke="${INK}" stroke-width="3.5"/><circle cx="21" cy="31" r="7" fill="#9ff5d0" stroke="${INK}" stroke-width="4"/><circle cx="43" cy="32" r="17" fill="#9ff5d0" stroke="${INK}" stroke-width="5"/><circle cx="37" cy="26" r="6" fill="#fff" opacity=".85"/></svg>`,
+ pill:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="12" y="22" width="22" height="20" rx="10" fill="#e65b4f" stroke="${INK}" stroke-width="5"/><rect x="30" y="22" width="22" height="20" rx="10" fill="#fff4dc" stroke="${INK}" stroke-width="5"/><rect x="26" y="22" width="12" height="20" fill="#e65b4f"/><rect x="32" y="24.5" width="6" height="15" fill="#fff4dc"/></g><path d="M50 4l-8 13h7l-6 12" fill="none" stroke="${INK}" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/><path d="M50 4l-8 13h7l-6 12" fill="none" stroke="#ffe36b" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+ pack:(s,n)=>{let g='';const pos=[[32,40,1],[18,44,.8],[46,44,.8],[25,26,.7],[40,24,.7],[32,14,.6]];for(let i=n-1;i>=0;i--){const[x,y,sc]=pos[i];g+=`<g transform="translate(${x-32*sc*.62} ${y-32*sc*.62}) scale(${sc*.62})">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g>`}return `<svg width="${s}" height="${s}" viewBox="0 0 64 64">${g}</svg>`},
+ bag:s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M22 14h20l-4 8h-12z" fill="#e65b4f" stroke="${INK}" stroke-width="4.5" stroke-linejoin="round"/><path d="M26 22h12c12 6 18 16 18 24 0 9-8 14-24 14S8 55 8 46c0-8 6-18 18-24z" fill="#ffd34d" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><rect x="22" y="20" width="20" height="5" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="3.5"/><g transform="translate(20 30) scale(.38)">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g><circle cx="17" cy="38" r="3" fill="#fff" opacity=".7"/></svg>`,
+};
+// the five D17 products (+ pack sizes). pass = game pass (one-time), else developer product
+const ITEMS=[
+ {id:'x2',name:'2x Qi',line:'Double income forever',price:299,col:'#9ff5c8',pass:1},
+ {id:'auto',name:'Auto Orbs',line:'Orbs fly to you',price:149,col:'#9fd0ff',pass:1},
+ {id:'vip',name:'VIP Sect',line:'+1 disciple, gold name',price:199,col:'#ffd36b',pass:1},
+ {id:'pill',name:'Instant Pill',line:'2x Qi for 60 s now',price:25,col:'#ffb3a8'},
+ {id:'p1',name:'Qi Pouch',line:'10 min of income',qi:'5,800',price:29,col:'#c9ffe4',n:1},
+ {id:'p2',name:'Qi Chest',line:'1 hour of income',qi:'34,560',price:129,col:'#b9f0d6',n:3},
+ {id:'p3',name:'Qi Vault',line:'6 hours of income',qi:'207K',price:499,col:'#a6e8c8',n:6},
+];
+const icon=(it,s)=>it.n?ic.pack(s,it.n):ic[it.id](s);
+const priceBtn=(it,w,h,fs,owned)=>`<div class="toy price ${owned?'owned':''}" style="width:${w}px;height:${h}px;--br:${P(10)}px;--sh:${P(3)}px"><span class="big" style="font-size:${fs}px;--sw:${P(3)}px">${owned?'Owned':robux(P(fs*1.05))+' '+it.price}</span></div>`.replace('>'+robux,'>'+robux).replace(/>([^<]*)<svg/,'>$1<svg');
+function priceHtml(it,w,h,fs,owned){return `<div class="toy price ${owned?'owned':''}" style="width:${w}px;height:${h}px;--br:${P(10)}px;--sh:${P(3)}px">${owned?`<span class="big" style="font-size:${fs}px;--sw:${P(3)}px">Owned</span>`:robux(Math.round(fs*1.1))+`<span class="big" style="font-size:${fs}px;--sw:${P(3)}px">${it.price}</span>`}</div>`}
+// HUD left column: Shop on top (new), then Disciples / Pill / Gift as today
+function leftCol(active){
+ const b=(col,inner,cap,extra='')=>`<div style="display:flex;flex-direction:column;align-items:center"><div class="toy hb" style="background:${col};${extra}">${inner}</div><div class="big cap" style="--sw:${px(3)}">${cap}</div></div>`;
+ return `<div class="leftcol">${b('#ffd36b',ic.bag(P(40)),'Shop',active?`outline:${px(4)} solid #fff;outline-offset:${px(3)}`:'')}${b('#9fd0ff',`<svg width="${P(40)}" height="${P(40)}" viewBox="0 0 64 64"><circle cx="32" cy="12" r="7" fill="${INK}"/><circle cx="32" cy="29" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M13 62c1-12 9-18 19-18s18 6 19 18z" fill="#5096ff" stroke="${INK}" stroke-width="4"/></svg>`,'Disciples')}${b('#ffb3a8',`<svg width="${P(40)}" height="${P(40)}" viewBox="0 0 64 64"><rect x="11" y="28" width="42" height="28" rx="4" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><rect x="7" y="19" width="50" height="12" rx="3" fill="#ff7a6b" stroke="${INK}" stroke-width="4"/><rect x="28" y="19" width="8" height="37" fill="#ffd34d"/></svg>`,'Gift 14:11')}</div>`;
+}
+const counter=`<div style="position:absolute;left:50%;top:${px(8)};transform:translateX(-50%);display:flex;gap:${px(6)};align-items:center;z-index:30">${qi(P(46))}<div><div class="big" style="font-size:${px(38)};--sw:${px(5)}">18,671</div><div class="big" style="font-size:${px(16)};color:#9ff5c8;--sw:${px(3)}">+12/s</div></div></div>`;
+let h='',label='';
+const title=(t,x,y,anchor='center')=>`<div class="big" style="position:absolute;left:${x};top:${y};transform:translate(-50%,-50%) rotate(-2deg);font-size:${px(34)};--sw:${px(6)};z-index:6;color:#ffe36b">${t}</div>`;
+const closeBtn=(x,y)=>`<div class="toy close" style="left:${x};top:${y};--br:${px(10)}"><span class="big" style="font-size:${px(22)};--sw:${px(4)}">X</span></div>`;
+
+if(opt==='A'){
+ // A: one cream board, two tabs, a row of tinted toy cards
+ label='A: cream board with tabs';
+ const W=P(620),H=P(286);
+ const passes=ITEMS.filter(i=>i.pass);
+ const cards=passes.map((it,i)=>`<div class="toy" style="width:${P(178)}px;height:${P(194)}px;background:${it.col};display:flex;flex-direction:column;align-items:center;padding-top:${px(8)};transform:rotate(${[-1.5,1,-1][i]}deg);--br:${px(16)}">${icon(it,P(76))}<div class="big" style="font-size:${px(21)};--sw:${px(4)};margin-top:${px(2)}">${it.name}</div><div class="big" style="font-size:${px(13)};--sw:${px(3)};color:#fff4dc;margin:${px(2)} 0 ${px(8)};text-align:center">${it.line}</div>${priceHtml(it,P(118),P(38),P(18),it.id==='auto')}</div>`).join('');
+ h=`<div class="veil"></div>${counter}${leftCol(1)}
+ <div style="position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);width:${W}px;height:${H}px">
+  <div class="toy board" style="position:absolute;inset:0;background:var(--cream);--br:${px(22)}"></div>
+  ${title('Shop','50%','0px')}
+  ${closeBtn(`calc(100% - ${px(22)})`,`-${px(14)}`)}
+  <div class="tabrow" style="position:absolute;left:${px(18)};top:${px(14)}"><div class="toy tab big" style="background:#59d39f;--sw:${px(3)};--br:${px(999)}">Boosts</div><div class="toy tab big" style="background:#c9c2d3;--sw:${px(3)};--br:${px(999)}">Qi</div></div>
+  <div style="position:absolute;left:0;right:0;top:${px(62)};display:flex;justify-content:center;gap:${px(16)}">${cards}</div>
+ </div>`;
+}
+if(opt==='B'){
+ // B: no board at all: the HUD's own language, toy tiles floating over a dark veil
+ label='B: no board, floating toy tiles';
+ const tile=(it,i,rot)=>`<div style="display:flex;flex-direction:column;align-items:center;transform:rotate(${rot}deg)"><div class="toy" style="width:${P(92)}px;height:${P(92)}px;background:${it.col};display:flex;align-items:center;justify-content:center;--br:${px(20)}">${icon(it,P(70))}</div><div class="big" style="font-size:${px(17)};--sw:${px(4)};margin-top:${px(8)}">${it.name}</div><div class="big" style="font-size:${px(12)};--sw:${px(3)};color:#c9ffe4;margin:${px(1)} 0 ${px(6)}">${it.qi?it.qi+' Qi':it.line}</div>${priceHtml(it,P(96),P(32),P(16),it.id==='auto')}</div>`;
+ const row1=ITEMS.filter(i=>i.pass||i.id==='pill').map((it,i)=>tile(it,i,[-2,1.5,-1,2][i])).join('');
+ const row2=ITEMS.filter(i=>i.n).map((it,i)=>tile(it,i,[1.5,-1.5,1][i])).join('');
+ h=`<div class="veil" style="background:rgba(20,14,30,.68)"></div>${counter}${leftCol(1)}
+ ${title('Shop','50%',px(96))}${closeBtn(`calc(50% + ${px(60)})`,px(78))}
+ <div style="position:absolute;left:50%;top:${px(124)};transform:translateX(-50%);display:flex;gap:${px(26)}">${row1}</div>`;
+ if(!pc) h=h.replace(`top:${px(124)}`,`top:${px(120)}`);
+ // phone height is tight: packs go in a second page reached by a "More Qi" arrow
+ h+=`<div style="position:absolute;left:50%;top:${pc?P(370):P(300)}px;transform:translateX(-50%);display:flex;gap:${px(26)}">${pc?row2:''}</div>`;
+ if(!pc) h+=`<div class="toy" style="position:absolute;left:calc(50% + ${px(250)});top:${px(196)};width:${px(70)};height:${px(70)};background:#c9ffe4;display:flex;align-items:center;justify-content:center;--br:${px(18)}">${ic.pack(P(52),3)}</div><div class="big" style="position:absolute;left:calc(50% + ${px(250)});top:${px(272)};width:${px(70)};text-align:center;font-size:${px(13)};--sw:${px(3)}">More Qi</div>`;
+}
+if(opt==='C'){
+ // C: a cream drawer from the right; the peak stays visible on the left
+ label='C: side drawer, list';
+ const W=P(380);
+ const row=(it)=>`<div style="display:flex;align-items:center;gap:${px(10)};padding:${px(5)} ${px(6)};border-radius:${px(14)};background:${it.col}55">${`<div class="toy" style="width:${P(52)}px;height:${P(52)}px;background:${it.col};display:flex;align-items:center;justify-content:center;--br:${px(14)};--sh:${px(3)}">${icon(it,P(40))}</div>`}<div style="flex:1"><div class="big" style="font-size:${px(18)};--sw:${px(4)}">${it.name}</div><div style="font-size:${px(12)};font-weight:600;color:#5a4b5e">${it.qi?it.qi+' Qi, '+it.line:it.line}</div></div>${priceHtml(it,P(86),P(32),P(16),it.id==='auto')}</div>`;
+ const list=ITEMS.slice(0,pc?7:4).map(row).join('');
+ h=`<div class="veil" style="background:linear-gradient(90deg,rgba(20,14,30,.0),rgba(20,14,30,.5))"></div>${counter}${leftCol(1)}
+ <div class="toy board" style="position:absolute;right:${px(10)};top:${px(64)};bottom:${px(12)};width:${W}px;background:var(--cream);--br:${px(22)};padding:${px(34)} ${px(12)} ${px(10)};display:flex;flex-direction:column;gap:${px(6)};overflow:hidden">${list}${pc?'':`<div style="text-align:center;font-size:${px(12)};font-weight:700;color:#5a4b5e">scroll for Qi packs</div>`}</div>
+ ${title('Shop',`calc(100% - ${P(10)+W/2}px)`,px(70))}${closeBtn(`calc(100% - ${px(40)})`,px(48))}
+ <div class="tabrow" style="position:absolute;right:${P(10)+W-P(130)}px;top:${px(52)};z-index:7"></div>`;
+}
+document.getElementById('hud').innerHTML=h;
+document.getElementById('lbl').textContent=label+(pc?' (computer)':' (phone)');
+</script></body></html>

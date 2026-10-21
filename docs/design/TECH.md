@@ -14,6 +14,9 @@
 | ServerScriptService.Server.Telemetry | `src/server/Telemetry.luau` | analytics catalogue, funnel, economy events |
 | StarterPlayerScripts.Client.Guide | `src/client/Guide.client.luau` | the guide trail to the next pad |
 | StarterPlayerScripts.Client.Juice | `src/client/Juice.client.luau` | floating qi, orbs, fly-to, event sounds and light |
+| ServerScriptService.Server.Shop | `src/server/Shop.luau` | passes, products (ProcessReceipt), hub shop pads |
+| StarterPlayerScripts.Client.Shop | `src/client/Shop.client.luau` | shop screen (mock B), hub pad cards |
+| ReplicatedStorage.Shared.Toy | `src/shared/Toy.luau` | HUD drawing kit (text, toy buttons, icons) for new screens |
 | StarterPlayerScripts.Client.PerfLog | `src/client/PerfLog.client.luau` | owner-only `/perf` log and `/clouds` A/B |
 
 Place-only content (not in Rojo): Lighting and `ActiveSky`, `ServerStorage.Sky_Original`, the Edit
@@ -56,9 +59,11 @@ printed once a minute.
   `data.funnel` = steps logged, so a return visit never re-logs. `FunnelTime` gives the minutes played
   (`data.playSec`) at each step.
 - **Custom:** `SessionEnd` (buildings bucket, session minutes, first | return), `Recruit` (rarity, realm,
-  kept | benched), `Feature` (pill | orb, realm).
+  kept | benched), `Feature` (pill | orb, realm), `Shop` (open | prompt | bought | closed, source or
+  item key, realm).
 - **Economy** (currency `Qi`): sinks per pad id, `recruit`, `breakthrough`; sources summed and sent
-  with each autosave and on leave (`income`, `orb`) plus `offline` (TimedReward) on join.
+  with each autosave and on leave (`income`, `orb`) plus `offline` (TimedReward) on join and Qi
+  packs (IAP, sku = pack key).
 - **Progression:** `Realm` Complete with the realm left behind, on each breakthrough.
 
 ## Studio test hooks (Studio only, ServerStorage)

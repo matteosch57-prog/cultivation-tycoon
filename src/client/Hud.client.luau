@@ -338,7 +338,27 @@ local function build()
 	leftLayout.Padding = UDim.new(0, px(10))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	leftLayout.Parent = left
-	local dCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY })
+	-- Shop (mock shop B, D24): always shown, on top; opens Shop.client's screen
+	local sCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 0 })
+	local sLayout = Instance.new("UIListLayout")
+	sLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	sLayout.Padding = UDim.new(0, px(2))
+	sLayout.Parent = sCol
+	local sHolder, sBtn = toy(sCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
+	sHolder.LayoutOrder = 1
+	local bag = Icon.new(sBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	bag:rect(32, 15, 18, 9, Color3.fromHex("E65B4F"), 2)
+	bag:circle(32, 40, 22, Color3.fromHex("FFD34D"))
+	bag:rect(32, 22, 22, 6, Color3.fromHex("E65B4F"), 2)
+	qiIcon(sBtn, px(17), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(4)) })
+	text(sCol, "Shop", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	sBtn.Activated:Connect(function()
+		local ev = playerGui:FindFirstChild("ShopOpen")
+		if ev then
+			ev:Fire("hud")
+		end
+	end)
+	local dCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	local dLayout = Instance.new("UIListLayout")
 	dLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	dLayout.Padding = UDim.new(0, px(2))
@@ -383,7 +403,7 @@ local function build()
 				toast("Pill swallowed: 2x Qi for 60 s!", GOLD, 2)
 			end
 		else
-			toast("The furnace is still brewing", PINK, 1.2)
+			toast("The furnace is still brewing (Instant Pill in the Shop)", PINK, 1.6)
 		end
 	end)
 	-- Playtime gift (mock tycoon_ideas idea 2 A): countdown -> ready (wobbles, red dot) -> claim
@@ -616,7 +636,7 @@ local function layout()
 	ui.pCol.Visible = hasFurnace
 	local hasGift = (player:GetAttribute("GiftIn") or -1) >= 0
 	ui.gCol.Visible = hasGift
-	ui.left.Visible = hasHall or hasFurnace or hasGift
+	ui.left.Visible = true -- the Shop button is always there
 	if not hasHall then
 		state.discOpen = false
 		ui.card.Visible = false
@@ -844,6 +864,19 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 		return
 	elseif kind == "tideSoon" then
 		toast(string.format("A Spirit Tide rises in %d s", a), Color3.fromHex("9FD0FF"), 3)
+		return
+	elseif kind == "shopPass" then
+		toast(a .. " is yours. Thank you!", GOLD, 3)
+		return
+	elseif kind == "shopQi" then
+		popGain(a, true)
+		toast(b .. "  +" .. compact(a) .. " Qi", GOLD, 2.5)
+		return
+	elseif kind == "shopPill" then
+		toast(string.format("Instant Pill: 2x Qi for %d s!", a), GOLD, 2.5)
+		return
+	elseif kind == "shopOwned" then
+		toast("You already own " .. a, Color3.fromHex("9FF5C8"), 1.6)
 		return
 	elseif kind == "tide" then
 		toast(string.format("Spirit Tide! Every sect earns 2x Qi for %d s", a), Color3.fromHex("9FD0FF"), 4)
