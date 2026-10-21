@@ -112,3 +112,12 @@ the log as a D-number.
   shorter, going deeper still beats resetting often. The reincarnation screen keeps text to the road,
   one NEXT line, two numbers and buttons (owner: "too much text"); every currency amount shows its
   icon (R18).
+- **D32** Realm looks and the last two Karma Shop nodes (ROADMAP M3). Every realm from 6 changes the
+  peak (clouds, rocks, second waterfall, storm, halo; [REINCARNATION](design/REINCARNATION.md)), all
+  blocks and particle clouds, no fake light (the halo is sunlit gold, the lightning an event flash).
+  Rebirth Gate (40 / 100 karma) lands a life at realm 3 / 5, never above 5 so the reset stays below its
+  gate; Old Foundations then builds the landing realm. Heavenly Hands (20) builds the HUD "Next" pad
+  from anywhere (mock A of `docs/art/mocks/karma_nodes_*.png`, picked by default, owner may switch to
+  B or C). Economy check (sim_economy reinc mode, 2026-10-21): the gate resetter earns a flat ~4
+  karma/h whatever the landing while going deeper earns 4.5 to 80 karma/h over lives 2 to 6; Hands
+  cuts realms 1 to 7 from 93 to 62 min for a slow phone walker and leaves the realm 10 date unchanged.

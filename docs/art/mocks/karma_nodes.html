@@ -1,0 +1,87 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Karma Shop nodes mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- ROADMAP M3 Karma Shop nodes (R4). ?opt=shop|A|B|C. Rendered at 844x390 (phone) with Edge headless
+     to karma_nodes_<opt>.jpg. shop = the Karma Shop with the two new tiles; A/B/C = three ways
+     Heavenly Hands builds without walking. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420;--sw:4px;--bw:3px;--br:14px;--sh:4px}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.55)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) var(--ink);paint-order:stroke fill;letter-spacing:.3px;line-height:1.05;white-space:nowrap}
+.toy{border:var(--bw) solid var(--ink);border-radius:var(--br);box-shadow:0 var(--sh) 0 var(--ink);position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.lbl{position:absolute;left:8px;top:6px;font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:3px 10px;border-radius:6px;z-index:50;white-space:nowrap}
+.stick{position:absolute;left:4%;bottom:8%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:4%;bottom:8%;width:76px;height:76px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.new{outline:3px dashed #ffe36b;outline-offset:4px;border-radius:16px}
+.row{display:flex;gap:14px;align-items:flex-start;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:2px;width:108px}
+.pip{width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:#3a2d40}
+.pip.on{background:#ffe36b}
+.tap{position:absolute;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.45);border:3px solid #fff;z-index:60}
+</style></head>
+<body><div class="scene" id="s"><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'shop';
+const INK='#1b1420';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const karma=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="#b48cff" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="32" r="11" fill="#efe4ff" stroke="${INK}" stroke-width="4"/><circle cx="24" cy="22" r="4" fill="#fff" opacity=".8"/></svg>`;
+// node icons (existing six approximated; the two new ones are the proposal)
+const IC={
+ sworn:`<rect x="12" y="36" width="20" height="22" rx="6" fill="#5096ff" stroke="${INK}" stroke-width="3"/><rect x="32" y="36" width="20" height="22" rx="6" fill="#5096ff" stroke="${INK}" stroke-width="3"/><circle cx="22" cy="26" r="9" fill="#f2cfae" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="26" r="9" fill="#f2cfae" stroke="${INK}" stroke-width="3"/>`,
+ seat:`<rect x="10" y="42" width="44" height="12" rx="6" fill="#e65b4f" stroke="${INK}" stroke-width="3"/><rect x="25" y="25" width="14" height="18" rx="6" fill="#9a6bff" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="18" r="8" fill="#f2cfae" stroke="${INK}" stroke-width="3"/>`,
+ foundation:`<rect x="14" y="34" width="36" height="20" rx="2" fill="#fff4dc" stroke="${INK}" stroke-width="3"/><rect x="7" y="22" width="50" height="12" rx="4" fill="#c0392b" stroke="${INK}" stroke-width="3"/><rect x="27" y="40" width="10" height="14" fill="#8a5a3c"/>`,
+ elixir:`<g transform="rotate(-35 32 32)"><rect x="12" y="22" width="22" height="20" rx="10" fill="#e65b4f" stroke="${INK}" stroke-width="3"/><rect x="30" y="22" width="22" height="20" rx="10" fill="#fff4dc" stroke="${INK}" stroke-width="3"/></g>`,
+ meditation:`<circle cx="30" cy="32" r="20" fill="#ffe36b" stroke="${INK}" stroke-width="3"/><circle cx="40" cy="26" r="16" fill="#d9c9ff"/>`,
+ echo:`<circle cx="22" cy="40" r="13" fill="#b48cff" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="26" r="16" fill="#b48cff" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="26" r="7" fill="#efe4ff"/>`,
+ // NEW Rebirth Gate: a moon gate with a step stair inside (start higher up the road)
+ rebirth:`<circle cx="32" cy="32" r="25" fill="#c0392b" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="34" r="15" fill="#9ff5c8" stroke="${INK}" stroke-width="3"/><path d="M22 46h7v-6h7v-6h7v14" fill="#fff4dc" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><rect x="4" y="52" width="56" height="8" rx="3" fill="#8a5a3c" stroke="${INK}" stroke-width="3"/>`,
+ // NEW Heavenly Hands: a gold open hand holding a little roof
+ hands:`<path d="M14 40c0-5 6-6 8-2l3 5V18a4 4 0 0 1 8 0v14-18a4 4 0 0 1 8 0v18-14a4 4 0 0 1 8 0v22c0 10-6 18-16 18h-4c-8 0-11-6-15-11z" fill="#ffd34d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M18 10l14-7 14 7z" fill="#c0392b" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`,
+};
+const icon=(k,s)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${IC[k]}</svg>`;
+const TILE={sworn:'#9fd0ff',seat:'#ffd36b',foundation:'#9ff5c8',elixir:'#ffb3a8',meditation:'#d9c9ff',echo:'#e6d4ff',rebirth:'#ffc9a6',hands:'#fff0a6'};
+const NODES=[
+ ['sworn','Sworn Bond','+1 disciple follows you',2,1,30],
+ ['seat','Disciple Seat','+1 disciple slot',1,1,0],
+ ['foundation','Old Foundations','Lives start fully built',1,0,20],
+ ['rebirth','Rebirth Gate','Lives start at realm 3',2,0,40,1],
+ ['elixir','Elixir Mastery','Pills last 30 s more',2,1,15],
+ ['meditation','Deep Meditation','+2 h offline Qi',2,0,5],
+ ['echo','Soul Echo','+10% Karma',5,0,8],
+ ['hands','Heavenly Hands','Build without walking',1,0,20,1],
+];
+const price=(n,max)=>`<div class="toy" style="width:70px;height:26px;--br:9px;--sh:3px;background:${max?'#c9c2d3':'#47d16c'};gap:3px">${max?'':karma(17)}<span class="big" style="font-size:14px;--sw:3px">${max?'Max':n}</span></div>`;
+const tile=([k,name,line,levels,lv,cost,isNew],i)=>`<div class="col ${isNew?'new':''}" style="transform:rotate(${[-2,1.5,-1,2,1,-1.5,2,-1][i]}deg)"><div class="toy" style="width:58px;height:58px;--br:16px;background:${TILE[k]}">${icon(k,44)}</div><div class="big" style="font-size:14px;--sw:3px">${name}</div><div class="big" style="font-size:11px;--sw:2.5px;color:#c9ffe4">${line}</div><div style="display:flex;gap:3px;margin:2px 0 3px">${Array.from({length:levels},(_,l)=>`<div class="pip ${l<lv?'on':''}"></div>`).join('')}</div>${price(cost,levels===lv)}</div>`;
+const counter=`<div style="position:absolute;left:50%;top:6px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;z-index:30">${qi(40)}<div><div class="big" style="font-size:32px;--sw:5px">19,863</div><div class="big" style="font-size:14px;color:#9ff5c8;--sw:3px">+152K/s</div></div></div>`;
+const bar=`<div style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px"><div class="big" style="font-size:15px;--sw:3px;color:#ffe9a6">Core Formation</div><div style="width:330px;height:28px;border-radius:14px;background:#3a2d40;border:3px solid ${INK};display:flex;align-items:center;justify-content:center"><span class="big" style="font-size:14px;--sw:3px">9 / 27 built</span></div></div>`;
+const goal=(extra='')=>`<div style="position:absolute;right:16px;top:44px;display:flex;align-items:center;gap:8px;transform:rotate(2deg)"><svg width="30" height="30" viewBox="0 0 64 64" style="transform:rotate(-140deg)"><path d="M8 26h30V12l20 20-20 20V38H8z" fill="#ffd34d" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/></svg><div><div class="big" style="font-size:14px;--sw:3px">Next: Herb Garden</div><div style="display:flex;align-items:center;gap:3px">${qi(15)}<span class="big" style="font-size:13px;--sw:3px;color:#9ff5c8">7,500</span></div></div>${extra}</div>`;
+let h='',label='';
+if(opt==='shop'){
+ label='Karma Shop: 8 tiles in 2 rows of 4 (dashed = new)';
+ h=`<div class="veil"></div><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px">
+ <div style="display:flex;gap:12px;align-items:center"><div class="toy" style="width:34px;height:34px;--br:10px;background:#59d39f"><span class="big" style="font-size:20px">&lt;</span></div><div class="big" style="font-size:30px;--sw:6px;color:#ffe36b;transform:rotate(-2deg)">Karma Shop</div><div class="toy" style="width:34px;height:34px;--br:10px;background:#ff6b5e"><span class="big" style="font-size:20px">X</span></div></div>
+ <div style="display:flex;align-items:center;gap:4px">${karma(24)}<span class="big" style="font-size:20px;color:#e6d4ff">34</span></div>
+ <div class="row">${NODES.slice(0,4).map(tile).join('')}</div><div class="row">${NODES.slice(4).map((n,i)=>tile(n,i+4)).join('')}</div></div>`;
+}else{
+ const hud=`${counter}${bar}`;
+ if(opt==='A'){
+  label='A (recommended): the Next card gets a Build button, tap = build it from anywhere';
+  h=`${hud}${goal(`<div class="toy" style="width:56px;height:46px;--br:12px;background:#ffd34d;margin-left:4px">${icon('hands',34)}</div>`)}<div class="tap" style="right:28px;top:52px"></div>`;
+ }else if(opt==='B'){
+  label='B: every price card in view gets a hand, tap the card to build it';
+  const card=(x,y,n,c,ok)=>`<div style="position:absolute;left:${x}px;top:${y}px;display:flex;align-items:center;gap:5px"><div class="toy" style="width:34px;height:34px;--br:10px;background:${ok?'#ffd34d':'#c9c2d3'}">${icon('hands',24)}</div><div><div class="big" style="font-size:14px;--sw:3px">${n}</div><div style="display:flex;align-items:center;gap:3px">${qi(13)}<span class="big" style="font-size:13px;--sw:3px;color:${ok?'#9ff5c8':'#ffb3a8'}">${c}</span></div></div></div>`;
+  h=`${hud}${goal()}${card(170,150,'Herb Garden','7,500',1)}${card(470,120,'Twin Spirit Vein','15K',1)}${card(600,210,'Sect Hall','22K',0)}<div class="tap" style="left:170px;top:150px"></div>`;
+ }else{
+  label='C: a Build button opens the list of open pads, tap one to build it';
+  const line=(n,c,ok)=>`<div style="display:flex;align-items:center;justify-content:space-between;width:250px"><span class="big" style="font-size:16px;--sw:3px">${n}</span><div class="toy" style="width:84px;height:28px;--br:9px;--sh:3px;background:${ok?'#47d16c':'#c9c2d3'};gap:3px">${qi(15)}<span class="big" style="font-size:14px;--sw:3px">${c}</span></div></div>`;
+  h=`<div class="veil"></div>${hud}<div style="position:absolute;left:14px;top:110px;display:flex;flex-direction:column;align-items:center"><div class="toy" style="width:54px;height:54px;background:#ffd34d">${icon('hands',40)}</div><div class="big" style="font-size:13px;--sw:3px">Build</div></div>
+  <div style="position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);display:flex;flex-direction:column;gap:8px;align-items:center"><div class="big" style="font-size:28px;--sw:6px;color:#ffe36b">Build</div>${line('Herb Garden','7,500',1)}${line('Twin Spirit Vein','15K',1)}${line('Sect Hall','22K',0)}${line('Alchemy Furnace','30K',0)}</div><div class="tap" style="left:555px;top:150px"></div>`;
+ }
+}
+document.getElementById('hud').innerHTML=h;document.getElementById('lbl').textContent=label;
+</script></body></html>

@@ -12,6 +12,7 @@ local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
+local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -52,6 +53,9 @@ reincFn.Parent = remotes
 local daoFn = Instance.new("RemoteFunction")
 daoFn.Name = "DaoBuy"
 daoFn.Parent = remotes
+local handsFn = Instance.new("RemoteFunction")
+handsFn.Name = "HandsBuild"
+handsFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -224,6 +228,8 @@ local function buildGrounds(plot, radius)
 	plot.grounds = g
 	plot.label = label
 	plot.radius = radius
+	plot.lookKey = nil -- the realm look follows the island's size
+	RealmLook.apply(plot)
 end
 
 -- Terrain grass blades grow through anything standing on them (stairs, stone floors), so
@@ -520,6 +526,14 @@ local function makePad(player, s, pad, cost, label, income, onBuy, kind)
 	return p
 end
 
+-- the one place a pad is paid for (standing on it, or Heavenly Hands)
+local function buyPad(s, part, info)
+	info.busy = true
+	s.padData[part] = nil
+	s.data.qi -= info.cost
+	info.onBuy()
+end
+
 -- Every 0.1 s: is an owner standing on one of their pads? (horizontal distance + height band)
 local PAD_REACH = 2.6 -- the pad top is 4 studs wide
 local function checkPads()
@@ -543,10 +557,7 @@ local function checkPads()
 						end
 						if s.data.qi >= info.cost then
 							s.padHold = true
-							info.busy = true
-							s.padData[part] = nil
-							s.data.qi -= info.cost
-							info.onBuy()
+							buyPad(s, part, info)
 						end
 						break -- one pad per player per tick
 					end
@@ -600,8 +611,11 @@ local function rebuild(s)
 	s.pads = {}
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
 	local radius = Config.islandRadius(s.data.owned)
+	s.plot.realm = s.data.realm
 	if s.plot.radius ~= radius then
 		buildGrounds(s.plot, radius)
+	else
+		RealmLook.apply(s.plot) -- what this realm shows around the peak (nothing below REALM_LOOK_FROM)
 	end
 	local hallLevel = Config.mainHallLevel(s.data.owned)
 	for _, pad in Config.PADS do
@@ -714,6 +728,10 @@ refreshPads = function(player, s)
 			refreshPads(player, s)
 			publish(player)
 			notify:FireAllClients("breakthrough", player.DisplayName, nextName)
+			local line = Config.realmLookLine(s.data.realm)
+			if line then
+				notify:FireClient(player, "realmLook", line)
+			end
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 	end
@@ -899,6 +917,7 @@ local function onLeave(player)
 	s.plot.owner = nil
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
+	s.plot.realm = nil
 	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
 end
 
@@ -1036,10 +1055,12 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
-	d.realm = 1
+	-- Rebirth Gate lands deeper, always below the REINC_REALM gate (never free to repeat)
+	local landing = Config.DAO_REBIRTH_REALMS[dao(d, "rebirth")] or 1
+	d.realm = math.clamp(landing, 1, Config.REINC_REALM - 1)
 	d.owned = {}
 	if dao(d, "foundation") > 0 then
-		-- Old Foundations: the new life starts with every realm 1 building (skips the walk)
+		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
 		for _, pad in Config.PADS do
 			d.owned[pad.id] = true
 		end
@@ -1093,6 +1114,27 @@ daoFn.OnServerInvoke = function(player, key)
 	end
 	publish(player)
 	Telemetry.custom(player, "KarmaShop", key, lv + 1, Telemetry.lifeBucket(d.lives or 1))
+	return true
+end
+
+-- Heavenly Hands (Karma Shop): build one of your open pads from anywhere. The client names the pad
+-- its HUD "Next" card shows; the server checks the node, the owner, the price and a cooldown (R9).
+handsFn.OnServerInvoke = function(player, padId)
+	local s = sessions[player]
+	if not s or type(padId) ~= "string" or dao(s.data, "hands") <= 0 then
+		return false
+	end
+	local now = os.clock()
+	if now < (s.handsAt or 0) then
+		return false
+	end
+	s.handsAt = now + Config.HANDS_COOLDOWN
+	local part = s.pads and s.pads[padId]
+	local info = part and s.padData and s.padData[part]
+	if not info or info.busy or s.data.qi < info.cost then
+		return false
+	end
+	buyPad(s, part, info)
 	return true
 end
 
@@ -1241,6 +1283,10 @@ if game:GetService("RunService"):IsStudio() then
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
+			end
+			if key == "realm" or key == "owned" then
+				rebuild(s) -- DebugSet:Invoke(player, "realm", 9) shows that realm's look (RealmLook)
+				refreshPads(player, s)
 			end
 			publish(player)
 			return true

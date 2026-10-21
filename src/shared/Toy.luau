@@ -239,6 +239,26 @@ function ICONS.bag(ic)
 	ic:detail(18, 36, 3, Color3.new(1, 1, 1), 0.3)
 end
 
+-- Karma Shop nodes drawn here because the HUD shows them too
+function ICONS.hands(ic) -- Heavenly Hands: an open gold hand
+	local gold = Color3.fromHex("FFD34D")
+	for i, x in { 20, 28.5, 37, 45.5 } do
+		ic:rect(x, 25 + math.abs(i - 2.5) * 3, 8, 24, gold, 4)
+	end
+	ic:rect(15, 42, 8, 20, gold, 4, -40)
+	ic:rect(33, 44, 34, 26, gold, 9)
+	ic:detail(25, 38, 3.5, Color3.new(1, 1, 1), 0.3)
+end
+function ICONS.rebirth(ic) -- Rebirth Gate: a moon gate with steps climbing through it
+	ic:circle(32, 30, 26, Color3.fromHex("C0392B"))
+	ic:circle(32, 32, 15, Color3.fromHex("9FF5C8"))
+	local cream = Color3.fromHex("FFF4DC")
+	ic:rect(25, 42, 8, 8, cream, 1)
+	ic:rect(33, 39, 8, 14, cream, 1)
+	ic:rect(41, 36, 8, 20, cream, 1)
+	ic:rect(32, 56, 56, 8, Color3.fromHex("8A5A3C"), 3)
+end
+
 -- a disciple in a robe of `robe` (the HUD's disciple drawing)
 local function disciple(ic, robe)
 	ic:rect(32, 52, 38, 22, robe, 9)

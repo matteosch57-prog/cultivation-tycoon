@@ -65,10 +65,18 @@ Config.DAO = {
 	{ key = "sworn", name = "Sworn Bond", line = "+1 disciple follows you", costs = { 10, 30 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
 	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 20 } },
+	-- `lines` = the line shown for the NEXT level (the last one once maxed)
+	{ key = "rebirth", name = "Rebirth Gate", line = "Lives start at realm 3", lines = { "Lives start at realm 3", "Lives start at realm 5" }, costs = { 40, 100 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
+	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 20 } },
 }
+-- Rebirth Gate: the realm a new life lands at, per level. Always below REINC_REALM (the landing
+-- must never pass its own gate, or reincarnating becomes free to repeat); economy check 2026-10-21:
+-- a resetter at the gate earns ~4 karma/h whatever the landing, going deeper wins from life 3.
+Config.DAO_REBIRTH_REALMS = { 3, 5 }
+Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
 Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
 Config.DAO_ECHO = 0.1 -- echo, karma per level
@@ -262,6 +270,37 @@ Config.PALETTES = {
 	{ stone = Color3.fromRGB(200, 225, 210), wood = Color3.fromRGB(140, 40, 40), roof = Color3.fromRGB(40, 140, 100), trim = Color3.fromRGB(230, 230, 220), glow = Color3.fromRGB(120, 255, 180) },
 	{ stone = Color3.fromRGB(235, 225, 200), wood = Color3.fromRGB(110, 30, 30), roof = Color3.fromRGB(200, 150, 40), trim = Color3.fromRGB(255, 220, 120), glow = Color3.fromRGB(255, 210, 110) },
 }
+
+-- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
+Config.REALM_LOOK_FROM = 6
+Config.REALM_FALL_ANGLE = 0.35 -- the realm 8 waterfall, front right (the first one is at the back left)
+Config.REALM_TINT = {
+	[6] = Color3.fromRGB(185, 166, 255), -- Void Refinement: violet
+	[7] = Color3.fromRGB(150, 225, 190), -- Body Integration: jade
+	[8] = Color3.fromRGB(255, 215, 140), -- Mahayana: warm gold
+	[9] = Color3.fromRGB(150, 165, 215), -- Tribulation: storm blue
+	[10] = Color3.fromRGB(255, 200, 60), -- True Immortal: the Immortal rarity's gold
+}
+-- one line per realm toast (a breakthrough says what changed on the peak)
+Config.REALM_LOOK_LINE = {
+	[6] = "Void clouds gather around your peak",
+	[7] = "Rocks rise and float around your peak",
+	[8] = "A second waterfall pours from your peak",
+	[9] = "A storm gathers over your peak",
+	[10] = "A halo crowns your Main Hall",
+}
+Config.REALM_LOOK_LINE_LATER = "Your halo takes a new colour"
+-- realm 11 and deeper climb the rarity ladder from Celestial (then cycle)
+function Config.realmTint(realm)
+	if Config.REALM_TINT[realm] then
+		return Config.REALM_TINT[realm]
+	end
+	local ladder = #Config.RARITIES - 5 -- Celestial .. Primordial
+	return Config.RARITIES[6 + (realm - 11) % ladder].color
+end
+function Config.realmLookLine(realm)
+	return Config.REALM_LOOK_LINE[realm] or (realm > 10 and Config.REALM_LOOK_LINE_LATER or nil)
+end
 
 function Config.realmName(realm)
 	if realm > #Config.REALMS then
