@@ -514,7 +514,8 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 	-- point forward (-Z), its blade glowing in the rarity colour, wind streaming off it.
 	if flying then
 		local k = 2.1
-		local mount = meshPart(m, "MountSword", SWORD.size * k, cf * CFrame.new(0, 0.2, 0) * CFrame.Angles(math.rad(-90), 0, 0), vivid(rarity.color), SWORD.mesh, nil, SWORD.scale * k)
+		-- lying flat, its broad side up under the feet (turned about its own length; edge-up read wrong)
+		local mount = meshPart(m, "MountSword", SWORD.size * k, cf * CFrame.new(0, 0.05, 0) * CFrame.Angles(math.rad(-90), 0, 0) * CFrame.Angles(0, math.rad(90), 0), vivid(rarity.color), SWORD.mesh, nil, SWORD.scale * k)
 		local wake = Instance.new("Attachment")
 		wake.Position = Vector3.new(0, -SWORD.size.Y * k / 2, 0) -- the hilt end, behind the rider
 		wake.Parent = mount
