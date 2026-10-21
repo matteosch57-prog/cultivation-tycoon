@@ -60,7 +60,7 @@ local ROBES = {
 local LOOK = {
 	sword = { robes = "male", hair = { 101082692371776 } }, -- Xianxia Low Ponytail - Black
 	lotus = { robes = "female", hair = { 113503254025840 } }, -- Hair buns with Hairpins - Black
-	monk = { robes = "male", hair = {} }, -- shaved head
+	monk = { robes = "male", hair = {}, hat = { 12136449552 } }, -- shaved head, a strategist's moustache so it reads as a face (Nexus Exchange)
 	elder = { robes = "male", hair = { 89557677054617 }, face = { 123149555491840 } }, -- Imperial Crown Hair-White, white beard
 }
 
@@ -121,6 +121,9 @@ local function describe(look, tier)
 	end
 	for _, id in spec.hair do
 		table.insert(list, { AssetId = id, AccessoryType = Enum.AccessoryType.Hair, IsLayered = false })
+	end
+	for _, id in spec.hat or {} do
+		table.insert(list, { AssetId = id, AccessoryType = Enum.AccessoryType.Hat, IsLayered = false })
 	end
 	for _, id in spec.face or {} do
 		table.insert(list, { AssetId = id, AccessoryType = Enum.AccessoryType.Face, IsLayered = false })
