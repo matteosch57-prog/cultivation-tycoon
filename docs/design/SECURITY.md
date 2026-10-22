@@ -21,6 +21,7 @@ fling other players. They cannot change server values, other players' data or th
 | ClaimShopFree | nothing | server UTC day, `data.shopFreeDay`, `DOT_SHOP_FIRST` s played | Safe |
 | MenuOpened | menu key | whitelist `MENUS`; only marks a red dot followed (`Dots.seen`), grants nothing | Safe |
 | ClaimWelcome | nothing | `welcomed == false`, once | Safe |
+| Teleport | "home" or "ranks" | Guard budget, `TELEPORT_COOLDOWN`, live character; the server picks the spot | Safe (no qi) |
 | ClaimGroup | nothing | fresh `GetGroupsAsync`, 3 s cooldown | Safe |
 | SocialInvite | nothing | Guard, 10 s per player; telemetry only, grants nothing | Safe |
 | Bless (ProximityPrompt) | prompt trigger | not your own shrine, once per sect a UTC day, give/get caps, 1 s busy flag; owner's share needs a real account (age + play time). No Guard (a prompt, not a remote) and the hold time is client side | Safe: an instant trigger gains nothing the caps allow |
