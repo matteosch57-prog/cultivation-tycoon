@@ -109,3 +109,23 @@ Owner picked **level 4** of five (clean, sunlight, sakura corners, petals and qi
 sunlight + sakura corners + petals + a few qi motes. Level 5 blurs at 64 px. `picks/icon_day.png` now holds it;
 rebuild with `juice_ladder()` in `tools/store_post.py`. Open: picks among the rarity, aura burst and flying
 thumbnails (page https://claude.ai/artifact/5iKSWQ3S5jHUC3JLkjGDkV; the thread is at its attachment cap).
+
+## Aura burst and flying (2026-10-22)
+Redone with the steel jian swords, sky only, each rarity with and without one word (AWAKEN / ASCEND):
+`final/thumb13_*` (board `final/board_round13.png`). Owner: "keep them all for now", so all twelve stay as
+candidates, no final pick yet. Personalization can A/B several thumbnails at once.
+
+## Status when closed (2026-10-22)
+Closed by the owner ("document and close for now"); nothing uploaded to Roblox yet (owner uploads on the Creator Hub).
+- **Kept icons:** `picks/icon_day.png` (juice level 4) and `picks/icon_night.png`.
+- **Kept thumbnails:** `picks/thumb_day1_day100_high.png`, `picks/thumb_day1_day100_wide.png`, and all twelve
+  `final/thumb13_*` (aura burst and flying, each with and without one word) as candidates.
+- **Review page:** https://claude.ai/artifact/5iKSWQ3S5jHUC3JLkjGDkV (private; the thread hit its 24-attachment cap).
+- **To reopen:** stage scenes in a Studio Play session only (temporary `_StoreArtTemp`, camera via a client
+  script, magenta SmoothPlastic board for cutouts, ask the coordinator for a slot), drop captures in `raw/`, then
+  `tools/store_post.py` (`icons5`, `juice_ladder()`, `day6()`, `hero_sky()`).
+- **Lessons:** plain captures and flat code-drawn art were both rejected; the Gladiator recipe (our real art
+  shot big in Studio, light and juice in post) won. Show 3 to 5 options per round, not 10. Simpler beats noisy
+  (juice 4 of 5; sky-only backgrounds read better than bursts). The cutout keys only board pixels connected
+  to the frame edge (pink-lit robes went see-through otherwise), and `ImageDraw.floodfill` silently does
+  nothing on an image made by `Image.fromarray` unless it is copied first.
