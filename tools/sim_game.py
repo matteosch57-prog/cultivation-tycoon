@@ -201,8 +201,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         S["karma"] += gain
         S["soul"] = max(S["soul"], S["realm"])
         S["life"] += 1
-        S.update(realm=1, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
-        S["owned"] = {p["id"] for p in C["PADS"]} if lvl("foundation") else set()
+        # LAND_HALF (proposal lever): a new life starts at half the deepest realm, fully built
+        land = max(1, int(S["soul"] * C["LAND_HALF"])) if C.get("LAND_HALF") else 1
+        S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
+        S["owned"] = {p["id"] for p in C["PADS"]} if lvl("foundation") or land > 1 else set()
         keep = sorted(S["disciples"], reverse=True)[:C["SWORN_BASE"] + lvl("sworn")]
         S["disciples"] = keep
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time
