@@ -446,3 +446,5 @@ the log as a D-number.
   load can reset it (Heavenly RNG's bug). The launch screen waits up to 1.5 s for a landscape viewport
   before sizing itself. Studio Play: HUD rails, top bar, realm bar, Recruit seal and jump button clean
   at 693x359, 751x389, 823x426. The turn itself is only provable on a real phone.
+- **D73** Round buttons (owner picked B Dome from `docs/art/mocks/2026-10-22_round_buttons.jpg`): circle
+  buttons get `Toy.dome`, all other buttons keep `Toy.glass`.

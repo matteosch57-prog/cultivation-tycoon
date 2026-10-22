@@ -183,7 +183,7 @@ end
 -- they're super close"; was 6 left, 8 right)
 local RAIL_GAP = 14
 
--- toy button: solid shadow + outlined face + glass shine (Toy.glass). Returns (holder, button).
+-- toy button: solid shadow + outlined face + its light (Toy.shine: glass cap, dome on a circle). Returns (holder, button).
 local function toy(parent, size, color, radius)
 	local holder = frame(parent, { Size = size })
 	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(4)), BackgroundTransparency = 0, BackgroundColor3 = INK })
@@ -201,7 +201,7 @@ local function toy(parent, size, color, radius)
 	st.Thickness = px(3)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
-	Toy.glass(btn, radius)
+	Toy.shine(btn, size, radius)
 	Toy.feel(btn, { scale = holder, squash = { btn, shadow } }) -- sound, buzz and jelly (shared with every screen)
 	return holder, btn
 end
