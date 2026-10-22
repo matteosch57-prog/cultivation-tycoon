@@ -73,6 +73,7 @@ Studio: `DebugSet:Invoke(player, "lives", 3)` rebuilds with that life's look.
 `Reincarnate` event: life that ended, realm reached, hours in that life.
 
 ## Checked
+- 2026-10-22 skins (D53): Studio Play on integration, DebugSet realm 1 / 3, then realm 4 life 3: every building Timber / Jade / Void Amethyst, Main Hall lanterns and motes, title over the head; no script errors (captures `docs/art/captures/2026-10-22_skin_play_*.jpg`). Known: the Celestial Palace roof (Kit GOLD_TILE) stays gold below Imperial Gold; a few Kit paints (PAINT_GREEN / BLUE) are not remapped.
 Studio Play on integration (mock save), 2026-10-21: the chip reads "Rebirth 1/10", gold "Rebirth!" at
 realm 10; a reincarnation from realm 10 gave life 2, +10 karma, Past Lives x3 (rate x3), kept the
 strongest disciple (sworn) and the Shop-bought one, and a second call was refused. Captures:
