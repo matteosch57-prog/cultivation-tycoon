@@ -286,3 +286,7 @@ the log as a D-number.
   sparkles twinkling around the body instead of the part-built crown. Why:
   the box icons were the "AI look" the owner keeps catching; the centre ring covered the view and
   overlapped the counter; a light aura matches the disciples' language.
+- **D54** HUD menus = mock B (owner pick, `docs/art/mocks/hud_menus_*.jpg`): left column = what you
+  open (Shop gold, Disciples, Karma), right stack under the next goal = what ticks (gift with its next
+  reward always shown, pill, altar row via `PlayerGui.HudSlots`); one dark button face, gold only for
+  the Shop and a ready gift or pill; a karma counter beside qi once the player has karma or a past life.

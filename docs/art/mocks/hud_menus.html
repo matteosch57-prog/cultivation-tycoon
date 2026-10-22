@@ -1,0 +1,96 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- HUD menu layouts (2026-10-22): ?opt=A|B|C&size=phone|pc. Rendered by tools/mock_hud_menus.py -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/review_bridges_islands.jpg') center/145% auto no-repeat}
+.rbx{position:absolute;top:8px;left:12px;display:flex;gap:8px}.rbx i{width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.rbxR{position:absolute;top:8px;right:12px}.rbxR i{display:block;width:40px;height:40px;border-radius:12px;background:rgba(18,18,22,.55)}
+.stick{position:absolute;left:4%;bottom:6%;width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.jump{position:absolute;right:4%;bottom:6%;width:96px;height:96px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.pc .stick,.pc .jump{display:none}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) #1b1420;paint-order:stroke fill;letter-spacing:.5px;white-space:nowrap}
+.toy{border:var(--bw) solid #1b1420;border-radius:var(--br);box-shadow:0 var(--sh) 0 #1b1420;position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:12%;right:12%;top:9%;height:20%;border-radius:999px;background:rgba(255,255,255,.28)}
+.dot{position:absolute;background:#ee3333;border:var(--bw) solid #1b1420;border-radius:999px}
+.col{display:flex;flex-direction:column;align-items:center}
+.row{display:flex;align-items:center}
+.tag{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px}
+</style></head>
+<body><div class="scene" id="s"><div class="rbx"><i></i><i></i></div><div class="rbxR"><i></i></div><div class="stick"></div><div class="jump"></div><div id="hud"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const pc=q.get('size')==='pc';const opt=q.get('opt')||'A';
+document.getElementById('s').classList.toggle('pc',pc);
+const k=pc?1.3:1, n=v=>Math.round(v*k), px=v=>n(v)+'px';
+const S=document.documentElement.style;S.setProperty('--sw',px(5));S.setProperty('--bw',px(3));S.setProperty('--br',px(14));S.setProperty('--sh',px(4));
+const INK='#1b1420', FACE='#3a2c44', GOLD='#ffd36b';
+// icons (64 box, outlined like the game's)
+const svg=(s,body)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${body}</svg>`;
+const qi=s=>svg(s,`<path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><circle cx="37" cy="40" r="9" fill="#e8fff4"/><circle cx="23" cy="35" r="4" fill="#fff" opacity=".8"/>`);
+const karma=s=>svg(s,`<circle cx="32" cy="32" r="25" fill="#9a6bff" stroke="${INK}" stroke-width="5"/><circle cx="36" cy="35" r="13" fill="#d9b8ff"/><circle cx="39" cy="37" r="5.5" fill="#9a6bff"/><circle cx="22" cy="22" r="4.5" fill="#fff" opacity=".85"/>`);
+const disc=s=>svg(s,`<circle cx="32" cy="12" r="7" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#5096ff" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M28 41h8l-4 16z" fill="#fff"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/>`);
+const bag=s=>svg(s,`<rect x="23" y="7" width="18" height="10" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="40" r="21" fill="#ffd34d" stroke="${INK}" stroke-width="5"/><rect x="21" y="18" width="22" height="6" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><path d="M32 29c5 5 8 8 8 12a8 8 0 0 1-16 0c0-4 3-7 8-12z" fill="#6fd6ae" stroke="${INK}" stroke-width="3.5"/>`);
+const gift=s=>svg(s,`<rect x="10" y="26" width="44" height="30" rx="4" fill="#e65b4f" stroke="${INK}" stroke-width="5"/><rect x="6" y="18" width="52" height="12" rx="3" fill="#ff7a6b" stroke="${INK}" stroke-width="5"/><path d="M32 20v34" stroke="#ffd34d" stroke-width="7"/><path d="M32 18c-10-12-18-4-10 0M32 18c10-12 18-4 10 0" fill="none" stroke="${INK}" stroke-width="4"/>`);
+const pill=s=>svg(s,`<g transform="rotate(-35 32 32)"><rect x="10" y="22" width="44" height="20" rx="10" fill="#fff4dc" stroke="${INK}" stroke-width="5"/><path d="M20 22h12v20H20a10 10 0 0 1 0-20z" fill="#e65b4f"/><rect x="10" y="22" width="44" height="20" rx="10" fill="none" stroke="${INK}" stroke-width="5"/><circle cx="19" cy="28" r="3" fill="#fff" opacity=".7"/></g>`);
+const gate=s=>svg(s,`<circle cx="32" cy="30" r="25" fill="#c0392b" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="32" r="14" fill="#9ff5c8" stroke="${INK}" stroke-width="4"/><rect x="21" y="40" width="9" height="9" fill="#fff4dc"/><rect x="30" y="35" width="9" height="14" fill="#fff4dc"/><rect x="14" y="49" width="36" height="9" rx="2" fill="#fff4dc" stroke="${INK}" stroke-width="4"/>`);
+const hall=s=>svg(s,`<rect x="13" y="30" width="38" height="24" rx="2" fill="#fff4dc" stroke="${INK}" stroke-width="4"/><rect x="5" y="15" width="54" height="14" rx="4" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><rect x="27" y="40" width="10" height="14" fill="#8a5a3c"/>`);
+const hands=s=>svg(s,`<g fill="#ffd34d" stroke="${INK}" stroke-width="4"><rect x="16" y="14" width="8" height="26" rx="4"/><rect x="25" y="9" width="8" height="28" rx="4"/><rect x="34" y="9" width="8" height="28" rx="4"/><rect x="43" y="14" width="8" height="26" rx="4"/><rect x="16" y="30" width="35" height="26" rx="10"/></g>`);
+// a toy button: face colour, icon, optional caption under it, optional red dot / glow
+const btn=(icon,face,cap,o={})=>{const sz=o.size||50;return `<div class="col" style="gap:${px(1)}">
+  <div class="toy" style="width:${px(sz)};height:${px(sz)};background:${face};${o.round?'border-radius:999px;':''}${o.glow?`box-shadow:0 ${px(4)} 0 ${INK},0 0 ${px(18)} ${px(4)} ${o.glow};`:''}">${icon(px(sz*0.74))}
+  ${o.dot?`<span class="dot" style="top:${px(-6)};right:${px(-6)};width:${px(18)};height:${px(18)}"></span>`:''}</div>
+  ${cap?`<span class="big" style="font-size:${px(13)};--sw:${px(4)};${o.capColor?`color:${o.capColor}`:''}">${cap}</span>`:''}</div>`};
+// the pieces every option shares
+const counter=(withKarma)=>`<div class="row" style="position:absolute;top:${px(8)};left:50%;transform:translateX(-50%);gap:${px(6)}">
+   ${qi(px(46))}<div class="col" style="align-items:flex-start;line-height:.95">
+   <span class="big" style="font-size:${px(38)}">6.12M</span>
+   <span class="big" style="font-size:${px(16)};color:#9ff5c8;--sw:${px(4)}">+16/s</span></div>
+   ${withKarma?`<div class="row" style="gap:${px(3)};margin-left:${px(10)};align-self:flex-start;margin-top:${px(6)}">${karma(px(26))}<span class="big" style="font-size:${px(22)};color:#e2ccff">240</span></div>`:''}
+ </div>`;
+const bar=(chip=true)=>`<div class="col" style="position:absolute;left:50%;bottom:${px(12)};transform:translateX(-50%);gap:${px(2)}">
+   <div class="row" style="gap:${px(8)}"><span class="big" style="font-size:${px(15)};color:#ffe9a8;--sw:${px(4)}">Qi Condensation</span>
+   ${chip?`<div class="toy row" style="width:${px(78)};height:${px(26)};border-radius:${px(9)};background:#b06bff;gap:${px(3)}">${karma(px(17))}<span class="big" style="font-size:${px(13)};--sw:${px(4)}">3/10</span></div>`:''}</div>
+   <div class="toy" style="width:${px(240)};height:${px(24)};background:#3a2d40;border-radius:999px;overflow:hidden;box-shadow:0 ${px(3)} 0 ${INK};justify-content:flex-start">
+     <div style="width:22%;height:100%;background:#59d39f"></div>
+     <span class="big row" style="position:absolute;inset:0;justify-content:center;gap:${px(4)};font-size:${px(14)};--sw:${px(4)}">${hall(px(17))}9/41</span></div></div>`;
+const goal=(top)=>`<div class="row" style="position:absolute;right:${px(14)};top:${px(top)};gap:${px(6)};transform:rotate(2deg)">
+   <span class="big" style="font-size:${px(26)};color:#ffe36b">&#10148;</span>
+   <div class="col" style="align-items:flex-start;line-height:1.05"><span class="big" style="font-size:${px(14)};--sw:${px(4)}">Spirit Vein</span>
+   <span class="big row" style="font-size:${px(13)};color:#ffb3a8;--sw:${px(4)};gap:${px(3)}">${qi(px(15))}25</span></div></div>`;
+const seal=()=>`<div class="col" style="position:absolute;right:${pc?px(22):'calc(4% + 108px)'};bottom:${pc?px(16):'5%'};gap:${px(1)}">
+   <div style="width:${px(92)};height:${px(92)};border-radius:50%;border:${px(3)} solid ${INK};box-shadow:0 ${px(4)} 0 ${INK},0 0 ${px(26)} ${px(6)} rgba(89,211,159,.55);background:radial-gradient(circle at 50% 42%,#d9b8ff,#a070f0 62%);display:flex;align-items:center;justify-content:center">
+   <div style="width:${px(40)};height:${px(40)};border-radius:50%;border:${px(3)} solid ${INK};background:radial-gradient(circle at 35% 30%,#fff,#59d39f 55%)"></div></div>
+   <span class="big" style="font-size:${px(19)}">Recruit</span><span class="big row" style="font-size:${px(14)};color:#c9ffe4;--sw:${px(4)};gap:${px(3)}">${qi(px(16))}500</span></div>`;
+const L=(top,inner,gap=10)=>`<div class="col" style="position:absolute;left:${px(12)};top:${top};gap:${px(gap)}">${inner}</div>`;
+const tags={A:'A: menus left, timers by the qi',B:'B: menus left, timers right',C:'C: one row of menus at the top'};
+let html='';
+if(opt==='A'){
+ // menus you OPEN on the left, all the same dark face; the Shop is the only gold one, set apart.
+ // Things that TICK (pill, gift) become two small round timers right under the qi counter.
+ html=counter(true)+
+  `<div class="row" style="position:absolute;top:${px(66)};left:50%;transform:translateX(-50%);gap:${px(14)}">
+    ${btn(pill,FACE,'1:42',{size:40,round:true,capColor:'#ffd9d2'})}${btn(gift,FACE,'Ready',{size:40,round:true,dot:true,glow:'rgba(255,211,107,.8)',capColor:'#ffe36b'})}</div>`+
+  L(pc?px(70):px(58),`${btn(disc,FACE,'3/5')}${btn(karma,FACE,'Karma')}<div style="height:${px(4)}"></div>${btn(bag,GOLD,'Shop')}`,8)+
+  goal(pc?70:58)+bar(true)+seal();
+}else if(opt==='B'){
+ // two sides: left = menus (Shop on top, gold), right = timers under the goal arrow
+ html=counter(true)+
+  L(pc?px(70):px(58),`${btn(bag,GOLD,'Shop')}${btn(disc,FACE,'3/5')}${btn(karma,FACE,'Karma')}`,8)+
+  goal(pc?70:58)+
+  `<div class="col" style="position:absolute;right:${px(14)};top:${px(pc?150:118)};gap:${px(10)}">
+    ${btn(gift,FACE,'Ready',{size:46,dot:true,glow:'rgba(255,211,107,.8)',capColor:'#ffe36b'})}${btn(pill,FACE,'1:42',{size:46,capColor:'#ffd9d2'})}</div>`+
+  bar(true)+seal();
+}else{
+ // one row at the top left, under Roblox's buttons: Shop (gold) | Disciples | Karma | Pill | Gift.
+ // Everything in one place, small, no words but numbers.
+ html=counter(true)+
+  `<div class="row" style="position:absolute;left:${px(12)};top:${px(pc?62:56)};gap:${px(8)};align-items:flex-start">
+    ${btn(bag,GOLD,'',{size:48})}<div style="width:${px(4)}"></div>${btn(disc,FACE,'3/5',{size:48})}${btn(karma,FACE,'240',{size:48,capColor:'#e2ccff'})}${btn(pill,FACE,'1:42',{size:48,capColor:'#ffd9d2'})}${btn(gift,FACE,'Ready',{size:48,dot:true,glow:'rgba(255,211,107,.8)',capColor:'#ffe36b'})}</div>`+
+  goal(pc?70:58)+bar(true)+seal();
+ html=html.replace(`margin-left:${px(10)};align-self:flex-start;margin-top:${px(6)}">${karma(px(26))}`,`margin-left:${px(10)};align-self:flex-start;margin-top:${px(6)};display:none">${karma(px(26))}`);
+}
+document.getElementById('hud').innerHTML=html;
+
+</script></body></html>

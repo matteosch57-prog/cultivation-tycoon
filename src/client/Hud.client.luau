@@ -24,6 +24,11 @@ local GOLD = Color3.fromHex("FFE36B")
 local PINK = Color3.fromHex("FFB3A8")
 local TIDE = Color3.fromHex("9FD0FF")
 local TIDE_LIGHT = Color3.fromHex("CFE6FF")
+local KARMA = Color3.fromHex("E2CCFF")
+-- one face for every HUD button (owner pick B, mock docs/art/mocks/hud_menus_B.jpg): the icon carries
+-- the colour; only the Shop is gold, and a button that wants a tap (gift / pill ready) lights gold
+local FACE = Color3.fromHex("3A2C44")
+local FACE_READY = Color3.fromHex("FFD36B")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 
 ---------------------------------------------------------------------------------------------
@@ -263,6 +268,15 @@ local toast -- forward (it used to live on `ui`, which build() replaces: the rec
 local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands builds it)
 
 local function build()
+	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
+	-- destroy them; they re-parent on Rebuilt
+	if ui.right then
+		for _, c in ui.right:GetChildren() do
+			if c ~= ui.gCol and c ~= ui.pCol and c ~= ui.rightLayout then
+				c.Parent = nil
+			end
+		end
+	end
 	gui:ClearAllChildren()
 	ui = {}
 	state.phoneMode = isPhone()
@@ -296,57 +310,144 @@ local function build()
 	ui.tideRow = tideRow
 	ui.counter = counter
 	counter.Name = "Counter" -- Juice flies qi drops into it
+	-- karma beside the qi (every currency shows with its icon), once the player has any or a past life
+	local kRow = frame(counter, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
+	local krl = Instance.new("UIListLayout")
+	krl.FillDirection = Enum.FillDirection.Horizontal
+	krl.VerticalAlignment = Enum.VerticalAlignment.Center
+	krl.Padding = UDim.new(0, px(3))
+	krl.Parent = kRow
+	local kPad = Instance.new("UIPadding")
+	kPad.PaddingLeft = UDim.new(0, px(8))
+	kPad.PaddingBottom = UDim.new(0, px(20)) -- level with the qi number, not its rate line
+	kPad.Parent = kRow
+	Toy.icon(kRow, "karma", px(26), { LayoutOrder = 1 })
+	ui.karma = text(kRow, "0", px(22), KARMA, { LayoutOrder = 2 })
+	ui.karmaRow = kRow
 
-	-- left column: Disciples (others appear when their features exist)
-	-- (layout() fits it between Roblox's top bar and the thumbstick: a column too tall for that band
-	-- wraps into a second one, so 4 buttons never sit under the Roblox menu on a phone)
+	-- Owner pick B (2026-10-22, mock docs/art/mocks/hud_menus_B.jpg): the left column holds what you
+	-- OPEN (Shop, Disciples, Karma); the right stack under the next goal holds what TICKS (gift, pill,
+	-- and other scripts' rows through PlayerGui.HudSlots). layout() fits the left column between
+	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	local leftLayout = Instance.new("UIListLayout")
-	leftLayout.Padding = UDim.new(0, px(10))
+	leftLayout.Padding = UDim.new(0, px(8))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	leftLayout.Wraps = true
 	leftLayout.Parent = left
-	-- Shop (mock shop B, D24): always shown, on top; opens Shop.client's screen
-	local sCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 0 })
-	local sLayout = Instance.new("UIListLayout")
-	sLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	sLayout.Padding = UDim.new(0, px(2))
-	sLayout.Parent = sCol
-	local sHolder, sBtn = toy(sCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
-	sHolder.LayoutOrder = 1
-	Toy.icon(sBtn, "shop", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	-- one button with its caption under it (a count, a timer: no words where a number says it)
+	local function sideButton(parent, order, size, face)
+		local col = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
+		local l = Instance.new("UIListLayout")
+		l.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		l.SortOrder = Enum.SortOrder.LayoutOrder
+		l.Padding = UDim.new(0, px(2))
+		l.Parent = col
+		local holder, btn = toy(col, UDim2.fromOffset(px(size), px(size)), face, px(size * 0.26))
+		holder.LayoutOrder = 1
+		return col, btn
+	end
+	-- Shop (mock shop B, D24): always shown, on top, the one gold button; opens Shop.client's screen
+	local sCol, sBtn = sideButton(left, 0, 50, Color3.fromHex("FFD36B"))
+	Toy.icon(sBtn, "shop", px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	text(sCol, "Shop", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	sBtn.Name = "ShopButton"
 	sBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ShopOpen")
 		if ev then
 			ev:Fire("hud")
 		end
 	end)
-	local dCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
-	local dLayout = Instance.new("UIListLayout")
-	dLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	dLayout.Padding = UDim.new(0, px(2))
-	dLayout.Parent = dCol
-	local dHolder, dBtn = toy(dCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("9FD0FF"), px(14))
-	dHolder.LayoutOrder = 1
-	discipleIcon(dBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	-- the label is the count (less text, mock less_text A)
+	-- Disciples: the label is the count (less text, mock less_text A)
+	local dCol, dBtn = sideButton(left, 1, 50, FACE)
+	discipleIcon(dBtn, px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	dBtn.Name = "DisciplesButton"
 	ui.dLabel = text(dCol, "0", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
+	-- Karma: straight to the Karma Shop page of the reincarnation screen (owner: no direct way in before)
+	local kCol, kBtn = sideButton(left, 2, 50, FACE)
+	Toy.icon(kBtn, "karma", px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	kBtn.Name = "KarmaButton"
+	text(kCol, "Karma", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	kBtn.Activated:Connect(function()
+		local ev = playerGui:FindFirstChild("ReincOpen")
+		if ev then
+			ev:Fire("karma")
+		end
+	end)
+	ui.kCol = kCol
 
-	-- Pill (Alchemy Furnace): brewing countdown -> ready (wobbles) -> active 2x timer
-	local pCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-	local pLayout2 = Instance.new("UIListLayout")
-	pLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	pLayout2.Padding = UDim.new(0, px(2))
-	pLayout2.Parent = pCol
-	local pHolder, pBtn = toy(pCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
-	pHolder.LayoutOrder = 1
-	Toy.icon(pBtn, "pill", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	-- right stack: under the next goal, right-aligned (layout() places it, or lays it in a row when
+	-- the space down to the Recruit seal is short)
+	local right = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY })
+	right.Name = "RightStack"
+	local rightLayout = Instance.new("UIListLayout")
+	rightLayout.Padding = UDim.new(0, px(8))
+	rightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	rightLayout.Parent = right
+	ui.right = right
+	ui.rightLayout = rightLayout
+	-- Playtime gift (daily ladder, owner 2026-10-22: "always show the next reward, reset daily, up to
+	-- 2h online"): the reward it pays sits under the button, then the countdown; ready = gold, wobbles,
+	-- red dot; all claimed today = the time to the reset
+	local gCol, gBtn = sideButton(right, 1, 46, FACE)
+	gBtn.Name = "GiftButton"
+	Toy.icon(gBtn, "gift", px(34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(16), px(16)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
+	corner(gDot, UDim.new(1, 0))
+	local gst = Instance.new("UIStroke")
+	gst.Color = INK
+	gst.Thickness = px(3)
+	gst.Parent = gDot
+	-- the next reward: qi (and free summons when that gift has them), each with its icon (R18)
+	local reward = frame(gCol, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	local rwl = Instance.new("UIListLayout")
+	rwl.FillDirection = Enum.FillDirection.Horizontal
+	rwl.VerticalAlignment = Enum.VerticalAlignment.Center
+	rwl.Padding = UDim.new(0, px(2))
+	rwl.Parent = reward
+	qiIcon(reward, px(14), { LayoutOrder = 1 })
+	ui.giftQi = text(reward, "", px(13), JADE_LIGHT, { LayoutOrder = 2 })
+	local sumRow = frame(reward, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
+	local srl = Instance.new("UIListLayout")
+	srl.FillDirection = Enum.FillDirection.Horizontal
+	srl.VerticalAlignment = Enum.VerticalAlignment.Center
+	srl.Padding = UDim.new(0, px(1))
+	srl.Parent = sumRow
+	discipleIcon(sumRow, px(14), { LayoutOrder = 1 })
+	ui.giftSummons = text(sumRow, "", px(13), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
+	ui.giftSumRow = sumRow
+	ui.giftReward = reward
+	ui.giftLabel = text(gCol, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	ui.gCol = gCol
+	ui.giftBtn = gBtn
+	ui.giftDot = gDot
+	gBtn.Activated:Connect(function()
+		if (player:GetAttribute("GiftIn") or -1) == 0 then
+			local ok, res = pcall(function()
+				return remotes.ClaimGift:InvokeServer()
+			end)
+			-- { qi = n, summons = n } (D49 daily ladder; the summons land in ChestSummons)
+			local gain = ok and (type(res) == "table" and res.qi or res) or nil
+			if type(gain) == "number" then
+				popGain(gain, true)
+				local pieces = { amt("qi", gain, "+") }
+				local summons = type(res) == "table" and res.summons or 0
+				if summons > 0 then
+					table.insert(pieces, string.format("+%d summons", summons))
+				end
+				toast(pieces, GOLD, 2)
+			end
+		else
+			toast(ui.giftLabel.Text ~= "" and ("Next gift in " .. ui.giftLabel.Text) or "Gift soon", PINK, 1.5)
+		end
+	end)
+	-- Pill (Alchemy Furnace): brewing countdown -> ready (gold, wobbles) -> active 2x timer
+	local pCol, pBtn = sideButton(right, 2, 46, FACE)
+	Toy.icon(pBtn, "pill", px(34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	ui.pillLabel = text(pCol, "Pill", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.pCol = pCol
-	ui.pillHolder = pHolder
 	ui.pillBtn = pBtn
 	pBtn.Name = "PillButton" -- the first-pill tip points at it (Tips.client)
 	pBtn.Activated:Connect(function()
@@ -360,40 +461,6 @@ local function build()
 		else
 			local s = player:GetAttribute("PillIn") or 0
 			toast(string.format("Brewing %d:%02d", s // 60, s % 60), PINK, 1.6)
-		end
-	end)
-	-- Playtime gift (mock tycoon_ideas idea 2 A): countdown -> ready (wobbles, red dot) -> claim
-	local gCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
-	local gLayout = Instance.new("UIListLayout")
-	gLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	gLayout.Padding = UDim.new(0, px(2))
-	gLayout.Parent = gCol
-	local gHolder, gBtn = toy(gCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFB3A8"), px(14))
-	gHolder.LayoutOrder = 1
-	Toy.icon(gBtn, "gift", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(18), px(18)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
-	corner(gDot, UDim.new(1, 0))
-	local gst = Instance.new("UIStroke")
-	gst.Color = INK
-	gst.Thickness = px(3)
-	gst.Parent = gDot
-	ui.giftLabel = text(gCol, "Gift", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	ui.gCol = gCol
-	ui.giftBtn = gBtn
-	ui.giftDot = gDot
-	gBtn.Activated:Connect(function()
-		if (player:GetAttribute("GiftIn") or -1) == 0 then
-			local ok, res = pcall(function()
-				return remotes.ClaimGift:InvokeServer()
-			end)
-			local gain = ok and type(res) == "table" and res.qi or nil -- { qi, summons } (D49)
-			if gain then
-				popGain(gain, true)
-				toast({ amt("qi", gain, "+") }, GOLD, 2)
-			end
-		else
-			local g = math.max(0, player:GetAttribute("GiftIn") or 0)
-			toast(string.format("Gift in %d:%02d", g // 60, g % 60), PINK, 1.5)
 		end
 	end)
 	ui.left = left
@@ -821,14 +888,15 @@ local function layout()
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
 	ui.dCol.Visible = hasHall
 	ui.pCol.Visible = hasFurnace
-	local hasGift = (player:GetAttribute("GiftIn") or -1) >= 0
-	ui.gCol.Visible = hasGift
+	ui.gCol.Visible = true -- the gift always shows its next reward (owner pick B)
+	ui.karmaRow.Visible = (player:GetAttribute("Karma") or 0) > 0 or (player:GetAttribute("Lives") or 1) > 1
 	local modal = modalOpen()
 	state.modal = modal
 	ui.recruit.Visible = hasHall and not modal
 	ui.prog.Visible = not modal
 	ui.counter.Visible = not modal
 	ui.left.Visible = not modal -- the Shop button is always there otherwise
+	ui.right.Visible = not modal
 	ui.card.Visible = state.discOpen and hasHall and not modal
 	if not hasHall then
 		state.discOpen = false
@@ -850,6 +918,26 @@ local function layout()
 	else
 		ui.recruit.Position = UDim2.new(1, -px(20), 1, -px(20))
 	end
+	-- right stack: under the next goal, down to the Recruit seal (and its x10 / x50 picker above it);
+	-- a column when it fits that band, else one row under the goal
+	local unscale = rootScale and rootScale.Scale or 1
+	local stackTop = inset.Max.Y + px(8) + math.max(px(34), ui.goal.AbsoluteSize.Y / unscale) + px(10)
+	local stackBottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
+	if ui.recruit.Visible then
+		stackBottom = math.min(stackBottom, (ui.recruit.AbsolutePosition.Y - rootPos.Y) / unscale - px(50))
+	end
+	local need, n = 0, 0
+	for _, c in ui.right:GetChildren() do
+		if c:IsA("GuiObject") and c.Visible then
+			need += c.AbsoluteSize.Y / unscale
+			n += 1
+		end
+	end
+	need += math.max(0, n - 1) * px(8)
+	local column = need <= stackBottom - stackTop
+	ui.rightLayout.FillDirection = column and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal
+	ui.rightLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	ui.right.Position = UDim2.new(1, -px(14), 0, stackTop)
 end
 
 ---------------------------------------------------------------------------------------------
@@ -860,6 +948,7 @@ refreshStatic = function()
 	end
 	ui.rate.Text = "+" .. compact(player:GetAttribute("Rate") or 0) .. "/s"
 	ui.realm.Text = player:GetAttribute("RealmName") or ""
+	ui.karma.Text = short(player:GetAttribute("Karma") or 0)
 	local realmNow = player:GetAttribute("Realm") or 1
 	-- a new life pays once this one goes deeper than every life before (D37)
 	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
@@ -921,9 +1010,24 @@ refreshStatic = function()
 	ui.fill.BackgroundColor3 = owned >= total and GOLD or JADE
 end
 
+-- PlayerGui.HudSlots: other scripts add a row to the right stack (the altar chip). The HUD rebuilds
+-- itself on a viewport change, so it points `Right` at the current stack and fires `Rebuilt` with it:
+-- a row re-parents itself there on every Rebuilt (LayoutOrder: gift 1, pill 2, then yours).
+local slots = Instance.new("Folder")
+slots.Name = "HudSlots"
+local slotRight = Instance.new("ObjectValue")
+slotRight.Name = "Right"
+slotRight.Parent = slots
+local slotRebuilt = Instance.new("BindableEvent")
+slotRebuilt.Name = "Rebuilt"
+slotRebuilt.Parent = slots
+slots.Parent = playerGui
+
 rebuildAll = function()
 	build()
 	refreshStatic()
+	slotRight.Value = ui.right
+	slotRebuilt:Fire(ui.right)
 	task.defer(layout)
 end
 
@@ -936,11 +1040,12 @@ player:GetAttributeChangedSignal("HasHall"):Connect(function()
 	layout()
 end)
 player:GetAttributeChangedSignal("HasFurnace"):Connect(layout)
-player:GetAttributeChangedSignal("GiftIn"):Connect(function()
-	if ui.gCol and ((player:GetAttribute("GiftIn") or -1) >= 0) ~= ui.gCol.Visible then
+for _, a in { "Karma", "Lives" } do
+	player:GetAttributeChangedSignal(a):Connect(function()
+		refreshStatic()
 		layout()
-	end
-end)
+	end)
+end
 player:GetAttributeChangedSignal("MaxDisciples"):Connect(refreshStatic)
 player:GetAttributeChangedSignal("Qi"):Connect(function()
 	local q = player:GetAttribute("Qi") or 0
@@ -1058,18 +1163,29 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	if ui.gCol.Visible then
+		-- the daily ladder (GiftIn / GiftQi / GiftSummons / GiftResetIn, Economy); GiftIn -1 = all
+		-- claimed today: the reward row hides and the label counts down to the reset
 		local g = player:GetAttribute("GiftIn") or -1
+		local done = g < 0
 		put(ui.giftDot, "Visible", g == 0)
+		put(ui.giftReward, "Visible", not done)
+		if not done then
+			put(ui.giftQi, "Text", "+" .. compact(player:GetAttribute("GiftQi") or 0))
+			local summons = player:GetAttribute("GiftSummons") or 0
+			put(ui.giftSumRow, "Visible", summons > 0)
+			put(ui.giftSummons, "Text", "+" .. summons)
+		end
 		if g == 0 then
 			put(ui.giftLabel, "Text", "Claim!")
 			put(ui.giftLabel, "TextColor3", GOLD)
 			put(ui.giftBtn, "Rotation", math.sin(os.clock() * 7) * 6)
-			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
+			put(ui.giftBtn, "BackgroundColor3", FACE_READY)
 		else
-			put(ui.giftLabel, "Text", string.format("%d:%02d", g // 60, g % 60))
-			put(ui.giftLabel, "TextColor3", Color3.new(1, 1, 1))
+			local s = done and (player:GetAttribute("GiftResetIn") or 0) or g
+			put(ui.giftLabel, "Text", s >= 3600 and string.format("%dh%02d", s // 3600, (s % 3600) // 60) or string.format("%d:%02d", s // 60, s % 60))
+			put(ui.giftLabel, "TextColor3", done and Color3.fromHex("C8C0D0") or Color3.new(1, 1, 1))
 			put(ui.giftBtn, "Rotation", 0)
-			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFB3A8"))
+			put(ui.giftBtn, "BackgroundColor3", FACE)
 		end
 	end
 
@@ -1079,18 +1195,18 @@ RunService.RenderStepped:Connect(function(dt)
 			put(ui.pillLabel, "Text", string.format("2x %d:%02d", left // 60, math.floor(left % 60)))
 			put(ui.pillLabel, "TextColor3", GOLD)
 			put(ui.pillBtn, "Rotation", 0)
-			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFE9A0"))
+			put(ui.pillBtn, "BackgroundColor3", FACE)
 		elseif player:GetAttribute("PillReady") then
 			put(ui.pillLabel, "Text", "Use!")
-			put(ui.pillLabel, "TextColor3", Color3.new(1, 1, 1))
+			put(ui.pillLabel, "TextColor3", GOLD)
 			put(ui.pillBtn, "Rotation", math.sin(os.clock() * 7) * 6)
-			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
+			put(ui.pillBtn, "BackgroundColor3", FACE_READY)
 		else
 			local s = player:GetAttribute("PillIn") or 0
 			put(ui.pillLabel, "Text", string.format("%d:%02d", s // 60, s % 60))
 			put(ui.pillLabel, "TextColor3", Color3.fromHex("C8C0D0"))
 			put(ui.pillBtn, "Rotation", 0)
-			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("B8A878"))
+			put(ui.pillBtn, "BackgroundColor3", FACE)
 		end
 	end
 

@@ -262,7 +262,7 @@ local function buildKarma(body)
 		local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(70), px(26)), JADE, px(9))
 		pHolder.LayoutOrder = 6
 		local price, priceRow = amount(pBtn, "karma", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		local priceIcon = priceRow:FindFirstChildWhichIsA("Frame")
+		local priceIcon = priceRow:FindFirstChildWhichIsA("ImageLabel") or priceRow:FindFirstChildWhichIsA("Frame") -- sheet icons are ImageLabels (D51)
 		local function buy()
 			if busy then
 				return
@@ -359,15 +359,16 @@ build = function()
 	refresh()
 end
 
-local function open()
+-- `toPage` = "karma" lands on the Karma Shop (the HUD's Karma button); else the road
+local function open(toPage)
 	if gui.Enabled then
 		return
 	end
 	armedUntil = 0
-	page = "road"
+	page = toPage == "karma" and "karma" or "road"
 	build()
 	gui.Enabled = true
-	remotes.MenuOpened:FireServer("reinc") -- analytics Menu (DATA.md)
+	remotes.MenuOpened:FireServer(page == "karma" and "karma" or "reinc") -- analytics Menu (DATA.md)
 	Sfx.play("toast")
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.85
