@@ -604,21 +604,36 @@ end)
 -- swing after it felt jarring). A piece of the new building that lands on your own character lets
 -- you through, on your client only, until you have stepped out of it; every other piece collides
 -- at once. (A piece that does not collide also never pops the camera in.)
+-- (by box maths, not a spatial query: the pieces were just moved by CFrame, and the physics
+-- broadphase still holds them where they flew a frame ago, so a query found nothing in Play)
+local function box(cf, size)
+	local h = size / 2
+	local x, y, z = cf.XVector, cf.YVector, cf.ZVector
+	return cf.Position,
+		Vector3.new(
+			math.abs(x.X) * h.X + math.abs(y.X) * h.Y + math.abs(z.X) * h.Z,
+			math.abs(x.Y) * h.X + math.abs(y.Y) * h.Y + math.abs(z.Y) * h.Z,
+			math.abs(x.Z) * h.X + math.abs(y.Z) * h.Y + math.abs(z.Z) * h.Z
+		)
+end
+
 local function touching(char, list)
-	local params = OverlapParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = list
 	local cf, size = char:GetBoundingBox()
+	local c, e = box(cf, size + Vector3.new(1, 0.5, 1))
 	local hit = {}
-	for _, p in workspace:GetPartBoundsInBox(cf, size + Vector3.new(1, 0.5, 1), params) do
-		hit[p] = true
+	for _, p in list do
+		local pc, pe = box(p.CFrame, p.Size)
+		local d = pc - c
+		if math.abs(d.X) < e.X + pe.X and math.abs(d.Y) < e.Y + pe.Y and math.abs(d.Z) < e.Z + pe.Z then
+			hit[p] = true
+		end
 	end
 	return hit
 end
 
 local function passThrough(model, parts, collide)
 	local char = player.Character
-	local onMe = (char and model:GetAttribute("BuyerId") == player.UserId) and touching(char, { model }) or {}
+	local onMe = (char and model:GetAttribute("BuyerId") == player.UserId) and touching(char, parts) or {}
 	local held, list = {}, {}
 	for i, p in parts do
 		if collide[i] and onMe[p] then
