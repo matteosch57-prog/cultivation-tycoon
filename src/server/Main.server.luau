@@ -640,6 +640,7 @@ local function buildModel(s, pad, attrs)
 	end
 	Builders[pad.id](ctxFor(s, m), pad)
 	Skin.apply(m, s.data.realm, s.data.lives) -- the realm / life grade (Config.skinFor)
+	Skin.scale(m, pad, s.data.lives, s.plot.frame) -- the Main Hall grows each life
 	return m
 end
 

@@ -601,6 +601,9 @@ Config.SKIN_LIFE_TOP = { 5, 6, 7 } -- lives 2, 3, 4+ at realm 4 and above
 -- one emitter per building of SKIN_MOTE_MIN studs or more, Rate SKIN_MOTE_RATE x (level - from + 1)
 -- capped at SKIN_MOTE_MAX, Lifetime ~5 s: under 20 live motes a building; lanterns capped at 8 lights.
 Config.SKIN_LANTERNS = { 0, 4, 6, 8 } -- lives 1, 2, 3, 4+
+-- The Main Hall grows each life (owner: "bigger later", "for people to see easily who's better"),
+-- scaled about its front step so it grows back and sideways, away from the plaza.
+Config.SKIN_HALL_SCALE = { 1, 1.08, 1.15 } -- lives 1, 2, 3+ (1.3 put the Celestial Palace wings on the islet bridges, mock 2026-10-22_hall_scale)
 Config.SKIN_MOTE_FROM = 3
 Config.SKIN_MOTE_MIN = 16
 Config.SKIN_MOTE_RATE = 1
