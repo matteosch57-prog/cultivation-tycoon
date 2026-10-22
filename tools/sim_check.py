@@ -5,6 +5,8 @@ and wobbles (and the red dot lights) the moment qi >= the rebirth price (Hud.cli
 Dots.luau). This sim plays the rebirth the way the HUD asks for it, adds the sources sim_game.py skips
 (Daily Blessing streak with its Immortal / Celestial days, the Shop free gift, Incense Blessing, the
 starter chest, Welcome Pouch, Robux disciples) and prices recruits with the x10 button.
+Since D66 the server opens a rebirth only when the next realm waits for one, so every policy now obeys
+that gate (default `gated`); `--pre-d66` replays the old qi-price-only rule.
 
     python tools/sim_check.py                          # the standard table
     python tools/sim_check.py --kind regular --policy eager --days 30 --trace
@@ -33,6 +35,9 @@ KINDS = {
     "regular": dict(session=30, per_day=2, walk=6, orb_every=30),
     "hooked": dict(session=60, per_day=3, walk=6, orb_every=30),
 }
+
+
+PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
 
 
 def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10):
@@ -253,6 +258,10 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 # --- rebirth (the HUD chip): eager presses it once the price is held
                 built = all_built()
                 eager = policy == "eager" or (policy == "hybrid" and S["lives"] - 1 < gate(S["realm"] + 2))
+                # D66: the server opens a rebirth only when the next realm waits for one (Config.rebirthOpen),
+                # so a press is refused otherwise: eager / hybrid only model the pre-D66 build (--pre-d66)
+                if not PRE_D66 and not (built and S["lives"] - 1 < gate(S["realm"] + 1)):
+                    eager = False
                 if eager and S["qi"] >= rebirth_price():
                     eager_at = s if eager_at is None else eager_at
                     if s - eager_at >= react:
@@ -322,7 +331,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--kind", default="regular")
-    ap.add_argument("--policy", default="eager")
+    ap.add_argument("--policy", default="gated")
+    ap.add_argument("--pre-d66", action="store_true", help="the build before D66 (a rebirth needed only the qi price)")
     ap.add_argument("--days", type=int, default=30)
     ap.add_argument("--buy", default="", help="comma list: x2,vip,auto,welcome,Primordial,...")
     ap.add_argument("--seeds", type=int, default=3)
@@ -335,6 +345,8 @@ def main():
         k, v = kv.split("=", 1)
         C[k] = eval(v)
     buy = tuple(x for x in a.buy.split(",") if x)
+    global PRE_D66
+    PRE_D66 = a.pre_d66
     runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
     log, src, sink = runs[0]
     print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))
