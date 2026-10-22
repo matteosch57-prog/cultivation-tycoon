@@ -16,15 +16,12 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local ChestModel = require(Shared:WaitForChild("ChestModel"))
 
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFE36B")
 local MINT = Color3.fromHex("9FF5C8")
 local GO = Color3.fromHex("47D16C")
-local RED = Color3.fromHex("B8352B")
-local REDDARK = Color3.fromHex("7A2019")
-local BAND = Color3.fromHex("D4A445")
-local JADE = Color3.fromHex("6FD6AE")
 local BALL = Color3.fromHex("B06BFF")
 
 local chestFn = remotes:WaitForChild("ChestSummon")
@@ -92,21 +89,75 @@ gui.Parent = playerGui
 
 ---------------------------------------------------------------------------------------------
 -- drawings (Toy icon shapes: outlined, two-tone, same language as the HUD)
+local ui = {}
+
+-- the chest in 3D (ChestModel, the same model as on the peak) in a ViewportFrame, with gold rays
+-- behind it that burst when the lid opens. Returns the holder (rotated for the rattle) and a
+-- function that sets the lid angle in degrees.
 local function drawChest(parent, size)
 	local holder = frame(parent, { Size = UDim2.fromOffset(size, size) })
-	local body = Toy.Icon.new(holder, size, { ZIndex = 2 })
-	body:rect(32, 46, 50, 28, RED, 4)
-	body:rect(32, 40, 50, 5, BAND, 1)
-	body:rect(16, 46, 6, 28, BAND, 1)
-	body:rect(48, 46, 6, 28, BAND, 1)
-	body:rect(32, 44, 10, 12, JADE, 3)
-	-- the lid is its own drawing so it can fly open
-	local lidBox = frame(holder, { Size = UDim2.fromOffset(size, size), ZIndex = 3 })
-	local lid = Toy.Icon.new(lidBox, size)
-	lid:rect(32, 26, 52, 16, REDDARK, 8)
-	lid:rect(32, 27, 46, 10, RED, 6)
-	lid:rect(32, 33, 52, 4, BAND, 1)
-	return holder, lidBox
+	-- rays behind the chest: a wide soft set and a thin bright set, hidden until the lid opens
+	local rays = frame(
+		holder,
+		{
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.42),
+			Size = UDim2.fromOffset(1, 1),
+			ZIndex = 1,
+		}
+	)
+	local function raySet(count, width, length, core, offset)
+		local set = frame(
+			rays,
+			{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1, 1) }
+		)
+		for i = 1, count do
+			local bar = frame(set, {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromOffset(width, length * (i % 2 == 0 and 0.75 or 1)),
+				Rotation = offset + i * (180 / count),
+				BackgroundTransparency = 0,
+				BackgroundColor3 = Color3.new(1, 1, 1),
+			})
+			Toy.corner(bar, UDim.new(0.5, 0))
+			local g = Instance.new("UIGradient")
+			g.Rotation = 90
+			g.Color = ColorSequence.new(GOLD, Color3.fromHex("FFF6D0"))
+			g.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.5, core),
+				NumberSequenceKeypoint.new(1, 1),
+			})
+			g.Parent = bar
+		end
+		return set
+	end
+	local soft = raySet(8, px(40), px(300), 0.55, 0)
+	local sharp = raySet(6, px(7), px(250), 0.1, 15)
+	local raysScale = Instance.new("UIScale")
+	raysScale.Scale = 0
+	raysScale.Parent = rays
+	ui.raySoft, ui.raySharp = soft, sharp -- turned every frame below
+	-- the 3D chest
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = UDim2.fromScale(1, 1)
+	vp.ZIndex = 2
+	vp.Ambient = Color3.fromRGB(150, 140, 135)
+	vp.LightColor = Color3.fromRGB(255, 240, 220)
+	vp.LightDirection = Vector3.new(-0.4, -1, -0.6)
+	vp.Parent = holder
+	local _, lid, hinge = ChestModel.build(vp, CFrame.new())
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 30
+	cam.CFrame = CFrame.lookAt(Vector3.new(5.2, 6.2, -10.5), Vector3.new(0, 2.1, 0))
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+	ui.rays = raysScale
+	return holder, function(deg)
+		ChestModel.setLid(lid, hinge, deg)
+	end
 end
 
 local function drawDisciple(parent, size, robe)
@@ -135,7 +186,6 @@ local function counterCentre()
 end
 
 ---------------------------------------------------------------------------------------------
-local ui = {}
 local busy = false
 local balls = {}
 
@@ -245,9 +295,9 @@ local function build(away, summons, mode)
 	)
 	local row = frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(row, true, px(18))
-	local chest, lid = drawChest(row, px(128))
+	local chest, setLid = drawChest(row, px(150))
 	chest.LayoutOrder = 1
-	ui.chest, ui.lid = chest, lid
+	ui.chest, ui.setLid = chest, setLid
 	local right = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	Toy.list(right, false, px(8), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
 	local _, amount = Toy.amount(right, "qi", px(34), Color3.new(1, 1, 1), { LayoutOrder = 1 })
@@ -373,7 +423,18 @@ local function play(gain, away, summons, mode)
 	-- the lid flies up and tips back
 	Sfx.play("padSnap")
 	Sfx.play("buyChime")
-	tween(ui.lid, 0.35, { Position = UDim2.fromOffset(-px(10), -px(30)), Rotation = -24 }, Enum.EasingStyle.Back)
+	-- the lid swings open on its hinge (Back easing: it overshoots and settles), the rays burst out
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < 0.5 and ui.setLid do
+			local k = (os.clock() - t0) / 0.5
+			local back = 1 + 2.70158 * (k - 1) ^ 3 + 1.70158 * (k - 1) ^ 2 -- easeOutBack
+			ui.setLid(110 * back)
+			RunService.RenderStepped:Wait()
+		end
+		ui.setLid(110)
+	end)
+	tween(ui.rays, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)
 	local centre = ui.chest.AbsolutePosition - gui.AbsolutePosition + ui.chest.AbsoluteSize * Vector2.new(0.5, 0.5)
 	-- the qi explodes: drops burst out in a ring, hang a beat, then stream into the counter
 	local drops = math.clamp(6 + math.floor(math.log10(math.max(gain, 1)) * 2), 8, 18)
@@ -434,6 +495,10 @@ RunService.RenderStepped:Connect(function()
 		return
 	end
 	local t = os.clock()
+	if ui.raySoft then
+		ui.raySoft.Rotation = (t * 18) % 360
+		ui.raySharp.Rotation = -(t * 26) % 360
+	end
 	for _, b in balls do
 		if b.state == "closed" then
 			b.face.Position = UDim2.fromOffset(0, math.sin(t * 3 + b.bob) * px(3))

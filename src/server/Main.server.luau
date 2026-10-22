@@ -17,6 +17,7 @@ local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
+local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
 
 local store = nil
@@ -342,25 +343,10 @@ local function buildIdleChest(plot)
 	local m = Instance.new("Model")
 	m.Name = "IdleChest"
 	local at = Config.IDLE_CHEST_AT
-	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, math.rad(-90), 0) -- faces the avenue
-	local red, dark = PAL.vermilion, Color3.fromHex("7A2019")
-	P(m, Vector3.new(4.4, 0.4, 3.2), cf * CFrame.new(0, 0.2, 0), PAL.stone) -- plinth
-	local box = P(m, Vector3.new(4, 2.2, 2.8), cf * CFrame.new(0, 1.5, 0), red, Enum.Material.Wood)
-	P(m, Vector3.new(4.1, 0.35, 2.9), cf * CFrame.new(0, 1.9, 0), PAL.gold, Enum.Material.Metal)
-	for _, x in { -1.45, 1.45 } do
-		P(m, Vector3.new(0.4, 2.3, 2.9), cf * CFrame.new(x, 1.5, 0), PAL.gold, Enum.Material.Metal)
-	end
-	-- the lid: a low barrel vault (a cylinder half sunk into the box)
-	P(m, Vector3.new(3.4, 2.6, 2.6), cf * CFrame.new(0, 2.6, 0), red, Enum.Material.Wood, Enum.PartType.Cylinder)
-	P(m, Vector3.new(0.3, 2.7, 2.7), cf * CFrame.new(-1.7, 2.6, 0), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
-	P(m, Vector3.new(0.3, 2.7, 2.7), cf * CFrame.new(1.7, 2.6, 0), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
-	P(m, Vector3.new(0.9, 1, 0.3), cf * CFrame.new(0, 1.9, -1.5), PAL.jade) -- clasp
-	for _, d in m:GetDescendants() do
-		if d:IsA("BasePart") then
-			d.CanTouch = false
-			d.CanQuery = false
-		end
-	end
+	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, math.rad(90), 0) -- front (lock) faces the avenue (-X)
+	P(m, Vector3.new(5.2, 0.4, 3.9), cf * CFrame.new(0, 0.2, 0), PAL.stone) -- plinth
+	local chest = ChestModel.build(m, cf * CFrame.new(0, 0.4, 0))
+	local box = chest:FindFirstChild("Body")
 	local bb = Instance.new("BillboardGui")
 	bb.Size = UDim2.fromOffset(220, 46)
 	bb.StudsOffset = Vector3.new(0, 4.6, 0)
