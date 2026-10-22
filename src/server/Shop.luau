@@ -372,11 +372,31 @@ function Shop.init(a)
 	opened.OnServerEvent:Connect(function(player, from)
 		local s = api.sessions[player]
 		local now = os.clock()
-		if s and Guard.allow(player, "ShopOpened") and OPEN_SOURCES[from] and now - (lastOpen[player] or 0) >= 3 then
+		if not (s and Guard.allow(player, "ShopOpened") and OPEN_SOURCES[from]) then
+			return
+		end
+		if now - (lastOpen[player] or 0) >= 3 then
 			lastOpen[player] = now
 			Telemetry.custom(player, "Shop", "open", from, realm(s))
 		end
 	end)
+
+	-- the Shop's free daily gift (its red dot leads here; Dots.freeReady): SHOP_FREE_SECONDS of income
+	local free = Instance.new("RemoteFunction")
+	free.Name = "ClaimShopFree"
+	free.Parent = api.remotes
+	free.OnServerInvoke = function(player)
+		local s = api.sessions[player]
+		if not s or not Guard.allow(player, "ClaimShopFree") or not api.freeReady(s.data) then
+			return nil
+		end
+		local gain = math.floor(api.rate(s, true) * Config.SHOP_FREE_SECONDS)
+		s.data.shopFreeDay = os.time() // 86400
+		s.data.qi += gain
+		Telemetry.custom(player, "Shop", "free", "", realm(s))
+		api.publish(player)
+		return gain
+	end
 
 	-- the HUD's own menus and panels (DATA.md): the client names one from MENUS, the server notes it
 	-- once per 3 s per menu (analytics event Menu, which the journal keeps as Menu:<key>)
@@ -388,6 +408,7 @@ function Shop.init(a)
 		if not s or not Guard.allow(player, "MenuOpened") or type(key) ~= "string" or not MENUS[key] then
 			return
 		end
+		api.dotSeen(player, s, key) -- that menu's red dot is followed (Dots.luau)
 		local seen = lastMenu[player] or {}
 		lastMenu[player] = seen
 		local now = os.clock()

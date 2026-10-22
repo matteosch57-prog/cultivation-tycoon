@@ -449,6 +449,13 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 -- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
 -- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
 Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
+-- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
+-- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
+-- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's (unclaimed
+-- group gift) lights at most once per DOT_GROUP_SECONDS.
+Config.DOT_SHOP_FIRST = 600
+Config.SHOP_FREE_SECONDS = 300
+Config.DOT_GROUP_SECONDS = 24 * 3600
 Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
 Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
 Config.GIFT_DAILY = true -- read by the sim

@@ -17,6 +17,7 @@ local LIMITS = {
 	UsePill = { 1, 3 },
 	ClaimGift = { 1, 3 },
 	ClaimStreak = { 1, 3 },
+	ClaimShopFree = { 1, 3 },
 	ClaimGroup = { 1, 3 },
 	ClaimWelcome = { 1, 3 },
 	SocialInvite = { 1, 3 },

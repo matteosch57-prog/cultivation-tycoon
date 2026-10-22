@@ -4,6 +4,7 @@
 -- dark veil. The server decides (R9): the button only asks; a second tap confirms.
 -- A second page, the Karma Shop (Config.DAO), spends karma on permanent nodes.
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -27,6 +28,17 @@ local KARMA = Color3.fromHex("D9B8FF")
 local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", rebirth = "FFC9A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6" }
 local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1 }
 local PER_ROW = 4
+
+-- the red dots lit when this screen opened (server Dots.luau): a snapshot, so they stay on while the
+-- screen is open although the server clears its own as soon as MenuOpened arrives
+local snap = {}
+local function litDots()
+	local ok, t = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Dots") or "{}")
+	return ok and type(t) == "table" and t or {}
+end
+local function karmaNew(key, level)
+	return table.find(snap.karma or {}, key .. ":" .. level) ~= nil
+end
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ReincOpen"
@@ -201,6 +213,7 @@ local build -- forward
 local function goTo(p)
 	page = p
 	armedUntil = 0
+	snap = litDots()
 	build()
 	if p == "karma" then
 		remotes.MenuOpened:FireServer("karma") -- analytics Menu (DATA.md)
@@ -244,6 +257,7 @@ local function buildKarma(body)
 		holder.LayoutOrder = 1
 		local iconProps = { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) }
 		Toy.icon(btn, node.key, px(44), iconProps) -- the shared icon sheet
+		local newDot = karmaNew(node.key, (player:GetAttribute("Dao_" .. node.key) or 0) + 1) and Toy.dot(btn, px(18)) or nil
 		text(col, node.name, px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 		local lineLabel = text(col, node.line, px(11), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
 		local pipRow = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
@@ -273,6 +287,9 @@ local function buildKarma(body)
 			end)
 			busy = false
 			Sfx.play(ok and done and "buyChime" or "deny")
+			if ok and done and newDot then
+				newDot.Visible = false -- followed: bought
+			end
 			refreshKarma()
 		end
 		btn.Activated:Connect(buy)
@@ -325,6 +342,9 @@ build = function()
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(46)), GO, px(14))
 	bHolder.LayoutOrder = 15
 	ui.btn = bBtn
+	if snap.reinc then
+		Toy.dot(bBtn, px(20))
+	end
 	ui.btnLabel = text(bBtn, "", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	bBtn.Activated:Connect(function()
 		if busy or (player:GetAttribute("Realm") or 1) < math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1) then
@@ -352,6 +372,9 @@ build = function()
 	local kHolder, kBtn = Toy.button(body, UDim2.fromOffset(px(160), px(34)), KARMA, px(11))
 	kHolder.LayoutOrder = 16
 	kHolder.Rotation = -1.5
+	if snap.karma then
+		Toy.dot(kBtn, px(18))
+	end
 	text(kBtn, "Karma Shop", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	kBtn.Activated:Connect(function()
 		goTo("karma")
@@ -366,6 +389,7 @@ local function open(toPage)
 	end
 	armedUntil = 0
 	page = toPage == "karma" and "karma" or "road"
+	snap = litDots()
 	build()
 	gui.Enabled = true
 	remotes.MenuOpened:FireServer(page == "karma" and "karma" or "reinc") -- analytics Menu (DATA.md)

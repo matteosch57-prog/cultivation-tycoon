@@ -14,6 +14,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local HttpService = game:GetService("HttpService")
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
 local Toy = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Toy"))
 
@@ -232,6 +233,13 @@ local state = {
 }
 local ui = {} -- rebuilt on viewport change
 
+-- the red dots the server lit (attribute Dots, server Dots.luau): { disc = { [name] = n }, karma = {..},
+-- shop = key, group = true, reinc = true }
+local function litDots()
+	local ok, t = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Dots") or "{}")
+	return ok and type(t) == "table" and t or {}
+end
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "Hud"
 gui.ResetOnSpawn = false
@@ -353,6 +361,7 @@ local function build()
 	local _, sBtn = sideButton(left, 0, 42, Color3.fromHex("FFD36B"))
 	Toy.icon(sBtn, "shop", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	sBtn.Name = "ShopButton"
+	ui.shopDot = Toy.dot(sBtn, px(17), { Visible = false })
 	sBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ShopOpen")
 		if ev then
@@ -363,12 +372,14 @@ local function build()
 	local dCol, dBtn = sideButton(left, 1, 42, FACE)
 	discipleIcon(dBtn, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	dBtn.Name = "DisciplesButton"
+	ui.discDot = Toy.dot(dBtn, px(17), { Visible = false })
 	ui.dLabel = text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
 	-- Karma: straight to the Karma Shop page of the reincarnation screen (owner: no direct way in before)
 	local kCol, kBtn = sideButton(left, 2, 42, FACE)
 	Toy.icon(kBtn, "karma", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	kBtn.Name = "KarmaButton"
+	ui.karmaDot = Toy.dot(kBtn, px(17), { Visible = false })
 	kBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ReincOpen")
 		if ev then
@@ -393,12 +404,7 @@ local function build()
 	local gCol, gBtn = sideButton(right, 1, 40, FACE, true)
 	gBtn.Name = "GiftButton"
 	Toy.icon(gBtn, "gift", px(28), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(16), px(16)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
-	corner(gDot, UDim.new(1, 0))
-	local gst = Instance.new("UIStroke")
-	gst.Color = INK
-	gst.Thickness = px(3)
-	gst.Parent = gDot
+	local gDot = Toy.dot(gBtn, px(16), { Visible = false })
 	-- the next reward: qi (and free summons when that gift has them), each with its icon (R18)
 	local reward = frame(gCol, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local rwl = Instance.new("UIListLayout")
@@ -448,6 +454,7 @@ local function build()
 	ui.pillLabel = text(pCol, "Pill", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.pCol = pCol
 	ui.pillBtn = pBtn
+	ui.pillDot = Toy.dot(pBtn, px(16), { Visible = false })
 	pBtn.Name = "PillButton" -- the first-pill tip points at it (Tips.client)
 	pBtn.Activated:Connect(function()
 		if player:GetAttribute("PillReady") then
@@ -478,8 +485,12 @@ local function build()
 	dBtn.Activated:Connect(function()
 		state.discOpen = not state.discOpen
 		card.Visible = state.discOpen
+		-- the new ones keep their dot while the list stays open (a snapshot: the server clears its own
+		-- now, on MenuOpened)
+		state.discNew = state.discOpen and (litDots().disc or {}) or nil
+		refreshStatic()
 		if state.discOpen then
-			remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md)
+			remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md); marks the dot seen
 		end
 	end)
 
@@ -511,6 +522,7 @@ local function build()
 	Toy.icon(chipRow, "karma", px(18), { LayoutOrder = 1 })
 	ui.rebirth = text(chipRow, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.rebirthBtn = chipBtn
+	ui.reincDot = Toy.dot(chipBtn, px(15), { Visible = false })
 	chipBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ReincOpen")
 		if ev then
@@ -968,6 +980,11 @@ refreshStatic = function()
 	end
 	ui.rate.Text = "+" .. compact(player:GetAttribute("Rate") or 0) .. "/s"
 	ui.realm.Text = player:GetAttribute("RealmName") or ""
+	local lit = litDots()
+	ui.shopDot.Visible = lit.shop ~= nil
+	ui.discDot.Visible = lit.disc ~= nil and not state.discOpen
+	ui.karmaDot.Visible = lit.karma ~= nil
+	ui.reincDot.Visible = lit.reinc == true
 	ui.karma.Text = short(player:GetAttribute("Karma") or 0)
 	local realmNow = player:GetAttribute("Realm") or 1
 	-- a new life pays once this one goes deeper than every life before (D37)
@@ -997,6 +1014,7 @@ refreshStatic = function()
 	end
 	local max = player:GetAttribute("MaxDisciples") or Config.MAX_DISCIPLES
 	ui.dLabel.Text = string.format("%d/%d", math.min(#list, max), max)
+	local newLeft = {} -- how many of each new name still get their dot
 	for i, name in list do
 		local r = Config.rarity(name)
 		if i > max then
@@ -1010,6 +1028,12 @@ refreshStatic = function()
 		cl.SortOrder = Enum.SortOrder.LayoutOrder
 		cl.Parent = cell
 		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }) -- its rarity's look and moving aura
+		if state.discNew and (state.discNew[name] or 0) > 0 then
+			newLeft[name] = (newLeft[name] or state.discNew[name]) - 1
+			if newLeft[name] >= 0 then
+				Toy.dot(face, px(14))
+			end
+		end
 		-- a sold rarity the player also rolled carries its "first pulled" mark: a gold dot
 		if table.find(pulled, name) and Config.shopItem(Config.shopKeyOf(name)) then
 			local dot = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.8, 0.2), Size = UDim2.fromOffset(px(10), px(10)), BackgroundTransparency = 0, BackgroundColor3 = GOLD, ZIndex = 5 })
@@ -1057,7 +1081,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1202,13 +1226,11 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		if g == 0 then
 			put(ui.giftLabel, "Text", "")
-			put(ui.giftBtn, "Rotation", math.sin(os.clock() * 7) * 6)
 			put(ui.giftBtn, "BackgroundColor3", FACE_READY)
 		else
 			local s = done and (player:GetAttribute("GiftResetIn") or 0) or g
 			put(ui.giftLabel, "Text", s >= 3600 and string.format("%dh%02d", s // 3600, (s % 3600) // 60) or string.format("%d:%02d", s // 60, s % 60))
 			put(ui.giftLabel, "TextColor3", done and Color3.fromHex("C8C0D0") or Color3.new(1, 1, 1))
-			put(ui.giftBtn, "Rotation", 0)
 			put(ui.giftBtn, "BackgroundColor3", FACE)
 		end
 	end
@@ -1218,18 +1240,18 @@ RunService.RenderStepped:Connect(function(dt)
 		if left > 0 then
 			put(ui.pillLabel, "Text", string.format("2x %d:%02d", left // 60, math.floor(left % 60)))
 			put(ui.pillLabel, "TextColor3", GOLD)
-			put(ui.pillBtn, "Rotation", 0)
+			put(ui.pillDot, "Visible", false)
 			put(ui.pillBtn, "BackgroundColor3", FACE)
 		elseif player:GetAttribute("PillReady") then
 			put(ui.pillLabel, "Text", "Use!")
 			put(ui.pillLabel, "TextColor3", GOLD)
-			put(ui.pillBtn, "Rotation", math.sin(os.clock() * 7) * 6)
+			put(ui.pillDot, "Visible", true)
 			put(ui.pillBtn, "BackgroundColor3", FACE_READY)
 		else
 			local s = player:GetAttribute("PillIn") or 0
 			put(ui.pillLabel, "Text", string.format("%d:%02d", s // 60, s % 60))
 			put(ui.pillLabel, "TextColor3", Color3.fromHex("C8C0D0"))
-			put(ui.pillBtn, "Rotation", 0)
+			put(ui.pillDot, "Visible", false)
 			put(ui.pillBtn, "BackgroundColor3", FACE)
 		end
 	end

@@ -321,3 +321,6 @@ the log as a D-number.
   (`Config.STREAK`, an Immortal on day 2 and a Celestial on day 7, each once per save, owner's
   choice over the Celestial shop sale; numbers checked by the economy pass, pace unchanged). 10 badges (`docs/design/BADGES.md`, `Config.BADGES`, `Badges.luau`), awarded
   from the save so a badge created later still reaches everyone who met it.
+- **D59** Red dots (owner 2026-10-22): one ruby-gem look (`Toy.dot`); every dot leads to a dot inside
+  and clears when followed; the server lights them where state changes (`Dots.luau`); the Shop's dot
+  leads to a free Daily Gift (300 s of income, once a UTC day).

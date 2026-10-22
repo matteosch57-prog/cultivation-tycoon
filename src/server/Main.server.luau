@@ -14,6 +14,7 @@ local Kit = require(script.Parent:WaitForChild("Kit"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
+local Dots = require(script.Parent:WaitForChild("Dots"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
@@ -612,6 +613,7 @@ local function publish(player)
 	player:SetAttribute("Lives", d.lives or 1)
 	player:SetAttribute("Karma", d.karma or 0)
 	player:SetAttribute("SoulPeak", d.soulPeak or 0)
+	Dots.publish(player, s) -- which red dots are lit (Dots.luau)
 	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
 	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
 	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.requiredPads(d.realm) or 0))
@@ -2054,6 +2056,8 @@ Shop.init({
 	end,
 	notify = notify,
 	passChanged = passChanged,
+	dotSeen = Dots.seen, -- a menu was opened: its red dot is followed
+	freeReady = Dots.freeReady, -- the Shop's free daily gift can be claimed
 	addDisciple = function(s, name)
 		local kept = addDisciple(s, name, true) -- paid for: never turned away
 		publish(s.player)
