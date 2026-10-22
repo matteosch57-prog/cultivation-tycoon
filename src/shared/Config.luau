@@ -204,7 +204,8 @@ Config.PADS = {
 	{ id = "jade3", name = "Heart of Jade", cost = 29000, income = 115, unlock = 22, req = { "jade2" }, x = 137.5, z = -120, district = "dao" },
 	-- Sky Islets (owner pick B 2026-10-22): nothing stands by default, roads and trees included.
 	-- A bridge opens its islet (every pad there needs it, Config.isletOf); paths and groves raise
-	-- Harmony (HARMONY_STEP each). PRICES ARE PLACEHOLDERS until the Economy sim agrees them.
+	-- Harmony (HARMONY_STEP each). Prices simmed (tools/sim_game.py, research 2026-10-22_islets_prices):
+	-- each sits on the ladder at its unlock rung; the pace cost is the extra walks, not the qi.
 	{ id = "bridge_fields", name = "Fields Bridge", cost = 15, income = 0, unlock = 1, req = {}, x = -52, z = -25, feature = "Opens the Spirit Fields", islet = "heart", kind = "bridge" },
 	{ id = "bridge_dao", name = "Alchemy Bridge", cost = 800, income = 0, unlock = 5, req = {}, x = 52, z = -26, feature = "Opens Alchemy and Training", islet = "heart", kind = "bridge" },
 	{ id = "bridge_disciples", name = "Disciple Bridge", cost = 1000, income = 0, unlock = 6, req = {}, x = -114, z = -105, feature = "Opens the Disciples' islet", islet = "fields", kind = "bridge" },
