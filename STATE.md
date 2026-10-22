@@ -31,8 +31,9 @@ checked in Studio Play (ROADMAP).
   (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
   new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
 
-- **Endless progression (D29, D31, D32, on integration):** reincarnation from realm `REINC_REALM` (and past the soul peak), Past Lives,
-  karma, the 8-node Karma Shop (Rebirth Gate, Heavenly Hands included) and the realm 6 to 10+ looks
+- **Endless progression (D63 rebirth, D31, D32, on integration):** Muscle Legends' rebirth (qi price +
+  step, back to realm 1 built, +50% qi each, karma each, realms gated by rebirths; checked in Studio
+  Play 2026-10-22), the Karma Shop (Heavenly Hands included) and the realm 6 to 10+ looks
   are built and checked in Studio Play (mock save); Spirit Tide and playtime gifts (D30) too. Left:
   Matteo's look at the Karma Shop page with 8 tiles (not captured: it needs a tap).
 
