@@ -493,11 +493,11 @@ end
 local function builtShare(d)
 	local n = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
 			n += 1
 		end
 	end
-	return n / #Config.PADS
+	return n / Config.REQUIRED_PADS
 end
 
 local function publish(player)
@@ -543,7 +543,7 @@ local function publish(player)
 	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (s.playTime or 0))) or -1)
 	local built = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
 			built += 1
 		end
 	end
@@ -554,7 +554,7 @@ local function publish(player)
 	player:SetAttribute("SoulPeak", d.soulPeak or 0)
 	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
 	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
-	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / #Config.PADS or 0))
+	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.REQUIRED_PADS or 0))
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
 	end
@@ -793,7 +793,9 @@ refreshPads = function(player, s)
 	end
 	for _, pad in Config.PADS do
 		if not s.data.owned[pad.id] then
-			all = false
+			if Config.neededForBreakthrough(pad) then -- paths and groves are optional (DECOR_OPTIONAL)
+				all = false
+			end
 			local ready = ownedCount >= (pad.unlock or 0)
 			for _, r in pad.req do
 				if not s.data.owned[r] then

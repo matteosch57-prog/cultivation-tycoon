@@ -508,7 +508,7 @@ end
 -- A grove pad: three trees of its islet's kind round the spot, with a bush between (Harmony).
 local GROVE = { heart = "sakura", fields = "sakura", dao = "maple", disciples = "pine", summit = "pine" }
 local function grove(ctx, pad)
-	local kind = GROVE[Config.isletOf(pad)]
+	local kind = pad.tree or GROVE[Config.isletOf(pad)]
 	local rng = Random.new(#pad.id * 31 + math.floor(pad.x))
 	for k = 1, 3 do
 		local a = k / 3 * math.pi * 2 + rng:NextNumber(-0.3, 0.3)

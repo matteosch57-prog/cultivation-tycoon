@@ -959,7 +959,7 @@ refreshStatic = function()
 	end
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
-	local total = #Config.PADS
+	local total = Config.REQUIRED_PADS -- paths and groves are optional (DECOR_OPTIONAL)
 	ui.progIcon.Visible = owned < total
 	ui.progText.Text = owned >= total and "Break through!" or string.format("%d/%d", owned, total)
 	TweenService:Create(ui.fill, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(math.clamp(owned / total, 0.04, 1), 1) }):Play()
