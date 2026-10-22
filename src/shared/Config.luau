@@ -593,8 +593,13 @@ Config.RANK_SEE = 140 -- studs: the boards' text draws within this
 -- Free Creator Store models on the ranking wall (owner: "search free assets"), rebuilt from their
 -- meshes by RankBoard (no inserted scripts): "Chinese Gate Door" and "Chinese Lion Stone Statue" by
 -- funshine_4321 (assets 131931560252959, 78030834541623).
-Config.RANK_GATE = { name = "Gate", height = 22, size = Vector3.new(1, 1, 1), parts = {} }
-Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(1, 1, 1), parts = {} }
+Config.RANK_GATE = { name = "Gate", height = 22, size = Vector3.new(26.567, 29.477, 5.462), parts = {
+	{ mesh = "rbxassetid://7299159581", texture = "rbxassetid://7299159924", size = Vector3.new(5.462, 9.489, 26.567), at = CFrame.new(0, 24.7322, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
+	{ mesh = "rbxassetid://7299136679", texture = "rbxassetid://7299137242", size = Vector3.new(2.213, 24.828, 22.612), at = CFrame.new(-0.0459, 12.4141, -0.0386, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
+} }
+Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.386, 28.575), parts = {
+	{ mesh = "rbxassetid://7280531958", texture = "rbxassetid://7280532422", size = Vector3.new(38.665, 48.388, 28.576), at = CFrame.new(0, 24.1921, 0) },
+} }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds (one SetAsync per changed score)
 Config.RANK_TICK = 30 -- s between a session's score reports (play time, rate)

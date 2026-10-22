@@ -279,4 +279,12 @@ function Ranks.touch()
 	task.defer(redraw, false)
 end
 
+-- Studio only: show `list` on a board (captures and layout checks with ten rows)
+function Ranks.debugRows(key, list)
+	if RunService:IsStudio() then
+		Ranks.top[key] = list
+		changed:Fire(key, list)
+	end
+end
+
 return Ranks
