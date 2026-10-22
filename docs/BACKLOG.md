@@ -8,6 +8,7 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
   far peaks pop out).
 
 ## Look
+- Rankings: a small screen with Global / your-country tabs reading the `Rank_<key>_<CC>` Workspace attributes (D62; mock first). Head shots draw black in Studio solo Play: check them live.
 - Our own skybox (the Creator Store one is a re-upload that could be moderated).
 
 ## Cultivators

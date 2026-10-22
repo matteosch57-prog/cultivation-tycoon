@@ -57,6 +57,13 @@ checked in Studio Play (ROADMAP).
   circles, light orbs, halo, steel jian fans with a rim glow, lotus seat, ornaments, mudra / qi surge /
   bow, a recruit arrival walk, a flying pose. Checked in Studio Play; left: Matteo's own playtest.
 
+- **Visible progression** (D53, D62, on `integration`): buildings recolour by realm (Timber, Red
+  Lacquer, Jade, Imperial Gold over realms 1 to 4; later lives top out in White Jade / Void Amethyst /
+  Celestial Azure), lanterns and motes grow with lives, the Main Hall grows 8% / 15% in lives 2 / 3,
+  a status title over other players' heads; hub ranking wall (Greatest Sects, Richest Qi, This Week,
+  global + per country stores), Lives in the player list. Checked in Studio Play (skins, hall,
+  wall with sample rows via `Ranks.debugRows`). Left: the country-tab screen (BACKLOG).
+
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
 `[Perf]` console rows (they close ROADMAP "Phone performance").
