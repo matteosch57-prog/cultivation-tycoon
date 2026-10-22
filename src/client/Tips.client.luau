@@ -62,14 +62,11 @@ local function bubble(parent, key)
 	return card
 end
 
--- the HUD's gold arrow (Hud arrowIcon: shaft + head pointing right), turned by `rot`; its slot
--- sits in a list, so the bob moves the drawing inside it
+-- the HUD's gold arrow (the "goal" icon of the sheet), turned by `rot`; its slot sits in a list,
+-- so the bob moves the drawing inside it
 local function arrow(parent, size, rot)
 	local slot = frame(parent, { Size = UDim2.fromOffset(size, size) })
-	local ic = Toy.Icon.new(slot, size, { Rotation = rot })
-	ic:rect(24, 32, 30, 14, GOLD, 3)
-	ic:rect(42, 32, 26, 26, GOLD, 3, 45)
-	return slot, ic.box
+	return slot, Toy.icon(slot, "goal", size, { Rotation = rot })
 end
 
 -- world tips: a BillboardGui over the target
