@@ -92,6 +92,7 @@ def load(path):
         if b and b != p["id"] and b not in p["req"]:
             p["req"].append(b)
     rar = [(float(w), float(b)) for w, b in re.findall(r"weight = ([\d.]+), bonus = ([\d.]+)", "\n".join(block("RARITIES")))]
+    env["RARITY_NAMES"] = re.findall(r'name = "([^"]+)", weight', "\n".join(block("RARITIES")))
     dao = {}
     for line in block("DAO"):
         m = re.search(r'key = "(\w+)".*?costs = \{([^}]*)\}', line)
@@ -270,7 +271,26 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     if C["WELCOME_QI"]:
         src("welcome", C["WELCOME_QI"])
     session_gap = 24 * 3600 / K["per_day"] - K["session"] * 60
+    rar_bonus = {n: b for n, b in zip(C.get("RARITY_NAMES", []), [b for _, b in C["RARITIES"]])}
+    streak_once = set()
     for day in range(days):
+        # STREAK (login streak, proposal lever): day d's reward on the first join of the day; a list of
+        # dicts {qi_s, summons, disciple (rarity name, once per save; repeats give `else_summons`)}
+        if C.get("STREAK"):
+            r = C["STREAK"][day % len(C["STREAK"])]
+            if r.get("qi_s"):
+                src("login streak", base() * r["qi_s"])
+            summons = r.get("summons", 0)
+            if r.get("disciple"):
+                if r["disciple"] not in streak_once:
+                    streak_once.add(r["disciple"])
+                    S["disciples"].append(rar_bonus[r["disciple"]])
+                else:
+                    summons += r.get("else_summons", 3)
+            for _ in range(summons):
+                S["disciples"].append(roll())
+            S["disciples"].sort(reverse=True)
+            del S["disciples"][C["DISCIPLE_CAP"] + vip:]
         for _ in range(K["per_day"]):
             if played:
                 away = min(session_gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
