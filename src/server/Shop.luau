@@ -97,7 +97,7 @@ local function grantProduct(player, s, it)
 		local gain = math.floor(api.rate(s, true) * it.seconds)
 		d.qi += gain
 		Telemetry.iapSource(player, d, gain, it.key)
-		api.notify:FireClient(player, "shopQi", gain, it.name)
+		api.notify:FireClient(player, "shopQi", gain, it.name, it.key)
 	end
 end
 
@@ -427,7 +427,7 @@ function Shop.init(a)
 		Telemetry.custom(player, "Shop", purchased and "bought" or "closed", it.key, realm(s))
 		if purchased then
 			setPass(player, s, it.key)
-			api.notify:FireClient(player, "shopPass", it.name)
+			api.notify:FireClient(player, "shopPass", it.name, it.key)
 			print(string.format("[Tycoon][shop] pass %s bought by %d", it.key, player.UserId))
 		end
 	end)
