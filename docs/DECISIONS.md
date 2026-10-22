@@ -428,3 +428,10 @@ the log as a D-number.
   `Remotes.Teleport`; the server checks you stand on that portal and picks the landing (R9).
   Checked in Studio Play (mock save, both directions, overlap sweep):
   `docs/art/captures/2026-10-22_rank_boards_bigger.jpg`, `docs/art/captures/2026-10-22_hub_portals.jpg`.
+- **D71** Build preview and a still buyer (owner 2026-10-22: the preview should work for every
+  buildable and look better; building teleported the avatar and swung the camera). Owner picks from
+  Studio captures (`docs/art/mocks/build_preview/`): B "white spirit", the classic tycoon hologram, a
+  pale glowing copy whole in its final place (the jade glass in pieces barely read on paths); and
+  "stand still": the server's step-out teleport is gone (it fired whenever you stood inside the new
+  thing's box, so paths, groves and bridges threw you several studs), pieces that land on the buyer
+  stay passable on their client until they step out. Pads stay where they are.

@@ -80,9 +80,11 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Guide trail (`Guide.client.luau`, D22): jade chevrons painted on the ground from the feet to the
   HUD's "Next:" pad, drifting toward it; always in realm 1 until `GUIDE_BUILT` buildings, then only
   after `GUIDE_IDLE` s standing still. Objects, not light (R3).
-- Preview: within 18 studs the building appears as a jade hologram floating in pieces, pulled apart and
-  tilted; the closer you walk the tighter it gathers (never whole before the buy). A soft sparkle when
-  it wakes. Piece offsets come from each piece's position, so the real building continues from them.
+- Preview (D71, owner pick B "white spirit"): from 30 studs the building fades in whole, in its real
+  place, as a pale glow (`SPIRIT`, Neon at `SPIRIT_LTM` see-through), rising its last 1.5 studs and
+  breathing softly; fully there 12 studs closer. Every pad with a builder has one (paths, groves,
+  bridges, realm buildings); an expansion shows the lobes of land it adds as flat discs. A soft
+  sparkle when it wakes. Captures: `docs/art/mocks/build_preview/`.
 - Step on: the rings spin up (flutter), snap inward with a stone snap, a column flash, a ripple and
   sparks; coins + chime; the pad sinks away. A step that cannot buy: one soft boink and a twitch.
   After a buy every pad waits until you stand on none (the step-out once chained 5 buys).
@@ -90,6 +92,9 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   snap rather than a drift), then a stone snap, a small temple bell (the big bell for a Main Hall
   level), sparks, dust and a warm light flash. The pieces do not collide while they fly (they shoved
   the avatar onto the next pads in Play).
+- Building never moves the buyer (D71): no step-out teleport. Pieces that land on your own character
+  stay passable on your client until you step out of them (`passThrough`, model attribute `BuyerId`),
+  so the avatar and the camera stay still.
 
 ## Robux purchase moment (src/client/BuyMoment.client.luau, D65)
 - A bought disciple (Welcome Pouch included) closes the Shop and plays the recruit reveal.

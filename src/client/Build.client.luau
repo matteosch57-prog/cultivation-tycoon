@@ -1,9 +1,10 @@
 -- Step-on pads and the buying feel (concept C "Formation", D27, mock in docs/art/mocks/).
 -- Every pad is an invisible server anchor tagged "StepPad"; this script draws it: a carved stone
 -- array with two rune rings that turn while you can afford it, a light in its gold heart, a
--- beacon beam and a price card. Walking up, the building's preview floats in pieces that gather
--- tighter the closer you come; stepping on spins the rings up and snaps them in, and the bought
--- building swirls together from those same pieces and lands with a bell.
+-- beacon beam and a price card. Walking up, the building's preview rises whole in its final place as
+-- a pale spirit glow (owner pick B, 2026-10-22); stepping on spins the rings up and snaps them in,
+-- and the bought building lifts apart from that ghost, swirls in and lands with a bell. Building
+-- never moves the buyer: pieces that land on you let you through until you step out.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -18,7 +19,10 @@ local PadLook = require(Shared:WaitForChild("PadLook"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local PerfMark = require(Shared:WaitForChild("PerfMark"))
 
-local PREVIEW_RANGE = 18 -- studs (horizontal) from the pad centre where the preview wakes
+local PREVIEW_RANGE = 30 -- studs (horizontal) from the pad centre where the preview starts to show
+local PREVIEW_FADE = 12 -- and it is fully there this many studs closer
+local SPIRIT = Color3.fromHex("D8FFF0") -- the preview's glow (white with a breath of jade)
+local SPIRIT_LTM = 0.78 -- its see-through at full strength (LocalTransparencyModifier)
 local REACH = 2.6 -- the server buys inside this (Main PAD_REACH)
 local ANIM_RANGE = 120 -- rings only turn near the camera
 local LIGHT_RANGE = 70 -- and only the nearest pads light the ground
@@ -66,8 +70,8 @@ local function fxPart(size, cf, color, material, shape)
 end
 
 ---------------------------------------------------------------------------------------------
--- Scatter: where each piece of a building floats before it gathers. Keyed on the piece's own
--- position, so the preview and the real building (built by the same builder) agree piece by piece.
+-- Scatter: where each piece of a building flies out to during its build-in, keyed on the piece's
+-- own position.
 local function hash(v, salt)
 	local x = math.sin(v.X * 12.9898 + v.Y * 78.233 + v.Z * 37.719 + salt) * 43758.5453
 	return x - math.floor(x)
@@ -519,12 +523,17 @@ local function preparePreview(rec, preview)
 	rec.homes = {}
 	for i, p in rec.preview do
 		rec.homes[i] = p.CFrame
-		p.Material = Enum.Material.ForceField
-		p.Color = p.Color:Lerp(JADE, 0.55)
+		p.Material = Enum.Material.Neon
+		p.Color = SPIRIT
 		p.Transparency = 0
 		p.LocalTransparencyModifier = 1
+		local sa = p:FindFirstChildOfClass("SurfaceAppearance") -- leaf cards keep their alpha, tinted pale
+		if sa then
+			pcall(function()
+				sa.Color = SPIRIT
+			end)
+		end
 	end
-	rec.scatter = scatter(rec.preview)
 	rec.k = 0
 	rec.cfs = table.create(#rec.preview)
 end
@@ -591,7 +600,54 @@ CollectionService:GetInstanceAddedSignal("StepPad"):Connect(function(d)
 end)
 
 ---------------------------------------------------------------------------------------------
--- Build-in: the bought building's pieces drift out from where the preview held them, swirl in
+-- Building never moves the buyer (owner 2026-10-22: the server's step-out teleport and the camera
+-- swing after it felt jarring). A piece of the new building that lands on your own character lets
+-- you through, on your client only, until you have stepped out of it; every other piece collides
+-- at once. (A piece that does not collide also never pops the camera in.)
+local function touching(char, list)
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = list
+	local cf, size = char:GetBoundingBox()
+	local hit = {}
+	for _, p in workspace:GetPartBoundsInBox(cf, size + Vector3.new(1, 0.5, 1), params) do
+		hit[p] = true
+	end
+	return hit
+end
+
+local function passThrough(model, parts, collide)
+	local char = player.Character
+	local onMe = (char and model:GetAttribute("BuyerId") == player.UserId) and touching(char, { model }) or {}
+	local held, list = {}, {}
+	for i, p in parts do
+		if collide[i] and onMe[p] then
+			held[p] = true
+			table.insert(list, p)
+		else
+			p.CanCollide = collide[i]
+		end
+	end
+	if #list == 0 then
+		return
+	end
+	task.spawn(function()
+		while next(held) and model.Parent do
+			task.wait(0.25)
+			local c = player.Character
+			local still = c and touching(c, list) or {}
+			for p in held do
+				if not still[p] then
+					held[p] = nil
+					p.CanCollide = true
+				end
+			end
+		end
+	end)
+end
+
+---------------------------------------------------------------------------------------------
+-- Build-in: the bought building's pieces lift out from where the preview ghost stood, swirl in
 -- and lock together bottom first, then a bell, sparks and a warm flash.
 local function animateBuild(model)
 	local builtAt = model:GetAttribute("BuiltAt")
@@ -629,7 +685,7 @@ local function animateBuild(model)
 		end
 		workspace:BulkMoveTo(parts, cfs, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	pose(0.15, 0) -- where the preview held them a moment ago
+	pose(0, 0) -- where the preview ghost stood a moment ago
 	task.wait(0.3) -- the pad's rings snap first
 	if not model.Parent then
 		return
@@ -669,8 +725,8 @@ local function animateBuild(model)
 			for i, p in parts do
 				p.CFrame = homes[i]
 				p.LocalTransparencyModifier = 0
-				p.CanCollide = collide[i]
 			end
+			passThrough(model, parts, collide)
 			if not model.Parent then
 				return
 			end
@@ -713,7 +769,7 @@ end)
 -- Every frame: rings turn, lights breathe, previews gather (near pads only)
 local function updatePreview(rec, hrp, dt)
 	local d = hrp and Vector3.new(rec.pad.Position.X - hrp.Position.X, 0, rec.pad.Position.Z - hrp.Position.Z).Magnitude or math.huge
-	local target = math.clamp((PREVIEW_RANGE - d) / 15, 0, 1)
+	local target = math.clamp((PREVIEW_RANGE - d) / PREVIEW_FADE, 0, 1)
 	rec.k += (target - rec.k) * math.min(1, dt * 5)
 	local k = rec.k
 	if k < 0.004 then
@@ -723,6 +779,7 @@ local function updatePreview(rec, hrp, dt)
 			for _, p in rec.preview do
 				p.LocalTransparencyModifier = 1
 			end
+			rec.lift = nil
 		end
 		return
 	end
@@ -731,15 +788,19 @@ local function updatePreview(rec, hrp, dt)
 		Sfx.play("padWake")
 	end
 	rec.previewShown = true
-	local t = os.clock()
-	local spread = 1 - 0.85 * k -- it never fully assembles before the buy
-	local ltm = 1 - math.min(1, k * 3) * 0.85
-	for i, p in rec.preview do
-		local s = rec.scatter[i]
-		rec.cfs[i] = scattered(rec.homes[i], s, spread, 0, 0.25 * math.sin(t * 1.5 + s.phase) * spread)
+	-- whole and in its real place; it rises the last stud and a half as it fades in, then breathes
+	local ltm = 1 - k * (1 - SPIRIT_LTM) + 0.04 * k * math.sin(os.clock() * 2.2)
+	for _, p in rec.preview do
 		p.LocalTransparencyModifier = ltm
 	end
-	workspace:BulkMoveTo(rec.preview, rec.cfs, Enum.BulkMoveMode.FireCFrameChanged)
+	local lift = (1 - k) * 1.5
+	if math.abs(lift - (rec.lift or -1)) > 0.01 then
+		rec.lift = lift
+		for i in rec.preview do
+			rec.cfs[i] = rec.homes[i] - Vector3.new(0, lift, 0)
+		end
+		workspace:BulkMoveTo(rec.preview, rec.cfs, Enum.BulkMoveMode.FireCFrameChanged)
+	end
 end
 
 RunService.RenderStepped:Connect(function(dt)

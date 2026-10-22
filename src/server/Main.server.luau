@@ -729,13 +729,22 @@ local function buildModel(s, pad, attrs)
 end
 
 -- A hidden copy of the building for the client's proximity preview: invisible to everyone
--- (the owner's client fades it in locally), no collisions, no lights or effects.
+-- (the owner's client fades it in locally as a pale glow), no collisions, no lights or effects.
+-- Every pad with a builder gets one (bridges, paths and groves too); an expansion, which builds
+-- nothing, previews the lobes of land it adds as flat discs.
 local function buildPreview(s, pad, parent)
 	if not Builders[pad.id] then
 		return
 	end
 	local m = buildModel(s, pad)
 	m.Name = "Preview"
+	local level = pad.id == "expand1" and 1 or pad.id == "expand2" and 2 or nil
+	for _, l in level and Config.ISLAND_LOBES or {} do
+		if l.exp == level then
+			local disc = Style.P(m, Vector3.new(0.4, l.r * 2, l.r * 2), s.plot.frame * CFrame.new(l.x, 0.4, l.z) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromHex("6FB59C"), nil, Enum.PartType.Cylinder)
+			disc.Name = "Lobe"
+		end
+	end
 	for _, d in m:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.Transparency = 1
@@ -745,6 +754,8 @@ local function buildPreview(s, pad, parent)
 			d.CastShadow = false
 		elseif d:IsA("Light") or d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Smoke") or d:IsA("SurfaceGui") then
 			d.Enabled = false -- (a SurfaceGui draws even on an invisible part: the name boards)
+		elseif d:IsA("Decal") then -- (Texture too) a painted face would show through the glow
+			d.Transparency = 1
 		end
 	end
 	m.Parent = parent
@@ -1053,22 +1064,13 @@ refreshPads = function(player, s)
 							notify:FireClient(player, "expand")
 						end
 					end
-					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
+					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow(), BuyerId = player.UserId })
 					Skin.extras(m, pad, s.data.realm, s.data.lives, s.plot.frame) -- lanterns and motes (not on previews)
 					m.Parent = s.plot.built
 					paintGround(m)
 					attachName(s, m)
-					-- never leave the buyer standing inside what they just built: step them out front
-					local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-					if hrp and m:FindFirstChildWhichIsA("BasePart", true) then -- (expansions build nothing)
-						local bcf, bsize = m:GetBoundingBox()
-						local lp = bcf:PointToObjectSpace(hrp.Position)
-						if math.abs(lp.X) < bsize.X / 2 + 1 and math.abs(lp.Z) < bsize.Z / 2 + 1 and lp.Y < bsize.Y / 2 then
-							local out = -s.plot.frame.LookVector -- the frame's +Z (toward the bridge)
-							local reach = math.max(bsize.X, bsize.Z) / 2 + 3
-							hrp.CFrame = CFrame.new(bcf.Position.X, hrp.Position.Y + 1, bcf.Position.Z) + out * reach
-						end
-					end
+					-- the buyer is never moved (owner 2026-10-22): pieces that land on them let them
+					-- through on their client until they step out (Build.client passThrough, BuyerId)
 					if pad.id == "platform" then
 						buildDisciples(s)
 					end
