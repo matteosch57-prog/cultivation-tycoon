@@ -548,8 +548,8 @@ Config.RECRUIT_BASE = 500
 Config.RECRUIT_COUNTS = { 1, 10, 50 }
 Config.RECRUIT_PICK_SECONDS = 5
 -- D44 (owner pick 2 of 3, research 2026-10-22_choice_and_recruits): each recruit in a realm costs
--- RECRUIT_POW x the last (restarts at a breakthrough), so the 20th costs ~90x the first: no spam.
-Config.RECRUIT_POW = 1.25
+-- RECRUIT_POW x the last (restarts at a breakthrough): at 1.05 the 50th costs ~11x the first.
+Config.RECRUIT_POW = 1.05 -- owner pick 2026-10-22 (was 1.25): x10 / x50 = the next 10 / 50 prices
 Config.RECRUIT_GROWTH = 0.5 -- the old linear rule, read only by the older sims (sim_pacing, sim_economy)
 -- D44: a pad of the realm costs at least PRICE_FLOOR_S seconds of income (rate without the pill,
 -- tide and friends), so every building stays a small saving goal and you pick which comes first
@@ -637,18 +637,20 @@ function Config.recruitCost(realm, recruits)
 	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
 end
 
--- the qi price of one press of `n` recruits, paid all or nothing (D52 economy, sim 2026-10-22
--- `_local/cmp_batch.py`): n x the current single price, like an egg game's x3 / x8 hatch; the
--- plain sum of n rising prices made x50 cost ~280,000 singles. Any rule left the pace unchanged
--- (only the best seats earn and rarities saturate), so this one gives the most rolls.
+-- the qi price of one press of `n` recruits, paid all or nothing: the real price of the next n
+-- recruits (owner 2026-10-22: "x10 should be the next x10 price"), with RECRUIT_POW 1.05 so x10 is
+-- ~13 singles and x50 ~210 (at 1.25, x50 was ~280,000). Sim: the recruit rule never moved the pace.
 function Config.recruitBatchCost(realm, recruits, n)
-	return Config.recruitCost(realm, recruits) * n
+	local total = 0
+	for i = 0, n - 1 do
+		total += Config.recruitCost(realm, recruits + i)
+	end
+	return total
 end
 
--- how far one press of `n` recruits moves data.realmRecruits: ceil(sqrt(n)), so the next x10
--- costs x1.25^4 ~ 2.4 and the next x50 x1.25^8 ~ 6 (spam still ends, a big press stays worth it)
+-- how far one press of `n` recruits moves data.realmRecruits: one per recruit
 function Config.recruitStep(n)
-	return math.ceil(math.sqrt(n))
+	return n
 end
 
 -- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more
