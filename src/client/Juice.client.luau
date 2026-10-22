@@ -336,7 +336,7 @@ end)
 local recruitFx = Instance.new("BindableEvent")
 recruitFx.Name = "RecruitFx"
 recruitFx.Parent = player:WaitForChild("PlayerGui")
-recruitFx.Event:Connect(function(rarityName, kept)
+recruitFx.Event:Connect(function(rarityName, kept, results)
 	local r = Config.rarity(rarityName)
 	local c = plotCentre()
 	if not c or not kept then
@@ -344,7 +344,12 @@ recruitFx.Event:Connect(function(rarityName, kept)
 	end
 	-- the platform sits at the peak's centre; light a column there in the rarity colour when the
 	-- on-screen orb bursts (RecruitReveal owns the sounds)
-	task.delay(Config.revealBurst(rarityName), function()
+	local at = Config.revealBurst(rarityName)
+	if results and #results > 1 then
+		local _, burst = Config.revealMultiTimes(results)
+		at = burst
+	end
+	task.delay(at, function()
 		pillar(c + Vector3.new(0, 1.5, 0), r.color, 18 + r.bonus * 14, 1.2 + r.bonus * 0.3)
 	end)
 end)

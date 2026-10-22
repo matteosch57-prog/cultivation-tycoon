@@ -626,27 +626,69 @@ local function build()
 	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
-	-- how many one press recruits (owner: after a recruit an x1 / x10 / x50 selector shows for a few
-	-- seconds above the seal; the pick sticks to the seal)
-	local pick = frame(rHolder, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -px(10)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false }) -- right-aligned: the seal sits at the screen's edge
+	-- how many one press recruits (owner: an x1 / x10 / x50 selector shows above the seal on a press
+	-- or a hover, even without the qi; the pick sticks to the seal). Each chip shows its batch price
+	-- and greys out while it is out of reach (the frame loop paints them).
+	local pick = frame(rHolder, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -px(8)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false }) -- right-aligned: the seal sits at the screen's edge
 	local pl = Instance.new("UIListLayout")
 	pl.FillDirection = Enum.FillDirection.Horizontal
+	pl.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	pl.Padding = UDim.new(0, px(6))
 	pl.SortOrder = Enum.SortOrder.LayoutOrder
 	pl.Parent = pick
 	ui.recruitPick = pick
 	ui.recruitChips = {}
-	for i, n in Config.RECRUIT_COUNTS do
-		local holder, b = toy(pick, UDim2.fromOffset(px(48), px(36)), Color3.fromHex("3A2C44"), px(18))
-		holder.LayoutOrder = i
-		text(b, "x" .. n, px(17), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		ui.recruitChips[n] = b
-		b.Activated:Connect(function()
-			state.recruitN = n
-			pick.Visible = false
-			refreshStatic()
+	-- hidden RECRUIT_PICK_SECONDS after the last press, pick or hover (never while hovered)
+	local function hidePickLater()
+		state.pickToken = (state.pickToken or 0) + 1
+		local my = state.pickToken
+		task.delay(Config.RECRUIT_PICK_SECONDS, function()
+			if state.pickToken == my and not state.pickHover then
+				pick.Visible = false
+			end
 		end)
 	end
+	local function showPick()
+		pick.Visible = true
+		hidePickLater()
+	end
+	local function hover(gui)
+		gui.MouseEnter:Connect(function()
+			state.pickHover = true
+			showPick()
+		end)
+		gui.MouseLeave:Connect(function()
+			state.pickHover = false
+			hidePickLater()
+		end)
+	end
+	ui.showRecruitPick = showPick
+	for i, n in Config.RECRUIT_COUNTS do
+		local col = frame(pick, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
+		local cl = Instance.new("UIListLayout")
+		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		cl.Padding = UDim.new(0, px(1))
+		cl.Parent = col
+		local holder, b = toy(col, UDim2.fromOffset(px(48), px(36)), Color3.fromHex("3A2C44"), px(18))
+		holder.LayoutOrder = 1
+		local label = text(b, "x" .. n, px(17), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local cRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+		local crl = Instance.new("UIListLayout")
+		crl.FillDirection = Enum.FillDirection.Horizontal
+		crl.VerticalAlignment = Enum.VerticalAlignment.Center
+		crl.Padding = UDim.new(0, px(2))
+		crl.Parent = cRow
+		qiIcon(cRow, px(12), { LayoutOrder = 1 })
+		local price = text(cRow, "", px(12), JADE_LIGHT, { LayoutOrder = 2 })
+		ui.recruitChips[n] = { btn = b, label = label, price = price }
+		hover(b)
+		b.Activated:Connect(function()
+			state.recruitN = n
+			refreshStatic()
+			hidePickLater()
+		end)
+	end
+	hover(rBtn)
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
 	-- press feel, like the toy buttons
 	rBtn.MouseButton1Down:Connect(function()
@@ -714,6 +756,7 @@ local function build()
 			return
 		end
 		state.recruiting = true
+		ui.showRecruitPick() -- the first press shows the x1 / x10 / x50 choice, qi or not
 		local ok, res = pcall(function()
 			return remotes.Recruit:InvokeServer(state.recruitN or 1)
 		end)
@@ -723,23 +766,8 @@ local function build()
 			-- the reveal names the disciple, so no toast
 			local fxEvent = playerGui:FindFirstChild("RecruitFx")
 			if fxEvent then
-				fxEvent:Fire(res.rarity, res.kept) -- a multi-recruit reveals its best disciple
+				fxEvent:Fire(res.rarity, res.kept, res.results) -- x10 / x50: every orb opens, then the best
 			end
-			if res.results and #res.results > 1 then
-				toast(string.format("x%d recruited: best %s", #res.results, res.rarity), Config.rarity(res.rarity).color, 2.5)
-			end
-			-- the x1 / x10 / x50 selector, for a few seconds; the current pick is gold
-			for n, b in ui.recruitChips do
-				b.BackgroundColor3 = n == (state.recruitN or 1) and Color3.fromHex("FFD34D") or Color3.fromHex("3A2C44")
-			end
-			ui.recruitPick.Visible = true
-			state.pickToken = (state.pickToken or 0) + 1
-			local my = state.pickToken
-			task.delay(Config.RECRUIT_PICK_SECONDS, function()
-				if state.pickToken == my then
-					ui.recruitPick.Visible = false
-				end
-			end)
 		elseif ok and res then
 			toast(res.reason, PINK, 1.5)
 		end
@@ -916,13 +944,18 @@ refreshStatic = function()
 	-- a new life pays once this one goes deeper than every life before (D37)
 	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
 	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("%d/%d", realmNow, target)
-	-- the price of the next press: each roll in order (x10 / x50 add the next ones up)
+	-- the price of each press size (all or nothing, Config.recruitBatchCost): the seal shows the pick's
 	local n = state.recruitN or 1
-	local recruitTotal, rr, realmNowR = 0, player:GetAttribute("RealmRecruits") or 0, player:GetAttribute("Realm") or 1
-	for i = 0, n - 1 do
-		recruitTotal += Config.recruitCost(realmNowR, rr + i)
+	local rr = player:GetAttribute("RealmRecruits") or 0
+	state.recruitTotals = {}
+	for _, c in Config.RECRUIT_COUNTS do
+		state.recruitTotals[c] = Config.recruitBatchCost(realmNow, rr, c)
+		local chip = ui.recruitChips and ui.recruitChips[c]
+		if chip then
+			chip.price.Text = compact(state.recruitTotals[c])
+		end
 	end
-	ui.recruitCost.Text = compact(n == 1 and (player:GetAttribute("RecruitCost") or 0) or recruitTotal)
+	ui.recruitCost.Text = compact(state.recruitTotals[n] or 0)
 	ui.recruitLabel.Text = n == 1 and "Recruit" or ("Recruit x" .. n)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
@@ -1144,7 +1177,18 @@ RunService.RenderStepped:Connect(function(dt)
 	if ui.recruit.Visible then
 		-- the Recruit seal: while a recruit is affordable the orb charges through the first five
 		-- rarity colours (a step every 0.6 s), the ring and rays turn and it breathes; else still, dim
-		local can = target >= (player:GetAttribute("RecruitCost") or math.huge)
+		local totals = state.recruitTotals or {}
+		local can = target >= (totals[state.recruitN or 1] or math.huge)
+		-- the chips: the pick is gold, a size out of reach is grey (dim gold when it is the pick)
+		if ui.recruitPick.Visible then
+			for c, chip in ui.recruitChips do
+				local ok = target >= (totals[c] or math.huge)
+				local picked = c == (state.recruitN or 1)
+				put(chip.btn, "BackgroundColor3", picked and (ok and Color3.fromHex("FFD34D") or Color3.fromHex("B8A878")) or (ok and Color3.fromHex("3A2C44") or Color3.fromHex("5A5262")))
+				put(chip.label, "TextColor3", ok and Color3.new(1, 1, 1) or Color3.fromHex("C8C0D0"))
+				put(chip.price, "TextColor3", ok and JADE_LIGHT or PINK)
+			end
+		end
 		local sl = ui.seal
 		local t = os.clock()
 		put(ui.recruitBtn, "BackgroundColor3", can and Color3.fromHex("A070F0") or Color3.fromHex("8C72A8"))

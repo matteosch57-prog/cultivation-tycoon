@@ -263,3 +263,11 @@ the log as a D-number.
   bubble with one line over the orb / chest pad (gold arrow, the jade trail leads there) or beside
   the HUD pill button; once per save (`data.tips`, a save from before them starts with all done).
   The idle chest moves beside the x2 qi pad (owner: "too close to start").
+- **D52** x10 / x50 recruits open every orb (owner 2026-10-22: "x10 and x50 should show X balls
+  opening, they don't work"; picked A of `docs/art/mocks/recruit_multi_{A,B,C}.mp4`, "give it some juice
+  and sound"). A grid hatch (FEEL "x10 / x50"), the Pet Simulator multi-hatch pattern; the stream (B)
+  ran ~7 s at x50 and the split orb (C) hid each opening. A press is all or nothing at
+  `Config.recruitBatchCost` (the chip shows the total): before, each roll was priced at 1.25x the last
+  and the run stopped when qi ran out, so x10 bought 2 or 3 and x50 (~280,000x a single) never ran.
+  The selector shows on a press or a hover, qi or not. Batch price and `recruitStep` belong to the
+  economy pass.

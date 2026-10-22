@@ -33,7 +33,9 @@ breakthrough takes the lobes back. Mock and study: `docs/art/mocks/island_layout
 
 ## Features
 - **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`
-  per disciple recruited in this realm, `data.realmRecruits`, which a breakthrough resets), rolls `RARITIES`. The best `maxDisciples`
+  per disciple recruited in this realm, `data.realmRecruits`, which a breakthrough resets), rolls `RARITIES`.
+  A press buys 1, 10 or 50 (`RECRUIT_COUNTS`) all or nothing at `recruitBatchCost` and moves
+  `realmRecruits` by `recruitStep` (D52; the batch formula is Economy's to tune). The best `maxDisciples`
   work; the rest rest until slots open. The roll is never sold for Robux (RULES R8); the Shop sells
   FIXED rarities behind realm gates and per-player limits, priced to their pacing impact (D28,
   MONETIZATION "Disciples for sale" and "Disciple price ladder"). Bought ones are kept in

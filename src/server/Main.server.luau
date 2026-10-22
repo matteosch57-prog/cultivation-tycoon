@@ -1501,8 +1501,8 @@ chestFn.OnServerInvoke = function(player)
 	return { rarity = r.name, kept = kept, left = s.data.chestSummons }
 end
 
--- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing): each roll pays its own price in
--- order and the run stops when qi runs out, so x10 is never cheaper than ten single presses
+-- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
+-- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
 recruitFn.OnServerInvoke = function(player, count)
 	if not Guard.allow(player, "Recruit") then
 		return nil -- over its call budget (Guard)
@@ -1520,21 +1520,18 @@ recruitFn.OnServerInvoke = function(player, count)
 			want = n
 		end
 	end
-	if s.data.qi < Config.recruitCost(s.data.realm, s.data.realmRecruits or 0) then
+	local cost = Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
+	if s.data.qi < cost then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
+	s.data.qi -= cost
+	s.data.recruited += want -- lifetime (telemetry)
+	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
+	Telemetry.sink(player, s.data, cost, "recruit")
 	local results, best, bestKept, bestKeptName = {}, nil, false, nil
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
-		local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
-		if s.data.qi < cost then
-			break
-		end
-		s.data.qi -= cost
-		s.data.recruited += 1 -- lifetime (telemetry)
-		s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
-		Telemetry.sink(player, s.data, cost, "recruit")
 		local r = roll()
 		local kept = addDisciple(s, r.name, false, true)
 		table.insert(results, { rarity = r.name, kept = kept })

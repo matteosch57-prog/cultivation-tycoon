@@ -56,6 +56,16 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   Immortal, `thunder` from Dao Ancestor. Aura: glow for all, rays from Core, a white counter ring
   from Elder, sparkles from Immortal, Primordial cycles every colour. Juice lights the platform
   column at the burst (`Config.revealBurst`). A tap skips to the burst, then to the end.
+- **x10 / x50** (D52, `REVEAL_MULTI`): every orb flies out of the seal (`rise` whoosh), lands in a grid
+  (5 x 2, or 10 x 5; `padSnap` ticks) and breathes faster under a `padSpin` swell; a rare orb (Core or
+  better at x10, Elder or better at x50: `Config.revealMultiRare`) shakes harder and tints toward its colour. They open in a wave (`Config.revealMultiTimes`): a white
+  flash, a ring, sparks and a rising `padReady` ding each (every third at x50); a rare one holds the
+  wave `rarePause` s with `rareChime`, a screen shake and rays. Then the best grows into the usual card
+  (white flash, shake, the single reveal's burst sounds), the tiles slide into tray rows under it
+  (`land` chime) with a count per rarity. A tap skips to the card, then to the end.
+  Studio captures: the local player attribute `RevealAt` (seconds) holds the reveal at that moment.
+- **The x1 / x10 / x50 selector** shows above the seal on a press or a hover (even without the qi) and
+  hides `RECRUIT_PICK_SECONDS` after; each chip shows its batch price and greys out when out of reach.
 
 ## Moving (src/client/Movement.client.luau, D34)
 - A cultivator's light step: walk, jump height and the soft fall are `Config.MOVE`. While falling an

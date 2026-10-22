@@ -542,8 +542,9 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
--- How many recruits one press buys (owner 2026-10-22: after a recruit an x1 / x10 / x50 selector shows
--- for RECRUIT_PICK_SECONDS; the pick sticks to the seal). Each roll is priced in order (no discount).
+-- How many recruits one press buys (owner 2026-10-22: an x1 / x10 / x50 selector shows above the seal
+-- on a press or a hover, even without the qi, and hides RECRUIT_PICK_SECONDS after; the pick sticks to
+-- the seal). A press is all or nothing at recruitBatchCost.
 Config.RECRUIT_COUNTS = { 1, 10, 50 }
 Config.RECRUIT_PICK_SECONDS = 5
 -- D44 (owner pick 2 of 3, research 2026-10-22_choice_and_recruits): each recruit in a realm costs
@@ -636,6 +637,21 @@ function Config.recruitCost(realm, recruits)
 	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
 end
 
+-- the qi price of one press of `n` recruits, paid all or nothing (Economy owns this formula; for now
+-- the plain sum of the next n single prices)
+function Config.recruitBatchCost(realm, recruits, n)
+	local total = 0
+	for i = 0, n - 1 do
+		total += Config.recruitCost(realm, recruits + i)
+	end
+	return total
+end
+
+-- how far one press of `n` recruits moves data.realmRecruits (Economy owns this rule)
+function Config.recruitStep(n)
+	return n
+end
+
 -- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more
 -- (from life PRICE_FLOOR_FROM_LIFE on; `lives` = data.lives)
 function Config.padCost(pad, realm, income, lives)
@@ -647,6 +663,37 @@ end
 -- Recruit button, then charges one `step` per rarity above the first (an Outer Disciple bursts at
 -- once, an Elder after 3 steps), bursts and shows the card for `hold` s (+ `holdPer` per tier).
 Config.REVEAL = { fly = 0.4, step = 0.3, hold = 1.6, holdPer = 0.25 }
+-- the x10 / x50 reveal (mock docs/art/mocks/recruit_multi_A.mp4, owner pick A 2026-10-22 "give it
+-- some juice and sound"): the orbs land in a grid by `pop`, open one after another (`wave` s apart,
+-- the gap shrinking with the count down to `waveMin`; a rare orb holds the wave `rarePause` s: Core
+-- or better at x10, Elder or better at x50 (`rareFrom` / `rareFromBig`, else x50 stalls on its Cores),
+-- and `zoom` s after the last one the best grows into the usual card, held `hold` s
+Config.REVEAL_MULTI = { pop = 1.3, wave = 1.2, waveMin = 0.035, waveMax = 0.12, rareFrom = 3, rareFromBig = 4, rarePause = 0.3, zoom = 0.35, hold = 2.2 }
+function Config.revealMultiWave(n)
+	local m = Config.REVEAL_MULTI
+	return math.clamp(m.wave / n, m.waveMin, m.waveMax)
+end
+-- the rarity index from which an orb counts as rare in an `n` reveal
+function Config.revealMultiRare(n)
+	local m = Config.REVEAL_MULTI
+	return n > 10 and m.rareFromBig or m.rareFrom
+end
+-- when each orb of `results` opens ({ rarity = name } list), and when the best card bursts after
+-- them (Juice lights the platform then)
+function Config.revealMultiTimes(results)
+	local m = Config.REVEAL_MULTI
+	local wave = Config.revealMultiWave(#results)
+	local rare = Config.revealMultiRare(#results)
+	local times, at = {}, m.pop
+	for i, r in results do
+		times[i] = at
+		at += wave
+		if Config.rarityIndex(r.rarity) >= rare then
+			at += m.rarePause
+		end
+	end
+	return times, at - wave + m.zoom
+end
 
 -- The disciple icons and their auras (D34): one uploaded 1024 x 1024 sheet drawn by
 -- tools/disciple_atlas.html (art/ui/disciple_atlas.png). Cells are { x, y, w, h } in px.
