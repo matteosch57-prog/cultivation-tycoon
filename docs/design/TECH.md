@@ -24,6 +24,13 @@
 Place-only content (not in Rojo): Lighting and `ActiveSky`, `ServerStorage.Sky_Original`, the Edit
 `Showcase` island, Terrain decoration. It persists only when the owner saves the place.
 
+## Screen orientation (D72)
+Landscape only on phones: `StarterGui.ScreenOrientation = LandscapeSensor` in `default.project.json`,
+and `src/first/Launch.client.luau` sets `PlayerGui.ScreenOrientation` and re-asserts it for the first
+5 s (only PlayerGui turns a player already in; the load can reset it). The project value reaches the
+place through Rojo; it persists only when the owner saves and publishes the place. Phone layouts only
+need checking in landscape sizes.
+
 ## Sync
 Normal: `start-rojo.bat` (port 34875), then Connect in the Studio Rojo plugin.
 Fallback used before Rojo existed: `python -m http.server 8765` in `src/` and an `execute_luau` that

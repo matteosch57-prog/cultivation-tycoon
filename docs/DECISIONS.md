@@ -438,3 +438,11 @@ the log as a D-number.
   Found in the Studio test: built models stream `Atomic` now; with streaming on, a Default model
   arrived as ~10% of its parts (Thatched Hut 47 of 483), so a preview held only those, the build-in
   swirled only those and the rest popped in colliding and shoved the buyer about a stud.
+- **D72** Landscape only on phones (owner 2026-10-22: "Force horizontal view"). The place had
+  `StarterGui.ScreenOrientation = Sensor`, so a phone held upright played in portrait.
+  `default.project.json` now sets `LandscapeSensor` (the phone still flips between its two landscape
+  sides; `$ignoreUnknownInstances` keeps the place's StarterGui children), and `Launch.client` sets
+  `PlayerGui.ScreenOrientation` and re-asserts it for 5 s: StarterGui is only copied at join and the
+  load can reset it (Heavenly RNG's bug). The launch screen waits up to 1.5 s for a landscape viewport
+  before sizing itself. Studio Play: HUD rails, top bar, realm bar, Recruit seal and jump button clean
+  at 693x359, 751x389, 823x426. The turn itself is only provable on a real phone.
