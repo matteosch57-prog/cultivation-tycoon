@@ -343,3 +343,13 @@ the log as a D-number.
   Daily Gift; the streak Claim can call it too. Why: top simulators answer on press with sound,
   squash and spring; HapticEffect is fully released on iPhone, Android and pads since Sept 2025.
   Tested in Play (Shop button 57x57 -> 61x49 -> 56x58 -> 57x57, no errors).
+- **D62** Hub rankings (owner 2026-10-22: "C but way more premium", statues and podiums "horrible",
+  "3 different rankings: biggest qi/s, weekly playtime", "a country ranking filter", then "OK, make
+  the lights better"; research `docs/research/2026-10-22_progression_pushes.md`, mocks
+  `docs/art/mocks/2026-10-22_rank_*.jpg`). Three boards on a wall at the hub (RankBoard): Greatest
+  Sects (realms climbed in every life, lives as tie-break) in a painted gate, Richest Qi (best qi/s
+  ever) and This Week (play time, new store each Monday UTC) on roofed steles, top 10 with head
+  shots, guardian lions, bronze ding braziers and pagoda lanterns with real light (free Creator
+  Store meshes rebuilt from ids, no inserted scripts). Each board has a global and a per-country
+  OrderedDataStore (Ranks.luau, batched writes, reads every RANK_REFRESH s); Lives joins Realm in
+  the player list. Why: rankings are the cheapest status push and give the skins (D53) an audience.

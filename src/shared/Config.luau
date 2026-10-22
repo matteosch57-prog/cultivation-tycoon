@@ -655,6 +655,37 @@ Config.RANK_GATE = { name = "Gate", height = 22, size = Vector3.new(26.567, 29.4
 	{ mesh = "rbxassetid://7299159581", texture = "rbxassetid://7299159924", size = Vector3.new(5.462, 9.489, 26.567), at = CFrame.new(0, 24.7322, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
 	{ mesh = "rbxassetid://7299136679", texture = "rbxassetid://7299137242", size = Vector3.new(2.213, 24.828, 22.612), at = CFrame.new(-0.0459, 12.4141, -0.0386, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
 } }
+-- "ancient chinese bronze vessel" and "chinese indoor lantern" by staticleelee (assets 92874522498149,
+-- 134122657957600): the wall's braziers and lanterns (owner: "make the lights better").
+Config.RANK_DING = { name = "Ding", height = 2.6, size = Vector3.new(9.8, 6.363, 6.447), parts = {
+	{ size = Vector3.new(0.4, 1.6, 2.0), at = CFrame.new(4.1001, 2.0453, 1.9434, 0, 1, 0, 0, 0, 1, 1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://6249538345", size = Vector3.new(4.575, 2.47, 7.4), at = CFrame.new(0, 4.2805, 0.0894, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://12449090364", size = Vector3.new(1.7, 1.247, 0.85), at = CFrame.new(0, 4.0454, 2.6001, -1, 0, 0, 0, 0, 1, 0, 1, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://12449090364", size = Vector3.new(1.9, 1.047, 0.85), at = CFrame.new(3.8750, 5.8393, 0.1021, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://7356523804", size = Vector3.new(2.629, 2.602, 1.198), at = CFrame.new(3.9390, 4.2071, 0.0703, 0, 0, -1, 0, 1, 0, 1, 0, 0), color = "27462D", material = "Concrete" },
+	{ mesh = "rbxassetid://7356523804", size = Vector3.new(2.629, 2.602, 1.414), at = CFrame.new(4.0469, 4.2071, 0.0703, 0, 0, -1, 0, 1, 0, 1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://15227880665", size = Vector3.new(7.387, 3.045, 4.502), at = CFrame.new(-0.0068, 1.5226, 0.1255, 1, 0, 0, 0, 1, 0, 0, 0, 1), color = "506D54", material = "CorrodedMetal" },
+	{ size = Vector3.new(0.4, 1.6, 2.0), at = CFrame.new(4.1001, 2.0453, -1.7256, 0, 1, 0, 0, 0, 1, 1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://12449090364", size = Vector3.new(1.9, 1.047, 0.85), at = CFrame.new(-3.9248, 5.8393, 0.1021, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://12449090364", size = Vector3.new(1.7, 1.247, 0.85), at = CFrame.new(0, 4.0454, -2.6001, 1, 0, 0, 0, 0, 1, 0, -1, 0), color = "506D54", material = "CorrodedMetal" },
+	{ mesh = "rbxassetid://7356523804", size = Vector3.new(2.629, 2.602, 1.198), at = CFrame.new(-3.9531, 4.2071, 0.0703, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "27462D", material = "Concrete" },
+	{ mesh = "rbxassetid://7356523804", size = Vector3.new(2.629, 2.602, 1.414), at = CFrame.new(-4.0615, 4.2071, 0.0703, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ size = Vector3.new(0.4, 1.6, 2.0), at = CFrame.new(-4.1001, 2.0453, -1.7256, 0, -1, 0, 0, 0, 1, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+	{ size = Vector3.new(0.4, 1.6, 2.0), at = CFrame.new(-4.1001, 2.0453, 1.9434, 0, -1, 0, 0, 0, 1, -1, 0, 0), color = "506D54", material = "CorrodedMetal" },
+} }
+-- the glowing core (Neon, a real PointLight sits in it) stands in for the original's lit panel
+Config.RANK_LANTERN = { name = "Lantern", height = 7, glowAt = 0.52, size = Vector3.new(6, 8.546, 6.004), parts = {
+	{ mesh = "rbxassetid://99854118578965", size = Vector3.new(6.004, 8.31, 6.0), at = CFrame.new(0, 4.1548, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "694028", material = "Wood" },
+	{ mesh = "rbxassetid://99854118578965", size = Vector3.new(5.604, 8.546, 5.6), at = CFrame.new(0, 4.2732, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0), color = "750000", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.433, 0.228, 1.394), at = CFrame.new(0.0059, 3.8852, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "1B2A35", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.827, 0.169, 1.608), at = CFrame.new(0.0059, 3.7947, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "750000", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.397, 1.107, 1.262), at = CFrame.new(0.0059, 4.4470, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0), color = "FFB25A", material = "Neon" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(0.709, 0.353, 0.709), at = CFrame.new(0.0059, 5.2923, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "1B2A35", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.827, 0.169, 1.608), at = CFrame.new(0.0059, 5.1002, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "750000", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.44, 0.22, 1.467), at = CFrame.new(0.0059, 5.1525, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "750000", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.106, 0.298, 1.202), at = CFrame.new(0.0059, 5.1915, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "750000", material = "Wood" },
+	{ mesh = "rbxassetid://3377804925", size = Vector3.new(1.433, 0.169, 1.394), at = CFrame.new(0.0059, 4.9881, 0, 0, 0, 1, 0, -1, 0, 1, 0, 0), color = "1B2A35", material = "Wood" },
+} }
 Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.386, 28.575), parts = {
 	{ mesh = "rbxassetid://7280531958", texture = "rbxassetid://7280532422", size = Vector3.new(38.665, 48.388, 28.576), at = CFrame.new(0, 24.1921, 0) },
 } }

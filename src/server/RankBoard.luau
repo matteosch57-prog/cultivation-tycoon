@@ -173,42 +173,88 @@ local function mesh(parent, def, cf, height)
 	local m = Instance.new("Model")
 	m.Name = def.name or "Prop"
 	for _, part in def.parts do
-		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, part.mesh, {
-			CollisionFidelity = Enum.CollisionFidelity.Box,
-			RenderFidelity = Enum.RenderFidelity.Automatic,
-		})
-		if ok and mp then
-			mp.Anchored = true
-			mp.TextureID = part.texture or ""
-			mp.Size = part.size * k
-			mp.CFrame = cf * (part.at - part.at.Position + part.at.Position * k)
-			mp.Parent = m
+		local p
+		if part.mesh then
+			local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, part.mesh, {
+				CollisionFidelity = Enum.CollisionFidelity.Box,
+				RenderFidelity = Enum.RenderFidelity.Automatic,
+			})
+			if ok and mp then
+				p = mp
+				p.TextureID = part.texture or ""
+			else
+				warn("[Tycoon][ranks] event=prop_mesh_failed")
+			end
 		else
-			warn("[Tycoon][ranks] event=prop_mesh_failed")
+			p = Instance.new("Part")
+		end
+		if p then
+			p.Anchored = true
+			p.Size = part.size * k
+			p.CFrame = cf * (part.at - part.at.Position + part.at.Position * k)
+			if part.color then
+				p.Color = Color3.fromHex(part.color)
+			end
+			if part.material then
+				p.Material = Enum.Material[part.material]
+			end
+			if p.Size.Magnitude < 3 then
+				p.CastShadow = false
+			end
+			p.Parent = m
 		end
 	end
 	m.Parent = parent
 	return m
 end
 
-local function brazier(parent, cf)
-	P(parent, Vector3.new(1.6, 0.4, 1.6), cf * CFrame.new(0, 0.2, 0), PAL.stone)
-	P(parent, Vector3.new(2.2, 0.7, 0.7), cf * CFrame.new(0, 1.2, 0) * CFrame.Angles(0, 0, math.pi / 2), H("6B4A2A"), Enum.Material.Metal, Enum.PartType.Cylinder)
-	local bowl = P(parent, Vector3.new(2, 0.6, 2), cf * CFrame.new(0, 2.5, 0), PAL.gold, Enum.Material.Metal)
-	local coals = P(parent, Vector3.new(1.5, 0.25, 1.5), cf * CFrame.new(0, 2.9, 0), H("FF7A2A"), Enum.Material.Neon)
-	coals.CastShadow = false
+local function flame(parent, at, size, range)
+	local holder = P(parent, Vector3.new(0.4, 0.4, 0.4), at, H("FF7A2A"))
+	holder.Transparency = 1
+	holder.CanCollide = false
+	holder.CanQuery = false
 	local fire = Instance.new("Fire")
-	fire.Size = 2.6
+	fire.Size = size
 	fire.Heat = 6
 	fire.Color = H("FF9A3C")
 	fire.SecondaryColor = H("FFD34D")
-	fire.Parent = bowl
+	fire.Parent = holder
 	local light = Instance.new("PointLight")
 	light.Color = H("FFB070")
-	light.Range = 16
-	light.Brightness = 1.8
+	light.Range = range
+	light.Brightness = 2
 	light.Shadows = false
-	light.Parent = coals
+	light.Parent = holder
+end
+
+-- a bronze ding (free mesh, Config.RANK_DING) burning on a stone step; plain bowl if it fails to load
+local function brazier(parent, cf)
+	local d = Config.RANK_DING
+	P(parent, Vector3.new(d.height * 1.3, 0.5, d.height * 1.3), cf * CFrame.new(0, 0.25, 0), PAL.stone)
+	local m = mesh(parent, d, cf * CFrame.new(0, 0.5, 0), d.height)
+	if not m or not m:FindFirstChildWhichIsA("BasePart") then
+		P(parent, Vector3.new(2, 0.6, 2), cf * CFrame.new(0, 1.8, 0), PAL.gold, Enum.Material.Metal)
+	end
+	flame(parent, cf * CFrame.new(0, 0.6 + d.height * 1.05, 0), d.height * 1.2, 18)
+end
+
+-- a pagoda-roofed lantern (free mesh, Config.RANK_LANTERN) with a real light in its glowing box
+local function lantern(parent, cf)
+	local d = Config.RANK_LANTERN
+	local m = mesh(parent, d, cf, d.height)
+	if not m or not m:FindFirstChildWhichIsA("BasePart") then
+		return
+	end
+	local holder = P(parent, Vector3.new(0.4, 0.4, 0.4), cf * CFrame.new(0, d.height * d.glowAt, 0), H("FFB070"))
+	holder.Transparency = 1
+	holder.CanCollide = false
+	holder.CanQuery = false
+	local light = Instance.new("PointLight")
+	light.Color = H("FFB070")
+	light.Range = 14
+	light.Brightness = 1.6
+	light.Shadows = false
+	light.Parent = holder
 end
 
 -- a roofed stele (a smaller board beside the gate)
@@ -246,7 +292,8 @@ function RankBoard.build(parent, cf)
 	-- guardians and fire in front
 	for _, sx in { -1, 1 } do
 		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 20, 0, -4) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
-		brazier(m, cf * CFrame.new(sx * 7, 0, -3))
+		brazier(m, cf * CFrame.new(sx * 5, 0, -6))
+		lantern(m, cf * CFrame.new(sx * 19.5, 0, 2.5))
 	end
 	m.Parent = parent
 	for key, rows in Ranks.top do
