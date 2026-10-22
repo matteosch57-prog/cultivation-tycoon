@@ -47,6 +47,12 @@ Config.HEALTH_PRESSURE_COOLDOWN = 60 -- s between DataStorePressure events of on
 Config.LOWPOLY_BALL = "rbxassetid://75794578549559"
 Config.LOWPOLY_CYLINDER = "rbxassetid://90367641492097"
 Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true parts
+-- Pond boulders (owner 2026-10-22, pick B): tools/rock_meshes.py writes art/meshes/rock_1..4.obj,
+-- the owner uploads them (R11). Empty = not uploaded yet: the rims use tilted block stones instead.
+Config.ROCK_MESH = { "", "", "", "" }
+-- Koi (owner 2026-10-22: "just find a model"): a free Creator Store fish, `length` studs nose to
+-- tail, `turn` = the rotation that points its nose toward -Z (this mesh faces +Z). mesh "" = no koi.
+Config.KOI = { mesh = "rbxassetid://5946959434", texture = "rbxassetid://5946959571", length = 3, turn = CFrame.Angles(0, math.pi, 0) }
 -- Leaf-card tree canopies (src/server/Nature.luau, tools/nature_assets.py writes art/meshes/canopy_*.obj).
 -- The owner uploads them (R11); empty = not uploaded yet, the old part trees stay. The leaf textures
 -- live in src/server/NatureKit.model.json as SurfaceAppearances.

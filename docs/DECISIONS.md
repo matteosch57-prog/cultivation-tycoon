@@ -204,3 +204,15 @@ the log as a D-number.
   Qi boost", "after a big building after 5-10 minutes"): 5 Robux once, an Elder + 10% Qi forever,
   offered once by a card after a big building between 5 and 10 min of play (MONETIZATION "Welcome
   Pouch"); cheap repeatable qi left out (research `2026-10-22_cheap_buys.md`).
+- **D42** Round ponds ringed with boulders (owner 2026-10-22: "all water sources are round and ugly,
+  use real small rocks for the round shape, make the water fit the round shape"; picked B of the
+  mock `docs/art/mocks/2026-10-22_pond_rims.html`): every round pond (resource ponds, koi pond,
+  waterfall pool) gets a ring of low-poly boulders (4 meshes from `tools/rock_meshes.py`, ids in
+  `Config.ROCK_MESH`, tilted block stones until uploaded) with pebbles in the gaps, its water a
+  paler disc under the rocks + the deeper tint in the middle, and ripples cut to the circle
+  (Gladiator RNG's round basins, D311 there) instead of a square patch.
+- **D43** Koi pond: a red drum bridge spanning rim to rim (curved plank deck, rails following the
+  curve, gold-capped posts; owner picked A of `docs/art/mocks/2026-10-22_koi_bridge_*.jpg`; Chinese
+  garden bridge research: drum, moon and nine-turn types, the stone moon arch read as a lump) and
+  koi from a free Creator Store mesh (owner: "just find a model"; "Fish A" by Karcist, a bare
+  MeshPart, no scripts; ids + size in `Config.KOI`), after two part-built koi read as blobs.

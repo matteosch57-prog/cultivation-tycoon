@@ -42,6 +42,12 @@ pass live in [captures/](captures/); HUD mocks in [mocks/](mocks/).
   dirt band, a light sandstone shelf, rock rings fading from sandstone A08A74 to slate 5A5670 downward,
   hanging spires, grass drips over the rim, dangling roots, small floating rocks.
 - One waterfall per peak (`Style.waterfall`, particle stream + mist) at the angle in `WATERFALL_ANGLE`.
+- Round water (D42, `Style.pond` / `koiPond` / the waterfall pool): a ring of low-poly boulders
+  (`Lowpoly.rock`, Slate in the three stone tones) half sunk with pebbles between, water at ground
+  level reaching under them, ripples cut to the circle. Never a square ripple patch on round water.
+  Captures `docs/art/captures/2026-10-22_pond_rims_*.jpg`.
+- Koi pond (D43): red drum bridge rim to rim, koi = the `Config.KOI` mesh (never fish built from
+  parts). Capture `docs/art/captures/2026-10-22_koi_pond_bridge_koi.jpg`.
 
 ## Palette
 Vermilion B8352B · tile 3E4656 · gold D4A445 · plaster EDE3CF · timber 5A3A29 · jade 6FB59C ·
