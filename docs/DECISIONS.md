@@ -286,6 +286,10 @@ the log as a D-number.
   sparkles twinkling around the body instead of the part-built crown. Why:
   the box icons were the "AI look" the owner keeps catching; the centre ring covered the view and
   overlapped the counter; a light aura matches the disciples' language.
+- **D54** HUD menus = mock B (owner pick, `docs/art/mocks/hud_menus_*.jpg`): left column = what you
+  open (Shop gold, Disciples, Karma), right stack under the next goal = what ticks (gift with its next
+  reward always shown, pill, altar row via `PlayerGui.HudSlots`); one dark button face, gold only for
+  the Shop and a ready gift or pill; a karma counter beside qi once the player has karma or a past life.
 - **D53** Building skins follow the realm, lives add what a reset cannot take (owner picked A over B
   and C, then "A is better still", mocks `docs/art/mocks/2026-10-22_skins_*.jpg`, research
   `docs/research/2026-10-22_visible_progression.md`). Every building is recoloured after it is built
@@ -296,3 +300,6 @@ the log as a D-number.
   over every head shows the realm in its colour and, from life 2, "Nth Life · grade"
   (`StatusTitle.client`). Why: the owner found realms and reincarnation worthless without a visible
   change ("like social status"); a material ladder reads from the next peak like Clash of Clans walls.
+- **D55** Phone calm pass = mock A (owner pick): two quiet rails; left = Shop, Disciples, Karma,
+  Friends (small, numbers only); right edge = round timers (gift with its reward, pill, altar); one
+  Friends button replaces the friends card and the group chip; smaller Recruit seal.
