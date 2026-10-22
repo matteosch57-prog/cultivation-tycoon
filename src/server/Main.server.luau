@@ -1599,8 +1599,26 @@ local function addDisciple(s, name, force, noBuild, look)
 	return kept, look, stars, stars > starsBefore
 end
 
+-- A recruit or chest summon that errors half way must not leave `s.recruiting` set: the player could
+-- never recruit again this session (Reincarnate guards its busy flag the same way)
+local function clearsBusy(what, fn)
+	return function(player, ...)
+		local ok, res = pcall(fn, player, ...)
+		if ok then
+			return res
+		end
+		local s = sessions[player]
+		if s then
+			s.recruiting = false
+		end
+		warn("[Tycoon] recruit failed") -- constant text: the Error Report groups by string
+		print("[Tycoon] " .. what .. " error:", res)
+		return nil
+	end
+end
+
 -- one free summon from the idle chest: the same roll and seating as a recruit, no qi
-chestFn.OnServerInvoke = function(player)
+chestFn.OnServerInvoke = clearsBusy("chest summon", function(player)
 	if not Guard.allow(player, "ChestSummon") then
 		return nil -- over its call budget (Guard)
 	end
@@ -1609,22 +1627,31 @@ chestFn.OnServerInvoke = function(player)
 		return nil
 	end
 	s.recruiting = true
-	s.data.chestSummons -= 1
-	player:SetAttribute("ChestSummons", s.data.chestSummons)
-	local r = roll()
-	local kept, look, stars, newStar = addDisciple(s, r.name)
-	-- a rolled rarity keeps its "first pulled" mark, as with a recruit
-	s.data.pulled = s.data.pulled or {}
-	s.data.pulled[r.name] = true
-	publish(player)
-	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+	-- pcall: an error inside must not leave the busy flag set (recruits and summons would stop for
+	-- the rest of the session; audit 2026-10-22)
+	local ok, res = pcall(function()
+		s.data.chestSummons -= 1
+		player:SetAttribute("ChestSummons", s.data.chestSummons)
+		local r = roll()
+		local kept, look, stars, newStar = addDisciple(s, r.name)
+		-- a rolled rarity keeps its "first pulled" mark, as with a recruit
+		s.data.pulled = s.data.pulled or {}
+		s.data.pulled[r.name] = true
+		publish(player)
+		Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+		return { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, left = s.data.chestSummons }
+	end)
 	s.recruiting = false
-	return { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, left = s.data.chestSummons }
+	if not ok then
+		warn("[Tycoon] chest summon failed:", res)
+		return nil
+	end
+	return res
 end
 
 -- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
 -- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
-recruitFn.OnServerInvoke = function(player, count)
+recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	if not Guard.allow(player, "Recruit") then
 		return nil -- over its call budget (Guard)
 	end
@@ -1646,31 +1673,45 @@ recruitFn.OnServerInvoke = function(player, count)
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
-	s.data.qi -= cost
-	s.data.recruited += want -- lifetime (telemetry)
-	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
-	Telemetry.sink(player, s.data, cost, "recruit")
-	local results, best, bestLook, bestKept, bestKeptName, bestKeptKey = {}, nil, nil, false, nil, nil
-	s.data.pulled = s.data.pulled or {}
-	for _ = 1, want do
-		local r = roll()
-		local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
-		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
-		if not best or r.bonus > Config.rarity(best).bonus then
-			best, bestLook = r.name, look
+	local ok, res = pcall(function() -- an error must not leave the busy flag set (audit 2026-10-22)
+		s.data.qi -= cost
+		s.data.recruited += want -- lifetime (telemetry)
+		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
+		Telemetry.sink(player, s.data, cost, "recruit")
+		local results, best, bestLook, bestKept, bestKeptName, bestKeptKey = {}, nil, nil, false, nil, nil
+		local rolled = {} -- ["rarity|kept"] = count: one Recruit event per outcome, not one per roll (an
+		-- x50 alone was a quarter of the server's minute analytics budget, Telemetry `spend`)
+		s.data.pulled = s.data.pulled or {}
+		for _ = 1, want do
+			local r = roll()
+			local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
+			table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
+			if not best or r.bonus > Config.rarity(best).bonus then
+				best, bestLook = r.name, look
+			end
+			if kept and (not bestKeptName or r.bonus > Config.rarity(bestKeptName).bonus) then
+				bestKept, bestKeptName, bestKeptKey = true, r.name, Config.indexKey(r.name, look)
+			end
+			local key = r.name .. "|" .. (kept and "kept" or "benched")
+			rolled[key] = (rolled[key] or 0) + 1
+			-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
+			s.data.pulled[r.name] = true
 		end
-		if kept and (not bestKeptName or r.bonus > Config.rarity(bestKeptName).bonus) then
-			bestKept, bestKeptName, bestKeptKey = true, r.name, Config.indexKey(r.name, look)
+		for key, n in rolled do
+			local rarity, fate = string.match(key, "^(.-)|(%a+)$")
+			Telemetry.customValue(player, "Recruit", n, rarity, Telemetry.realmBucket(s.data.realm), fate)
 		end
-		Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
-		-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
-		s.data.pulled[r.name] = true
-	end
-	buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
-	publish(player)
-	Telemetry.funnel(player, s.data)
+		buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
+		publish(player)
+		Telemetry.funnel(player, s.data)
+		return { ok = true, rarity = best, look = bestLook, kept = bestKept, results = results }
+	end)
 	s.recruiting = false
-	return { ok = true, rarity = best, look = bestLook, kept = bestKept, results = results }
+	if not ok then
+		warn("[Tycoon] recruit failed:", res)
+		return nil
+	end
+	return res
 end
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.
@@ -1835,10 +1876,13 @@ inviteEv.OnServerEvent:Connect(function(player)
 end)
 
 -- Reincarnation: the ONE function every caller goes through, so the gate lives here. A new life
--- lands at realm 1, below the REINC_REALM gate, so it can never be repeated for free.
+-- lands at half the soul peak, never above it, so the record-depth gate below stops a free repeat.
 local function reincarnate(player, s)
 	local d = s.data
-	if d.realm < Config.REINC_REALM then
+	-- the same gate as the Reincarnation page: the gate realm AND a new record depth. A life lands at
+	-- half the soul peak, so from soulPeak 4 it lands ON realm 2: a realm-only gate let a fired remote
+	-- repeat it at once for free lives (Lives board, life skins, the Reborn badge, a server-wide toast).
+	if d.realm < math.max(Config.REINC_REALM, (d.soulPeak or 0) + 1) then
 		return nil
 	end
 	local gained = karmaGain(d, builtShare(d))

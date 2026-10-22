@@ -22,8 +22,10 @@ fling other players. They cannot change server values, other players' data or th
 | MenuOpened | menu key | whitelist `MENUS`; only marks a red dot followed (`Dots.seen`), grants nothing | Safe |
 | ClaimWelcome | nothing | `welcomed == false`, once | Safe |
 | ClaimGroup | nothing | fresh `GetGroupsAsync`, 3 s cooldown | Safe |
+| SocialInvite | nothing | Guard, 10 s per player; telemetry only, grants nothing | Safe |
+| Bless (ProximityPrompt) | prompt trigger | not your own shrine, once per sect a UTC day, give/get caps, 1 s busy flag; owner's share needs a real account (age + play time). No Guard (a prompt, not a remote) and the hold time is client side | Safe: an instant trigger gains nothing the caps allow |
 | DaoBuy | node key | string, node exists, price, cap | Safe |
-| Reincarnate | nothing | realm gate inside the one shared function | Safe |
+| Reincarnate | nothing | gate realm AND a new record depth (`soulPeak + 1`, as the page shows) inside the one shared function | **Fixed** (audit 2026-10-22): the realm-only gate let a fired remote repeat it for free lives once a life landed on realm 2 |
 | ShopBuy / ShopOpened | item key / source | string, length, 1 s, realm gate, limit / whitelist | Safe |
 | ProcessReceipt | (Roblox) | PurchaseId de-dup in the save, grant then save, `NotProcessedYet` on a failed save | Safe |
 | Qi orbs | nothing (position) | own orbs, spawn rate caps the income | Safe: a teleport only saves walking |
