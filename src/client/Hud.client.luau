@@ -198,7 +198,7 @@ local function toy(parent, size, color, radius)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
 	Toy.glass(btn, radius)
-	Toy.feel(btn, { scale = holder }) -- sound, buzz, squish and spring (shared with every screen)
+	Toy.feel(btn, { scale = holder, squash = { btn, shadow } }) -- sound, buzz and jelly (shared with every screen)
 	return holder, btn
 end
 
@@ -665,8 +665,8 @@ local function build()
 	end
 	hover(rBtn)
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
-	-- press feel, like the toy buttons (the seal's own UIScale breathes, so the face squeezes)
-	Toy.feel(rBtn, { sink = seal, hover = false })
+	-- press feel, like the toy buttons
+	Toy.feel(rBtn, { squash = { rBtn, shadow }, hover = false })
 
 	-- next goal: top right, under Roblox's own buttons
 	local goal = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY, Rotation = 2 })

@@ -361,7 +361,7 @@ local function build(away, summons, mode)
 			state = "hidden",
 			bob = i * 0.7,
 		}
-		Toy.feel(face, { sink = false, hover = false }) -- (the holder's UIScale pops it in)
+		Toy.feel(face, { hover = false })
 		face.Activated:Connect(function()
 			task.spawn(openBall, b)
 		end)

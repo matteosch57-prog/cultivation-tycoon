@@ -647,7 +647,7 @@ local function showOffer()
 	notNow.LayoutOrder = 4
 	notNow.Parent = body
 	text(notNow, "Not now", px(15), Color3.fromHex("D9D0E8"))
-	Toy.feel(notNow, { sink = false })
+	Toy.feel(notNow)
 	local function closeOffer()
 		offerGui.Enabled = false
 	end

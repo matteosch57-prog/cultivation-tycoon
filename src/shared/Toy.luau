@@ -88,16 +88,18 @@ function Toy.glass(face, radius)
 	return g
 end
 
--- Click feel for every button in the game (mock _local/button_feel_mock.html, "Button Feel Picks").
--- On touch, not on release, so it answers instantly: the click sound, a phone buzz (Haptic), the
--- button sinks onto its shadow and squeezes; release springs it back past 1 and settles. Style "B"
--- adds a white blink on the face and a thin ring popping off the edge. Gamepad and keyboard presses
--- (Activated with no touch first) get the same thing in one go.
---   opts.scale  what squeezes (default the button; Toy.button passes its holder)
---   opts.sink   what drops onto the shadow (default the button; false = nothing drops)
---   opts.sound  Sfx name for the press (default "click"; false = silent, the caller plays its own)
---   opts.hover  false = no grow on mouse-over
-Toy.FEEL = "B"
+-- Click feel for every button in the game: "Jelly" (owner pick C, mock "Button Feel Picks",
+-- _local/button_feel_mock.html). On touch, not on release, so it answers instantly: the click
+-- sound, a phone buzz (Haptic), and the face squashes wide and short onto its shadow; release
+-- wobbles it tall, then wide, then settles. Gamepad and keyboard presses (Activated with no touch
+-- first) get the same thing in one go.
+--   opts.squash  the pieces that squash together (Toy.button passes face + shadow). Default the
+--                button itself, unless a layout or AutomaticSize owns its size: then it wobbles
+--                through its UIScale instead
+--   opts.scale   what grows on mouse-over and pops on Toy.reward (default the button; Toy.button
+--                passes its holder)
+--   opts.sound   Sfx name for the press (default "click"; false = silent, the caller plays its own)
+--   opts.hover   false = no grow on mouse-over
 local feels = setmetatable({}, { __mode = "k" }) -- button -> its UIScale, for Toy.reward
 
 local function tw(obj, t, goal, style, dir)
@@ -137,6 +139,17 @@ local function ringOff(btn, grow, t, thick)
 	end)
 end
 
+-- the squash keyframes (x, y, seconds): touch, then the release wobble
+local SQUASH = { 1.08, 0.86, 0.07 }
+local WOBBLE = { { 0.94, 1.1, 0.14 }, { 1.03, 0.97, 0.13 }, { 1, 1, 0.2 } }
+
+local function sizeOwned(g)
+	if g.AutomaticSize ~= Enum.AutomaticSize.None then
+		return true
+	end
+	return g.Parent ~= nil and g.Parent:FindFirstChildWhichIsA("UIGridStyleLayout") ~= nil
+end
+
 function Toy.feel(btn, opts)
 	if feels[btn] then
 		return feels[btn]
@@ -158,46 +171,67 @@ function Toy.feel(btn, opts)
 	if sc then
 		feels[btn] = sc
 	end
-	local sink = opts.sink == nil and btn or opts.sink
-	local drop, ring = px(3), px(10) -- (sized now: another screen may change Toy.S later)
-	local rest
+	-- squash pieces with their resting Size/Position; they squash about their bottom middle, so
+	-- the face presses down onto its shadow and stretches up out of it
+	local pieces = {}
+	for _, g in opts.squash or (sizeOwned(btn) and {} or { btn }) do
+		table.insert(pieces, { g = g })
+	end
+	local gen = 0
+	local function squashTo(sx, sy, t, style)
+		for _, p in pieces do
+			local g, size, pos = p.g, p.size, p.pos
+			local ax, ay = g.AnchorPoint.X, g.AnchorPoint.Y
+			local kx, ky = (0.5 - ax) * (1 - sx), (1 - ay) * (1 - sy)
+			tw(g, t, {
+				Size = UDim2.new(size.X.Scale * sx, size.X.Offset * sx, size.Y.Scale * sy, size.Y.Offset * sy),
+				Position = pos + UDim2.new(size.X.Scale * kx, size.X.Offset * kx, size.Y.Scale * ky, size.Y.Offset * ky),
+			}, style)
+		end
+	end
+	local function wobble(i, my)
+		local k = WOBBLE[i]
+		if not k or gen ~= my then
+			return
+		end
+		if #pieces > 0 then
+			squashTo(k[1], k[2], k[3], Enum.EasingStyle.Sine)
+		elseif sc then
+			tw(sc, k[3], { Scale = (k[1] + k[2]) / 2 + (i == 1 and 0.06 or 0) }, Enum.EasingStyle.Sine)
+		end
+		task.delay(k[3], wobble, i + 1, my)
+	end
 	local down, lastUp = false, 0
 	local function press()
 		if down then
 			return
 		end
 		down = true
+		gen += 1
 		if opts.sound ~= false then
 			Sfx.play(opts.sound or "click")
 		end
 		Haptic.play("click")
-		if sink then
-			rest = sink.Position
-			sink.Position = rest + UDim2.fromOffset(0, drop)
-		end
-		if sc then
-			tw(sc, 0.06, { Scale = 0.92 })
-		end
-		if Toy.FEEL == "B" then
-			local f = flashOf(btn)
-			f.BackgroundTransparency = 0.5
-			tw(f, 0.16, { BackgroundTransparency = 1 })
+		if #pieces > 0 then
+			for _, p in pieces do
+				if not p.size then -- rest taken at the first touch, when the screen has laid out
+					p.size, p.pos = p.g.Size, p.g.Position
+				end
+			end
+			squashTo(SQUASH[1], SQUASH[2], SQUASH[3])
+		elseif sc then
+			tw(sc, SQUASH[3], { Scale = 0.9 })
 		end
 	end
-	local function release(fired)
+	local function release()
 		if not down then
 			return
 		end
 		down, lastUp = false, os.clock()
-		if sink and rest then
-			sink.Position = rest
+		if sc and #pieces > 0 then
+			tw(sc, 0.2, { Scale = 1 })
 		end
-		if sc then
-			tw(sc, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-		end
-		if fired and Toy.FEEL == "B" then
-			ringOff(btn, ring, 0.38, drop)
-		end
+		wobble(1, gen)
 	end
 	btn.InputBegan:Connect(function(input)
 		local t = input.UserInputType
@@ -208,11 +242,11 @@ function Toy.feel(btn, opts)
 	btn.InputEnded:Connect(function(input)
 		local t = input.UserInputType
 		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-			release(true)
+			release()
 		end
 	end)
 	btn.MouseLeave:Connect(function()
-		release(false)
+		release()
 		if sc and not down then
 			tw(sc, 0.2, { Scale = 1 })
 		end
@@ -227,7 +261,7 @@ function Toy.feel(btn, opts)
 	btn.Activated:Connect(function()
 		if not down and os.clock() - lastUp > 0.3 then -- gamepad / keyboard: no touch came first
 			press()
-			task.delay(0.07, release, true)
+			task.delay(SQUASH[3], release)
 		end
 	end)
 	return sc
@@ -315,7 +349,7 @@ function Toy.button(parent, size, color, radius)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
 	Toy.glass(btn, radius)
-	Toy.feel(btn, { scale = holder })
+	Toy.feel(btn, { scale = holder, squash = { btn, shadow } })
 	return holder, btn
 end
 
