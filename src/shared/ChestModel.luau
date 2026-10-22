@@ -107,7 +107,7 @@ function ChestModel.build(parent, cf)
 		local slat = part(
 			lid,
 			Vector3.new(W + 0.04, 0.22, LID_R * math.pi / slats + 0.06),
-			center * CFrame.new(0, y, z) * CFrame.Angles(-(a - math.pi / 2), 0, 0),
+			center * CFrame.new(0, y, z) * CFrame.Angles(a - math.pi / 2, 0, 0),
 			i % 2 == 0 and LACQUER or LACQUER_DARK
 		)
 		slat.Name = "Slat"
@@ -120,10 +120,22 @@ function ChestModel.build(parent, cf)
 			part(
 				lid,
 				Vector3.new(0.26, 0.08, LID_R * math.pi / slats + 0.08),
-				center * CFrame.new(x, y, z) * CFrame.Angles(-(a - math.pi / 2), 0, 0),
+				center * CFrame.new(x, y, z) * CFrame.Angles(a - math.pi / 2, 0, 0),
 				math.abs(x) > W / 2 - 0.2 and BRASS or GOLD,
 				Enum.Material.Metal
 			)
+		end
+	end
+	-- the lid's two ends: a half disc built from stacked strips under the arc (closes the barrel)
+	for _, x in { -W / 2 + 0.06, W / 2 - 0.06 } do
+		local rows = 6
+		for r = 0, rows - 1 do
+			local y0, y1 = r / rows * LID_R, (r + 1) / rows * LID_R
+			local half = math.sqrt(math.max(0, LID_R * LID_R - y1 * y1)) -- inside the arc at the strip's top
+			local mid = (y0 + y1) / 2
+			local w = 2 * math.sqrt(math.max(0, LID_R * LID_R - mid * mid))
+			w = math.max(w, 2 * half)
+			part(lid, Vector3.new(0.12, y1 - y0 + 0.02, w), center * CFrame.new(x, mid, 0), LACQUER_DARK)
 		end
 	end
 	-- a jade knob on top
