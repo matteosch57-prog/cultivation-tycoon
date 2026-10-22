@@ -51,6 +51,15 @@ neither changed. Cumulative inside a life, gone after a reincarnation:
 A breakthrough to a realm with a look toasts its line to the owner (`Config.realmLookLine`, Notify
 `realmLook`).
 
+## Building skins and status (D53)
+`Skin.apply` recolours each building after `Builders` makes it (nearest `Style.PAL` colour, same
+offset, Neon untouched) to the grade `Config.skinFor(realm, lives)` names: `SKIN_REALM_GRADES` for
+realms 1 to 4, `SKIN_LIFE_TOP` from realm 4 in later lives. `Skin.extras` (not for previews) adds
+`SKIN_LANTERNS` stone lanterns round the Main Hall per life and a mote emitter over buildings at least
+`SKIN_MOTE_MIN` wide from `SKIN_MOTE_FROM` (`Config.skinLevel`). `StatusTitle.client` draws the realm
+name in `Config.realmColor` and "Nth Life · grade" over every head from the Realm / Lives attributes.
+Studio: `DebugSet:Invoke(player, "lives", 3)` rebuilds with that life's look.
+
 ## Screen and HUD
 - HUD: a "Rebirth 3/10" chip beside the realm name above the progress bar; gold and wobbling from
   realm 10 ("Rebirth!"). It opens `Reincarnation.client.luau`.

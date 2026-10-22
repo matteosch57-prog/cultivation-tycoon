@@ -290,3 +290,13 @@ the log as a D-number.
   open (Shop gold, Disciples, Karma), right stack under the next goal = what ticks (gift with its next
   reward always shown, pill, altar row via `PlayerGui.HudSlots`); one dark button face, gold only for
   the Shop and a ready gift or pill; a karma counter beside qi once the player has karma or a past life.
+- **D53** Building skins follow the realm, lives add what a reset cannot take (owner picked A over B
+  and C, then "A is better still", mocks `docs/art/mocks/2026-10-22_skins_*.jpg`, research
+  `docs/research/2026-10-22_visible_progression.md`). Every building is recoloured after it is built
+  (`Skin.luau`): Timber, Red Lacquer (the art), Jade, Imperial Gold over realms 1 to 4 (the realms
+  the island opens over); from realm 4 a 2nd / 3rd / 4th+ life builds in White Jade / Void Amethyst /
+  Celestial Azure (`SKIN_LIFE_TOP`). Lives add real stone lanterns round the Main Hall
+  (`SKIN_LANTERNS`) and motes over big buildings scale with realm step + lives (`skinLevel`). A title
+  over every head shows the realm in its colour and, from life 2, "Nth Life · grade"
+  (`StatusTitle.client`). Why: the owner found realms and reincarnation worthless without a visible
+  change ("like social status"); a material ladder reads from the next peak like Clash of Clans walls.

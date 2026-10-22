@@ -576,6 +576,66 @@ Config.PALETTES = {
 	{ stone = Color3.fromRGB(235, 225, 200), wood = Color3.fromRGB(110, 30, 30), roof = Color3.fromRGB(200, 150, 40), trim = Color3.fromRGB(255, 220, 120), glow = Color3.fromRGB(255, 210, 110) },
 }
 
+-- Building skins (research docs/research/2026-10-22_visible_progression.md, mocks
+-- docs/art/mocks/2026-10-22_skins_*.jpg): every building is recoloured after it is built
+-- (src/server/Skin.luau) so a peak shows how far its owner has come from the next peak over.
+-- A grade maps Style.PAL keys (ART_BIBLE palette) to a colour, or { colour, material }; keys left out
+-- keep the art colour. Grade 2 is the art itself.
+local hex = Color3.fromHex
+Config.SKIN_GRADES = {
+	{ name = "Timber", map = { vermilion = hex("8A5A3B"), tile = hex("7D6B4F"), tileDark = hex("5E4F3A"), gold = hex("6B5A45"), plaster = hex("CDBB9A"), jade = hex("6E8060") } },
+	{ name = "Red Lacquer", map = {} },
+	{ name = "Jade", map = { vermilion = hex("2E6F5A"), tile = hex("2F7A5E"), tileDark = hex("21573F"), plaster = hex("F2EFE6"), stone = hex("D9D6CC"), stoneLight = hex("E6E3DA") } },
+	{ name = "Imperial Gold", map = { tile = hex("D9A43A"), tileDark = hex("A87A22"), plaster = hex("F0D9A8"), gold = hex("F2C14E"), stone = hex("E4D7B5") } },
+	{ name = "White Jade", map = { tile = hex("E8ECEF"), tileDark = hex("B9C3CC"), vermilion = hex("EDE6D8"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, timber = hex("D8CFC0"), timberDark = hex("A89F8E"), gold = hex("F5D27A"), stone = { hex("EEF0F2"), Enum.Material.Marble }, stoneLight = hex("F7F8F9"), jade = hex("9FE3CF") } },
+}
+-- Later lives top out higher (owner pick A, 2026-10-22: the material follows the realm; lives add what
+-- a reset cannot take): from realm 4 a life N >= 2 builds in SKIN_LIFE_TOP[N - 1] instead of Imperial Gold.
+table.insert(Config.SKIN_GRADES, { name = "Void Amethyst", map = { tile = hex("6B4FA8"), tileDark = hex("4A3478"), vermilion = hex("3B2E5A"), plaster = hex("EAE4F5"), gold = hex("CFC6E8"), stone = hex("C9C3D6"), stoneLight = hex("DDD8E6") } })
+table.insert(Config.SKIN_GRADES, { name = "Celestial Azure", map = { tile = hex("4FA3D9"), tileDark = hex("2F78A8"), vermilion = hex("F2F6FA"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = hex("FFD36A"), stone = { hex("E8EEF4"), Enum.Material.Marble }, stoneLight = hex("F4F8FB"), timberDark = hex("2B4F6E") } })
+Config.SKIN_REALM_GRADES = { 1, 2, 3, 4 } -- realms 1 to 4 (the island opens over the same 4 realms, Config.REALM_PADS)
+Config.SKIN_LIFE_TOP = { 5, 6, 7 } -- lives 2, 3, 4+ at realm 4 and above
+-- Lives also add light and aura that a reset never takes back: real stone lanterns round the Main
+-- Hall (SKIN_LANTERNS per life, R3: a visible lamp with a real light) and slow motes over every
+-- big building from SKIN_MOTE_FROM (level = realm grade step + lives - 1). Phone budget (R16 rule 6):
+-- one emitter per building of SKIN_MOTE_MIN studs or more, Rate SKIN_MOTE_RATE x (level - from + 1)
+-- capped at SKIN_MOTE_MAX, Lifetime ~5 s: under 20 live motes a building; lanterns capped at 8 lights.
+Config.SKIN_LANTERNS = { 0, 4, 6, 8 } -- lives 1, 2, 3, 4+
+Config.SKIN_MOTE_FROM = 3
+Config.SKIN_MOTE_MIN = 16
+Config.SKIN_MOTE_RATE = 1
+Config.SKIN_MOTE_MAX = 4
+Config.SKIN_MOTE_COLOR = { Color3.fromHex("FFB070"), Color3.fromHex("FFB070"), Color3.fromHex("9FF5C8"), Color3.fromHex("FFD36A"), Color3.fromHex("E8F6FF"), Color3.fromHex("C9B5FF"), Color3.fromHex("A8DCFF") } -- by grade
+-- grade index for a peak at `realm` in life `lives`
+function Config.skinFor(realm, lives)
+	realm, lives = realm or 1, lives or 1
+	local top = #Config.SKIN_REALM_GRADES
+	if lives > 1 and realm >= top then
+		return Config.SKIN_LIFE_TOP[math.min(lives - 1, #Config.SKIN_LIFE_TOP)]
+	end
+	return Config.SKIN_REALM_GRADES[math.clamp(realm, 1, top)]
+end
+-- how much light and aura: the realm's step (1 to 4) plus one per extra life
+function Config.skinLevel(realm, lives)
+	return math.clamp(realm or 1, 1, #Config.SKIN_REALM_GRADES) + (lives or 1) - 1
+end
+function Config.skinName(realm, lives)
+	return Config.SKIN_GRADES[Config.skinFor(realm, lives)].name
+end
+-- the overhead status title (StatusTitle.client): realms 1 to 5 climb the rarity colours, then the realm tint
+function Config.realmColor(realm)
+	if realm <= 5 then
+		return Config.RARITIES[math.max(1, realm)].color
+	end
+	return Config.realmTint(realm)
+end
+Config.TITLE_SEE = 110 -- studs: farther titles are hidden
+function Config.ordinal(n)
+	local t = n % 100
+	local suffix = (t >= 11 and t <= 13) and "th" or ({ "st", "nd", "rd" })[n % 10] or "th"
+	return n .. suffix
+end
+
 -- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
