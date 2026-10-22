@@ -1336,6 +1336,21 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 	elseif kind == "tide" then
 		toast("Spirit Tide! 2x Qi", Color3.fromHex("9FD0FF"), 4)
 		return
+	elseif kind == "blessed" then -- a visitor blessed this sect (Bless.luau); b = qi gained (0: none)
+		if b and b > 0 then
+			popGain(b, true)
+			toast({ a .. " blessed your sect", amt("qi", b, "+") }, Color3.fromHex("9FF5D0"), 4)
+		else
+			toast(a .. " blessed your sect", Color3.fromHex("9FF5D0"), 4)
+		end
+		return
+	elseif kind == "blessGave" then -- a = qi gained, b = the sect's owner
+		popGain(a, true)
+		toast({ "Blessed " .. b, amt("qi", a, "+") }, Color3.fromHex("9FF5D0"), 3)
+		return
+	elseif kind == "blessNo" then
+		toast(a, PINK, 2)
+		return
 	end
 	if kind == "built" then
 		toast(a .. "!", Color3.fromHex("9FF5C8"), 1.6)

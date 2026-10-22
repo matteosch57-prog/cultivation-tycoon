@@ -307,3 +307,11 @@ the log as a D-number.
   to 16 rebuilt the same 16 realm-1 buildings slower, first new land at minute 19). Life 2 now breaks
   through in about a minute and buys new land at about minute 10. The Old Foundations Karma node did
   exactly this, so it is gone.
+- **D57** Incense Blessing (owner pick A of three, mock `docs/art/mocks/neighbour_visits.html`; research
+  `2026-10-22_neighbour_visits.md`): the reason to visit a neighbour. Every peak has an incense shrine
+  by its entrance; a visitor holds its prompt 3 s and both get BLESS_SECONDS of their own offline-rate
+  income (the Adopt Me trick-or-treat shape: both sides gain, once a day per house). Once per visitor
+  and sect a UTC day, 5 given and 5 received a day at most, never your own; the owner's share needs a
+  giver with a 7-day-old account and 10 min played (alts feed nobody). Today's sticks stay lit; the
+  plaque counts every blessing ever (`blessTotal`, a status number for the coming sect board). Never
+  required, never prompted for (FarmVille's "spam your friends" backlash).

@@ -23,6 +23,7 @@ local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Journal = require(script.Parent:WaitForChild("Journal"))
+local Bless = require(script.Parent:WaitForChild("Bless"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -383,6 +384,7 @@ local function buildPlots()
 		buildGrounds(plot, {})
 		Shop.buildIsland(plot)
 		buildIdleChest(plot)
+		Bless.build(plot) -- the incense shrine visitors bless (Bless.luau)
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()
@@ -1281,6 +1283,8 @@ local function onJoin(player)
 	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
+	Bless.refresh(plot) -- the shrine shows this owner's blessings
+	Bless.mark(player, s)
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
 	if Config.GROUP_ID > 0 then
@@ -1424,6 +1428,7 @@ local function onLeave(player)
 	s.plot.realm = nil
 	s.plot.landKey = nil
 	buildGrounds(s.plot, {}) -- back to a fresh peak for the next owner
+	Bless.refresh(s.plot) -- a cold shrine for the next owner
 end
 
 -- Recruit ----------------------------------------------------------------------------
@@ -1997,6 +2002,15 @@ Shop.init({
 	styleP = Style.P,
 	palette = Style.PAL,
 	cultivators = Cultivators,
+})
+Bless.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	notify = notify,
+	telemetry = Telemetry,
+	style = Style,
+	palette = Style.PAL,
 })
 setupLighting()
 buildPlots()
