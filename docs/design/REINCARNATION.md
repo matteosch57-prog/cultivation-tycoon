@@ -5,7 +5,8 @@ A new life after realm 10 (D29). Numbers live in `Config.luau`; research and pac
 
 ## The reset
 - **Gate:** realm `REINC_REALM` or deeper in this life, checked in the one server function
-  `reincarnate` (`Main.server.luau`, remote `Reincarnate`). Lands at realm 1, below the gate.
+  `reincarnate` (`Main.server.luau`, remote `Reincarnate`). Lands at `REINC_LAND_SHARE` of the
+  deepest realm, fully built (D40, at least realm 1): always below the next paying depth.
 - **Resets:** qi, buildings, realm, pill and boost, the recruit price, disciples except Shop-bought
   ones (permanent, counted in `data.boughtDisciples`, they take no sworn seat) and the `SWORN_BASE` strongest
   of the rest.

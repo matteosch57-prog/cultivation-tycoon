@@ -79,7 +79,13 @@ Config.REALMS = {
 -- comes ~10 min in; x1.5 per realm deeper keeps each life a little longer than the last (10, 14,
 -- 20 ... ~75 min by life 9, ~4 h by life 14 for 2 x 30 min a day; research 2026-10-21_economy_math).
 Config.REINC_REALM = 2
-Config.PAST_LIVES_MULT = 1.5
+-- D40 (owner: "resets: whatever research says, of similar games"): a reset must make the climb back
+-- clearly faster (idle games: the multiplier; Roblox rebirth games: keep part of the progress; both
+-- automate the rebuild). A new life lands at REINC_LAND_SHARE of the deepest realm, fully built, and
+-- Past Lives pays x2.5 per realm deeper: lives stay 10 to 40 min for ~2 weeks, ~1 h by life 30, ~4 h
+-- by life 40, with no hard wall (tools/sim_game.py LAND_HALF; research 2026-10-22_full_game_sim)
+Config.PAST_LIVES_MULT = 2.5
+Config.REINC_LAND_SHARE = 0.5
 Config.SWORN_BASE = 1
 function Config.pastLivesMult(soulPeak)
 	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))

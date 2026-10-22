@@ -162,3 +162,12 @@ the log as a D-number.
   life 14 moves from day 12 to day 13. Leftover qi stays reset at every breakthrough and reincarnation
   (the carry-over proposal is dropped). An idle chest with free summons and a return screen comes next
   (mock first).
+- **D40** Resets make the climb faster (owner: "isn't reincarnation supposed to make the game faster?",
+  "how does the game get infinite?", then "whatever research says, of similar games"). Research:
+  idle games make the rebuild much faster after a prestige (the multiplier, often auto-buy); Roblox
+  rebirth games keep part of the progress plus a permanent multiplier. Sim (2026-10-22): with lives
+  starting at realm 1 and x1.5, reaching the old best took 65 to 100% of the last life and lives grew
+  ~2x each (a ~20 h wall by life 18). Now a new life lands at `REINC_LAND_SHARE` (half) of the deepest
+  realm, fully built, and `PAST_LIVES_MULT` is 2.5: lives stay 10 to 40 min for ~2 weeks, ~1 h by
+  life 30 (day 14), ~4 h by life 40 (day 36), no hard wall. Karma still pays only a new record (D37).
+  A second layer (Ascension) is the next lever once live data shows where players stop.

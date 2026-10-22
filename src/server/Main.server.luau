@@ -1513,10 +1513,13 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
-	d.realm = 1 -- always below the REINC_REALM gate (D37 removed the Rebirth Gate node)
+	-- D40: the new life lands at half the deepest realm, built (the climb back is the fast part).
+	-- Always below the next paying depth (soulPeak + 1) and karma pays only a new record (D37), so
+	-- a reset can never be repeated for profit.
+	d.realm = math.max(1, math.floor(d.soulPeak * Config.REINC_LAND_SHARE))
 	d.owned = {}
 	d.workers = {}
-	if dao(d, "foundation") > 0 then
+	if d.realm > 1 or dao(d, "foundation") > 0 then
 		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
 		for _, pad in Config.PADS do
 			d.owned[pad.id] = true
