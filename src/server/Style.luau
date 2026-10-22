@@ -784,6 +784,7 @@ end
 -- (only world y = +2 or -2 are reachable), so islands using terrain must stand at world y = 2
 -- and the fill is always centred at world y = -4 (height 4), which surfaces exactly at y = 2.
 local LAWN = Color3.fromHex("7DAA5C") -- the terrain LeafyGrass colour (Main setupLighting)
+local DRY = Color3.fromHex("A8957A") -- the terrain Ground colour: land not open yet (Sky Islets)
 local QI = Color3.fromHex("6FF2C8")
 
 -- The magic that holds an island up (owner 2026-10-21: "under it some magical aura like flying,
@@ -866,7 +867,12 @@ end
 
 -- `extra` = lobes of land the expansions added (Config.islandLobes: { x, z, r }), each with its own
 -- grass top, dirt band, rock underside and grass drips, joined to the base disc.
-function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
+function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra, dry)
+	-- `dry`: land not open yet (a Sky Islet whose bridge is not built) is bare dry ground
+	local lawn, lawnMat = LAWN, Enum.Material.LeafyGrass
+	if dry then
+		lawn, lawnMat = DRY, Enum.Material.Ground
+	end
 	local rng = Random.new(seed or 5)
 	local m = Instance.new("Model")
 	m.Name = "Island"
@@ -892,14 +898,14 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 		if useTerrain then
 			-- LeafyGrass: short, no blades (Grass's blades everywhere read as an overgrown field)
 			local w = at.Position
-			workspace.Terrain:FillCylinder(CFrame.new(w.X, -4, w.Z), 4, l[3], Enum.Material.LeafyGrass)
+			workspace.Terrain:FillCylinder(CFrame.new(w.X, -4, w.Z), 4, l[3], lawnMat)
 		else
 			cylY(m, 2, l[3] * 2, at * CFrame.new(0, -1, 0), PAL.grass, Enum.Material.SmoothPlastic)
 		end
 		-- the lawn runs right to the border (owner 2026-10-21): the lip is the lawn's own green, its
 		-- top just under the grass surface and the terrain's own material, so the edge reads as the same
 		-- ground (a SmoothPlastic lip read as a flat green ring round the lawn)
-		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -0.95, 0), useTerrain and LAWN or PAL.grass, useTerrain and Enum.Material.LeafyGrass or Enum.Material.SmoothPlastic)
+		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -0.95, 0), useTerrain and lawn or PAL.grass, useTerrain and lawnMat or Enum.Material.SmoothPlastic)
 		cylY(m, 3, l[3] * 2 + 0.2, at * CFrame.new(0, -4, 0), PAL.dirt, Enum.Material.SmoothPlastic)
 	end
 	-- rock underside: rings of faceted chunks, narrowing and darkening with depth
@@ -948,7 +954,7 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 		end
 	end
 	-- tall swaying Grass only in a few meadow patches near the rim, never on paths or plots
-	if useTerrain then
+	if useTerrain and not dry then
 		local patches = math.floor(radius / 6)
 		for i = 1, patches do
 			local a = i / patches * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
@@ -970,11 +976,11 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 		local r = radius * rng:NextNumber(0.97, 1.02)
 		local len = rng:NextNumber(1.6, 3.8)
 		local at = cf * CFrame.new(math.cos(a) * r, -1.6 - len / 2, math.sin(a) * r) * CFrame.Angles(0, -a + math.pi / 2, 0)
-		local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, i % 3 == 0 and 0 or 0.35))
+		local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, lawn:Lerp(PAL.grassDark, i % 3 == 0 and 0 or 0.35))
 		local tip = P(m, Vector3.new(0.9, len * 0.5, 0.7), at * CFrame.new(0, -len * 0.55, 0), PAL.grassDark)
 		if useTerrain then -- the same grass as the lawn, not plastic tabs
-			drip.Material = Enum.Material.LeafyGrass
-			tip.Material = Enum.Material.LeafyGrass
+			drip.Material = lawnMat
+			tip.Material = lawnMat
 		end
 	end
 	for _, e in extra do
@@ -985,9 +991,9 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 			if Vector2.new(x, z).Magnitude > radius + 2 then
 				local len = rng:NextNumber(1.6, 3.8)
 				local at = cf * CFrame.new(x, -1.6 - len / 2, z) * CFrame.Angles(0, -a + math.pi / 2, 0)
-				local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, 0.2))
+				local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, lawn:Lerp(PAL.grassDark, 0.2))
 				if useTerrain then
-					drip.Material = Enum.Material.LeafyGrass
+					drip.Material = lawnMat
 				end
 			end
 		end
@@ -1013,9 +1019,9 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 		local at = cf * CFrame.new(math.cos(a) * r, rng:NextNumber(-14, -4), math.sin(a) * r)
 		-- a lawn cap in the island's own grass on a faceted rock that narrows to a point, with a
 		-- small spirit crystal under it (the plain boxes read as cubes, review 2026-10-21)
-		local cap = cylY(m, s * 0.3, s * 1.1, at, useTerrain and LAWN or PAL.grass)
+		local cap = cylY(m, s * 0.3, s * 1.1, at, useTerrain and lawn or PAL.grass)
 		if useTerrain then
-			cap.Material = Enum.Material.LeafyGrass
+			cap.Material = lawnMat
 		end
 		for j = 0, 2 do
 			local w = s * (0.95 - j * 0.3)

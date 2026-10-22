@@ -191,76 +191,52 @@ end
 
 local WATERFALL_ANGLE = 0.55 -- front-right rim, between the shop bridge and the east lobe (layout A keeps it clear of every lobe)
 
--- is (x, z) on one of these lobes of land?
-local function onLobe(lobes, x, z, margin)
-	for _, l in lobes do
-		if (Vector2.new(x, z) - Vector2.new(l.x, l.z)).Magnitude < l.r + (margin or 0) then
-			return true
-		end
+-- the land's state (expansion level + which islets are open): the grounds redraw when it changes
+local function landKey(owned)
+	local key = tostring(Config.expansionLevel(owned))
+	for _, name in Config.ISLET_ORDER do
+		key ..= Config.isletOpen(owned, name) and "1" or "0"
 	end
-	return false
+	return key
 end
 
--- The peak's ground: island (terrain grass on top) with the lobes its expansions added, roads,
--- rim trees, waterfall, rope bridge and the entrance archway with the owner's name. Rebuilt
--- whenever the land changes (an expansion, a breakthrough).
-local function buildGrounds(plot, radius, lobes)
-	lobes = lobes or {}
+-- The peak's ground (Sky Islets, owner pick B 2026-10-22): the home island and every district
+-- islet (terrain grass on top) with the lobes their expansions added; an islet whose bridge is not
+-- built yet is dry ground. No roads and no trees by default: those are pads (Config.PADS kind
+-- path / grove, Builders). Plus the waterfall, the hub bridge, the shop bridge and the entrance
+-- archway with the owner's name. Rebuilt whenever the land changes (a bridge, an expansion, a
+-- breakthrough).
+local function buildGrounds(plot, owned)
+	owned = owned or {}
+	local radius = Config.ISLAND_RADIUS
 	if plot.grounds then
 		plot.grounds:Destroy()
 	end
-	-- clear the old terrain grass (largest island + margin; never reaches the hub or neighbours)
-	-- (islands reach at most 1.05 x radius, so 1.05 x max + 6 stays clear of the neighbours at
-	-- PLOT_RADIUS 215 and of the hub)
-	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADIUS * 1.05 + 6, Enum.Material.Air)
-	for _, l in Config.ISLAND_LOBES do -- every lobe a peak can own (layout A), each with its margin
+	-- clear the old terrain grass: every islet and lobe a peak can own, each with its margin (islands
+	-- reach at most 1.05 x their radius; Config.ISLETS keeps 13+ studs to the neighbours)
+	for _, i in Config.ISLETS do
+		workspace.Terrain:FillCylinder(plot.frame * CFrame.new(i.x, -6, i.z), 20, i.r * 1.05 + 6, Enum.Material.Air)
+	end
+	for _, l in Config.ISLAND_LOBES do
 		workspace.Terrain:FillCylinder(plot.frame * CFrame.new(l.x, -6, l.z), 20, l.r * 1.05 + 4, Enum.Material.Air)
 	end
 	local g = Instance.new("Folder")
 	g.Name = "Grounds"
 	groundRadius = radius
-	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true, lobes)
-	-- roads: the plaza ring and the paths into each district this land reaches (Config.ROADS)
-	local level = #lobes > 0 and (lobes[#lobes].exp or 0) or 0
-	local roads = Instance.new("Folder")
-	roads.Name = "Roads"
-	Style.road(roads, plot.frame, {}, 5, Config.ROAD_RING)
-	for _, r in Config.ROADS do
-		if r.exp <= level then
-			Style.road(roads, plot.frame, r, 4.5)
-		end
-	end
-	roads.Parent = g
-	-- trees around the rim of the base disc and of each lobe, wherever nothing is planned
-	local rim = {}
-	local n = math.floor(radius / 4)
-	for k = 0, n - 1 do
-		local a = k / n * math.pi * 2 + 0.13
-		local r = radius - 8 - (k % 2) * 3
-		table.insert(rim, { math.cos(a) * r, math.sin(a) * r, k })
-	end
-	for li, l in lobes do
-		local ln = math.floor(l.r / 4)
-		for k = 0, ln - 1 do
-			local a = k / ln * math.pi * 2
-			local r = l.r - 6 - (k % 2) * 3
-			local x, z = l.x + math.cos(a) * r, l.z + math.sin(a) * r
-			if Vector2.new(x, z).Magnitude > radius - 2 then -- only on the new land, not over the base disc
-				table.insert(rim, { x, z, li * 20 + k })
+	local lobes = Config.islandLobes(owned)
+	for k, name in Config.ISLET_ORDER do
+		local i = Config.ISLETS[name]
+		local extra = {}
+		for _, l in lobes do
+			if l.islet == name then
+				table.insert(extra, { x = l.x - i.x, z = l.z - i.z, r = l.r })
 			end
 		end
-	end
-	for _, t in rim do
-		local x, z, k = t[1], t[2], t[3]
-		-- base-rim trees that a lobe now surrounds would stand in the middle of the new land
-		local inner = Vector2.new(x, z).Magnitude < radius and onLobe(lobes, x, z, -4)
-		if not inner and not keepClear(x, z) then
-			if k % 3 == 0 then
-				Style.sakura(g, plot.frame * CFrame.new(x, 0, z), plot.index * 50 + k)
-			else
-				Style.pine(g, plot.frame * CFrame.new(x, 0, z), plot.index * 50 + k, 11 + (k % 4) * 2)
-			end
+		local clear = function(x, z)
+			return keepClear(x + i.x, z + i.z)
 		end
+		local seed = 100 + plot.index + (k - 1) * 17 -- the heart keeps the old island's seed
+		Style.island(g, plot.frame * CFrame.new(i.x, 0, i.z), i.r, seed, clear, true, extra, not Config.isletOpen(owned, name))
 	end
 	Style.waterfall(g, plot.frame, radius, WATERFALL_ANGLE)
 	-- rope bridge from the hub rim to the peak rim
@@ -387,7 +363,7 @@ local function buildPlots()
 		built.Name = "Built"
 		built.Parent = folder
 		local plot = { index = i, frame = frame, center = center, folder = folder, built = built, owner = nil }
-		buildGrounds(plot, Config.ISLAND_RADIUS)
+		buildGrounds(plot, {})
 		Shop.buildIsland(plot)
 		buildIdleChest(plot)
 		folder.Parent = world
@@ -507,7 +483,8 @@ local function rate(s, away)
 	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
 	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome
+	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony
 end
 
 -- share of this realm's pads owned (0..1)
@@ -781,12 +758,11 @@ local function rebuild(s)
 	s.plot.built:ClearAllChildren()
 	s.pads = {}
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
-	local radius = Config.islandRadius(s.data.owned)
-	local level = Config.expansionLevel(s.data.owned)
+	local land = landKey(s.data.owned)
 	s.plot.realm = s.data.realm
-	if s.plot.radius ~= radius or s.plot.landLevel ~= level then
-		s.plot.landLevel = level
-		buildGrounds(s.plot, radius, Config.islandLobes(s.data.owned))
+	if s.plot.radius == nil or s.plot.landKey ~= land then
+		s.plot.landKey = land
+		buildGrounds(s.plot, s.data.owned)
 	else
 		RealmLook.apply(s.plot) -- what this realm shows around the peak (nothing below REALM_LOOK_FROM)
 	end
@@ -865,10 +841,13 @@ refreshPads = function(player, s)
 						end
 					end
 					-- an expansion grows the island under the player's feet
-					if pad.id == "expand1" or pad.id == "expand2" then
-						s.plot.landLevel = Config.expansionLevel(s.data.owned)
-						buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned))
-						notify:FireClient(player, "expand")
+					-- (a bridge turns its islet from dry ground to grass)
+					if landKey(s.data.owned) ~= s.plot.landKey then
+						s.plot.landKey = landKey(s.data.owned)
+						buildGrounds(s.plot, s.data.owned)
+						if pad.id == "expand1" or pad.id == "expand2" then
+							notify:FireClient(player, "expand")
+						end
 					end
 					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
 					m.Parent = s.plot.built
@@ -1155,6 +1134,20 @@ local function onJoin(player)
 		end
 		return
 	end
+	-- Sky Islets (2026-10-22): a save from before the islets owns buildings that now stand on an
+	-- islet; it gets that islet's bridge (and the ones leading to it) free, or it could not reach them
+	for _, pad in Config.PADS do
+		local name = Config.isletOf(pad)
+		if data.owned[pad.id] and pad.kind ~= "bridge" then
+			while Config.ISLETS[name].bridge do
+				data.owned[Config.ISLETS[name].bridge] = true
+				name = Config.ISLETS[name].from
+			end
+		end
+	end
+	for id, n in data.workers or {} do -- WORKER_MAX went from 3 to 2 (owner 2026-10-22)
+		data.workers[id] = math.min(n, Config.WORKER_MAX)
+	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
@@ -1287,8 +1280,8 @@ local function onLeave(player)
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
 	s.plot.realm = nil
-	s.plot.landLevel = 0
-	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
+	s.plot.landKey = nil
+	buildGrounds(s.plot, {}) -- back to a fresh peak for the next owner
 end
 
 -- Recruit ----------------------------------------------------------------------------
@@ -1726,8 +1719,9 @@ local function checkOrbs(player, s, hrp)
 		return
 	end
 	-- Auto Orbs pass: while the owner stands on their own peak, every orb flies to them
-	local flat = hrp.Position - s.plot.center
-	local auto = s.passes and s.passes.auto and Vector2.new(flat.X, flat.Z).Magnitude < (s.plot.radius or Config.ISLAND_RADIUS) + 4
+	local lp = s.plot.frame:PointToObjectSpace(hrp.Position)
+	local _, off = Config.isletAt(lp.X, lp.Z) -- on any of the peak's islets (Sky Islets)
+	local auto = s.passes and s.passes.auto and off < 4
 	for i = #s.orbs, 1, -1 do
 		local orb = s.orbs[i]
 		if not orb.Parent then
@@ -1824,7 +1818,7 @@ end
 local function passChanged(player, s, key)
 	if key == "vip" then
 		s.plot.vip = true
-		buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned)) -- redraws the arch in gold
+		buildGrounds(s.plot, s.data.owned) -- redraws the arch in gold
 		buildDisciples(s) -- the extra slot seats a benched disciple
 	end
 	publish(player)

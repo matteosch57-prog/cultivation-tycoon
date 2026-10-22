@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Rig = require(Shared:WaitForChild("Rig"))
+local Config = require(Shared:WaitForChild("Config"))
 local Style = require(script.Parent:WaitForChild("Style"))
 
 local Workers = {}
@@ -72,33 +73,34 @@ local TOOLS = {
 }
 local GRIP = CFrame.new(0, -0.3, -0.1) * CFrame.Angles(-math.pi / 2, 0, 0) -- tool space in the hand
 
--- Each building: its job, its tool, and the spots of workers 1..3 in the building's frame
--- (`frame` "axis" = the pad's own frame like the builder, "centre" = turned to face the peak's
--- centre). A spot is { x, z, look-at x, look-at z }.
+-- Each building: its job, its tool, and the spots of workers 1..2 (Config.WORKER_MAX; owner
+-- 2026-10-22: two farmers on every farm) in the building's frame (`frame` "axis" = the pad's own
+-- frame like the builder, "centre" = turned to face its islet's centre). A spot is
+-- { x, z, look-at x, look-at z }.
+local FARM = { job = "farmer", tool = "hoe", frame = "axis", spots = { { -5, -7.6, -5, 0 }, { 5, -7.6, 5, 0 } } }
+local MINE = { job = "miner", tool = "pick", frame = "axis", spots = { { 3.9, 2.9, 0, 0 }, { -3.9, 2.9, 0, 0 } } }
+-- the tea terraces: a picker at each end of the steps (Builders tea faces the islet's centre)
+local TEA = { job = "farmer", tool = "hoe", frame = "centre", spots = { { -7.4, 0, 0, 0 }, { 7.4, 0, 0, 0 } } }
 Workers.JOBS = {
-	garden = {
-		job = "farmer",
-		tool = "hoe",
-		frame = "axis",
-		spots = { { -5, -7.6, -5, 0 }, { 5, -7.6, 5, 0 }, { -10.4, 0, 0, 0 } },
-	},
-	vein1 = {
-		job = "miner",
-		tool = "pick",
-		frame = "axis",
-		spots = { { 3.9, 2.9, 0, 0 }, { -3.9, 2.9, 0, 0 }, { 0, -4.8, 0, 0 } },
-	},
+	garden = FARM,
+	garden2 = FARM,
+	garden3 = FARM,
+	tea1 = TEA,
+	tea2 = TEA,
+	vein1 = MINE,
+	vein2 = MINE,
+	vein3 = MINE,
 	training = {
 		job = "fighter",
 		tool = "sword",
 		frame = "centre",
-		spots = { { 0, -4.4, 0, 0 }, { -2.6, 2.4, 3, 2.4 }, { 2.6, 2.4, -3, 2.4 } },
+		spots = { { -2.6, 2.4, 3, 2.4 }, { 2.6, 2.4, -3, 2.4 } },
 	},
 	furnace = {
 		job = "alchemist",
 		tool = "fan",
 		frame = "axis",
-		spots = { { -4.4, 0.8, 0, 0.8 }, { 4.4, 0.8, 0, 0.8 }, { 0, 4.5, 0, 0 } },
+		spots = { { -4.4, 0.8, 0, 0.8 }, { 4.4, 0.8, 0, 0.8 } },
 	},
 }
 
@@ -214,7 +216,8 @@ end
 local function buildingFrame(plotFrame, pad, how)
 	if how == "centre" then
 		local p = Vector3.new(pad.x, 0, pad.z)
-		return plotFrame * CFrame.lookAt(p, Vector3.zero) * CFrame.Angles(0, math.pi, 0)
+		local i = Config.ISLETS[Config.isletAt(pad.x, pad.z)]
+		return plotFrame * CFrame.lookAt(p, Vector3.new(i.x, 0, i.z)) * CFrame.Angles(0, math.pi, 0)
 	end
 	return plotFrame * CFrame.new(pad.x, 0, pad.z)
 end

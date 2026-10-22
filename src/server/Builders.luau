@@ -9,12 +9,17 @@ local Nature = require(script.Parent:WaitForChild("Nature"))
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
 local SP = Style.PAL
 
--- Buildings around the sides face the CENTRE of the peak (their front, +Z, turned toward the
+-- Buildings around the sides face the CENTRE of their islet (their front, +Z, turned toward the
 -- courtyard), not the bridge: built facing +Z, the side and corner ones showed their backs to
 -- the courtyard and their fronts to the void. `back` pushes it away from the centre.
 local function facingCentre(ctx, x, z, back)
 	local p = Vector3.new(x, 0, z)
-	local look = CFrame.lookAt(p, Vector3.new(0, 0, 0)) * CFrame.Angles(0, math.pi, 0)
+	local i = Config.ISLETS[Config.isletAt(x, z)]
+	local c = Vector3.new(i.x, 0, i.z)
+	if (c - p).Magnitude < 1 then
+		c = p + Vector3.new(0, 0, 1)
+	end
+	local look = CFrame.lookAt(p, c) * CFrame.Angles(0, math.pi, 0)
 	return ctx.frame * look * CFrame.new(0, 0, back or 0)
 end
 
@@ -271,12 +276,13 @@ end
 function Builders.moongate(ctx, pad)
 	Kit.moonGate(ctx.folder, facingCentre(ctx, pad.x, pad.z, -2))
 end
-function Builders.pagoda1(ctx)
-	Kit.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 1, 2, 5)
+-- (on the Summit islet: at the pad, PAGODA_AT was the old spot behind the Main Hall)
+function Builders.pagoda1(ctx, pad)
+	Kit.pagoda(ctx.folder, pad and ctx.frame * CFrame.new(pad.x, 0, pad.z) or ctx.frame * PAGODA_AT, 10, 1, 2, 5)
 end
 
-function Builders.pagoda2(ctx)
-	Kit.pagoda(ctx.folder, ctx.frame * PAGODA_AT, 10, 3, 5, 5)
+function Builders.pagoda2(ctx, pad)
+	Kit.pagoda(ctx.folder, pad and ctx.frame * CFrame.new(pad.x, 0, pad.z) or ctx.frame * PAGODA_AT, 10, 3, 5, 5)
 end
 
 function Builders.array(ctx, pad)
@@ -462,5 +468,66 @@ local function spring(ctx, pad)
 end
 Builders.spring1 = spring
 Builders.spring2 = spring
+
+-- Sky Islets (owner pick B 2026-10-22): nothing stands by default, roads and trees included.
+-- A bridge pad lays the rope bridge to its islet (Config.bridgeEnds; 3 studs onto each rim).
+local function bridge(ctx, pad)
+	local a, b = Config.bridgeEnds(pad.id:match("^bridge_(%w+)$"))
+	local d = (b - a).Unit
+	local lift = Vector3.new(0, 0.05, 0)
+	Style.bridge(ctx.folder, ctx.frame * (a - d * 3) + lift, ctx.frame * (b + d * 3) + lift, 7)
+end
+for name in Config.ISLETS do
+	Builders["bridge_" .. name] = bridge
+end
+
+-- A path pad: on the heart, the plaza ring round the platform and spokes to the bridges leaving
+-- it; on an islet, a road from where its bridge lands to its middle, and on to the bridges leaving
+-- it (Harmony, Config.HARMONY_STEP).
+local function islandPath(ctx, pad)
+	local name = Config.isletOf(pad)
+	local i = Config.ISLETS[name]
+	local c = Vector3.new(i.x, 0, i.z)
+	local hub
+	if name == "heart" then
+		Style.road(ctx.folder, ctx.frame, {}, 5, Config.PLAZA_RING)
+	else
+		local _, land = Config.bridgeEnds(name)
+		hub = c + (land - c) * 0.35
+		Style.road(ctx.folder, ctx.frame, { { land.X, land.Z }, { hub.X, hub.Z } }, 4.5)
+	end
+	for other, j in Config.ISLETS do
+		if j.from == name then
+			local foot = Config.bridgeEnds(other)
+			local from = hub or c + (foot - c).Unit * Config.PLAZA_RING
+			Style.road(ctx.folder, ctx.frame, { { from.X, from.Z }, { foot.X, foot.Z } }, 4.5)
+		end
+	end
+end
+
+-- A grove pad: three trees of its islet's kind round the spot, with a bush between (Harmony).
+local GROVE = { heart = "sakura", fields = "sakura", dao = "maple", disciples = "pine", summit = "pine" }
+local function grove(ctx, pad)
+	local kind = GROVE[Config.isletOf(pad)]
+	local rng = Random.new(#pad.id * 31 + math.floor(pad.x))
+	for k = 1, 3 do
+		local a = k / 3 * math.pi * 2 + rng:NextNumber(-0.3, 0.3)
+		local r = rng:NextNumber(3.5, 5)
+		local cf = ctx.frame * CFrame.new(pad.x + math.cos(a) * r, 0, pad.z + math.sin(a) * r)
+		local seed = 70 + k * 13 + #pad.id
+		if kind == "pine" then
+			Style.pine(ctx.folder, cf, seed, 11 + k * 2)
+		elseif Nature.ready(kind) then
+			Nature.tree(ctx.folder, cf, seed, kind, rng:NextNumber(0.7, 0.85))
+		else
+			Style.sakura(ctx.folder, cf, seed)
+		end
+	end
+	Nature.bush(ctx.folder, ctx.frame * CFrame.new(pad.x, 0, pad.z), 90 + #pad.id, 1.6, kind ~= "pine")
+end
+for name in Config.ISLETS do
+	Builders["path_" .. name] = islandPath
+	Builders["grove_" .. name] = grove
+end
 
 return Builders
