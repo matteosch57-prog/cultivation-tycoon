@@ -159,6 +159,7 @@ new screen gets a mock first.
 Set rules (research: one light, one outline, one palette, one detail level): ink outline `1B1420` 4.5
 units of a 64 box, flat colour with one hard shade toward the bottom right (light from the top left),
 real silhouettes (SVG paths, not stacked boxes), 2 to 4 parts each, 6 units of padding. Robux is
-always Roblox's own gold icon (`Config.ROBUX_ICON`). A new icon: add its geometry to `icons.js`,
+always Roblox's own gold icon (`Config.ROBUX_ICON`); the disciple icon is the disciple atlas figure
+(owner: its shape is better). A new icon: add its geometry to `icons.js`,
 re-render the sheet (`?view=atlas&style=A`, Edge headless, transparent, 1024 px max), upload, put the
 new id and its cell in `Config.ICON_ATLAS` in one pass.

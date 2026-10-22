@@ -249,13 +249,14 @@ the log as a D-number.
   thumb for example"; "fight in the middle is too invasive on screen, but it's nice to show it + a
   path to go there, with a HIDE or X button. Crown is ugly, add a light aura better"). Mocks
   `docs/art/mocks/icons_board.jpg` (now vs 3 finishes), `fight_options.jpg`, `aura_options.jpg`;
-  picks (recommended defaults, owner can swap): icons A "sticker", altar row, aura W1.
+  owner picks: icons A "sticker" ("but disciples have a better shape already": the disciple icon
+  stays the disciple atlas figure), altar A (top right, under the next goal), aura W3.
   Icons: the ~30 box-built icons are replaced by one uploaded sheet of real silhouettes with one
   rule set (ART_BIBLE "Icons"); Robux shows Roblox's own icon. Altar: the ring under the qi counter
   is gone; while a round is open a 46 px altar button sits in the HUD's right stack (PlayerGui
   `HudSlots.Right`, LayoutOrder 3; alone in the top right without it), beads around it = time held,
   seconds under it; a tap points the guide trail at the altar (local attribute `GuideTo`, read by
-  `Guide.client`), its X hides it until the next round. Winner: a gold Highlight, a gold halo behind
-  the head (the disciples' magic circle mesh) and rising motes instead of the part-built crown. Why:
+  `Guide.client`), its X hides it until the next round. Winner: a gold rim light (Highlight) and gold
+  sparkles twinkling around the body instead of the part-built crown. Why:
   the box icons were the "AI look" the owner keeps catching; the centre ring covered the view and
   overlapped the counter; a light aura matches the disciples' language.
