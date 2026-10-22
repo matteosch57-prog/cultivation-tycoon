@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Glass shine bars (2026-10-21, owner: "more like the first look, but the white bar itself like the
+     glassy one, something smooth, 10 mocks based on research"). The button stays the first look (flat
+     face, ink outline, ink shadow); only the white bar changes. Research: glossy game buttons build the
+     shine as separate translucent glare layers that fade (top glare, sometimes a faint bottom glare, a
+     glint that sweeps); in Roblox each one is a white Frame + UICorner + a UIGradient on Transparency
+     (vertical, horizontal or rotated). Rendered to glass_bars.jpg at 1400 x 980. -->
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1400px;height:980px;font-family:Fredoka,sans-serif;background:url('../captures/26_check_full_peak.jpg') center/cover;position:relative;overflow:hidden}
+body::before{content:"";position:absolute;inset:0;background:rgba(20,16,30,.42)}
+.grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:14px 30px;padding:18px 26px}
+.cell{display:flex;align-items:center;gap:18px}
+.lab{width:175px;display:flex;flex-direction:column}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;letter-spacing:.4px;white-space:nowrap}
+.lab b{font-size:22px;color:#ffe36b;--sw:5px}
+.lab i{font-style:normal;font-size:12px;color:#e8e0f0;--sw:3px;white-space:normal}
+.row{display:flex;align-items:center;gap:14px;zoom:1.3}
+.btn{position:relative;border-radius:var(--r);width:var(--w);height:var(--h)}
+.btn .shadow{position:absolute;inset:0;transform:translateY(4px);border-radius:var(--r);background:#1b1420}
+.btn .face{position:absolute;inset:0;border-radius:var(--r);border:3px solid #1b1420;background:var(--c);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.content{position:relative;z-index:3;display:flex;align-items:center;gap:7px;margin-top:7px}
+.g{position:absolute;z-index:2}
+</style></head>
+<body><div class="grid" id="g"></div>
+<script>
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const disc=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="#1b1420"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="#1b1420" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="#1b1420"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#5096ff" stroke="#1b1420" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const bag=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="23" y="8" width="18" height="10" rx="2" fill="#e65b4f" stroke="#1b1420" stroke-width="4"/><circle cx="32" cy="40" r="21" fill="#ffd34d" stroke="#1b1420" stroke-width="5"/><g transform="translate(20 28) scale(.38)">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g></svg>`;
+const robux=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="9" y="9" width="46" height="46" rx="13" fill="#fff" stroke="#1b1420" stroke-width="5"/><rect x="23" y="23" width="18" height="18" rx="3" fill="#1b1420"/></svg>`;
+const W='255,255,255';
+const fadeV=(a,b)=>`linear-gradient(180deg,rgba(${W},${a}),rgba(${W},${b}))`;
+// each variant: list of glare layers {css}
+const V=[
+ ['Now','flat white bar (today)',[{l:'10%',r:'10%',t:'10%',h:'20%',rad:'999px',bg:`rgba(${W},.38)`}]],
+ ['1 Fade pill','the same bar, bright at the top, melting away downwards',[{l:'10%',r:'10%',t:'9%',h:'26%',rad:'999px',bg:fadeV(.75,0)}]],
+ ['2 Fade pill + dot','1 with a small round reflection on the right',[{l:'9%',r:'26%',t:'9%',h:'24%',rad:'999px',bg:fadeV(.75,0)},{r:'9%',t:'10%',w:'10%',ar:1,rad:'50%',bg:fadeV(.8,.15)}]],
+ ['3 Glass cap','a wide glassy top half with a soft curved edge',[{l:'5%',r:'5%',t:'5%',h:'46%',rad:'var(--r) var(--r) 45% 45%',bg:fadeV(.62,.04)}]],
+ ['4 Soft ends','the bar fades out at both ends and downwards',[{l:'6%',r:'6%',t:'9%',h:'26%',rad:'999px',bg:`linear-gradient(90deg,rgba(${W},0),rgba(${W},.8) 30%,rgba(${W},.8) 70%,rgba(${W},0))`,mask:'linear-gradient(180deg,#000,transparent)'}]],
+ ['5 Rim light','a thin bright line under the top edge, a soft fade below it',[{l:'7%',r:'7%',t:'5%',h:'7%',rad:'999px',bg:`rgba(${W},.85)`},{l:'5%',r:'5%',t:'8%',h:'34%',rad:'40%',bg:fadeV(.35,0)}]],
+ ['6 Dual glare','a fading top bar plus a faint glow along the bottom',[{l:'10%',r:'10%',t:'9%',h:'26%',rad:'999px',bg:fadeV(.72,0)},{l:'22%',r:'22%',b:'7%',h:'14%',rad:'999px',bg:fadeV(0,.3)}]],
+ ['7 Lens arc','a glass arc: flat at the top, rounded underneath',[{l:'7%',r:'7%',t:'6%',h:'38%',rad:'40% 40% 50% 50% / 30% 30% 70% 70%',bg:fadeV(.7,.05)}]],
+ ['8 Glint','fade pill + a slanted glint (can sweep across every few s)',[{l:'10%',r:'10%',t:'9%',h:'26%',rad:'999px',bg:fadeV(.7,0)},{l:'60%',t:'-20%',w:'9%',h:'140%',rad:'4px',bg:`linear-gradient(90deg,rgba(${W},0),rgba(${W},.45),rgba(${W},0))`,rot:20}]],
+ ['9 Thin over wide','a crisp thin bar riding on a faint wide band',[{l:'6%',r:'6%',t:'7%',h:'40%',rad:'40%',bg:fadeV(.28,0)},{l:'14%',r:'14%',t:'10%',h:'11%',rad:'999px',bg:fadeV(.9,.45)}]],
+ ['10 Bubble','the bar leans left and fades right, with a round glint',[{l:'8%',r:'30%',t:'9%',h:'26%',rad:'999px',bg:`linear-gradient(90deg,rgba(${W},.8),rgba(${W},0))`,mask:'linear-gradient(180deg,#000 40%,transparent)'},{l:'9%',t:'11%',w:'9%',ar:1,rad:'50%',bg:`rgba(${W},.9)`}]],
+];
+function glare(L){
+  const st=[];
+  if(L.l)st.push(`left:${L.l}`);if(L.r)st.push(`right:${L.r}`);if(L.t)st.push(`top:${L.t}`);if(L.b)st.push(`bottom:${L.b}`);
+  if(L.w)st.push(`width:${L.w}`);if(L.h)st.push(`height:${L.h}`);if(L.ar)st.push(`aspect-ratio:1;max-width:14px`);
+  st.push(`border-radius:${L.rad}`,`background:${L.bg}`);
+  if(L.mask)st.push(`-webkit-mask-image:${L.mask}`);
+  if(L.rot)st.push(`transform:rotate(${L.rot}deg)`);
+  return `<div class="g" style="${st.join(';')}"></div>`;
+}
+function button(layers,c,w,h,r,inner){
+  return `<div class="btn" style="--w:${w}px;--h:${h}px;--r:${r}px;--c:${c}"><div class="shadow"></div><div class="face">${layers.map(glare).join('')}<div class="content">${inner}</div></div></div>`;
+}
+let html='';
+for(const [name,desc,layers] of V){
+  html+=`<div class="cell"><div class="lab"><b class="big">${name}</b><i class="big">${desc}</i></div><div class="row">
+   ${button(layers,'#ffd36b',60,60,15,bag(36))}
+   ${button(layers,'#b06bff',158,62,14,`${disc(32)}<div style="display:flex;flex-direction:column;line-height:1"><span class="big" style="font-size:20px">Recruit</span><span style="display:flex;align-items:center;gap:3px">${qi(15)}<span class="big" style="font-size:13px;color:#c9ffe4;--sw:3px">1.2M</span></span></div>`)}
+   ${button(layers,'#59d39f',96,38,11,`${robux(17)}<span class="big" style="font-size:16px">99</span>`)}
+  </div></div>`;
+}
+document.getElementById('g').innerHTML=html;
+</script></body></html>

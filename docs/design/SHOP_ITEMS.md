@@ -15,6 +15,7 @@ game reads the real price from Roblox. Icons: `art/shop_icons/<key>.png` (512 x 
 ## Developer products (Monetization > Developer Products)
 | Key | Type | Name | Description | Price (R$) | Icon |
 |---|---|---|---|---|---|
+| welcome | Developer product | Welcome Pouch | A welcome gift for new sects: an Elder disciple (+150% Qi) and +10% Qi forever. Once per player. | 5 | welcome.png |
 | pill | Developer product | Instant Pill | Swallow a pill right now: 2x Qi for 60 seconds. Adds to any pill already running. | 25 | pill.png |
 | pack1 | Developer product | Qi Pouch | Get 10 minutes of your sect's income in Qi, instantly. | 29 | pack1.png |
 | pack2 | Developer product | Qi Chest | Get 1 hour of your sect's income in Qi, instantly. | 99 | pack2.png |

@@ -86,7 +86,13 @@ local function grantProduct(player, s, it)
 		d.boughtDisciples[it.rarity] = (d.boughtDisciples[it.rarity] or 0) + 1
 		local kept = api.addDisciple(s, it.rarity)
 		Telemetry.custom(player, "DiscipleBought", it.key, realm(s), Telemetry.minuteBucket(d.playSec or 0))
-		api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
+		if it.qiBonus then
+			-- the Welcome Pouch: qi forever on top of its disciple (Main's rate reads data.qiBonus)
+			d.qiBonus = (d.qiBonus or 0) + it.qiBonus
+			api.notify:FireClient(player, "shopWelcome", it.rarity, kept, it.qiBonus)
+		else
+			api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
+		end
 	elseif it.seconds then
 		local gain = math.floor(api.rate(s, true) * it.seconds)
 		d.qi += gain
@@ -136,6 +142,26 @@ local function processReceipt(info)
 	end
 	warn("[Tycoon][shop] receipt save failed, Roblox will retry", it.key)
 	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+-- The Welcome Pouch offer (Config.WELCOME): once per player, after a building stands. Main calls it
+-- after every build; the card is drawn by Shop.client and buys through the usual prompt.
+function Shop.maybeWelcome(player, s, pad)
+	local d = s.data
+	local it = Config.shopItem("welcome")
+	if not it or d.welcomeOffered or (it.id == 0 and not STUDIO) then
+		return
+	end
+	if ((d.shopBought or {}).welcome or 0) >= (it.limit or 1) then
+		return
+	end
+	local played = d.playSec or 0
+	if played < Config.WELCOME.after or (not pad.feature and played < Config.WELCOME.late) then
+		return
+	end
+	d.welcomeOffered = true
+	Telemetry.custom(player, "Shop", "offer", "welcome", realm(s))
+	api.notify:FireClient(player, "welcomeOffer")
 end
 
 -- One prompt per player per second; the item must exist and not be owned.

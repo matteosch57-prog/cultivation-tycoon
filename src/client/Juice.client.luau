@@ -13,13 +13,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
 local PerfMark = require(Shared:WaitForChild("PerfMark"))
+local Toy = require(Shared:WaitForChild("Toy"))
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local sect = workspace:WaitForChild("Sect")
 
 Sfx.init()
 
 local INK = Color3.fromHex("1B1420")
-local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 local fx = Instance.new("Folder")
 fx.Name = "LocalJuice"
 fx.Parent = workspace
@@ -130,26 +130,26 @@ local function floatText(pos, str, color)
 	bb.LightInfluence = 0
 	bb.MaxDistance = 120
 	bb.Parent = p
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundTransparency = 1
-	t.FontFace = FONT
-	t.TextSize = 22
-	t.TextColor3 = color
-	t.Text = str
-	t.Parent = bb
-	local st = Instance.new("UIStroke")
-	st.Color = INK
-	st.Thickness = 2.5
-	st.Parent = t
+	-- the qi drop in front of the number (R18: every amount shows its currency icon)
+	local row = Toy.frame(bb, { Size = UDim2.fromScale(1, 1) })
+	Toy.list(row, true, 3)
+	Toy.icon(row, "qi", 24, { LayoutOrder = 1 })
+	local t = Toy.text(row, str, 22, color, { LayoutOrder = 2 })
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.3
-	sc.Parent = t
+	sc.Parent = row
 	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	TweenService:Create(p, TweenInfo.new(1.6, Enum.EasingStyle.Quad), { Position = pos + Vector3.new(0, 7, 0) }):Play()
 	task.delay(0.9, function()
-		TweenService:Create(t, TweenInfo.new(0.7), { TextTransparency = 1 }):Play()
-		TweenService:Create(st, TweenInfo.new(0.7), { Transparency = 1 }):Play()
+		local info = TweenInfo.new(0.7)
+		TweenService:Create(t, info, { TextTransparency = 1 }):Play()
+		for _, d in row:GetDescendants() do
+			if d:IsA("UIStroke") then
+				TweenService:Create(d, info, { Transparency = 1 }):Play()
+			elseif d:IsA("Frame") and d.BackgroundTransparency < 1 then
+				TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+			end
+		end
 	end)
 	task.delay(1.7, function()
 		p:Destroy()
@@ -338,23 +338,15 @@ recruitFx.Name = "RecruitFx"
 recruitFx.Parent = player:WaitForChild("PlayerGui")
 recruitFx.Event:Connect(function(rarityName, kept)
 	local r = Config.rarity(rarityName)
-	Sfx.play("recruit")
 	local c = plotCentre()
 	if not c or not kept then
 		return
 	end
-	-- the platform sits at the peak's centre; light a column there in the rarity colour
-	if r.bonus >= 0.6 then
-		task.delay(0.25, function()
-			Sfx.play("rareChime")
-		end)
-	end
-	if r.bonus >= 1.5 then
-		task.delay(0.35, function()
-			Sfx.play("gong")
-		end)
-	end
-	pillar(c + Vector3.new(0, 1.5, 0), r.color, 18 + r.bonus * 14, 1.2 + r.bonus * 0.3)
+	-- the platform sits at the peak's centre; light a column there in the rarity colour when the
+	-- on-screen orb bursts (RecruitReveal owns the sounds)
+	task.delay(Config.revealBurst(rarityName), function()
+		pillar(c + Vector3.new(0, 1.5, 0), r.color, 18 + r.bonus * 14, 1.2 + r.bonus * 0.3)
+	end)
 end)
 
 -- pill swallowed

@@ -26,7 +26,8 @@ const pill=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><defs><clipPa
 const K={x2:['#9ff5c8',s=>ic.x2(s)],auto:['#9fd0ff',s=>ic.auto(s)],vip:['#ffd36b',s=>ic.vip(s)],pill:['#ffb3a8',s=>pill(s)],
 pack1:['#c9ffe4',s=>ic.pack(s,1)],pack2:['#b9f0d6',s=>ic.pack(s,3)],pack3:['#a6e8c8',s=>ic.pack(s,6)],
 elder:['#e5c1ff',s=>disc(s,'#be64ff',0)],immortal:['#ffecb1',s=>disc(s,'#ffc83c',1)],celestial:['#c4f3f7',s=>disc(s,'#6ee1eb',2)],
-dao:['#f5a8ad',s=>disc(s,'#e6323c',3)],emperor:['#ffcd9e',s=>disc(s,'#ff8c28',4)],primordial:['#ffc2ef',s=>disc(s,'#ff6edc',5)]};
+dao:['#f5a8ad',s=>disc(s,'#e6323c',3)],emperor:['#ffcd9e',s=>disc(s,'#ff8c28',4)],primordial:['#ffc2ef',s=>disc(s,'#ff6edc',5)],
+welcome:['#ffd36b',s=>`<div style="position:relative;width:${s}px;height:${s}px">${ic.bag(s)}<div style="position:absolute;right:-${s*0.06}px;bottom:${s*0.04}px">${disc(s*0.58,'#be64ff',0)}</div></div>`]};
 const key=new URLSearchParams(location.search).get('key');const [bg,f]=K[key];
 const t=document.getElementById('t');t.style.background=bg;t.innerHTML=f(330);
 </script></body></html>

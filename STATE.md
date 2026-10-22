@@ -45,7 +45,7 @@ checked in Studio Play (ROADMAP).
 - **Shop** (D24, D33; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), items
   sold where they act (passes at the peak entrance, pill at the furnace, orbs at the array), a
   Disciple Garden island with the six disciples for sale, a Get Qi offer on a pad out of reach; 3
-  passes and 10 products granted through saved receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 13
+  passes and 11 products (the 5 Robux Welcome Pouch included, D38) granted through saved receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 14
   items listed in `docs/design/SHOP_ITEMS.md` (type, name, description, price, icon in
   `art/shop_icons/`) and paste each id into `Config.SHOP_PASSES` / `SHOP_PRODUCTS`; then a Studio
   test purchase checks the prompt and ProcessReceipt.

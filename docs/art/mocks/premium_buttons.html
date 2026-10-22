@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Premium toy buttons (2026-10-21, owner: "I like the button idea with the whiter bar to make it
+     shiny, but make it slightly more premium"). Every effect maps to Roblox UI: UIGradient on the face,
+     UIStroke, inner Frames with UICorner (lip, shine, ring), a 4-point sparkle from two rotated Frames.
+     Rendered to premium_buttons.jpg at 1400 x 720. -->
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1400px;height:720px;font-family:Fredoka,sans-serif;background:url('../captures/26_check_full_peak.jpg') center/cover;position:relative;overflow:hidden}
+body::before{content:"";position:absolute;inset:0;background:rgba(20,16,30,.35)}
+.grid{position:relative;display:grid;grid-template-columns:200px 1fr;gap:22px 14px;padding:22px 26px}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;letter-spacing:.4px;white-space:nowrap}
+.lab{display:flex;flex-direction:column;justify-content:center}
+.lab b{font-size:24px;color:#ffe36b;--sw:5px}
+.lab i{font-style:normal;font-size:13px;color:#e8e0f0;--sw:3px;white-space:normal}
+.row{display:flex;align-items:center;gap:22px;zoom:1.5}
+.col{display:flex;flex-direction:column;align-items:center;gap:2px}
+/* the button: holder + shadow + face */
+.btn{position:relative;border-radius:var(--r);width:var(--w);height:var(--h)}
+.btn .shadow{position:absolute;inset:0;transform:translateY(4px);border-radius:var(--r);background:#1b1420}
+.btn .face{position:absolute;inset:0;border-radius:var(--r);border:3px solid #1b1420;background:var(--c);overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn .shine{position:absolute;left:10%;right:10%;top:10%;height:20%;border-radius:999px;background:rgba(255,255,255,.38)}
+.btn .content{position:relative;z-index:3;display:flex;align-items:center;gap:8px}
+/* A: soft gradient + lip */
+.A .face{background:linear-gradient(180deg,var(--l) 0%,var(--c) 45%,var(--c) 70%,var(--d) 100%)}
+.A .lip{position:absolute;left:0;right:0;bottom:0;height:16%;background:var(--d);opacity:.85}
+.A .shine{background:rgba(255,255,255,.62);top:9%;height:19%;left:12%;right:24%}
+.A .dot{position:absolute;right:11%;top:10%;width:12%;aspect-ratio:1;max-width:12px;border-radius:50%;background:rgba(255,255,255,.62)}
+/* B: key cap + gold trim */
+.B .shadow{background:var(--dd);transform:translateY(5px);border:3px solid #1b1420}
+.B .face{background:linear-gradient(180deg,var(--l) 0%,var(--c) 50%,var(--d) 100%)}
+.B .ring{position:absolute;inset:3px;border-radius:calc(var(--r) - 5px);border:2px solid #ffe08a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.B .shine{background:rgba(255,255,255,.62);top:11%;height:18%;left:14%;right:26%}
+.B .dot{position:absolute;right:13%;top:12%;width:10%;aspect-ratio:1;max-width:10px;border-radius:50%;background:rgba(255,255,255,.62)}
+/* C: glass */
+.C .face{background:linear-gradient(180deg,var(--l) 0%,var(--c) 55%,var(--c) 100%)}
+.C .glass{position:absolute;left:4%;right:4%;top:4%;height:46%;border-radius:calc(var(--r) - 4px) calc(var(--r) - 4px) 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.08))}
+.C .glow{position:absolute;left:20%;right:20%;bottom:6%;height:16%;border-radius:999px;background:rgba(255,255,255,.28)}
+.C .spark{position:absolute;left:12%;top:12%;width:14px;height:14px;z-index:4}
+.C .spark::before,.C .spark::after{content:"";position:absolute;left:50%;top:50%;width:3px;height:14px;background:#fff;border-radius:2px;transform:translate(-50%,-50%)}
+.C .spark::after{transform:translate(-50%,-50%) rotate(90deg)}
+</style></head>
+<body><div class="grid" id="g"></div>
+<script>
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const disc=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="#1b1420"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="#1b1420" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="#1b1420"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#5096ff" stroke="#1b1420" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const bag=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="23" y="8" width="18" height="10" rx="2" fill="#e65b4f" stroke="#1b1420" stroke-width="4"/><circle cx="32" cy="40" r="21" fill="#ffd34d" stroke="#1b1420" stroke-width="5"/><g transform="translate(20 28) scale(.38)">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g></svg>`;
+const gift=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="11" y="28" width="42" height="28" rx="4" fill="#e65b4f" stroke="#1b1420" stroke-width="5"/><rect x="7" y="19" width="50" height="12" rx="3" fill="#ff7a6b" stroke="#1b1420" stroke-width="5"/><path d="M32 19v37" stroke="#ffd34d" stroke-width="7"/></svg>`;
+const robux=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="9" y="9" width="46" height="46" rx="13" fill="#fff" stroke="#1b1420" stroke-width="5"/><rect x="23" y="23" width="18" height="18" rx="3" fill="#1b1420"/></svg>`;
+// colour sets: c face, l lighter top, d darker bottom, dd key side
+const COL={yellow:{c:'#ffd36b',l:'#fff0b8',d:'#e8a93a',dd:'#b8781f'},blue:{c:'#9fd0ff',l:'#dcefff',d:'#5f9ee6',dd:'#3d6fb3'},pink:{c:'#ffb3a8',l:'#ffe1db',d:'#e9786b',dd:'#b5503f'},purple:{c:'#b06bff',l:'#d9b8ff',d:'#7f3fd6',dd:'#5a2a9e'},jade:{c:'#59d39f',l:'#b9f5dc',d:'#2f9e6f',dd:'#1f6e4c'}};
+function button(style,col,w,h,r,inner){
+  const k=COL[col];
+  const extra={now:'<div class="shine"></div>',A:'<div class="lip"></div><div class="shine"></div><div class="dot"></div>',B:'<div class="ring"></div><div class="shine"></div><div class="dot"></div>',C:'<div class="glass"></div><div class="glow"></div><div class="spark"></div>'}[style];
+  return `<div class="btn ${style}" style="--w:${w}px;--h:${h}px;--r:${r}px;--c:${k.c};--l:${k.l};--d:${k.d};--dd:${k.dd}"><div class="shadow"></div><div class="face">${extra}<div class="content">${inner}</div></div></div>`;
+}
+const ROWS=[['now','Now','flat colour, one white bar'],['A','A: soft gradient','lighter top, a darker lip at the bottom, a brighter bar and a dot'],['B','B: gold trim','A plus a thin gold ring inside and a coloured 3D side (recommended)'],['C','C: glass','a glassy top half, a soft glow below, a little sparkle']];
+let html='';
+for(const [s,name,desc] of ROWS){
+  html+=`<div class="lab"><b class="big">${name}</b><i class="big">${desc}</i></div><div class="row">
+   <div class="col">${button(s,'yellow',62,62,16,bag(44))}<span class="big" style="font-size:14px">Shop</span></div>
+   <div class="col">${button(s,'blue',62,62,16,disc(44))}<span class="big" style="font-size:14px">5/5</span></div>
+   <div class="col">${button(s,'pink',62,62,16,gift(44))}<span class="big" style="font-size:14px">4:59</span></div>
+   ${button(s,'purple',176,64,16,`${disc(38)}<div style="display:flex;flex-direction:column;line-height:1"><span class="big" style="font-size:23px">Recruit</span><span style="display:flex;align-items:center;gap:3px">${qi(17)}<span class="big" style="font-size:15px;color:#c9ffe4;--sw:4px">1.2M</span></span></div>`)}
+   ${button(s,'jade',112,38,11,`${robux(20)}<span class="big" style="font-size:18px">99</span>`)}
+   ${button(s,'purple',96,30,10,`<span class="big" style="font-size:16px">3/10</span>`)}
+  </div>`;
+}
+document.getElementById('g').innerHTML=html;
+</script></body></html>

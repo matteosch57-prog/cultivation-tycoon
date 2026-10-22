@@ -1,0 +1,107 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Less text pass (2026-10-21): ?v=now | a | b (phone HUD) and ?v=cards (pad cards + toasts).
+     Rendered to less_text_*.jpg at phone size 844x390. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif;background:#2a2433}
+.scene{position:relative;width:844px;height:390px;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.scene::before{content:"";position:absolute;inset:0;background:rgba(20,16,30,.18)}
+.rbx{position:absolute;top:8px;left:12px;display:flex;gap:8px}.rbx i{width:36px;height:36px;border-radius:11px;background:rgba(18,18,22,.55)}
+.stick{position:absolute;left:5%;bottom:7%;width:96px;height:96px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.jump{position:absolute;right:4%;bottom:7%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;letter-spacing:.4px;white-space:nowrap}
+.toy{border:3px solid #1b1420;border-radius:14px;box-shadow:0 4px 0 #1b1420;position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:12%;height:22%;border-radius:999px;background:rgba(255,255,255,.35)}
+.tag{position:absolute;right:8px;top:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 12px;border-radius:6px;z-index:9}
+.row{display:flex;align-items:center}
+.col{display:flex;flex-direction:column;align-items:center}
+.dot{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:#e33;border:3px solid #1b1420}
+.badge{position:absolute;top:-9px;right:-9px;min-width:22px;height:22px;border-radius:999px;background:#e33;border:3px solid #1b1420;display:flex;align-items:center;justify-content:center;font-size:13px;--sw:3px}
+/* cards page */
+.cards{position:absolute;inset:0;padding:14px 18px;display:grid;grid-template-columns:1fr;gap:0;background:rgba(20,16,30,.55)}
+.h{font-size:15px;color:#ffe9a8;--sw:4px;margin-bottom:2px}
+.pair{display:flex;align-items:center;gap:8px;margin:3px 0}
+.was{font-size:13px;color:#d9d0e2;--sw:3px;opacity:.85;text-decoration:line-through;text-decoration-color:#ff8a8a;text-decoration-thickness:2px}
+.arrow{color:#ffe36b;font-size:15px;--sw:3px}
+.now{font-size:16px;--sw:4px}
+</style></head>
+<body><div class="scene" id="s"><div class="rbx"><i></i><i></i></div><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="tag" id="tag"></div></div>
+<script>
+const v=new URLSearchParams(location.search).get('v')||'now';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/><circle cx="22" cy="34" r="4" fill="#fff" opacity=".8"/></svg>`;
+const karma=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="#9a6bff" stroke="#1b1420" stroke-width="5"/><circle cx="36" cy="35" r="12" fill="#d9b8ff"/><circle cx="39" cy="37" r="5" fill="#9a6bff"/><circle cx="23" cy="23" r="4" fill="#fff" opacity=".85"/></svg>`;
+const disc=(s,robe='#5096ff')=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="#1b1420"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="#1b1420" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="#1b1420"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="${robe}" stroke="#1b1420" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const bag=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="23" y="8" width="18" height="10" rx="2" fill="#e65b4f" stroke="#1b1420" stroke-width="4"/><circle cx="32" cy="40" r="21" fill="#ffd34d" stroke="#1b1420" stroke-width="5"/><g transform="translate(20 28) scale(.38)">${qi(64).replace(/<\/?svg[^>]*>/g,'')}</g></svg>`;
+const pill=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="12" y="22" width="22" height="20" rx="10" fill="#e65b4f" stroke="#1b1420" stroke-width="4"/><rect x="30" y="22" width="22" height="20" rx="10" fill="#fff4dc" stroke="#1b1420" stroke-width="4"/></g></svg>`;
+const gift=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="11" y="28" width="42" height="28" rx="4" fill="#e65b4f" stroke="#1b1420" stroke-width="5"/><rect x="7" y="19" width="50" height="12" rx="3" fill="#ff7a6b" stroke="#1b1420" stroke-width="5"/><path d="M32 19v37" stroke="#ffd34d" stroke-width="7"/></svg>`;
+const wave=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M6 40c8-12 16-12 26 0s18 12 26 0v16H6z" fill="#9fd0ff" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M10 26c8-10 14-10 22 0s14 10 22 0" fill="none" stroke="#1b1420" stroke-width="9" stroke-linecap="round"/><path d="M10 26c8-10 14-10 22 0s14 10 22 0" fill="none" stroke="#cfe6ff" stroke-width="4" stroke-linecap="round"/></svg>`;
+const hall=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M4 30L32 12l28 18z" fill="#e65b4f" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><rect x="14" y="30" width="36" height="24" fill="#fff4dc" stroke="#1b1420" stroke-width="5"/><rect x="27" y="38" width="10" height="16" fill="#8a5a3c"/></svg>`;
+const arrow=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-150 32 32)"><path d="M8 25h26V12l22 20-22 20V39H8z" fill="#ffe36b" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/></g></svg>`;
+const amt=(icon,n,size,color='#fff')=>`<span class="row" style="gap:3px">${icon(Math.round(size*1.15))}<span class="big" style="font-size:${size}px;color:${color};--sw:${Math.max(3,Math.round(size*.2))}px">${n}</span></span>`;
+const btn=(icon,color,under,extra='')=>`<div class="col" style="gap:1px"><div class="toy" style="width:54px;height:54px;background:${color};display:flex;align-items:center;justify-content:center">${icon(40)}${extra}</div>${under?`<span class="big" style="font-size:13px;--sw:4px;${under.style||''}">${under.t}</span>`:''}</div>`;
+const RAR=[['Immortal','#ffb02e','+400%'],['Elder','#b06bff','+150%'],['Core Disciple','#5096ff','+60%'],['Inner Disciple','#59d39f','+25%'],['Outer Disciple','#c8c0d0','+10%'],['Outer Disciple','#c8c0d0','+10%'],['Inner Disciple','#59d39f','+25%']];
+const H=document.getElementById('hud'), T=document.getElementById('tag');
+
+function counter(tide){return `<div class="row" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);gap:6px">${qi(46)}
+ <div class="col" style="align-items:flex-start;line-height:.95"><span class="big" style="font-size:38px;--sw:5px">19,863</span>
+ <span class="big" style="font-size:16px;color:#9ff5c8">+152K/s</span>${tide}</div></div>`}
+function bar(label,chip,txt){return `<div class="col" style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);gap:2px">
+ <div class="row" style="gap:8px"><span class="big" style="font-size:15px;color:#ffe9a8">Foundation Establishment</span>${chip}</div>
+ <div class="toy" style="width:240px;height:24px;background:#3a2d40;border-radius:999px;overflow:hidden;box-shadow:0 3px 0 #1b1420">
+ <div style="width:22%;height:100%;background:#59d39f"></div>
+ <span class="big" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px">${txt}</span></div></div>`}
+function recruit(word){return `<div class="toy row" style="position:absolute;right:112px;bottom:22px;background:#b06bff;padding:6px 14px;gap:8px;transform:rotate(-2deg)">${disc(34)}
+ <div class="col" style="align-items:flex-start;line-height:1">${word?'<span class="big" style="font-size:20px">Recruit</span>':''}${amt(qi,'1.2M',word?14:20,'#c9ffe4')}</div></div>`}
+
+if(v==='now'){
+ T.textContent='NOW (today in Play, phone)';
+ H.innerHTML=counter(`<span class="big" style="font-size:12px;color:#cfe6ff;--sw:3px">Spirit Tide in 3:12</span>`)+
+ `<div class="col" style="position:absolute;left:12px;top:48%;transform:translateY(-50%);gap:8px">
+   ${btn(bag,'#ffd36b',{t:'Shop'})}${btn(d=>disc(d),'#9fd0ff',{t:'Disciples'},'<span class="badge big">7</span>')}${btn(pill,'#ffd36b',{t:'Use pill!'})}${btn(gift,'#ffb3a8',{t:'Gift 4:59'})}</div>
+  <div class="toy" style="position:absolute;left:80px;top:96px;background:#fff4dc;padding:6px 12px;box-shadow:none">
+   <div class="big" style="font-size:16px;color:#ffe9a8">Disciples 7/7</div>${RAR.map(r=>`<div class="big" style="font-size:13px;color:${r[1]}">${r[0]}  ${r[2]}</div>`).join('')}</div>
+  <div class="row" style="position:absolute;right:14px;top:62px;gap:6px;transform:rotate(2deg)">${arrow(30)}<div class="col" style="align-items:flex-start;line-height:1.05">
+   <span class="big" style="font-size:14px">Next: Breakthrough: Foundation Establishment</span><span class="big" style="font-size:13px;color:#ffb3a8">200 Qi</span></div></div>
+  <div class="col" style="position:absolute;left:47%;top:165px;transform:translateX(-50%)"><span class="big" style="font-size:20px;color:#fff2c4">Thatched Hut</span>
+   <span class="big" style="font-size:13px;color:#c9ffe4">Your sect's heart: upgrade it</span>${amt(qi,'90',22,'#9ff5c8')}</div>
+  <span class="big" style="position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:22px;color:#ffe36b">Keep playing: your next gift is on its way</span>`+
+ bar('',`<div class="toy" style="background:#b06bff;padding:1px 12px;border-radius:9px"><span class="big" style="font-size:13px">Rebirth 3/10</span></div>`,'1 / 27 built')+recruit(true);
+}
+if(v==='a'||v==='b'){
+ const B=v==='b';
+ T.textContent=B?'B: icons and numbers only':'A: short words (recommended)';
+ const tide=`<span class="row" style="gap:3px">${wave(15)}<span class="big" style="font-size:13px;color:#cfe6ff;--sw:3px">3:12</span></span>`;
+ H.innerHTML=counter(tide)+
+ `<div class="col" style="position:absolute;left:12px;top:48%;transform:translateY(-50%);gap:${B?12:8}px">
+   ${btn(bag,'#ffd36b',B?null:{t:'Shop'})}${btn(d=>disc(d),'#9fd0ff',B?null:{t:'7/7'},B?'<span class="badge big">7</span>':'')}${btn(pill,'#ffd36b',B?null:{t:'Use!'},B?'<span class="dot"></span>':'')}${btn(gift,'#ffb3a8',{t:'4:59'})}</div>
+  <div class="row" style="position:absolute;left:84px;top:${B?118:112}px;gap:4px;flex-wrap:wrap;width:170px">${RAR.map(r=>`<div class="col" style="gap:0">${disc(34,r[1])}${B?'':`<span class="big" style="font-size:11px;color:${r[1]};--sw:3px">${r[2]}</span>`}</div>`).join('')}</div>
+  <div class="row" style="position:absolute;right:14px;top:62px;gap:6px;transform:rotate(2deg)">${arrow(30)}<div class="col" style="align-items:flex-start;line-height:1.05">
+   ${B?'':'<span class="big" style="font-size:14px">Breakthrough</span>'}${amt(qi,'200',B?18:13,'#9ff5c8')}</div></div>
+  <div class="col" style="position:absolute;left:47%;top:175px;transform:translateX(-50%)"><span class="big" style="font-size:20px;color:#fff2c4">Thatched Hut</span>${amt(qi,'90',22,'#9ff5c8')}</div>
+  <span class="row" style="position:absolute;left:50%;top:30%;transform:translateX(-50%);gap:6px">${gift(26)}<span class="big" style="font-size:22px;color:#ffe36b">4:59</span></span>`+
+ bar('',`<div class="toy row" style="background:#b06bff;padding:1px 10px 1px 6px;border-radius:9px;gap:3px">${karma(18)}<span class="big" style="font-size:13px">3/10</span></div>`,
+   `<span class="row" style="gap:4px">${hall(17)}1/27</span>`)+recruit(!B);
+}
+if(v==='cards'){
+ T.textContent='';T.style.display='none';document.querySelector('.stick').remove();document.querySelector('.jump').remove();
+ document.body.style.height='640px';document.getElementById('s').style.height='640px';
+ const P=(was,now)=>`<div class="pair"><span class="big was">${was}</span><span class="big arrow">&#10148;</span><span class="big now">${now}</span></div>`;
+ const Pn=(was,now)=>`<div class="pair"><span class="big was">${was}</span><span class="big arrow">&#10148;</span>${now}</div>`;
+ H.innerHTML=`<div class="cards"><div>
+  <div class="big h">Pad cards: name and price; the line only up close, 2 or 3 words</div>
+  ${P('Your sect\'s heart: upgrade it','Main Hall')}${P('Brews a 2x Qi pill','2x Qi pills')}${P('Unlocks recruiting','Recruit disciples')}
+  ${P('Spawns qi orbs to collect','Qi orbs')}${P('Your island grows again','More land')}${P('Main Hall level 3','Hall level 3')}
+  <div class="big h" style="margin-top:6px">Messages</div>
+  ${Pn('Gift  +720 Qi',amt(qi,'+720',16,'#ffe36b'))}${Pn('Qi orb  +1.2K',amt(qi,'+1.2K',16,'#9ff5d0'))}
+  ${Pn('Your sect gathered 48K Qi while you were away',`<span class="row" style="gap:5px"><span class="big now">Away</span>${amt(qi,'+48K',16,'#9fd0ff')}</span>`)}
+ 
+  ${P('The furnace is still brewing (Instant Pill in the Shop)','Brewing 2:13')}${P('Keep playing: your next gift is on its way','Gift in 4:59')}
+  ${P('Pill swallowed: 2x Qi for 60 s!','2x Qi  1:00')}${P('A pill is ready in your furnace!','Pill ready!')}
+  ${P('Your peak grows! New land to build on','More land!')}${P('Spirit Tide! Every sect earns 2x Qi for 120 s','Spirit Tide! 2x Qi')}
+  ${P('Elder left: your disciples are stronger','Elder: sect full')}${P('New disciple: Elder!','Elder!')}
+  ${P('You already have your Elder from the Shop','Already yours')}${P('Built: Lantern Row','Lantern Row!')}
+ </div></div>`;
+}
+</script></body></html>

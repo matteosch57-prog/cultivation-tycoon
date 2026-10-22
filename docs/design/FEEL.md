@@ -30,6 +30,22 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   level), sparks, dust and a warm light flash. The pieces do not collide while they fly (they shoved
   the avatar onto the next pads in Play).
 
+## Recruit reveal (src/client/RecruitReveal.client.luau, D34)
+- A qi orb flies from the Recruit button to the screen centre (`REVEAL.fly`), charges one `step`
+  per rarity above Outer Disciple (colour climbs grey, green, blue, purple..., each step a rising
+  `padReady` ding and a harder shake), then bursts (white ring, drops) into the disciple card.
+- Burst sounds climb: `recruit` always, `rareChime` from Core, `powerUp` from Elder, `gong` from
+  Immortal, `thunder` from Dao Ancestor. Aura: glow for all, rays from Core, a white counter ring
+  from Elder, sparkles from Immortal, Primordial cycles every colour. Juice lights the platform
+  column at the burst (`Config.revealBurst`). A tap skips to the burst, then to the end.
+
+## Moving (src/client/Movement.client.luau, D34)
+- A cultivator's light step: walk, jump height and the soft fall are `Config.MOVE`. While falling an
+  upward VectorForce takes `floatFall` of gravity away, so landings float down.
+- **Cloud step:** a new jump press in the air (keys, pad or the phone's jump button) kicks the avatar
+  up once per jump and leaves a jade ring under the feet (a plain part, not a light, R3).
+- Run, jump and fall play Roblox's own Ninja and Levitation animation packs (`MOVE.anims`).
+
 ## Constant motion (src/client/Juice.client.luau)
 - "+qi" floats off every earning building every 3 s (staggered).
 - Orbs bob and spin; collecting one flies qi drops into the HUD counter, which bounces.

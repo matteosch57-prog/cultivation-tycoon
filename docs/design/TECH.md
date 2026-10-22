@@ -161,7 +161,7 @@ in view. Evidence: [2026-10-21 phone perf](../research/2026-10-21_phone_perf.md)
    `PerfMark.onScreen(camera, pos, radius)` and distance first, and sleeps otherwise (cultivators,
    qi orbs). Effects switch off by distance (cultivator auras beyond 90 studs).
 3. **Time every per-frame or burst job:** `local t0 = PerfMark.begin()` ... `PerfMark.finish("name", t0)`
-   (hud, cultivators, guide, orbs), so `/perf` names it.
+   (hud, cultivators, guide, orbs, padcards, move, reveal, auras), so `/perf` names it.
 4. **Write only on a real change.** Compare with the last value before writing a property, above all
    on BillboardGui / SurfaceGui text and colours (each write redraws the GUI).
 5. **Big builds fill an unparented Model and parent it once** (one replication; `buildModel`).

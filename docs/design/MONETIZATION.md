@@ -66,7 +66,7 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   or above from the start flattens realms 1 to 6 to the 5 min floor. Bought ones are counted in
   `data.boughtDisciples`, survive breakthroughs and are never trimmed by the disciple cap (the
   cap drops the weakest unbought one); a reincarnation must keep them. A rarity
-  the player rolled shows "first pulled" in the disciples card (`data.pulled`). Event
+  the player rolled shows a gold "first pulled" dot in the disciples row (`data.pulled`). Event
   `DiscipleBought` (key, realm, minutes played). The server refuses the prompt when the sect is
   full of stronger ones (it could not stay). A bought one joins like a recruit and, if no seat is
   free, rests on the bench (`DISCIPLE_CAP`).
@@ -89,6 +89,18 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   `docs/art/captures/shop_screen_play.jpg`, `shop_hub_pads_play.jpg`.
 
 The list to create in the dashboard (name, description, price, icon): [SHOP_ITEMS](SHOP_ITEMS.md).
+
+## Welcome Pouch (D38, research `2026-10-22_cheap_buys.md`, mock `docs/art/mocks/welcome_pouch_a.jpg`)
+- The entry door: **5 Robux, once per player** (`SHOP_PRODUCTS` key `welcome`, `limit = 1`): an Elder
+  (bought disciple, permanent) and `qiBonus` +10% on every qi/s forever (`data.qiBonus`, kept through
+  every life; Main's `rate`). Economy check (sim_economy `--bought 1.5,0.1`): realm 10 lands the same
+  day as without it.
+- Offered once (`Config.WELCOME`, `data.welcomeOffered`): right after a building with a `feature`
+  once 5 min are played, or after any building from 10 min. The card (`Shop.client`, ScreenGui
+  `WelcomeOffer`) shows the Elder with its aura and the bonus, a price button and "Not now"; the
+  Boosts tab keeps a "Once" tile first until it is bought. Bought: the recruit reveal plays its Elder,
+  then a "+10% forever" toast. Telemetry `Shop` "offer" / "prompt" / "bought" with key `welcome`.
+- Repeatable cheap qi (Pocket Qi, short pills) was studied and left out (anchors the 29 Pouch low).
 
 ## Disciple price ladder (economy check, D28)
 Relative to the 2x Qi pass price P: Elder 0.15P, Immortal 0.3P, Celestial 0.6P, Dao Ancestor 1P,

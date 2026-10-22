@@ -519,7 +519,8 @@ local function rate(s, away)
 	local past = Config.pastLivesMult(data.soulPeak)
 	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
 	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group
+	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome
 end
 
 -- share of this realm's pads owned (0..1)
@@ -900,6 +901,7 @@ refreshPads = function(player, s)
 					refreshPads(player, s)
 					publish(player)
 					notify:FireClient(player, "built", pad.name)
+					Shop.maybeWelcome(player, s, pad)
 				end)
 			end
 		end
