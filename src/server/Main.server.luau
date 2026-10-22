@@ -546,6 +546,7 @@ local function publish(player)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
 	player:SetAttribute("HasHall", d.owned.hall == true)
 	player:SetAttribute("RecruitCost", Config.recruitCost(d.realm, d.realmRecruits or 0))
+	player:SetAttribute("RealmRecruits", d.realmRecruits or 0) -- the HUD prices x10 / x50 from it
 	player:SetAttribute("Disciples", table.concat(d.disciples, ","))
 	local pulled = {}
 	for name in d.pulled or {} do
@@ -1312,7 +1313,7 @@ end
 
 -- Seat a new disciple (a recruit, or one bought in the Shop). Returns true when it works a seat;
 -- false = the sect is full of stronger ones and it left (`force` keeps it on the bench instead).
-local function addDisciple(s, name, force)
+local function addDisciple(s, name, force, noBuild)
 	local list = s.data.disciples
 	local max = maxDisciples(s)
 	table.sort(list, byBonus)
@@ -1341,7 +1342,9 @@ local function addDisciple(s, name, force)
 			table.remove(list, i)
 		end
 	end
-	buildDisciples(s, kept and name or nil)
+	if not noBuild then -- a multi-recruit rebuilds once at the end
+		buildDisciples(s, kept and name or nil)
+	end
 	return kept
 end
 
@@ -1368,7 +1371,9 @@ chestFn.OnServerInvoke = function(player)
 	return { rarity = r.name, kept = kept, left = s.data.chestSummons }
 end
 
-recruitFn.OnServerInvoke = function(player)
+-- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing): each roll pays its own price in
+-- order and the run stops when qi runs out, so x10 is never cheaper than ten single presses
+recruitFn.OnServerInvoke = function(player, count)
 	if not Guard.allow(player, "Recruit") then
 		return nil -- over its call budget (Guard)
 	end
@@ -1379,28 +1384,45 @@ recruitFn.OnServerInvoke = function(player)
 	if not s.data.owned.hall then
 		return { ok = false, reason = "Build the Disciple Hall first" }
 	end
-	local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
-	if s.data.qi < cost then
+	local want = 1
+	for _, n in Config.RECRUIT_COUNTS do
+		if count == n then
+			want = n
+		end
+	end
+	if s.data.qi < Config.recruitCost(s.data.realm, s.data.realmRecruits or 0) then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
-	s.data.qi -= cost
-	s.data.recruited += 1 -- lifetime (telemetry)
-	s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
-	Telemetry.sink(player, s.data, cost, "recruit")
-	local r = roll()
-	local kept = addDisciple(s, r.name)
-	publish(player)
-	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
-	-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
+	local results, best, bestKept, bestKeptName = {}, nil, false, nil
 	s.data.pulled = s.data.pulled or {}
-	if not s.data.pulled[r.name] then
+	for _ = 1, want do
+		local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
+		if s.data.qi < cost then
+			break
+		end
+		s.data.qi -= cost
+		s.data.recruited += 1 -- lifetime (telemetry)
+		s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
+		Telemetry.sink(player, s.data, cost, "recruit")
+		local r = roll()
+		local kept = addDisciple(s, r.name, false, true)
+		table.insert(results, { rarity = r.name, kept = kept })
+		if not best or r.bonus > Config.rarity(best).bonus then
+			best = r.name
+		end
+		if kept and (not bestKeptName or r.bonus > Config.rarity(bestKeptName).bonus) then
+			bestKept, bestKeptName = true, r.name
+		end
+		Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+		-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
 		s.data.pulled[r.name] = true
-		publish(player)
 	end
+	buildDisciples(s, bestKeptName) -- once, only the best newcomer arrives with its entrance
+	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
-	return { ok = true, rarity = r.name, kept = kept }
+	return { ok = true, rarity = best, kept = bestKept, results = results }
 end
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.

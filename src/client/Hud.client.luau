@@ -290,6 +290,7 @@ end
 
 ---------------------------------------------------------------------------------------------
 -- state
+local refreshStatic -- forward: the recruit selector (built earlier) redraws the seal through it
 local state = {
 	shownQi = player:GetAttribute("Qi") or 0,
 	lastQi = player:GetAttribute("Qi") or 0,
@@ -617,7 +618,7 @@ local function build()
 	rtl.Padding = UDim.new(0, px(1))
 	rtl.SortOrder = Enum.SortOrder.LayoutOrder
 	rtl.Parent = rText
-	text(rText, "Recruit", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.recruitLabel = text(rText, "Recruit", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	local priceRow = frame(rText, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local prl = Instance.new("UIListLayout")
 	prl.FillDirection = Enum.FillDirection.Horizontal
@@ -628,6 +629,27 @@ local function build()
 	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
+	-- how many one press recruits (owner: after a recruit an x1 / x10 / x50 selector shows for a few
+	-- seconds above the seal; the pick sticks to the seal)
+	local pick = frame(rHolder, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -px(10)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false })
+	local pl = Instance.new("UIListLayout")
+	pl.FillDirection = Enum.FillDirection.Horizontal
+	pl.Padding = UDim.new(0, px(6))
+	pl.SortOrder = Enum.SortOrder.LayoutOrder
+	pl.Parent = pick
+	ui.recruitPick = pick
+	ui.recruitChips = {}
+	for i, n in Config.RECRUIT_COUNTS do
+		local holder, b = toy(pick, UDim2.fromOffset(px(48), px(36)), Color3.fromHex("3A2C44"), px(18))
+		holder.LayoutOrder = i
+		text(b, "x" .. n, px(17), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		ui.recruitChips[n] = b
+		b.Activated:Connect(function()
+			state.recruitN = n
+			pick.Visible = false
+			refreshStatic()
+		end)
+	end
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
 	-- press feel, like the toy buttons
 	rBtn.MouseButton1Down:Connect(function()
@@ -696,7 +718,7 @@ local function build()
 		end
 		state.recruiting = true
 		local ok, res = pcall(function()
-			return remotes.Recruit:InvokeServer()
+			return remotes.Recruit:InvokeServer(state.recruitN or 1)
 		end)
 		state.recruiting = false -- always release, whatever happens below
 		if ok and res and res.ok then
@@ -704,8 +726,23 @@ local function build()
 			-- the reveal names the disciple, so no toast
 			local fxEvent = playerGui:FindFirstChild("RecruitFx")
 			if fxEvent then
-				fxEvent:Fire(res.rarity, res.kept)
+				fxEvent:Fire(res.rarity, res.kept) -- a multi-recruit reveals its best disciple
 			end
+			if res.results and #res.results > 1 then
+				toast(string.format("x%d recruited: best %s", #res.results, res.rarity), Config.rarity(res.rarity).color, 2.5)
+			end
+			-- the x1 / x10 / x50 selector, for a few seconds; the current pick is gold
+			for n, b in ui.recruitChips do
+				b.BackgroundColor3 = n == (state.recruitN or 1) and Color3.fromHex("FFD34D") or Color3.fromHex("3A2C44")
+			end
+			ui.recruitPick.Visible = true
+			state.pickToken = (state.pickToken or 0) + 1
+			local my = state.pickToken
+			task.delay(Config.RECRUIT_PICK_SECONDS, function()
+				if state.pickToken == my then
+					ui.recruitPick.Visible = false
+				end
+			end)
 		elseif ok and res then
 			toast(res.reason, PINK, 1.5)
 		end
@@ -872,7 +909,7 @@ end
 
 ---------------------------------------------------------------------------------------------
 -- data -> UI
-local function refreshStatic()
+refreshStatic = function()
 	if not ui.root then
 		return
 	end
@@ -882,7 +919,14 @@ local function refreshStatic()
 	-- a new life pays once this one goes deeper than every life before (D37)
 	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
 	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("%d/%d", realmNow, target)
-	ui.recruitCost.Text = compact(player:GetAttribute("RecruitCost") or 0)
+	-- the price of the next press: each roll in order (x10 / x50 add the next ones up)
+	local n = state.recruitN or 1
+	local recruitTotal, rr, realmNowR = 0, player:GetAttribute("RealmRecruits") or 0, player:GetAttribute("Realm") or 1
+	for i = 0, n - 1 do
+		recruitTotal += Config.recruitCost(realmNowR, rr + i)
+	end
+	ui.recruitCost.Text = compact(n == 1 and (player:GetAttribute("RecruitCost") or 0) or recruitTotal)
+	ui.recruitLabel.Text = n == 1 and "Recruit" or ("Recruit x" .. n)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
 	local pulledRaw = player:GetAttribute("Pulled") or ""
@@ -934,7 +978,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "Disciples", "Built", "Pulled" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()

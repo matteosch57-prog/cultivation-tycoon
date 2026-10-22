@@ -447,6 +447,10 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
+-- How many recruits one press buys (owner 2026-10-22: after a recruit an x1 / x10 / x50 selector shows
+-- for RECRUIT_PICK_SECONDS; the pick sticks to the seal). Each roll is priced in order (no discount).
+Config.RECRUIT_COUNTS = { 1, 10, 50 }
+Config.RECRUIT_PICK_SECONDS = 5
 Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, D25)
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
