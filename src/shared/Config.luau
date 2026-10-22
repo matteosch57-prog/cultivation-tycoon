@@ -327,14 +327,6 @@ end
 -- sooner, the fast-then-hard steps kept; never above 0.10 (0.20 flattens D25's step).
 Config.DISTRICT_BONUS = 0.05
 Config.DISTRICT_NAMES = { fields = "Fields", dao = "Alchemy", disciples = "Disciple" }
--- the price card's line for a district building (nil for the heart): "+5% per Fields building"
-function Config.districtLine(pad)
-	local name = pad.district and Config.DISTRICT_NAMES[pad.district]
-	if not name or pad.income <= 0 then
-		return nil
-	end
-	return string.format("+%d%% per %s building", math.floor(Config.DISTRICT_BONUS * 100 + 0.5), name)
-end
 function Config.districtMult(owned, pad)
 	if not pad.district or pad.district == "heart" or pad.income <= 0 then -- the heart is the hub, not a resource district
 		return 1
@@ -531,6 +523,10 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
+-- How many recruits one press buys (owner 2026-10-22: after a recruit an x1 / x10 / x50 selector shows
+-- for RECRUIT_PICK_SECONDS; the pick sticks to the seal). Each roll is priced in order (no discount).
+Config.RECRUIT_COUNTS = { 1, 10, 50 }
+Config.RECRUIT_PICK_SECONDS = 5
 Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, D25)
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
