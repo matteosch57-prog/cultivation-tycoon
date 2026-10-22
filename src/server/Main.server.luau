@@ -686,7 +686,7 @@ local function makePad(player, s, pad, cost, label, income, onBuy, kind)
 	p:SetAttribute("Title", label)
 	p:SetAttribute("Cost", cost)
 	p:SetAttribute("Income", income)
-	p:SetAttribute("Feature", pad.feature or Config.districtLine(pad)) -- what it does, or its district bonus
+	p:SetAttribute("Feature", pad.feature) -- what a feature building does (the card adds +Qi/s from Income)
 	p:SetAttribute("OwnerId", player.UserId)
 	p:SetAttribute("PadId", pad.id)
 	buildPreview(s, pad, p)

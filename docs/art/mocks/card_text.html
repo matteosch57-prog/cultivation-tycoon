@@ -1,0 +1,92 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Card text mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Pad and world-shop card text mocks (R4, owner feedback 2026-10-22: "a line saying what it gives
+     always, have variety"; shop text "hiding everything, short and concrete, smaller").
+     ?scene=pad|shop. Rendered with Edge headless to card_text_<scene>.jpg. Cards are 1:1 with the
+     capture's pixels (BillboardGui offsets are screen pixels). -->
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#1b1420;font-family:Fredoka,sans-serif;width:1820px}
+.grid{display:grid;grid-template-columns:900px 900px;gap:20px;padding:10px}
+.panel{position:relative;width:900px;height:470px;overflow:hidden;border-radius:10px;background-repeat:no-repeat}
+.tag{position:absolute;left:12px;top:10px;font:700 30px Fredoka;color:#fff;background:rgba(27,20,32,.8);padding:2px 16px;border-radius:10px;z-index:9}
+.sub{position:absolute;left:12px;bottom:10px;font:500 17px Fredoka;color:#fff;background:rgba(27,20,32,.8);padding:4px 12px;border-radius:8px;z-index:9;max-width:876px}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:var(--s,4px) #1b1420;paint-order:stroke fill;line-height:1.05;white-space:nowrap;text-align:center}
+.card{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:1px}
+.row{display:flex;align-items:center;gap:5px;justify-content:center}
+.chip{display:flex;align-items:center;gap:4px;background:rgba(27,20,32,.72);border:2.5px solid #1b1420;border-radius:999px;padding:1px 10px 1px 6px}
+.plate{background:rgba(27,20,32,.78);border:3px solid #1b1420;border-radius:10px;padding:2px 12px}
+.strip{position:absolute;left:0;right:0;bottom:46px;display:flex;justify-content:space-around;padding:8px 0;background:rgba(27,20,32,.55)}
+.strip .card{position:static;transform:none}
+</style></head>
+<body><div class="grid" id="g"></div>
+<script>
+const q=new URLSearchParams(location.search);const scene=q.get('scene')||'pad';
+const INK='#1b1420';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const robux=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4l24 14v28L32 60 8 46V18z" fill="#fff" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M32 18l12 7v14l-12 7-12-7V25z" fill="${INK}"/></svg>`;
+const T=(txt,size,col='#fff',extra='')=>`<div class="t" style="font-size:${size}px;color:${col};--s:${Math.max(2,size*.14)}px;${extra}">${txt}</div>`;
+const G='#9ff5c8', Y='#ffe9a8', LIL='#dcc6ff', GOLD='#ffe08a';
+const panels=[];
+function panel(tag,sub,bg,pos,cards,strip){panels.push({tag,sub,bg,pos,cards,strip})}
+
+if(scene==='pad'){
+ const BG='../captures/50_pads_formation_ready.jpg', POS='-500px -150px';
+ const at=(x,y,h)=>({x:x-500,y:y-150,h});
+ const P={x:945,y:300}; // above the pad, under the beam top
+ // the three other pads shown in the strip, for variety
+ const ex=[
+  {n:'Spirit Vein',inc:2,line:'Qi seeps from the rock',kind:'inc',cost:'25'},
+  {n:'Alchemy Furnace',inc:10,line:'Brews 2x Qi pills',kind:'feat',cost:'1.2K'},
+  {n:'Koi Pond',inc:90,line:'Koi circle under lilies',kind:'look',cost:'13K'},
+ ];
+ const price=(c,s=26)=>`<div class="row">${qi(s+4)}${T(c,s,G)}</div>`;
+ // NOW
+ const now=e=>T(e.n,22)+price(e.cost);
+ panel('Now','Name and price; only the 6 feature buildings say what they do, and only up close.',BG,POS,
+  [{...at(P.x,P.y),html:now({n:'Lantern Row',cost:'60'})}],ex.map(e=>now(e)));
+ // A: words only, varied
+ const a=e=>T(e.n,22)+T(e.line,16,Y)+price(e.cost);
+ panel('A  One line in words','Every pad says what it gives in a few words, each one different. No numbers.',BG,POS,
+  [{...at(P.x,P.y),html:a({n:'Lantern Row',line:'Lights your avenue at dusk',cost:'60'})}],ex.map(a));
+ // B: qi chip + words
+ const b=e=>T(e.n,22)+`<div class="row">${qi(18)}${T('+'+e.inc+'/s',16,G)}${T('· '+e.line,15,Y)}</div>`+price(e.cost);
+ panel('B  Income + a few words','The Qi it adds (with the Qi icon), then a short varied line. Concrete and still short.',BG,POS,
+  [{...at(P.x,P.y),html:b({n:'Lantern Row',inc:3,line:'lights the avenue',cost:'60'})}],ex.map(e=>b({...e,line:e.line.toLowerCase()})));
+ // C: lead with what it gives
+ const col={inc:G,feat:GOLD,look:'#ffc2e0'};
+ const c=e=>T(e.kind==='inc'?`${qi(24)} +${e.inc}/s`:e.line,22,col[e.kind],'display:flex;align-items:center;gap:4px')+T(e.n,15,'#fff')+price(e.cost,24);
+ panel('C  What it gives first','The gift is the big line, coloured by kind: green Qi, gold power, pink look. The name goes small.',BG,POS,
+  [{...at(P.x,P.y),html:c({n:'Lantern Row',inc:3,line:'',kind:'inc',cost:'60'})}],ex.map(c));
+}else{
+ const BG='../captures/shop_island_disciples_play.jpg', POS='-450px -120px';
+ const at=(x,y)=>({x:x-450,y:y-120});
+ // three shop pads in front of three disciples on display
+ const pads=[{x:830,y:415,n:'Immortal',line:'+400% Qi disciple',p:'199'},{x:940,y:400,n:'Celestial',line:'+900% Qi disciple',p:'399'},{x:1200,y:420,n:'Elder',line:'+150% Qi disciple',p:'99'}];
+ const rob=(p,s)=>`<div class="row">${robux(s+2)}${T(p,s,LIL)}</div>`;
+ // NOW: 62 px icon, name 22, line 15, price 26, 150 px tall, 5.5 studs up, on top of the 3D
+ const bob=`<div style="width:62px;height:62px;border-radius:50%;background:radial-gradient(#fff6,#c9a3ff);border:3px solid ${INK}"></div>`;
+ panel('Now','Icon, name, line and price float over each pad, on top of everything: they cover the disciples.',BG,POS,
+  pads.map(d=>({...at(d.x,d.y-40),html:bob+T(d.n,22)+T(d.line,15,Y)+rob(d.p,26)})));
+ // A: small tag, name + price
+ panel('A  Small tag','Name and price only, about half the size, low over the pad: the disciple stands clear behind it.',BG,POS,
+  pads.map(d=>({...at(d.x,d.y-6),html:T(d.n,16)+rob(d.p,17)})));
+ // B: price chip far, details near
+ panel('B  Price, details up close','Far away only a price chip. Walk up and the name and what it gives fade in (right pad).',BG,POS,
+  pads.map((d,i)=>({...at(d.x,d.y-4),html:i<2?`<div class="chip">${robux(18)}${T(d.p,16,LIL)}</div>`:T(d.n,18)+T(d.line,14,Y)+`<div class="chip">${robux(18)}${T(d.p,16,LIL)}</div>`})));
+ // C: plate on the ground in front of the pad
+ panel('C  Ground plate','A small dark plate on the ground at the pad\'s front edge, like a shop sign. Nothing floats in the air.',BG,POS,
+  pads.map(d=>({...at(d.x,d.y+34),html:`<div class="plate row">${T(d.n,15)}${robux(16)}${T(d.p,15,LIL)}</div>`})));
+}
+const g=document.getElementById('g');
+for(const p of panels){
+ const el=document.createElement('div');el.className='panel';
+ el.style.backgroundImage=`url('${p.bg}')`;el.style.backgroundPosition=p.pos;
+ el.innerHTML=`<div class="tag">${p.tag}</div><div class="sub">${p.sub}</div>`+
+  p.cards.map(c=>`<div class="card" style="left:${c.x}px;top:${c.y}px">${c.html}</div>`).join('')+
+  (p.strip?`<div class="strip">${p.strip.map(h=>`<div class="card">${h}</div>`).join('')}</div>`:'');
+ g.appendChild(el);
+}
+</script></body></html>

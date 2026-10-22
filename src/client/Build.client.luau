@@ -233,7 +233,7 @@ local function makeCard(pad, kind)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "PadCard"
 	bb.Adornee = pad
-	bb.Size = UDim2.fromOffset(260, 92)
+	bb.Size = UDim2.fromOffset(260, 112)
 	bb.StudsOffset = Vector3.new(0, 5.5, 0)
 	bb.MaxDistance = 110
 	-- On top of the 3D: depth-tested cards sat behind the beacon beam, sank half into the
@@ -270,13 +270,35 @@ local function makeCard(pad, kind)
 		return t
 	end
 	text(1, 22, PadLook.TEXT.title).Text = pad:GetAttribute("Title") or ""
+	-- what it gives, always (mock card_text B, owner pick 2026-10-22): (qi drop) +3/s, then in
+	-- yellow what a feature building does ("2x Qi pills"). No description lines.
+	local income = pad:GetAttribute("Income") or 0
 	local feature = pad:GetAttribute("Feature")
-	local featureLine
-	if feature then
-		-- feature buildings say what they DO, in 2 or 3 words, only up close (less text, mock A)
-		featureLine = text(2, 15, PadLook.TEXT.line)
-		featureLine.Text = feature
-		featureLine.Visible = false
+	if income > 0 or feature then
+		local gives = Instance.new("Frame")
+		gives.BackgroundTransparency = 1
+		gives.AutomaticSize = Enum.AutomaticSize.XY
+		gives.Size = UDim2.new()
+		gives.LayoutOrder = 2
+		local gl = Instance.new("UIListLayout")
+		gl.FillDirection = Enum.FillDirection.Horizontal
+		gl.VerticalAlignment = Enum.VerticalAlignment.Center
+		gl.SortOrder = Enum.SortOrder.LayoutOrder
+		gl.Padding = UDim.new(0, 4)
+		gl.Parent = gives
+		gives.Parent = f
+		if income > 0 then
+			local gic = Toy.Icon.new(gives, 20, { LayoutOrder = 1 })
+			gic:qi(32, 32, 1)
+			local inc = text(2, 18, PadLook.TEXT.build)
+			inc.Text = "+" .. fmt(income) .. "/s"
+			inc.Parent = gives
+		end
+		if feature then
+			local ft = text(3, 17, PadLook.TEXT.line)
+			ft.Text = feature
+			ft.Parent = gives
+		end
 	end
 	-- a worker hire pad: one dot per worker the building can take, gold for the ones hired
 	local max = pad:GetAttribute("HireMax")
@@ -284,7 +306,7 @@ local function makeCard(pad, kind)
 		local dots = Instance.new("Frame")
 		dots.BackgroundTransparency = 1
 		dots.Size = UDim2.fromOffset(max * 24, 22)
-		dots.LayoutOrder = 2
+		dots.LayoutOrder = 3
 		local dl = Instance.new("UIListLayout")
 		dl.FillDirection = Enum.FillDirection.Horizontal
 		dl.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -309,7 +331,7 @@ local function makeCard(pad, kind)
 	row.BackgroundTransparency = 1
 	row.AutomaticSize = Enum.AutomaticSize.XY
 	row.Size = UDim2.new()
-	row.LayoutOrder = 3
+	row.LayoutOrder = 4
 	local rl = Instance.new("UIListLayout")
 	rl.FillDirection = Enum.FillDirection.Horizontal
 	rl.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -328,11 +350,11 @@ local function makeCard(pad, kind)
 	ic:qi(32, 32, 1)
 	local amount = part(3, "")
 	local more = part(4, "more")
-	local costText = { need = need, amount = amount, more = more, feature = featureLine }
+	local costText = { need = need, amount = amount, more = more }
 	local free = pad:GetAttribute("FreeText") -- a free pad (the idle chest) says what it does instead of a price
 	if free then
 		row.Visible = false
-		text(3, 26, PadLook.textColor(kind, true)).Text = free
+		text(4, 26, PadLook.textColor(kind, true)).Text = free
 	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "DistanceScale"
@@ -837,9 +859,6 @@ RunService.Heartbeat:Connect(function(dt)
 		local near = (rec.k or 0) > 0.3
 		if near ~= rec.cardLow then
 			rec.cardLow = near
-			if rec.costText.feature then
-				rec.costText.feature.Visible = near
-			end
 			TweenService:Create(rec.card, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, near and 2.6 or 5.5, 0) }):Play()
 		end
 		local need = onPad and not ok
