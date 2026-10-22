@@ -183,6 +183,11 @@ local function keepClear(x, z)
 			return true
 		end
 	end
+	for _, at in { Config.IDLE_CHEST_AT, Config.IDLE_CHEST_PAD } do -- the idle chest and its green pad
+		if (Vector2.new(x, z) - Vector2.new(at.X, at.Z)).Magnitude < 7 then
+			return true
+		end
+	end
 	for _, e in Config.SHOP_PEAK_PADS do -- the shop pads (the entrance ones move with the rim)
 		local sx, sz = Config.shopPeakSpot(e, groundRadius)
 		if (Vector2.new(x, z) - Vector2.new(sx, sz)).Magnitude < 7 then
@@ -499,15 +504,31 @@ local function rate(s, away)
 	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony
 end
 
+-- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
+-- realm, the disciples, Past Lives and Harmony. Not a pill, the tide, friends, the group or a paid
+-- multiplier (2x Qi pass, Welcome Pouch), so those make every goal come sooner instead of raising
+-- its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
+local function priceRate(s)
+	local data = s.data
+	local base = Config.BASE_RATE
+	for id in data.owned do
+		local pad = Config.padById(id)
+		if pad then
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
+		end
+	end
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * Config.pastLivesMult(data.soulPeak) * Config.harmonyMult(data.owned)
+end
+
 -- share of this realm's pads owned (0..1)
 local function builtShare(d)
 	local n = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
 			n += 1
 		end
 	end
-	return n / Config.REQUIRED_PADS
+	return n / Config.requiredPads(d.realm)
 end
 
 local function publish(player)
@@ -520,7 +541,7 @@ local function publish(player)
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
 	-- D44: the realm's open pads cost at least PRICE_FLOOR_S s of income; reprice them as it grows
-	local away = rate(s, true)
+	local away = priceRate(s)
 	for id, part in s.pads or {} do
 		local pad = Config.padById(id)
 		local info = s.padData and s.padData[part]
@@ -558,15 +579,25 @@ local function publish(player)
 	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
+	local tips = {}
+	for key in d.tips or {} do
+		table.insert(tips, key)
+	end
+	player:SetAttribute("Tips", table.concat(tips, ",")) -- first-time tips already done (Tips.client)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
 	player:SetAttribute("BoostUntil", d.boostUntil or 0)
-	-- playtime gifts: GiftIn = seconds to the next one (0 = ready), -1 = all claimed this session
-	local gi = s.giftIdx or 1
+	-- playtime gifts (D49, daily): GiftIn = seconds to the next one (0 = ready), -1 = all claimed
+	-- today; GiftNext / GiftQi / GiftSummons = what it pays; GiftResetIn = seconds to 00:00 UTC
+	local gi = d.giftIdx or 1
 	local at = Config.GIFT_TIMES[gi]
-	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (s.playTime or 0))) or -1)
+	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (d.giftPlay or 0))) or -1)
+	player:SetAttribute("GiftNext", at and gi or 0)
+	player:SetAttribute("GiftQi", at and math.floor(rate(s, true) * Config.GIFT_VALUE[gi]) or 0)
+	player:SetAttribute("GiftSummons", at and Config.GIFT_SUMMONS[gi] or 0)
+	player:SetAttribute("GiftResetIn", (Config.giftDay() + 1) * 86400 - os.time())
 	local built = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
 			built += 1
 		end
 	end
@@ -577,7 +608,7 @@ local function publish(player)
 	player:SetAttribute("SoulPeak", d.soulPeak or 0)
 	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
 	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
-	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.REQUIRED_PADS or 0))
+	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.requiredPads(d.realm) or 0))
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
 	end
@@ -853,7 +884,6 @@ end
 
 refreshPads = function(player, s)
 	-- only add and remove what changed (rebuilding every pad made all cards and beacons flicker)
-	local mult = Config.costMult(s.data.realm)
 	local wanted = {}
 	local all = true
 	local ownedCount = 0
@@ -861,7 +891,7 @@ refreshPads = function(player, s)
 		ownedCount += 1
 	end
 	for _, pad in Config.PADS do
-		if not s.data.owned[pad.id] then
+		if not s.data.owned[pad.id] and Config.padOpen(pad, s.data.realm) then -- D48: the island opens with the realms
 			if Config.neededForBreakthrough(pad) then -- paths and groves are optional (DECOR_OPTIONAL)
 				all = false
 			end
@@ -897,7 +927,7 @@ refreshPads = function(player, s)
 		if not s.data.owned[pad.id] then
 			local ready = wanted[pad.id]
 			if ready and not s.pads[pad.id] then
-				local cost = Config.padCost(pad, s.data.realm, rate(s, true), s.data.lives)
+				local cost = Config.padCost(pad, s.data.realm, priceRate(s), s.data.lives)
 				local income = pad.income * Config.incomeMult(s.data.realm)
 				local part
 				part = makePad(player, s, pad, cost, pad.name, income, function()
@@ -954,6 +984,8 @@ refreshPads = function(player, s)
 		local at = Config.IDLE_CHEST_PAD
 		local p = makePad(player, s, { id = "chest", x = at.X, z = at.Z, feature = "Fills while you're away" }, 0, "Idle Chest", 0, function()
 			s.chestShown = true
+			s.data.tips = s.data.tips or {}
+			s.data.tips.chest = true
 			local gain = s.data.chestQi or 0
 			s.data.chestQi = 0
 			if gain > 0 then
@@ -1004,7 +1036,7 @@ refreshPads = function(player, s)
 		end
 	end
 	if all and not s.pads.breakthrough then
-		local cost = math.floor(Config.BREAKTHROUGH_COST * mult)
+		local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48
 		local nextName = Config.realmName(s.data.realm + 1)
 		local bt = { id = "breakthrough", x = 0, z = 14 }
 		s.pads.breakthrough = makePad(player, s, bt, cost, "Breakthrough: " .. nextName, 0, function()
@@ -1264,6 +1296,10 @@ local function onJoin(player)
 	if data.welcomed == nil then
 		data.welcomed = (data.sessions or 0) > 0
 	end
+	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
+	if data.tips == nil then
+		data.tips = data.welcomed and { orb = true, pill = true, chest = true } or {}
+	end
 	-- the starter idle chest: a new save finds it full, opened from its green pad (not a popup)
 	local starterChest = false
 	if data.welcomed == false and not data.chestStarter then
@@ -1467,8 +1503,8 @@ chestFn.OnServerInvoke = function(player)
 	return { rarity = r.name, kept = kept, left = s.data.chestSummons }
 end
 
--- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing): each roll pays its own price in
--- order and the run stops when qi runs out, so x10 is never cheaper than ten single presses
+-- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
+-- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
 recruitFn.OnServerInvoke = function(player, count)
 	if not Guard.allow(player, "Recruit") then
 		return nil -- over its call budget (Guard)
@@ -1486,21 +1522,18 @@ recruitFn.OnServerInvoke = function(player, count)
 			want = n
 		end
 	end
-	if s.data.qi < Config.recruitCost(s.data.realm, s.data.realmRecruits or 0) then
+	local cost = Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
+	if s.data.qi < cost then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
+	s.data.qi -= cost
+	s.data.recruited += want -- lifetime (telemetry)
+	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
+	Telemetry.sink(player, s.data, cost, "recruit")
 	local results, best, bestKept, bestKeptName = {}, nil, false, nil
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
-		local cost = Config.recruitCost(s.data.realm, s.data.realmRecruits or 0)
-		if s.data.qi < cost then
-			break
-		end
-		s.data.qi -= cost
-		s.data.recruited += 1 -- lifetime (telemetry)
-		s.data.realmRecruits = (s.data.realmRecruits or 0) + 1 -- prices the next roll; reset at a breakthrough
-		Telemetry.sink(player, s.data, cost, "recruit")
 		local r = roll()
 		local kept = addDisciple(s, r.name, false, true)
 		table.insert(results, { rarity = r.name, kept = kept })
@@ -1532,6 +1565,8 @@ pillFn.OnServerInvoke = function(player)
 	end
 	s.data.pillReady = false
 	s.data.pillTimer = 0
+	s.data.tips = s.data.tips or {}
+	s.data.tips.pill = true
 	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
@@ -1546,18 +1581,25 @@ giftFn.OnServerInvoke = function(player)
 	if not s then
 		return nil
 	end
-	local gi = s.giftIdx or 1
+	local d = s.data
+	local gi = d.giftIdx or 1
 	local at = Config.GIFT_TIMES[gi]
-	if not at or (s.playTime or 0) < at then
+	if not at or (d.giftPlay or 0) < at then
 		return nil
 	end
 	local gain = math.floor(rate(s, true) * Config.GIFT_VALUE[gi])
-	s.giftIdx = gi + 1
-	s.data.qi += gain
-	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(s.data.realm))
+	local summons = Config.GIFT_SUMMONS[gi] or 0
+	d.giftIdx = gi + 1
+	d.qi += gain
+	if summons > 0 then -- free summons wait in the idle chest's pool (ChestSummon reveals them)
+		d.chestSummons = (d.chestSummons or 0) + summons
+		player:SetAttribute("ChestSummons", d.chestSummons)
+	end
+	Telemetry.source(player, d, gain, "gift", true)
+	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(d.realm))
 	publish(player)
-	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
-	return gain
+	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
+	return { qi = gain, summons = summons }
 end
 
 -- Group gift (D35): the card asks for a like, then the group join, then Claim. Only the group is
@@ -1652,7 +1694,9 @@ local function reincarnate(player, s)
 	if d.realm > 1 or dao(d, "foundation") > 0 then
 		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
 		for _, pad in Config.PADS do
-			d.owned[pad.id] = true
+			if Config.padOpen(pad, d.realm) then
+				d.owned[pad.id] = true
+			end
 		end
 	end
 	d.qi = 0
@@ -1821,6 +1865,8 @@ local function checkOrbs(player, s, hrp)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
+			s.data.tips = s.data.tips or {}
+			s.data.tips.orb = true
 			notify:FireClient(player, "orb", gain, orb.Position)
 			orb:Destroy()
 			table.remove(s.orbs, i)
@@ -2027,6 +2073,12 @@ while true do
 		s.earned = (s.earned or 0) + gain
 		s.playTime = (s.playTime or 0) + dt
 		d.playSec = (d.playSec or 0) + dt
+		-- daily gifts (D49): play time today; a new UTC day restarts the ladder
+		local today = Config.giftDay()
+		if d.giftDay ~= today then
+			d.giftDay, d.giftPlay, d.giftIdx = today, 0, 1
+		end
+		d.giftPlay = (d.giftPlay or 0) + dt
 		Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then

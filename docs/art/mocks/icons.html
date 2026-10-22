@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Icon set mock (owner feedback 2026-10-22: "lots of icons are looking AI af, the like thumb for
+example"). Row NOW redraws today's in-game icons from their Luau shape code (boxes + circles + an
+ink copy underneath). Rows A/B/C draw ONE new geometry per icon (real silhouettes as SVG paths) in
+three finishes, each holding the set rules from research: one outline colour and weight, one light
+from the top left, one palette, one level of detail, same padding.
+?view=board (default) | ?view=atlas&style=A  (atlas = the 8 x 8 sheet of 128 px cells, transparent) -->
+<html><head><meta charset="utf-8">
+<style>
+  body { margin: 0; background: #14101a; font-family: "Fredoka One", "Segoe UI", sans-serif; color: #fff; }
+  .board { width: 1600px; padding: 18px 22px; box-sizing: border-box; }
+  .row { display: flex; align-items: center; gap: 0; margin: 0 0 10px; border-radius: 16px; padding: 10px 10px 4px; }
+  .sky { background: linear-gradient(180deg, #8fc9ef 0%, #bfe3f5 60%, #7fbf6a 61%, #5fa24f 100%); }
+  .dark { background: #2a2233; }
+  .tag { width: 64px; font: 700 30px "Segoe UI", sans-serif; color: #fff; -webkit-text-stroke: 1.5px #1b1420; text-align: center; }
+  .cell { width: 74px; text-align: center; }
+  .cell svg { width: 62px; height: 62px; display: block; margin: 0 auto; }
+  .lab { font: 600 11px "Segoe UI", sans-serif; color: #1b1420; opacity: .75; height: 14px; }
+  .dark .lab { color: #fff; opacity: .55; }
+  .head { font: 700 22px "Segoe UI", sans-serif; margin: 6px 0 12px; }
+  .note { font: 500 15px "Segoe UI", sans-serif; opacity: .8; margin: -6px 0 14px; }
+  .atlas { width: 1024px; height: 1024px; position: relative; background: transparent; }
+  .atlas svg { position: absolute; width: 128px; height: 128px; }
+</style></head>
+<body>
+<div id="root"></div>
+<script src="icons.js"></script>
+<script>
+if (VIEW === "atlas") document.body.style.background = "transparent";
+document.getElementById("root").innerHTML = VIEW === "atlas" ? atlas() : board();
+</script>
+</body></html>

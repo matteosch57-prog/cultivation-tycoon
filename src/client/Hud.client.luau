@@ -1,5 +1,5 @@
 -- Cultivation Tycoon HUD (mock C, docs/mocks/hud_C_*): no panels, chunky outlined numbers,
--- toy buttons. Icons are drawn from UI shapes (no uploaded images). The layout follows the
+-- toy buttons. Icons come from the shared icon sheet (Toy.icon). The layout follows the
 -- device: phone sizes from a 390px-tall reference, computer ~1.3x, and it steers around
 -- Roblox's own topbar, thumbstick and jump button.
 local Players = game:GetService("Players")
@@ -145,91 +145,23 @@ local function text(parent, str, size, color, props)
 	return t
 end
 
--- Shapes in a 64-unit icon box (like the mock's SVGs). Each shape gets a dark outline copy
--- underneath (lower ZIndex) so overlapping fills merge into one outlined silhouette.
-local Icon = {}
-Icon.__index = Icon
-function Icon.new(parent, size, props)
-	local box = frame(parent, { Size = UDim2.fromOffset(size, size) })
-	for k, v in props or {} do
-		box[k] = v
-	end
-	return setmetatable({ box = box, u = size / 64, ow = math.max(2, size / 64 * 4.5) }, Icon)
-end
-function Icon:_shape(cx, cy, w, h, color, radius, rot, outline)
-	local u = self.u
-	local function make(extra, col, z)
-		local f = frame(self.box, {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(cx * u, cy * u),
-			Size = UDim2.fromOffset(w * u + extra * 2, h * u + extra * 2),
-			BackgroundTransparency = 0,
-			BackgroundColor3 = col,
-			Rotation = rot or 0,
-			ZIndex = z,
-		})
-		if radius then
-			corner(f, radius)
-		end
-		return f
-	end
-	if outline ~= false then
-		make(self.ow, INK, 1)
-	end
-	return make(0, color, 2)
-end
-function Icon:circle(cx, cy, r, color, outline)
-	return self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, outline)
-end
-function Icon:rect(cx, cy, w, h, color, radius, rot, outline)
-	return self:_shape(cx, cy, w, h, color, radius and UDim.new(0, radius * self.u) or nil, rot, outline)
-end
-function Icon:detail(cx, cy, r, color, transparency) -- un-outlined highlight on top
-	local f = self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, false)
-	f.ZIndex = 3
-	f.BackgroundTransparency = transparency or 0
-	return f
-end
-
+-- Icons come from the shared icon sheet (Toy.icon, Config.ICON_ATLAS)
 local function qiIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:circle(32, 40, 20, Color3.fromHex("6FD6AE"))
-	ic:rect(32, 23, 27, 27, Color3.fromHex("6FD6AE"), 3, 45)
-	ic:detail(37, 40, 9, Color3.fromHex("E8FFF4"))
-	ic:detail(23, 35, 4, Color3.new(1, 1, 1), 0.2)
-	return ic.box
+	return Toy.icon(parent, "qi", size, props)
 end
 
-local function discipleIcon(parent, size, robe, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 52, 38, 22, robe or Color3.fromHex("5096FF"), 9)
-	ic:circle(32, 12, 7, INK)
-	ic:circle(32, 29, 13, Color3.fromHex("F2CFAE"))
-	local hair = ic:rect(32, 21, 24, 7, INK, 3, 0, false)
-	hair.ZIndex = 3
-	local collar = ic:rect(32, 47, 8, 12, Color3.new(1, 1, 1), 2, 0, false)
-	collar.ZIndex = 3
-	return ic.box
+local function discipleIcon(parent, size, props)
+	return Toy.icon(parent, "disciple", size, props)
 end
 
 -- the Spirit Tide: a blue wave crest
 local function tideIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 46, 54, 22, TIDE, 6)
-	ic:circle(18, 34, 12, TIDE)
-	ic:circle(42, 30, 14, TIDE)
-	ic:detail(44, 26, 6, TIDE_LIGHT)
-	ic:detail(20, 31, 4, Color3.new(1, 1, 1), 0.2)
-	return ic.box
+	return Toy.icon(parent, "tide", size, props)
 end
 
 -- a little hall (buildings owned, on the realm bar)
 local function hallIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 42, 38, 24, Color3.fromHex("FFF4DC"), 2)
-	ic:rect(32, 22, 54, 14, Color3.fromHex("E65B4F"), 4)
-	ic:rect(32, 47, 10, 14, Color3.fromHex("8A5A3C"), 1, 0, false).ZIndex = 3
-	return ic.box
+	return Toy.icon(parent, "hall", size, props)
 end
 
 -- returns (slot, spinner): the slot sits in the layout, the spinner inside it is what rotates
@@ -238,10 +170,7 @@ local function arrowIcon(parent, size, props)
 	for k, v in props or {} do
 		slot[k] = v
 	end
-	local ic = Icon.new(slot, size)
-	ic:rect(24, 32, 30, 14, GOLD, 3)
-	ic:rect(42, 32, 26, 26, GOLD, 3, 45)
-	return slot, ic.box
+	return slot, Toy.icon(slot, "goal", size)
 end
 
 -- toy button: solid shadow + outlined face + glass shine (Toy.glass). Returns (holder, button).
@@ -386,11 +315,7 @@ local function build()
 	sLayout.Parent = sCol
 	local sHolder, sBtn = toy(sCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
 	sHolder.LayoutOrder = 1
-	local bag = Icon.new(sBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	bag:rect(32, 15, 18, 9, Color3.fromHex("E65B4F"), 2)
-	bag:circle(32, 40, 22, Color3.fromHex("FFD34D"))
-	bag:rect(32, 22, 22, 6, Color3.fromHex("E65B4F"), 2)
-	qiIcon(sBtn, px(17), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(4)) })
+	Toy.icon(sBtn, "shop", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	text(sCol, "Shop", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	sBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ShopOpen")
@@ -405,7 +330,7 @@ local function build()
 	dLayout.Parent = dCol
 	local dHolder, dBtn = toy(dCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("9FD0FF"), px(14))
 	dHolder.LayoutOrder = 1
-	discipleIcon(dBtn, px(40), nil, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	discipleIcon(dBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	-- the label is the count (less text, mock less_text A)
 	ui.dLabel = text(dCol, "0", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
@@ -418,14 +343,12 @@ local function build()
 	pLayout2.Parent = pCol
 	local pHolder, pBtn = toy(pCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
 	pHolder.LayoutOrder = 1
-	local pill = Icon.new(pBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Rotation = -35 })
-	pill:rect(23, 32, 22, 20, Color3.fromHex("E65B4F"), 10)
-	pill:rect(41, 32, 22, 20, Color3.fromHex("FFF4DC"), 10)
-	pill:detail(20, 27, 3, Color3.new(1, 1, 1), 0.3)
+	Toy.icon(pBtn, "pill", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	ui.pillLabel = text(pCol, "Pill", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.pCol = pCol
 	ui.pillHolder = pHolder
 	ui.pillBtn = pBtn
+	pBtn.Name = "PillButton" -- the first-pill tip points at it (Tips.client)
 	pBtn.Activated:Connect(function()
 		if player:GetAttribute("PillReady") then
 			local ok, used = pcall(function()
@@ -447,11 +370,7 @@ local function build()
 	gLayout.Parent = gCol
 	local gHolder, gBtn = toy(gCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFB3A8"), px(14))
 	gHolder.LayoutOrder = 1
-	local gift = Icon.new(gBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	gift:rect(32, 42, 42, 28, Color3.fromHex("E65B4F"), 4)
-	gift:rect(32, 25, 50, 12, Color3.fromHex("FF7A6B"), 3)
-	gift:rect(32, 37, 8, 38, Color3.fromHex("FFD34D"), nil, 0, false)
-	gift:detail(22, 22, 3, Color3.new(1, 1, 1), 0.3)
+	Toy.icon(gBtn, "gift", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(18), px(18)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
 	corner(gDot, UDim.new(1, 0))
 	local gst = Instance.new("UIStroke")
@@ -464,10 +383,11 @@ local function build()
 	ui.giftDot = gDot
 	gBtn.Activated:Connect(function()
 		if (player:GetAttribute("GiftIn") or -1) == 0 then
-			local ok, gain = pcall(function()
+			local ok, res = pcall(function()
 				return remotes.ClaimGift:InvokeServer()
 			end)
-			if ok and gain then
+			local gain = ok and type(res) == "table" and res.qi or nil -- { qi, summons } (D49)
+			if gain then
 				popGain(gain, true)
 				toast({ amt("qi", gain, "+") }, GOLD, 2)
 			end
@@ -624,27 +544,69 @@ local function build()
 	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
-	-- how many one press recruits (owner: after a recruit an x1 / x10 / x50 selector shows for a few
-	-- seconds above the seal; the pick sticks to the seal)
-	local pick = frame(rHolder, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -px(10)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false }) -- right-aligned: the seal sits at the screen's edge
+	-- how many one press recruits (owner: an x1 / x10 / x50 selector shows above the seal on a press
+	-- or a hover, even without the qi; the pick sticks to the seal). Each chip shows its batch price
+	-- and greys out while it is out of reach (the frame loop paints them).
+	local pick = frame(rHolder, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -px(8)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false }) -- right-aligned: the seal sits at the screen's edge
 	local pl = Instance.new("UIListLayout")
 	pl.FillDirection = Enum.FillDirection.Horizontal
+	pl.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	pl.Padding = UDim.new(0, px(6))
 	pl.SortOrder = Enum.SortOrder.LayoutOrder
 	pl.Parent = pick
 	ui.recruitPick = pick
 	ui.recruitChips = {}
-	for i, n in Config.RECRUIT_COUNTS do
-		local holder, b = toy(pick, UDim2.fromOffset(px(48), px(36)), Color3.fromHex("3A2C44"), px(18))
-		holder.LayoutOrder = i
-		text(b, "x" .. n, px(17), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		ui.recruitChips[n] = b
-		b.Activated:Connect(function()
-			state.recruitN = n
-			pick.Visible = false
-			refreshStatic()
+	-- hidden RECRUIT_PICK_SECONDS after the last press, pick or hover (never while hovered)
+	local function hidePickLater()
+		state.pickToken = (state.pickToken or 0) + 1
+		local my = state.pickToken
+		task.delay(Config.RECRUIT_PICK_SECONDS, function()
+			if state.pickToken == my and not state.pickHover then
+				pick.Visible = false
+			end
 		end)
 	end
+	local function showPick()
+		pick.Visible = true
+		hidePickLater()
+	end
+	local function hover(gui)
+		gui.MouseEnter:Connect(function()
+			state.pickHover = true
+			showPick()
+		end)
+		gui.MouseLeave:Connect(function()
+			state.pickHover = false
+			hidePickLater()
+		end)
+	end
+	ui.showRecruitPick = showPick
+	for i, n in Config.RECRUIT_COUNTS do
+		local col = frame(pick, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
+		local cl = Instance.new("UIListLayout")
+		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		cl.Padding = UDim.new(0, px(1))
+		cl.Parent = col
+		local holder, b = toy(col, UDim2.fromOffset(px(48), px(36)), Color3.fromHex("3A2C44"), px(18))
+		holder.LayoutOrder = 1
+		local label = text(b, "x" .. n, px(17), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		local cRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+		local crl = Instance.new("UIListLayout")
+		crl.FillDirection = Enum.FillDirection.Horizontal
+		crl.VerticalAlignment = Enum.VerticalAlignment.Center
+		crl.Padding = UDim.new(0, px(2))
+		crl.Parent = cRow
+		qiIcon(cRow, px(12), { LayoutOrder = 1 })
+		local price = text(cRow, "", px(12), JADE_LIGHT, { LayoutOrder = 2 })
+		ui.recruitChips[n] = { btn = b, label = label, price = price }
+		hover(b)
+		b.Activated:Connect(function()
+			state.recruitN = n
+			refreshStatic()
+			hidePickLater()
+		end)
+	end
+	hover(rBtn)
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
 	-- press feel, like the toy buttons
 	rBtn.MouseButton1Down:Connect(function()
@@ -712,6 +674,7 @@ local function build()
 			return
 		end
 		state.recruiting = true
+		ui.showRecruitPick() -- the first press shows the x1 / x10 / x50 choice, qi or not
 		local ok, res = pcall(function()
 			return remotes.Recruit:InvokeServer(state.recruitN or 1)
 		end)
@@ -721,23 +684,8 @@ local function build()
 			-- the reveal names the disciple, so no toast
 			local fxEvent = playerGui:FindFirstChild("RecruitFx")
 			if fxEvent then
-				fxEvent:Fire(res.rarity, res.kept) -- a multi-recruit reveals its best disciple
+				fxEvent:Fire(res.rarity, res.kept, res.results) -- x10 / x50: every orb opens, then the best
 			end
-			if res.results and #res.results > 1 then
-				toast(string.format("x%d recruited: best %s", #res.results, res.rarity), Config.rarity(res.rarity).color, 2.5)
-			end
-			-- the x1 / x10 / x50 selector, for a few seconds; the current pick is gold
-			for n, b in ui.recruitChips do
-				b.BackgroundColor3 = n == (state.recruitN or 1) and Color3.fromHex("FFD34D") or Color3.fromHex("3A2C44")
-			end
-			ui.recruitPick.Visible = true
-			state.pickToken = (state.pickToken or 0) + 1
-			local my = state.pickToken
-			task.delay(Config.RECRUIT_PICK_SECONDS, function()
-				if state.pickToken == my then
-					ui.recruitPick.Visible = false
-				end
-			end)
 		elseif ok and res then
 			toast(res.reason, PINK, 1.5)
 		end
@@ -787,6 +735,8 @@ local function fadeOut(root, t)
 			TweenService:Create(d, info, { Transparency = 1 }):Play()
 		elseif d:IsA("Frame") and d.BackgroundTransparency < 1 then
 			TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+		elseif d:IsA("ImageLabel") then
+			TweenService:Create(d, info, { ImageTransparency = 1 }):Play()
 		end
 	end
 end
@@ -914,13 +864,18 @@ refreshStatic = function()
 	-- a new life pays once this one goes deeper than every life before (D37)
 	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
 	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("%d/%d", realmNow, target)
-	-- the price of the next press: each roll in order (x10 / x50 add the next ones up)
+	-- the price of each press size (all or nothing, Config.recruitBatchCost): the seal shows the pick's
 	local n = state.recruitN or 1
-	local recruitTotal, rr, realmNowR = 0, player:GetAttribute("RealmRecruits") or 0, player:GetAttribute("Realm") or 1
-	for i = 0, n - 1 do
-		recruitTotal += Config.recruitCost(realmNowR, rr + i)
+	local rr = player:GetAttribute("RealmRecruits") or 0
+	state.recruitTotals = {}
+	for _, c in Config.RECRUIT_COUNTS do
+		state.recruitTotals[c] = Config.recruitBatchCost(realmNow, rr, c)
+		local chip = ui.recruitChips and ui.recruitChips[c]
+		if chip then
+			chip.price.Text = compact(state.recruitTotals[c])
+		end
 	end
-	ui.recruitCost.Text = compact(n == 1 and (player:GetAttribute("RecruitCost") or 0) or recruitTotal)
+	ui.recruitCost.Text = compact(state.recruitTotals[n] or 0)
 	ui.recruitLabel.Text = n == 1 and "Recruit" or ("Recruit x" .. n)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
@@ -959,7 +914,7 @@ refreshStatic = function()
 	end
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
-	local total = Config.REQUIRED_PADS -- paths and groves are optional (DECOR_OPTIONAL)
+	local total = Config.requiredPads(player:GetAttribute("Realm") or 1) -- this realm's island (D48); paths and groves optional
 	ui.progIcon.Visible = owned < total
 	ui.progText.Text = owned >= total and "Break through!" or string.format("%d/%d", owned, total)
 	TweenService:Create(ui.fill, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(math.clamp(owned / total, 0.04, 1), 1) }):Play()
@@ -1142,7 +1097,18 @@ RunService.RenderStepped:Connect(function(dt)
 	if ui.recruit.Visible then
 		-- the Recruit seal: while a recruit is affordable the orb charges through the first five
 		-- rarity colours (a step every 0.6 s), the ring and rays turn and it breathes; else still, dim
-		local can = target >= (player:GetAttribute("RecruitCost") or math.huge)
+		local totals = state.recruitTotals or {}
+		local can = target >= (totals[state.recruitN or 1] or math.huge)
+		-- the chips: the pick is gold, a size out of reach is grey (dim gold when it is the pick)
+		if ui.recruitPick.Visible then
+			for c, chip in ui.recruitChips do
+				local ok = target >= (totals[c] or math.huge)
+				local picked = c == (state.recruitN or 1)
+				put(chip.btn, "BackgroundColor3", picked and (ok and Color3.fromHex("FFD34D") or Color3.fromHex("B8A878")) or (ok and Color3.fromHex("3A2C44") or Color3.fromHex("5A5262")))
+				put(chip.label, "TextColor3", ok and Color3.new(1, 1, 1) or Color3.fromHex("C8C0D0"))
+				put(chip.price, "TextColor3", ok and JADE_LIGHT or PINK)
+			end
+		end
 		local sl = ui.seal
 		local t = os.clock()
 		put(ui.recruitBtn, "BackgroundColor3", can and Color3.fromHex("A070F0") or Color3.fromHex("8C72A8"))

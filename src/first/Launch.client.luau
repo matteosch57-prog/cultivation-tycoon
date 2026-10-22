@@ -243,6 +243,8 @@ local function enter()
 			tween(d, 0.3, { GroupTransparency = 1 })
 		elseif d:IsA("Frame") and d ~= veil and d.BackgroundTransparency < 1 then
 			tween(d, 0.3, { BackgroundTransparency = 1 })
+		elseif d:IsA("ImageLabel") then
+			tween(d, 0.3, { ImageTransparency = 1 })
 		end
 	end
 	if hrp then

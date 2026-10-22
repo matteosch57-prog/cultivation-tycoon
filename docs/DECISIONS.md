@@ -245,3 +245,44 @@ the log as a D-number.
   the hips with a salute. A recruit rebuilds only the seat that changed (seats are kept, so the seat
   order is not the strength order). Why: the owner found the old motion stiff and the full rebuild
   on every recruit weird; joint Transforms are the documented no-upload way.
+- **D48** The island opens over the realms (owner pick A of three, research
+  `2026-10-22_island_by_realm.md`, mock `docs/art/mocks/realm_land.png`; owner: "tycoons are
+  interesting because you get a bigger, more beautiful island slowly"): `Config.REALM_PADS` lists the
+  pads that first open in realms 1 to 4 (16, +14, +11, +14), each realm rebuilds everything opened so
+  far, a new life lands with its landing realm's pads. The breakthrough costs `BREAKTHROUGH_SECONDS`
+  of the price income (buildings x realm x disciples x Past Lives x Harmony; the paid passes are left
+  out, so they make goals come sooner instead of raising them; the D44 floor uses it too).
+- **D49** Daily playtime gifts (owner 2026-10-22: "always show what's the next reward, reset daily, up to
+  2h online"): 8 gifts at 5, 10, 20, 30, 45, 60, 90, 120 min of play TODAY (UTC day, summed over
+  sessions, saved as `data.giftDay/giftPlay/giftIdx`), paying `GIFT_VALUE` s of income and
+  `GIFT_SUMMONS` free summons (into the idle chest pool). The server publishes GiftIn, GiftNext,
+  GiftQi, GiftSummons and GiftResetIn so the HUD always shows the next reward; ClaimGift returns
+  `{ qi, summons }`. Simmed: no pace change, ~9% of a regular player's qi.
+- **D50** First-time tips = mock A (owner: "Missing small tutorial at: first qi ball to get, first
+  pill to use, first idle chest. Small and simple"; mocks `docs/art/mocks/tips_*.jpg`): a cream
+  bubble with one line over the orb / chest pad (gold arrow, the jade trail leads there) or beside
+  the HUD pill button; once per save (`data.tips`, a save from before them starts with all done).
+  The idle chest moves beside the x2 qi pad (owner: "too close to start").
+- **D52** x10 / x50 recruits open every orb (owner 2026-10-22: "x10 and x50 should show X balls
+  opening, they don't work"; picked A of `docs/art/mocks/recruit_multi_{A,B,C}.mp4`, "give it some juice
+  and sound"). A grid hatch (FEEL "x10 / x50"), the Pet Simulator multi-hatch pattern; the stream (B)
+  ran ~7 s at x50 and the split orb (C) hid each opening. A press is all or nothing at
+  `Config.recruitBatchCost` (the chip shows the total): before, each roll was priced at 1.25x the last
+  and the run stopped when qi ran out, so x10 bought 2 or 3 and x50 (~280,000x a single) never ran.
+  The selector shows on a press or a hover, qi or not. Batch price and `recruitStep` belong to the
+  economy pass.
+- **D51** Icons and the altar on screen (owner 2026-10-22: "lots of icons are looking AI af, the like
+  thumb for example"; "fight in the middle is too invasive on screen, but it's nice to show it + a
+  path to go there, with a HIDE or X button. Crown is ugly, add a light aura better"). Mocks
+  `docs/art/mocks/icons_board.jpg` (now vs 3 finishes), `fight_options.jpg`, `aura_options.jpg`;
+  owner picks: icons A "sticker" ("but disciples have a better shape already": the disciple icon
+  stays the disciple atlas figure), altar A (top right, under the next goal), aura W3.
+  Icons: the ~30 box-built icons are replaced by one uploaded sheet of real silhouettes with one
+  rule set (ART_BIBLE "Icons"); Robux shows Roblox's own icon. Altar: the ring under the qi counter
+  is gone; while a round is open a 46 px altar button sits in the HUD's right stack (PlayerGui
+  `HudSlots.Right`, LayoutOrder 3; alone in the top right without it), beads around it = time held,
+  seconds under it; a tap points the guide trail at the altar (local attribute `GuideTo`, read by
+  `Guide.client`), its X hides it until the next round. Winner: a gold rim light (Highlight) and gold
+  sparkles twinkling around the body instead of the part-built crown. Why:
+  the box icons were the "AI look" the owner keeps catching; the centre ring covered the view and
+  overlapped the counter; a light aura matches the disciples' language.

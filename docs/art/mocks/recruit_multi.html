@@ -1,0 +1,134 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Multi-recruit reveal mocks (2026-10-22, owner: "x10 and x50 should show X balls opening").
+     ?opt=A|B|C&n=10|50&t=<s> draws one frame; &sheet=<from>,<count>,<fps> stacks frames for the GIF
+     render (tools in the scratchpad). Phone size 844x390, the HUD's formation seal bottom right.
+     A Grid hatch: N orbs fly out and land in a grid, wobble, then pop in a wave into disciple tiles;
+       the best one grows into the usual reveal card. (Pet Simulator style multi-hatch.)
+     B Stream: the orbs open one after another in the centre, each result drops into a tray at the
+       bottom (x50 = counters per rarity); a rare stops the stream for its own short burst.
+     C One orb splits: one orb charges through the colours up to the BEST roll (as today), bursts
+       into N small orbs that open together, then the tiles sort by rarity under the best card. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;overflow:hidden;font-family:Fredoka,sans-serif;background:#000}
+.scene{position:relative;width:844px;height:390px;overflow:hidden;background:url('altar_bg.jpg') center/cover}
+.veil{position:absolute;inset:0;background:#140e1e}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap;line-height:1.05}
+.abs{position:absolute;left:0;top:0}
+.tag{position:absolute;left:10px;top:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50}
+</style></head>
+<body><div id="root"></div>
+<script>
+const q=new URLSearchParams(location.search);
+const opt=q.get('opt')||'A', N=parseInt(q.get('n')||'10');
+const INK='#1b1420';
+const R=[['Outer',60,10,'#c8c8c8'],['Inner',28,25,'#5ac878'],['Core',9,60,'#5096ff'],['Elder',2.5,150,'#be64ff'],['Immortal',.5,400,'#ffc83c'],['Celestial',.12,900,'#6ee1eb']];
+// a fixed example roll (seeded), with one Elder in x10 and an Immortal in x50
+function rolls(n){let s=n===10?7:21;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};const out=[];
+  for(let i=0;i<n;i++){let r=rnd()*100,k=0;for(;k<R.length-1;k++){if(r<R[k][1])break;r-=R[k][1]}out.push(Math.min(k,3))}
+  out[n===10?6:33]=n===10?3:4; return out;}
+const ROLL=rolls(N); const BEST=ROLL.reduce((b,k,i)=>k>ROLL[b]?i:b,0);
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const back=x=>{const c=1.7;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const out=x=>1-Math.pow(1-x,3);
+const CX=422,CY=180, SEAL={x:844-120-43,y:390-30-60};
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/></svg>`;
+const disc=(s,robe)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="${INK}"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="${robe}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const at=(x,y,inner,extra='')=>`<div class="abs" style="transform:translate(${x}px,${y}px) translate(-50%,-50%);${extra}">${inner}</div>`;
+const orb=(x,y,s,col,o=1)=>at(x,y,'',`width:${s}px;height:${s}px;border-radius:50%;border:${Math.max(2,s*0.07)}px solid ${INK};background:radial-gradient(circle at 35% 30%,#fff 0 12%,${col} 45%,${col});opacity:${o}`);
+const ring=(x,y,p,col='#fff',size=60)=>p<=0||p>=1?'':at(x,y,'',`width:${size}px;height:${size}px;border-radius:50%;border:${8*(1-p)}px solid ${col};opacity:${1-p};transform:translate(${x}px,${y}px) translate(-50%,-50%) scale(${0.4+p*1.8})`);
+function rays(x,y,len,rot,alpha,col){let r='';for(let i=0;i<12;i++)r+=`<div style="position:absolute;left:-${len*0.08}px;top:-${len}px;width:${len*0.16}px;height:${len}px;background:linear-gradient(0deg,${col},transparent);transform-origin:50% 100%;transform:rotate(${i*30}deg);clip-path:polygon(35% 0,65% 0,100% 100%,0 100%)"></div>`;
+  return `<div class="abs" style="transform:translate(${x}px,${y}px) rotate(${rot}deg);opacity:${alpha}">${r}</div>`;}
+// a result tile: dark rounded square, rarity border, the disciple in its robe
+const tile=(x,y,s,k,p=1,o=1)=>at(x,y,`<div style="width:${s}px;height:${s}px;border-radius:${s*0.26}px;background:#2b2033;border:${Math.max(2,s*0.08)}px solid ${R[k][3]};box-shadow:0 ${s*0.06}px 0 ${INK},0 0 0 ${Math.max(1.5,s*0.04)}px ${INK};display:flex;align-items:flex-end;justify-content:center;overflow:hidden">${disc(s*0.86,R[k][3])}</div>`,`transform:translate(${x}px,${y}px) translate(-50%,-50%) scale(${p});opacity:${o}`);
+const card=(x,y,k,p)=>at(x,y,`<div style="display:flex;flex-direction:column;align-items:center">${disc(96,R[k][3])}
+  <span class="big" style="font-size:36px;color:${R[k][3]};--sw:6px;margin-top:-4px">${R[k][0]}!</span>
+  <span class="big" style="font-size:21px;--sw:4px;display:flex;align-items:center;gap:4px">+${R[k][2]}% ${qi(21)}</span></div>`,`transform:translate(${x}px,${y}px) translate(-50%,-50%) scale(${Math.max(0.01,back(p))});opacity:${clamp(p*3)}`);
+function counts(){const c={};ROLL.forEach(k=>c[k]=(c[k]||0)+1);return Object.keys(c).sort((a,b)=>b-a).map(k=>`<span style="color:${R[k][3]}">${c[k]} ${R[k][0]}</span>`).join('<span style="color:#fff"> · </span>');}
+const summary=(y,o)=>at(CX,y,`<span class="big" style="font-size:17px;--sw:4px">x${N}: ${counts()}</span>`,`opacity:${o}`);
+function sealHud(t,dim){const press=t<0.12?0.92:1;
+  return `<div class="abs" style="left:${844-120-86}px;top:${390-30-120}px;opacity:${dim};transform:scale(${press})"><div style="display:flex;flex-direction:column;align-items:center">
+  <svg width="86" height="86" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#a070f0" stroke="${INK}" stroke-width="6"/><circle cx="50" cy="50" r="34" fill="none" stroke="#e2d0ff" stroke-width="3" stroke-dasharray="8 6"/><circle cx="50" cy="50" r="18" fill="#f2f2f6" stroke="${INK}" stroke-width="4"/><circle cx="44" cy="44" r="6" fill="#fff"/></svg>
+  <span class="big" style="font-size:19px;margin-top:3px">Recruit x${N}</span><span class="big" style="font-size:15px;display:flex;gap:4px;align-items:center">${qi(15)}${N===10?'31M':'2.1B'}</span></div></div>`;}
+
+// grid slots for N tiles around the centre
+function grid(n,y0){const cols=n===10?5:10, s=n===10?58:30, gap=n===10?14:6, rows=Math.ceil(n/cols);
+  const w=cols*s+(cols-1)*gap, h=rows*s+(rows-1)*gap; const p=[];
+  for(let i=0;i<n;i++){const c=i%cols,r=Math.floor(i/cols);p.push([CX-w/2+s/2+c*(s+gap),y0-h/2+s/2+r*(s+gap)])}return {p,s};}
+
+function frame(t){
+  let h='', end, fade;
+  if(opt==='A'){
+    const g=grid(N,CY-10), wave=N===10?0.12:0.035, popAt=1.3, waveEnd=popAt+N*wave;
+    const zoomAt=waveEnd+0.35; end=zoomAt+2.2; fade=1-clamp((t-(end-0.3))/0.3);
+    ROLL.forEach((k,i)=>{const [gx,gy]=g.p[i]; const t0=i*(N===10?0.03:0.008); const f=out(clamp((t-t0)/0.5));
+      const x=SEAL.x+(gx-SEAL.x)*f, y=SEAL.y+(gy-SEAL.y)*f-Math.sin(f*Math.PI)*50; const pa=popAt+i*wave;
+      if(t<pa){const wob=t>0.6?Math.sin(t*(30+k*14)+i)*(1+k*1.4)*(g.s/58):0; const tint=k>=2&&t>0.9?R[Math.min(k,1+Math.floor((t-0.9)*3))][3]:R[0][3];
+        h+=orb(x+wob,y,g.s*(0.5+0.5*f),tint,f>0?1:0);}
+      else{const p=clamp((t-pa)/0.25); const gone=i===BEST&&t>zoomAt?0:1;
+        // at the zoom the tiles slide down into a tray row under the card
+        const tr=out(clamp((t-zoomAt)/0.4)); const ts=N===10?34:20, per=N===10?10:17, tg=N===10?6:4;
+        const tx=CX-(per*ts+(per-1)*tg)/2+ts/2+(i%per)*(ts+tg), ty=(N===10?300:268)+Math.floor(i/per)*(ts+tg);
+        const x=gx+(tx-gx)*tr, y=gy+(ty-gy)*tr, s=g.s+(ts-g.s)*tr;
+        if(k>=2)h+=rays(gx,gy,g.s*1.1,t*40,0.5*clamp((t-pa)/0.2)*(1-clamp((t-zoomAt)/0.3)),R[k][3]+'aa');
+        h+=ring(gx,gy,clamp((t-pa)/0.3),R[k][3],g.s); h+=tile(x,y,s,k,back(p)*gone,fade);}});
+    if(t>zoomAt){const p=clamp((t-zoomAt)/0.35); const [bx,by]=g.p[BEST]; const x=bx+(CX-bx)*out(p), y=by+(CY-50-by)*out(p);
+      h+=rays(x,y,200,t*25,0.6*p*fade,R[ROLL[BEST]][3]+'aa'); h+=card(x,y,ROLL[BEST],p*fade); h+=summary(352,clamp((t-zoomAt-0.3)/0.3)*fade);}
+    h=`<div class="veil" style="opacity:${0.55*out(clamp(t/0.3))*fade}"></div>`+h;
+  }
+  if(opt==='B'){
+    // interval shrinks for x50; a rare (Core and up) holds the stream for a beat
+    const times=[]; let tt=0.15;
+    ROLL.forEach((k,i)=>{times.push(tt); const base=N===10?0.3:Math.max(0.045,0.22*Math.pow(0.9,i)); tt+=base+(k>=3?0.7:k>=2&&N===10?0.25:0)});
+    const doneAt=tt+0.2; end=doneAt+2.2; fade=1-clamp((t-(end-0.3))/0.3);
+    const tray=(i)=>N===10?[CX-5*44+22+i*44,350]:null; const counters={};
+    ROLL.forEach((k,i)=>{const t0=times[i]; const fly=clamp((t-t0)/0.18); if(t<t0)return;
+      if(fly<1){const f=out(fly);h+=orb(SEAL.x+(CX-SEAL.x)*f,SEAL.y+(CY-SEAL.y)*f-Math.sin(f*Math.PI)*40,26+30*f,k>=2?R[k][3]:R[0][3]);return;}
+      const p=(t-t0-0.18); const hold=k>=3?0.7:0.12;
+      if(p<hold+0.2){ if(k>=3)h+=rays(CX,CY,150,t*30,0.6*clamp(p/0.2),R[k][3]+'aa');
+        h+=ring(CX,CY,clamp(p/0.3),R[k][3],k>=3?120:70);
+        const toTray=clamp((p-hold)/0.2); const dst=N===10?tray(i):[CX+(-180+Math.min(k,3)*120),352];
+        const x=CX+(dst[0]-CX)*toTray, y=CY+(dst[1]-CY)*toTray; const s=(k>=3?90:64)*(1-toTray)+36*toTray;
+        h+=tile(x,y,s,k,back(clamp(p/0.15)));
+        if(k>=3&&toTray<0.5)h+=at(CX,CY+66,`<span class="big" style="font-size:26px;color:${R[k][3]};--sw:5px">${R[k][0]}!</span>`,`opacity:${1-toTray*2}`);
+      }else{ if(N===10)h+=tile(...tray(i),36,k,1,fade); counters[k]=(counters[k]||0)+1;}});
+    if(N===50){[0,1,2,3,4].forEach(k=>{if(!counters[k])return; const x=CX-180+Math.min(k,3)*120+(k===4?120:0);
+      h+=tile(x,352,36,k,1,fade)+at(x+34,352,`<span class="big" style="font-size:18px;--sw:4px">x${counters[k]}</span>`,`opacity:${fade}`);});}
+    h+=at(CX,40,`<span class="big" style="font-size:20px;--sw:4px">${Math.min(N,ROLL.filter((k,i)=>t>times[i]+0.18).length)} / ${N}</span>`,`opacity:${fade*(t<doneAt?1:1-clamp((t-doneAt)/0.3))}`);
+    if(t>doneAt){const p=clamp((t-doneAt)/0.35); h+=rays(CX,CY-10,200,t*25,0.6*p*fade,R[ROLL[BEST]][3]+'aa'); h+=card(CX,CY-10,ROLL[BEST],p*fade);}
+    h=`<div class="veil" style="opacity:${0.55*out(clamp(t/0.3))*fade}"></div>`+h;
+  }
+  if(opt==='C'){
+    const best=ROLL[BEST], burstAt=0.4+best*0.3, g=grid(N,CY+70);
+    const openAt=burstAt+0.75, sortAt=openAt+0.45; end=sortAt+2.4; fade=1-clamp((t-(end-0.3))/0.3);
+    if(t<burstAt){const f=out(clamp(t/0.4)); const step=Math.min(best,Math.floor(clamp((t-0.4)/(burstAt-0.4))*best*0.999+ (t>0.4?1:0)));
+      const col=R[Math.min(best,Math.max(0,step))][3]; const sh=t>0.4?Math.sin(t*70)*(1+step*1.5):0; const s=(40+50*f)*(1+0.25*clamp((t-0.4)/(burstAt-0.4)));
+      h+=orb(SEAL.x+(CX-SEAL.x)*f+sh,SEAL.y+(CY-30-SEAL.y)*f-Math.sin(f*Math.PI)*60,s,col);}
+    else{ h+=ring(CX,CY-30,clamp((t-burstAt)/0.4),'#fff',120);
+      // sorted order: best first, then by rarity
+      const order=ROLL.map((k,i)=>[k,i]).sort((a,b)=>b[0]-a[0]||a[1]-b[1]); const rank={}; order.forEach(([k,i],r)=>rank[i]=r);
+      ROLL.forEach((k,i)=>{ const [gx,gy]=g.p[i]; const sp=out(clamp((t-burstAt)/0.5)); const a=i/N*6.283;
+        const sx=CX+Math.cos(a)*(N===10?150:170)*sp, sy=CY-30+Math.sin(a)*(N===10?95:110)*sp;
+        const mv=out(clamp((t-openAt-0.1)/0.35)); const x=sx+(gx-sx)*mv, y=sy+(gy-sy)*mv; const pa=openAt+(N===10?0.02:0.004)*i;
+        if(t<pa){h+=orb(sx,sy,g.s*0.7,'#f2f2f6');return;}
+        const sr=clamp((t-sortAt)/0.4); const [tx,ty]=g.p[rank[i]]; const xx=x+(tx-x)*out(sr), yy=y+(ty-y)*out(sr);
+        h+=ring(sx,sy,clamp((t-pa)/0.3),R[k][3],g.s); h+=tile(xx,yy,g.s*(i===BEST?1.0:1),k,back(clamp((t-pa)/0.25)),fade);});
+      const p=clamp((t-burstAt)/0.35); h+=rays(CX,CY-60,170,t*25,0.55*p*fade,R[best][3]+'aa');
+      h+=at(CX,CY-60,`<div style="display:flex;flex-direction:column;align-items:center"><span class="big" style="font-size:34px;color:${R[best][3]};--sw:6px">${R[best][0]}!</span><span class="big" style="font-size:18px;--sw:4px;display:flex;align-items:center;gap:4px">best of ${N} · +${R[best][2]}% ${qi(18)}</span></div>`,`transform:translate(${CX}px,${CY-90}px) translate(-50%,-50%) scale(${back(p)});opacity:${fade}`);
+    }
+    h=`<div class="veil" style="opacity:${0.6*out(clamp(t/0.3))*fade}"></div>`+h;
+  }
+  const tags={A:'A: grid hatch (my pick)',B:'B: stream into a tray',C:'C: one orb splits'};
+  h+=sealHud(t,t<0.2?1:0.35+0.65*clamp((t-(end-0.4))/0.4));
+  h+=`<div class="tag">${tags[opt]} · x${N}</div>`;
+  return {h,end};
+}
+const root=document.getElementById('root');
+const sheet=q.get('sheet');
+if(sheet){const [from,count,fps]=sheet.split(',').map(Number);let s='';for(let f=from;f<from+count;f++)s+=`<div class="scene">${frame(f/fps).h}</div>`;root.innerHTML=s;}
+else if(q.get('t')){root.innerHTML=`<div class="scene">${frame(parseFloat(q.get('t'))).h}</div>`;}
+else{const t0=performance.now();const loop=()=>{const t=(performance.now()-t0)/1000;const r=frame(t%(frame(0).end+0.6));root.innerHTML=`<div class="scene">${r.h}</div>`;requestAnimationFrame(loop)};loop();}
+document.title=String(frame(0).end);
+</script></body></html>

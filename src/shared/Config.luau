@@ -16,13 +16,13 @@ Config.OFFLINE_RATE = 0.5
 -- (tools/sim_game.py CHEST_SUMMON_EVERY): they are the fun of coming back.
 Config.CHEST_SUMMON_EVERY = 3600
 Config.CHEST_SUMMON_MAX = 4
-Config.IDLE_CHEST_AT = Vector3.new(10, 0, 44) -- on the peak (frame space): beside the avenue, past the gate
+Config.IDLE_CHEST_AT = Vector3.new(26, 0, 52) -- on the peak (frame space): beside the x2 qi pad, away from the spawn (owner 2026-10-22)
 -- A brand-new save finds the chest already full (owner: "give a full one at start, green pad in
 -- front, with the full animation to get the loop into their heads"): CHEST_STARTER_QI waiting and
 -- CHEST_STARTER_SUMMONS free summons, opened by stepping on the green pad at IDLE_CHEST_PAD.
 Config.CHEST_STARTER_QI = 150
 Config.CHEST_STARTER_SUMMONS = 3
-Config.IDLE_CHEST_PAD = Vector3.new(5, 0, 44)
+Config.IDLE_CHEST_PAD = Vector3.new(24, 0, 45)
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
 Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)
@@ -144,7 +144,11 @@ Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 Config.REALM_COST_MULT = 5
 Config.REALM_COST_LATE = 10
 Config.REALM_COST_LATE_FROM = 5
-Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
+Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only by the older sims
+-- D48: the breakthrough costs BREAKTHROUGH_SECONDS of the price income (Main priceRate: buildings x
+-- realm x disciples x Past Lives x Harmony, no pill, tide or paid pass) the realm ends on, so the save-up after the
+-- last building is the same short goal whatever the realm holds (research 2026-10-22_island_by_realm)
+Config.BREAKTHROUGH_SECONDS = 90
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.
@@ -411,7 +415,7 @@ Config.WELCOME_QI = 200
 -- over the hub. It opens half a tide cycle after each tide (never with one); stand on it ALONE for
 -- ALTAR_HOLD s to claim it (two or more on it pause the timer); Palm Strike pushes, a fall locks
 -- you out until the round ends. Rewards are seconds of the player's own income (fair at any
--- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a crown until the next round (only
+-- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a light aura until the next round (only
 -- ALTAR_SOLO_SECONDS if nobody else came to fight), everyone else who stood on it
 -- ALTAR_JOIN_SECONDS. That is ~+20% live income per round on average (research 2026-10-21_economy_math).
 Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
@@ -428,10 +432,18 @@ Config.ALTAR_PUSH_COOLDOWN = 2
 Config.ALTAR_PUSH_REACH = 9 -- studs in front of the striker
 Config.ALTAR_PUSH_SPEED = 62 -- knockback, studs/s (sideways), plus a hop
 Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's timer runs
--- Playtime gifts: claimable after this many seconds of play in one session (research
--- 2026-10-21_tycoon_study); each pays GIFT_VALUE[i] seconds of income (no tide, no pill)
-Config.GIFT_TIMES = { 300, 900, 1800 }
-Config.GIFT_VALUE = { 120, 300, 600 }
+-- Playtime gifts, D49 (owner 2026-10-22: "always show the next reward, reset daily, up to 2 h
+-- online"): gift i is claimable after GIFT_TIMES[i] seconds of play TODAY (UTC day, summed over
+-- every session; the ladder restarts at 00:00 UTC). Each pays GIFT_VALUE[i] seconds of income (no
+-- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
+-- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
+Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
+Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
+Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
+Config.GIFT_DAILY = true -- read by the sim
+function Config.giftDay(t)
+	return math.floor((t or os.time()) / 86400)
+end
 Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
 
 -- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
@@ -451,29 +463,29 @@ end
 -- MarketplaceService (regional pricing changes them per player).
 -- `seconds` (Qi packs) = seconds of the buyer's income (no tide, no pill, like gifts).
 Config.SHOP_PASSES = {
-	{ key = "x2", id = 0, name = "2x Qi", line = "Double income forever" },
-	{ key = "auto", id = 0, name = "Auto Orbs", line = "Orbs fly to you" },
-	{ key = "vip", id = 0, name = "VIP Sect", line = "+1 disciple, gold name" },
+	{ key = "x2", id = 2045637564, name = "2x Qi", line = "Double income forever" },
+	{ key = "auto", id = 2047412977, name = "Auto Orbs", line = "Orbs fly to you" },
+	{ key = "vip", id = 2048210735, name = "VIP Sect", line = "+1 disciple, gold name" },
 }
 Config.SHOP_PRODUCTS = {
 	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
 	-- Elder plus `qiBonus` more qi forever (kept through every life); offered once by WELCOME
-	{ key = "welcome", id = 0, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
-	{ key = "pill", id = 0, name = "Instant Pill", line = "2x Qi for 60 s now" },
-	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
-	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
-	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
+	{ key = "welcome", id = 3721094927, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
+	{ key = "pill", id = 3721095019, name = "Instant Pill", line = "2x Qi for 60 s now" },
+	{ key = "pack1", id = 3721095093, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
+	{ key = "pack2", id = 3721095259, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
+	{ key = "pack3", id = 3721095401, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
 	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
 	-- when full). Every tier from Elder up is sold (owner, D28), priced by the owner as a ladder.
-	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
-	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
+	{ key = "elder", id = 3721095583, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
+	{ key = "immortal", id = 3721095692, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
 	-- `limit` = times one player may buy it: the chase tiers once each, Elder / Immortal one sect's
 	-- worth (bought disciples are never trimmed, so this bounds the list and the save); `minRealm` = on sale only from
 	-- that realm (bought from the start they would flatten the early climb: economy check, D28)
-	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
-	{ key = "dao", id = 0, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
-	{ key = "emperor", id = 0, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1, minRealm = 7 },
-	{ key = "primordial", id = 0, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
+	{ key = "celestial", id = 3721095787, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
+	{ key = "dao", id = 3721095866, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
+	{ key = "emperor", id = 3721095940, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1, minRealm = 7 },
+	{ key = "primordial", id = 3721095995, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
@@ -530,13 +542,14 @@ end
 -- Disciples: recruited at the Disciple Hall, each adds a % bonus to income.
 Config.MAX_DISCIPLES = 5
 Config.RECRUIT_BASE = 500
--- How many recruits one press buys (owner 2026-10-22: after a recruit an x1 / x10 / x50 selector shows
--- for RECRUIT_PICK_SECONDS; the pick sticks to the seal). Each roll is priced in order (no discount).
+-- How many recruits one press buys (owner 2026-10-22: an x1 / x10 / x50 selector shows above the seal
+-- on a press or a hover, even without the qi, and hides RECRUIT_PICK_SECONDS after; the pick sticks to
+-- the seal). A press is all or nothing at recruitBatchCost.
 Config.RECRUIT_COUNTS = { 1, 10, 50 }
 Config.RECRUIT_PICK_SECONDS = 5
 -- D44 (owner pick 2 of 3, research 2026-10-22_choice_and_recruits): each recruit in a realm costs
--- RECRUIT_POW x the last (restarts at a breakthrough), so the 20th costs ~90x the first: no spam.
-Config.RECRUIT_POW = 1.25
+-- RECRUIT_POW x the last (restarts at a breakthrough): at 1.05 the 50th costs ~11x the first.
+Config.RECRUIT_POW = 1.05 -- owner pick 2026-10-22 (was 1.25): x10 / x50 = the next 10 / 50 prices
 Config.RECRUIT_GROWTH = 0.5 -- the old linear rule, read only by the older sims (sim_pacing, sim_economy)
 -- D44: a pad of the realm costs at least PRICE_FLOOR_S seconds of income (rate without the pill,
 -- tide and friends), so every building stays a small saving goal and you pick which comes first
@@ -681,6 +694,22 @@ function Config.recruitCost(realm, recruits)
 	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
 end
 
+-- the qi price of one press of `n` recruits, paid all or nothing: the real price of the next n
+-- recruits (owner 2026-10-22: "x10 should be the next x10 price"), with RECRUIT_POW 1.05 so x10 is
+-- ~13 singles and x50 ~210 (at 1.25, x50 was ~280,000). Sim: the recruit rule never moved the pace.
+function Config.recruitBatchCost(realm, recruits, n)
+	local total = 0
+	for i = 0, n - 1 do
+		total += Config.recruitCost(realm, recruits + i)
+	end
+	return total
+end
+
+-- how far one press of `n` recruits moves data.realmRecruits: one per recruit
+function Config.recruitStep(n)
+	return n
+end
+
 -- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more
 -- (from life PRICE_FLOOR_FROM_LIFE on; `lives` = data.lives)
 function Config.padCost(pad, realm, income, lives)
@@ -692,6 +721,37 @@ end
 -- Recruit button, then charges one `step` per rarity above the first (an Outer Disciple bursts at
 -- once, an Elder after 3 steps), bursts and shows the card for `hold` s (+ `holdPer` per tier).
 Config.REVEAL = { fly = 0.4, step = 0.3, hold = 1.6, holdPer = 0.25 }
+-- the x10 / x50 reveal (mock docs/art/mocks/recruit_multi_A.mp4, owner pick A 2026-10-22 "give it
+-- some juice and sound"): the orbs land in a grid by `pop`, open one after another (`wave` s apart,
+-- the gap shrinking with the count down to `waveMin`; a rare orb holds the wave `rarePause` s: Core
+-- or better at x10, Elder or better at x50 (`rareFrom` / `rareFromBig`, else x50 stalls on its Cores),
+-- and `zoom` s after the last one the best grows into the usual card, held `hold` s
+Config.REVEAL_MULTI = { pop = 1.3, wave = 1.2, waveMin = 0.035, waveMax = 0.12, rareFrom = 3, rareFromBig = 4, rarePause = 0.3, zoom = 0.35, hold = 2.2 }
+function Config.revealMultiWave(n)
+	local m = Config.REVEAL_MULTI
+	return math.clamp(m.wave / n, m.waveMin, m.waveMax)
+end
+-- the rarity index from which an orb counts as rare in an `n` reveal
+function Config.revealMultiRare(n)
+	local m = Config.REVEAL_MULTI
+	return n > 10 and m.rareFromBig or m.rareFrom
+end
+-- when each orb of `results` opens ({ rarity = name } list), and when the best card bursts after
+-- them (Juice lights the platform then)
+function Config.revealMultiTimes(results)
+	local m = Config.REVEAL_MULTI
+	local wave = Config.revealMultiWave(#results)
+	local rare = Config.revealMultiRare(#results)
+	local times, at = {}, m.pop
+	for i, r in results do
+		times[i] = at
+		at += wave
+		if Config.rarityIndex(r.rarity) >= rare then
+			at += m.rarePause
+		end
+	end
+	return times, at - wave + m.zoom
+end
 
 -- The disciple icons and their auras (D34): one uploaded 1024 x 1024 sheet drawn by
 -- tools/disciple_atlas.html (art/ui/disciple_atlas.png). Cells are { x, y, w, h } in px.
@@ -719,6 +779,24 @@ Config.DISCIPLE_ATLAS = {
 		fig9 = { 0, 640, 128, 128 },
 	},
 }
+
+-- The UI icon set (owner 2026-10-22: the box-built icons "look AI"; pick A "sticker" of
+-- docs/art/mocks/icons_board.jpg): one uploaded 1024 x 1024 sheet of 128 px cells drawn by
+-- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
+-- by row, in the mock's ORDER. Robux is Roblox's own icon (ROBUX_ICON, ships with the client).
+Config.ICON_ATLAS = {
+	image = "rbxassetid://83850133060052",
+	cell = 128,
+	keys = {
+		-- cell 4 (disciple) is unused: Toy draws the disciple atlas figure
+		qi = 0, karma = 1, shop = 3, pill = 5, gift = 6, tide = 7,
+		hall = 8, goal = 9, x2 = 10, auto = 11, vip = 12, hands = 13, rebirth = 14, like = 15,
+		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
+		sworn = 24, seat = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29,
+		bag = 3, -- the shop's qi pouch
+	},
+}
+Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
 
 -- index of a rarity in RARITIES (1 = Outer Disciple)
 function Config.rarityIndex(name)
@@ -759,6 +837,45 @@ for _, pad in Config.PADS do
 	if Config.neededForBreakthrough(pad) then
 		Config.REQUIRED_PADS += 1
 	end
+end
+
+-- D48 (owner pick A 2026-10-22: "unlock more with the realms"; research 2026-10-22_island_by_realm,
+-- mock docs/art/mocks/realm_land.png): the island opens over the realms. REALM_PADS[r] = the pads
+-- that first open in realm r; every realm offers its own and all earlier ones (rebuilt each realm).
+-- Realm 1 keeps the Main Hall, the pill furnace, the Disciple Hall and the qi orbs (first tutorials).
+-- The building looks thread reads Config.padRealm for its skin steps.
+Config.REALM_PADS = {
+	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
+	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training" },
+	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2" },
+	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3" },
+}
+local padRealm = {}
+for r, ids in Config.REALM_PADS do
+	for _, id in ids do
+		padRealm[id] = r
+	end
+end
+for _, pad in Config.PADS do -- a pad left out of REALM_PADS opens with the last step, never silently in realm 1
+	padRealm[pad.id] = padRealm[pad.id] or #Config.REALM_PADS
+end
+-- the realm a pad first opens in
+function Config.padRealm(pad)
+	return padRealm[pad.id]
+end
+-- is the pad offered in this realm?
+function Config.padOpen(pad, realm)
+	return padRealm[pad.id] <= realm
+end
+-- how many pads a breakthrough needs in this realm (the HUD's "built" total)
+function Config.requiredPads(realm)
+	local n = 0
+	for _, pad in Config.PADS do
+		if Config.neededForBreakthrough(pad) and Config.padOpen(pad, realm) then
+			n += 1
+		end
+	end
+	return n
 end
 
 return Config

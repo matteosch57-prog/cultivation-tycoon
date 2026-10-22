@@ -151,5 +151,15 @@ each pad's gold heart, colours from `PadLook`) and short event flashes.
 
 ## UI
 The HUD language is mock C (approved): no panels, chunky Fredoka One text with a dark outline, toy
-buttons (thick outline, solid shadow, shine), icons drawn from UI shapes. Mocks A and B were rejected
-as AI-looking (D7). Every new screen gets a mock first.
+buttons (thick outline, solid shadow, shine). Mocks A and B were rejected as AI-looking (D7). Every
+new screen gets a mock first.
+
+**Icons (D51):** one sheet, `art/ui/icon_atlas.png` (`Config.ICON_ATLAS`, drawn by
+`docs/art/mocks/icons.html` + `icons.js`, style A "sticker"); every icon goes through `Toy.icon(key)`.
+Set rules (research: one light, one outline, one palette, one detail level): ink outline `1B1420` 4.5
+units of a 64 box, flat colour with one hard shade toward the bottom right (light from the top left),
+real silhouettes (SVG paths, not stacked boxes), 2 to 4 parts each, 6 units of padding. Robux is
+always Roblox's own gold icon (`Config.ROBUX_ICON`); the disciple icon is the disciple atlas figure
+(owner: its shape is better). A new icon: add its geometry to `icons.js`,
+re-render the sheet (`?view=atlas&style=A`, Edge headless, transparent, 1024 px max), upload, put the
+new id and its cell in `Config.ICON_ATLAS` in one pass.

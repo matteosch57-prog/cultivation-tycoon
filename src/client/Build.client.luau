@@ -288,8 +288,7 @@ local function makeCard(pad, kind)
 		gl.Parent = gives
 		gives.Parent = f
 		if income > 0 then
-			local gic = Toy.Icon.new(gives, 20, { LayoutOrder = 1 })
-			gic:qi(32, 32, 1)
+			Toy.icon(gives, "qi", 20, { LayoutOrder = 1 })
 			local inc = text(2, 18, PadLook.TEXT.build)
 			inc.Text = "+" .. fmt(income) .. "/s"
 			inc.Parent = gives
@@ -346,8 +345,7 @@ local function makeCard(pad, kind)
 		return t
 	end
 	local need = part(1, "Need")
-	local ic = Toy.Icon.new(row, 30, { LayoutOrder = 2 })
-	ic:qi(32, 32, 1)
+	Toy.icon(row, "qi", 30, { LayoutOrder = 2 })
 	local amount = part(3, "")
 	local more = part(4, "more")
 	local costText = { need = need, amount = amount, more = more }

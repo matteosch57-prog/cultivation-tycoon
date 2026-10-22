@@ -365,6 +365,375 @@ local function start(rarityName, kept)
 	end)
 end
 
--- Hud fires PlayerGui.RecruitFx (made by Juice) with (rarity name, kept) after a recruit
+-- x10 / x50 (mock docs/art/mocks/recruit_multi_A.mp4): every orb flies out of the seal into a grid
+-- and wobbles (harder, and tinting, for a rarer one); they open in a wave into disciple tiles; then the
+-- best grows into the usual card above a tray of all of them and a count per rarity. A tap skips ahead.
+-- Juice: a whoosh out, ticks as they land, a swell while they shake harder, a rising ding and sparks
+-- per pop, a rare one holds the wave with a flash and a shake, a white flash for the best card, a
+-- chime as the tray settles. Timing: Config.REVEAL_MULTI (Juice lights the platform at the card).
+local M = Config.REVEAL_MULTI
+local IS_STUDIO = RunService:IsStudio()
+local TILE_BG = Color3.fromHex("2B2033")
+
+local function startMulti(results)
+	finish()
+	Toy.S = computeScale()
+	local px = Toy.px
+	local n = #results
+	local popTimes, zoomAt = Config.revealMultiTimes(results)
+	local rareFrom = Config.revealMultiRare(n)
+	local endAt = zoomAt + M.hold
+	local best = 1
+	for i, r in results do
+		if Config.rarityIndex(r.rarity) > Config.rarityIndex(results[best].rarity) then
+			best = i
+		end
+	end
+	local bestName = results[best].rarity
+	local bestIdx = Config.rarityIndex(bestName)
+	local rarity = Config.rarity(bestName)
+	local vp = workspace.CurrentCamera.ViewportSize
+	local from = recruitPoint()
+	local small = n > 10
+	-- the grid in the middle; after the zoom, the card up top and the tiles in tray rows under it
+	local cols, size, gap = small and 10 or 5, px(small and 30 or 58), px(small and 6 or 14)
+	local rows = math.ceil(n / cols)
+	local gridTop = Vector2.new(vp.X / 2 - (cols * size + (cols - 1) * gap) / 2, vp.Y * 0.44 - (rows * size + (rows - 1) * gap) / 2)
+	local per, tSize, tGap = small and 17 or 10, px(small and 20 or 34), px(small and 4 or 6)
+	local trayTop = Vector2.new(vp.X / 2 - (math.min(n, per) * tSize + (math.min(n, per) - 1) * tGap) / 2, vp.Y * (small and 0.69 or 0.77))
+	local cardAt = Vector2.new(vp.X / 2, vp.Y * 0.32)
+
+	gui.Enabled = true
+	local veil = Instance.new("TextButton")
+	veil.Text = ""
+	veil.AutoButtonColor = false
+	veil.Size = UDim2.fromScale(1, 1)
+	veil.BackgroundColor3 = Color3.fromHex("140E1E")
+	veil.BackgroundTransparency = 1
+	veil.BorderSizePixel = 0
+	veil.Parent = gui
+
+	-- the best card's aura (behind everything else), as in the single reveal
+	local aura = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(px(400), px(400)), Visible = false, ZIndex = 2 })
+	local glows = {}
+	for i, k in { 3.1, 2.3, 1.6 } do
+		glows[i] = circle(aura, px(110) * k, rarity.color, { Position = UDim2.fromScale(0.5, 0.5), BackgroundTransparency = 1 })
+	end
+	local rayA = bestIdx >= 3 and rays(aura, 12, px(190), px(28), rarity.color, 0.35) or nil
+	local rayB = bestIdx >= 4 and rays(aura, 8, px(150), px(16), WHITE, 0.55) or nil
+
+	-- orbs, tiles and the tray fade as one group at the end
+	local layer = Instance.new("CanvasGroup")
+	layer.Size = UDim2.fromScale(1, 1)
+	layer.BackgroundTransparency = 1
+	layer.ZIndex = 3
+	layer.Parent = gui
+	local items = {}
+	for i, r in results do
+		local idx = Config.rarityIndex(r.rarity)
+		local col = Config.rarity(r.rarity).color
+		local c, row = (i - 1) % cols, (i - 1) // cols
+		local tc, tr = (i - 1) % per, (i - 1) // per
+		local it = {
+			idx = idx,
+			delay = (i - 1) * (small and 0.008 or 0.03),
+			popAt = popTimes[i],
+			grid = gridTop + Vector2.new(size / 2 + c * (size + gap), size / 2 + row * (size + gap)),
+			tray = trayTop + Vector2.new(tSize / 2 + tc * (tSize + tGap), tSize / 2 + tr * (tSize + tGap)),
+		}
+		it.orb = circle(layer, size, Config.RARITIES[1].color, { Visible = false, ZIndex = 3 })
+		local ost = Instance.new("UIStroke")
+		ost.Color = INK
+		ost.Thickness = px(small and 2 or 3)
+		ost.Parent = it.orb
+		circle(it.orb, size * 0.36, WHITE, { Position = UDim2.fromScale(0.36, 0.32), BackgroundTransparency = 0.15, ZIndex = 4 })
+		-- the burst ring where it opens, and rays behind a Core or rarer tile
+		it.ring = circle(layer, size, WHITE, { BackgroundTransparency = 1, Visible = false, ZIndex = 5 })
+		it.ringStroke = Instance.new("UIStroke")
+		it.ringStroke.Color = col
+		it.ringStroke.Parent = it.ring
+		if idx >= 3 then
+			it.rayHolder = Toy.frame(layer, { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(0, 0), Visible = false, ZIndex = 2 })
+			it.rays = rays(it.rayHolder, 8, size * 1.1, math.max(px(5), size * 0.16), col, 0.3)
+		end
+		-- the tile: the disciple in a dark rounded square ringed in its rarity colour
+		it.tile = Toy.frame(layer, { AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(size, size), BackgroundTransparency = 0, BackgroundColor3 = TILE_BG, ClipsDescendants = true, Visible = false, ZIndex = 4 })
+		Toy.corner(it.tile, UDim.new(0.26, 0))
+		local tst = Instance.new("UIStroke")
+		tst.Color = col
+		tst.Thickness = math.max(2, px(small and 2 or 4))
+		tst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		tst.Parent = it.tile
+		Toy.disciple(it.tile, size, r.rarity, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true)
+		it.scale = Instance.new("UIScale")
+		it.scale.Parent = it.tile
+		-- a white flash over the tile as it opens, and sparks flying off in its colour
+		it.flash = Toy.frame(it.tile, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = WHITE, ZIndex = 6 })
+		Toy.corner(it.flash, UDim.new(0.26, 0))
+		it.sparks = {}
+		for k = 1, idx >= rareFrom and 8 or 4 do
+			it.sparks[k] = circle(layer, math.max(px(4), size * 0.16), col, { Visible = false, ZIndex = 6 })
+		end
+		items[i] = it
+	end
+
+	-- the count per rarity just above the tray (clear of the HUD's realm bar): "x10: 1 Elder · 2 Inner · 7 Outer"
+	local summary = Toy.frame(layer, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(vp.X / 2, trayTop.Y - px(6)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false, ZIndex = 6 })
+	Toy.list(summary, true, px(5))
+	Toy.text(summary, "x" .. n .. ":", px(17), WHITE, { LayoutOrder = 0 })
+	local counts = {}
+	for _, r in results do
+		counts[r.rarity] = (counts[r.rarity] or 0) + 1
+	end
+	local order = 1
+	for k = #Config.RARITIES, 1, -1 do
+		local def = Config.RARITIES[k]
+		if counts[def.name] then
+			if order > 1 then
+				Toy.text(summary, "·", px(17), WHITE, { LayoutOrder = order * 2 - 1 })
+			end
+			local short = string.gsub(def.name, " Disciple$", "")
+			Toy.text(summary, counts[def.name] .. " " .. short, px(17), def.color, { LayoutOrder = order * 2 })
+			order += 1
+		end
+	end
+
+	-- the best one's card (a CanvasGroup so it fades as one)
+	local card = Instance.new("CanvasGroup")
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.AutomaticSize = Enum.AutomaticSize.XY
+	card.Size = UDim2.new()
+	card.BackgroundTransparency = 1
+	card.Visible = false
+	card.ZIndex = 8
+	card.Parent = gui
+	local cpad = Instance.new("UIPadding")
+	for _, side in { "PaddingTop", "PaddingBottom", "PaddingLeft", "PaddingRight" } do
+		cpad[side] = UDim.new(0, px(8))
+	end
+	cpad.Parent = card
+	Toy.list(card, false, px(2))
+	local cardScale = Instance.new("UIScale")
+	cardScale.Parent = card
+	Toy.disciple(card, px(96), bestName, { LayoutOrder = 1 }, true)
+	local nameLabel = Toy.text(card, bestName .. "!", px(36), rarity.color, { LayoutOrder = 2 })
+	local bonusRow = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	Toy.list(bonusRow, true, px(5))
+	Toy.text(bonusRow, string.format("+%d%%", math.floor(rarity.bonus * 100 + 0.5)), px(21), WHITE, { LayoutOrder = 1 })
+	Toy.icon(bonusRow, "qi", px(23), { LayoutOrder = 2 })
+	if not results[best].kept then
+		Toy.text(card, "Sect full", px(16), PINK, { LayoutOrder = 4 })
+	end
+
+	local flash = Toy.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BackgroundColor3 = WHITE, ZIndex = 7 })
+
+	local t0 = os.clock()
+	local state = { burst = false, shakeUntil = 0, shakeAmp = 0 }
+	run = state
+	Sfx.play("gather", { volume = 1.4 })
+	Sfx.play("rise", { volume = 1.2 })
+	-- the swell peaks as the first orb opens
+	task.delay(math.max(0, M.pop - 0.85), function()
+		if run == state then
+			Sfx.play("padSpin", { volume = 1.3 })
+		end
+	end)
+
+	-- a tap skips ahead: every orb open and the best card out, then to the end
+	veil.Activated:Connect(function()
+		if run ~= state then
+			return
+		end
+		local t = os.clock() - t0
+		if t < zoomAt - 0.05 then
+			t0 -= zoomAt - t
+		elseif t < endAt - 0.3 then
+			t0 -= endAt - 0.3 - t
+		end
+	end)
+
+	conn = RunService.RenderStepped:Connect(function()
+		if run ~= state then
+			return
+		end
+		local pm = PerfMark.begin()
+		local t = os.clock() - t0
+		-- Studio captures: the local attribute RevealAt (seconds) holds the reveal at that moment
+		local held = IS_STUDIO and player:GetAttribute("RevealAt")
+		if held then
+			t = held
+		end
+		if t >= endAt then
+			finish()
+			PerfMark.finish("reveal", pm)
+			return
+		end
+		local fade = 1 - seg(t, endAt - 0.3, endAt)
+		veil.BackgroundTransparency = 1 - 0.55 * easeOut(seg(t, 0, 0.3)) * fade
+		layer.GroupTransparency = 1 - fade
+		local toTray = easeOut(seg(t, zoomAt, zoomAt + 0.4))
+		-- a short shake on a rare pop and on the best card
+		local shake = t < state.shakeUntil and state.shakeAmp * (state.shakeUntil - t) / 0.25 or 0
+		local sx, sy = math.sin(t * 90) * shake, math.cos(t * 77) * shake
+		layer.Position = UDim2.fromOffset(sx, sy)
+		-- the grid breathes faster and faster before the wave
+		local charge = seg(t, 0.6, M.pop)
+		local pulse = 1 + 0.08 * charge * math.max(0, math.sin(t * (10 + 18 * charge)))
+		for i, it in items do
+			if t < it.popAt then
+				-- fly out on an arc, then wobble in place; a rare orb climbs toward its colour
+				local f = easeOut(seg(t, it.delay, it.delay + 0.5))
+				local pos = from:Lerp(it.grid, f) - Vector2.new(0, math.sin(f * math.pi) * px(50))
+				local wob = t > 0.6 and math.sin(t * (30 + it.idx * 14) + i) * px(1 + it.idx * 1.4) * size / px(58) or 0
+				local s = size * (0.5 + 0.5 * f) * pulse
+				if f >= 1 and not it.landed then
+					it.landed = true
+					if not small or i == n then
+						Sfx.play("padSnap", { volume = small and 0.6 or 0.35, pitch = 1.3 + 0.3 * i / n })
+					end
+				end
+				it.orb.Visible = t >= it.delay
+				it.orb.Position = UDim2.fromOffset(pos.X + wob, pos.Y)
+				it.orb.Size = UDim2.fromOffset(s, s)
+				if it.idx >= rareFrom and t > 0.9 then
+					it.orb.BackgroundColor3 = Config.RARITIES[math.min(it.idx, 1 + math.floor((t - 0.9) * 3))].color
+				end
+			else
+				if not it.open then
+					it.open = true
+					it.orb.Visible = false
+					it.tile.Visible = true
+					it.ring.Visible = true
+					if it.rayHolder then
+						it.rayHolder.Visible = true
+					end
+					-- a rising ding per orb (every third one at x50, every rare one always)
+					if not small or i % 3 == 1 or it.idx >= 3 then
+						Sfx.play("padReady", { pitch = 1 + 0.4 * i / n, volume = small and 0.9 or 1.3 })
+					end
+					if it.idx >= rareFrom then
+						-- a rare one: the wave holds, the screen shakes, the chime climbs with the rarity
+						Sfx.play("rareChime", { pitch = 0.9 + 0.08 * it.idx })
+						if it.idx >= 4 then
+							Sfx.play("powerUp", { volume = 0.7 })
+						end
+						state.shakeUntil, state.shakeAmp = t + 0.25, px(2 + it.idx)
+					end
+				end
+				local fl = seg(t, it.popAt, it.popAt + 0.22)
+				it.flash.BackgroundTransparency = fl
+				local sp = seg(t, it.popAt, it.popAt + 0.45)
+				for k, d in it.sparks do
+					d.Visible = sp < 1
+					if sp < 1 then
+						local a = k / #it.sparks * math.pi * 2 + i
+						local r = size * (0.4 + easeOut(sp) * (it.idx >= rareFrom and 1.6 or 0.9))
+						d.Position = UDim2.fromOffset(it.grid.X + math.cos(a) * r, it.grid.Y + math.sin(a) * r)
+						d.BackgroundTransparency = sp
+					end
+				end
+				local b = seg(t, it.popAt, it.popAt + 0.3)
+				it.ring.Visible = b < 1
+				it.ring.Position = UDim2.fromOffset(it.grid.X, it.grid.Y)
+				local rs = size * (0.4 + 1.8 * b)
+				it.ring.Size = UDim2.fromOffset(rs, rs)
+				it.ringStroke.Thickness = math.max(0, px(small and 5 or 8) * (1 - b))
+				it.ringStroke.Transparency = b
+				if it.rays then
+					local a = 0.5 * seg(t, it.popAt, it.popAt + 0.2) * (1 - seg(t, zoomAt, zoomAt + 0.3))
+					it.rayHolder.Position = UDim2.fromOffset(it.grid.X, it.grid.Y)
+					it.rays.Rotation = t * 40
+					for _, h in it.rays:GetChildren() do
+						local beam = h:FindFirstChildOfClass("Frame")
+						if beam then
+							beam.BackgroundTransparency = 1 - a
+						end
+					end
+				end
+				if it.placedAt ~= toTray then -- only while it moves (50 tiles, every frame)
+					it.placedAt = toTray
+					local pos = it.grid:Lerp(it.tray, toTray)
+					local s = size + (tSize - size) * toTray
+					it.tile.Position = UDim2.fromOffset(pos.X, pos.Y)
+					it.tile.Size = UDim2.fromOffset(s, s)
+				end
+				it.scale.Scale = math.max(0.01, back(seg(t, it.popAt, it.popAt + 0.25)))
+			end
+		end
+
+		if t >= zoomAt then
+			if not state.burst then
+				state.burst = true
+				aura.Visible = true
+				card.Visible = true
+				state.shakeUntil, state.shakeAmp = t + 0.25, px(3 + bestIdx)
+				task.delay(0.4, function()
+					if run == state then
+						Sfx.play("land", { volume = 1.2 }) -- the tray settles
+					end
+				end)
+				Sfx.play("recruit")
+				if bestIdx >= 3 then
+					Sfx.play("rareChime")
+				end
+				if bestIdx >= 4 then
+					task.delay(0.1, Sfx.play, "powerUp")
+				end
+				if bestIdx >= 5 then
+					task.delay(0.2, Sfx.play, "gong")
+				end
+				if bestIdx >= 7 then
+					task.delay(0.05, Sfx.play, "thunder")
+				end
+			end
+			summary.Visible = t >= zoomAt + 0.3
+			flash.BackgroundTransparency = 1 - 0.7 * (1 - seg(t, zoomAt, zoomAt + 0.25))
+			-- the card grows out of the best tile and rises to the top
+			local p = seg(t, zoomAt, zoomAt + 0.35)
+			local pos = items[best].grid:Lerp(cardAt, easeOut(p))
+			card.Position = UDim2.fromOffset(pos.X, pos.Y)
+			aura.Position = UDim2.fromOffset(pos.X, pos.Y)
+			cardScale.Scale = math.max(0.01, back(p) * (0.9 + 0.1 * fade))
+			card.GroupTransparency = 1 - fade
+			local col = rarity.color
+			if bestName == "Primordial" then
+				col = Color3.fromHSV((t * 0.35) % 1, 0.55, 1)
+				nameLabel.TextColor3 = col
+			end
+			local breathe = 1 + 0.05 * math.sin(t * 3)
+			for i, g in glows do
+				local k = ({ 3.1, 2.3, 1.6 })[i]
+				g.BackgroundColor3 = col
+				g.BackgroundTransparency = 1 - (0.4 - i * 0.1) * fade * seg(t, zoomAt, zoomAt + 0.3)
+				g.Size = UDim2.fromOffset(px(110) * k * breathe, px(110) * k * breathe)
+			end
+			for ri, ring in { rayA, rayB } do
+				if ring then
+					ring.Rotation = ri == 1 and t * 22 or -t * 34
+					local from2 = zoomAt + 0.1 * (ri - 1)
+					for _, h in ring:GetChildren() do
+						local beam = h:FindFirstChildOfClass("Frame")
+						if beam then
+							if ri == 1 then
+								beam.BackgroundColor3 = col
+							end
+							beam.BackgroundTransparency = 1 - fade * seg(t, from2, from2 + 0.3)
+						end
+					end
+				end
+			end
+		end
+		PerfMark.finish("reveal", pm)
+	end)
+end
+
+-- Hud fires PlayerGui.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit;
+-- results (x10 / x50) open every orb, else the single reveal
 local fx = playerGui:WaitForChild("RecruitFx")
-fx.Event:Connect(start)
+fx.Event:Connect(function(rarityName, kept, results)
+	if results and #results > 1 then
+		startMulti(results)
+	else
+		start(rarityName, kept)
+	end
+end)
