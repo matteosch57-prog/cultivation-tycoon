@@ -144,7 +144,13 @@ local function buildHub()
 		end
 		local side = a + 0.32
 		local lr = Config.HUB_RADIUS - 5
-		Style.lantern(folder, CFrame.new(math.cos(side) * lr, BASE_Y, math.sin(side) * lr), 0.9)
+		-- not within 60 degrees of the ranking wall: one stood behind it, the next one inside its right
+		-- guardian lion (audit Play sweep 2026-10-22); the wall carries its own lanterns
+		local wallMid = bridgeAngle(Config.RANK_WALL_GAP) + math.pi / Config.PLOT_COUNT
+		local fromWall = math.abs((side - wallMid + math.pi) % (math.pi * 2) - math.pi)
+		if fromWall > math.pi / 3 then
+			Style.lantern(folder, CFrame.new(math.cos(side) * lr, BASE_Y, math.sin(side) * lr), 0.9)
+		end
 		task.wait()
 	end
 	folder.Parent = world
