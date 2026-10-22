@@ -29,6 +29,7 @@ local Guard = require(script.Parent:WaitForChild("Guard"))
 local Journal = require(script.Parent:WaitForChild("Journal"))
 local Bless = require(script.Parent:WaitForChild("Bless"))
 local Badges = require(script.Parent:WaitForChild("Badges"))
+local PlayerAura = require(script.Parent:WaitForChild("PlayerAura"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -2380,6 +2381,7 @@ ServerHealth.start()
 Players.PlayerAdded:Connect(onJoin)
 Players.PlayerRemoving:Connect(onLeave)
 Ranks.start()
+PlayerAura.start()
 for _, p in Players:GetPlayers() do
 	task.spawn(onJoin, p)
 end

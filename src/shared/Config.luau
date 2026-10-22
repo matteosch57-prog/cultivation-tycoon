@@ -816,6 +816,9 @@ function Config.realmColor(realm)
 	return Config.realmTint(realm)
 end
 Config.TITLE_SEE = 110 -- studs: farther titles are hidden
+-- The player's own aura (src/server/PlayerAura.luau): "A" realm aura, "B" realm aura + a gold bead
+-- per rebirth, "C" life aura (mocks docs/art/mocks/2026-10-22_aura_row*.jpg)
+Config.PLAYER_AURA_STYLE = "B"
 function Config.ordinal(n)
 	local t = n % 100
 	local suffix = (t >= 11 and t <= 13) and "th" or ({ "st", "nd", "rd" })[n % 10] or "th"

@@ -6,7 +6,8 @@
 -- gold bead per rebirth on a halo behind the head, which a rebirth never takes back. Style "C"
 -- grows the aura with the lives instead of the realm.
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
--- small neon beads only. Phone budget: at most 3 emitters a player, under ~60 live particles.
+-- small neon beads only. Phone budget: at most 3 emitters a player, ~110 live particles at the top
+-- step (2x the first mock, which read too faint past 30 studs: docs/art/mocks/2026-10-22_aura_row*).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
@@ -90,37 +91,39 @@ function PlayerAura.build(char, tier, color, beads)
 
 	if tier >= 1 then
 		-- wisps rising from a ring round the feet
-		local r = 3.4 + 1.2 * k
+		local r = 4.2 + 1.4 * k
 		local ring = holder(folder, hrp, "AuraRing", Vector3.new(r, 0.2, r), CFrame.new(0, feet + 0.2, 0))
 		emitter(ring, {
 			Name = "Wisps",
 			Texture = TEX .. "smoke_main.dds",
 			Color = tint,
-			Size = seq(0.6, 1.1 + 0.9 * k, 0.2),
-			Transparency = seq(0.6, 0.45 - 0.15 * k, 1),
+			Size = seq(1.2, 1.8 + 1.2 * k, 0.4),
+			Transparency = seq(0.35, 0.2 - 0.1 * k, 1),
+			Brightness = 2,
 			Lifetime = NumberRange.new(0.9 + 0.5 * k, 1.3 + 0.6 * k),
 			Speed = NumberRange.new(0.4, 0.8),
 			Acceleration = Vector3.new(0, 4 + 4 * k, 0),
 			Rotation = NumberRange.new(0, 360),
 			RotSpeed = NumberRange.new(-40, 40),
-			Rate = 8 + 10 * k,
+			Rate = 16 + 14 * k,
 		})
 	end
 	if tier >= 3 then
 		-- flames licking up the body
-		local r = 2.6 + 0.8 * k
+		local r = 3 + 1 * k
 		local base = holder(folder, hrp, "AuraFlames", Vector3.new(r, 0.2, r), CFrame.new(0, feet + 0.4, 0))
 		emitter(base, {
 			Name = "Flames",
 			Texture = TEX .. "fire_main.dds",
 			Color = ColorSequence.new(color:Lerp(WHITE, 0.35), color),
-			Size = seq(1.0 + 0.6 * k, 0.8 + 0.6 * k, 0),
-			Transparency = seq(0.35, 0.3, 1),
+			Size = seq(1.6 + 0.8 * k, 1.3 + 0.8 * k, 0),
+			Transparency = seq(0.15, 0.15, 1),
+			Brightness = 2,
 			Lifetime = NumberRange.new(0.5, 0.7 + 0.4 * k),
 			Speed = NumberRange.new(1, 2),
 			Acceleration = Vector3.new(0, 6 + 6 * k, 0),
 			ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward,
-			Rate = 10 + 14 * k,
+			Rate = 18 + 16 * k,
 		})
 	end
 	if tier >= 5 then
@@ -132,14 +135,14 @@ function PlayerAura.build(char, tier, color, beads)
 			Color = ColorSequence.new(WHITE, color),
 			Shape = Enum.ParticleEmitterShape.Box,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-			Size = seq(0, 0.5 + 0.4 * k, 0),
+			Size = seq(0, 0.7 + 0.5 * k, 0),
 			Transparency = NumberSequence.new(0.05),
 			Brightness = 2,
 			Lifetime = NumberRange.new(0.6, 1.1),
 			Speed = NumberRange.new(0.5, 1.5),
 			Drag = 2,
 			Rotation = NumberRange.new(0, 360),
-			Rate = 4 + 8 * k,
+			Rate = 6 + 8 * k,
 		})
 	end
 
@@ -174,11 +177,41 @@ end
 -- the aura for `player` from its Realm and Lives attributes, in Config.PLAYER_AURA_STYLE
 function PlayerAura.refresh(player, style)
 	local char = player.Character
-	if not char then
+	if not char or not player:GetAttribute("Realm") then
 		return
 	end
-	local tier, color, beads = PlayerAura.look(style or Config.PLAYER_AURA_STYLE or "B", player:GetAttribute("Realm"), player:GetAttribute("Lives"))
+	local tier, color, beads = PlayerAura.look(style or Config.PLAYER_AURA_STYLE, player:GetAttribute("Realm"), player:GetAttribute("Lives"))
 	PlayerAura.build(char, tier, color, beads)
+end
+
+-- every player, now and later: built on each spawn (again once the avatar's look has loaded, which
+-- can change its height) and whenever the realm or the life changes
+function PlayerAura.start()
+	local Players = game:GetService("Players")
+	local function watch(player)
+		local function spawned(char)
+			char:WaitForChild("HumanoidRootPart", 10)
+			char:WaitForChild("Head", 10)
+			PlayerAura.refresh(player)
+		end
+		player.CharacterAdded:Connect(spawned)
+		player.CharacterAppearanceLoaded:Connect(function()
+			PlayerAura.refresh(player)
+		end)
+		player:GetAttributeChangedSignal("Realm"):Connect(function()
+			PlayerAura.refresh(player)
+		end)
+		player:GetAttributeChangedSignal("Lives"):Connect(function()
+			PlayerAura.refresh(player)
+		end)
+		if player.Character then
+			task.spawn(spawned, player.Character)
+		end
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do
+		task.spawn(watch, player)
+	end
 end
 
 return PlayerAura
