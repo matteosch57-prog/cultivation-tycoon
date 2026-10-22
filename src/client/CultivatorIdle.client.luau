@@ -135,15 +135,19 @@ end
 local WALK_ANIM = "rbxassetid://507777826"
 local WALK_SPEED = 5 -- studs per second
 local function arrive(m)
-	local walker = m:FindFirstChild("Walker")
-	local avatar = m:FindFirstChild("Avatar")
-	local cushion = m:FindFirstChild("Cushion")
 	local at = m:GetAttribute("ArrivedAt")
-	if not walker or not avatar or not cushion or not at then
+	if not at then
 		return
 	end
-	local hrp = walker:FindFirstChild("HumanoidRootPart")
-	local hum = walker:FindFirstChildOfClass("Humanoid")
+	-- the walker streams in after the tag sometimes: wait for it (the first try missed it)
+	local walker = m:WaitForChild("Walker", 4)
+	local avatar = m:WaitForChild("Avatar", 4)
+	local cushion = m:WaitForChild("Cushion", 4)
+	if not walker or not avatar or not cushion then
+		return
+	end
+	local hrp = walker:WaitForChild("HumanoidRootPart", 4)
+	local hum = walker:WaitForChild("Humanoid", 4)
 	if not hrp or not hum or workspace:GetServerTimeNow() - at > 8 then
 		walker:Destroy() -- joined late: only the seated figure
 		return

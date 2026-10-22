@@ -600,9 +600,11 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 			if w and m.Parent then
 				local walker = w:Clone()
 				walker.Name = "Walker"
-				local _, size = walker:GetBoundingBox()
-				-- front is -Z: behind the cushion is +Z
-				walker:PivotTo(cf * CFrame.new(0, size.Y / 2, Cultivators.WALK_FROM))
+				-- front is -Z: behind the cushion is +Z; feet on the ground (root at hip height)
+				local root = walker:FindFirstChild("HumanoidRootPart")
+				local hum = walker:FindFirstChildOfClass("Humanoid")
+				local up = (hum and hum.HipHeight or 2) + (root and root.Size.Y / 2 or 1)
+				walker:PivotTo(cf * CFrame.new(0, up, Cultivators.WALK_FROM))
 				walker.Parent = m
 				m:SetAttribute("ArrivedAt", workspace:GetServerTimeNow())
 				task.delay(20, function()
