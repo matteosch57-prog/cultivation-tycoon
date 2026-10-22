@@ -327,13 +327,170 @@ function Builders.island(ctx, radius, bare)
 	end
 end
 
+---------------------------------------------------------------------------------------------
+-- Floating Lotus Isles (owner pick C 2026-10-22, docs/art/captures/2026-10-22_platform_C_v2_islets.jpg):
+-- a jade lotus deck on a rock islet wrapped in clouds, floating over the Meditation Platform, with a
+-- palace lantern in its heart and 4 more disciple seats. Floating stepping stones lead up to it from
+-- the platform (isle 1) or the isle before (owner: "make sure we can jump on them one per one"):
+-- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
+-- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
+local ISLES = { -- centre of the deck's underside, peak frame space (the platform is at 0, 0)
+	{ x = -17, y = 12, z = 3 },
+	{ x = 17, y = 16, z = -3 },
+	{ x = 0, y = 24, z = -14 },
+}
+local ISLE_DECK = 1.7 -- the deck's top above the isle's y
+local ISLE_R = 7 -- the jade deck's radius
+local ISLE_SEAT_R = 4.4
+local ISLE_STEP_RISE, ISLE_STEP_GAP = 4, 7
+local PLATFORM_TOP = 1.3 -- the platform deck's top: a seat's y is measured from it (Builders.disciple)
+local CLOUD_WHITE, CLOUD_LILAC = Color3.fromRGB(255, 252, 255), Color3.fromRGB(214, 206, 240)
+local LOTUS = { mesh = "rbxassetid://14340526628", tex = "rbxassetid://14340559072", native = Vector3.new(22.23, 28.65, 22.23) }
+
+local function skyPart(ctx, name, size, cf, collide)
+	local p = Lowpoly.sky(name)
+	if not p then
+		return nil
+	end
+	p:ClearAllChildren()
+	p.Size = size
+	p.CFrame = ctx.frame * cf
+	p.CanCollide = collide == true
+	p.CanQuery = collide == true
+	p.CanTouch = false
+	p.Parent = ctx.folder
+	return p
+end
+
+-- the cloud is an old FileMesh: CreateMeshPartAsync refuses it, a SpecialMesh draws it (no collision)
+local CLOUD_NATIVE = Vector3.new(13.76, 9.09, 24.67)
+local function cloud(ctx, cf, w, rng)
+	local size = Vector3.new(w * 0.56, w * 0.37, w)
+	local p = part(ctx, size, cf * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), CLOUD_WHITE:Lerp(CLOUD_LILAC, rng:NextNumber(0, 0.35)), nil, {
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+	})
+	local sm = Instance.new("SpecialMesh")
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = Config.SKY_MESH.cloud
+	sm.Scale = size / CLOUD_NATIVE
+	sm.Parent = p
+end
+
+-- a rock islet of width `w` whose flat top is at `top` (the mesh's top face is its box top). It never
+-- collides: its Box collision was a wall in front of the step below; the jade on top carries you.
+local function islet(ctx, at, top, w, h)
+	local p = skyPart(ctx, "islet", Vector3.new(w, h, w), CFrame.new(at.X, top - h / 2, at.Z), false)
+	if p then
+		p.Material = Enum.Material.Slate
+		p.Color = SP.rock
+	else -- stand-in until the mesh loads: tapering rock drums
+		for k = 0, 2 do
+			local d = cyl(ctx, h / 3, w * (1 - k * 0.3), CFrame.new(at.X, top - h / 6 - k * h / 3, at.Z), SP.rock, Enum.Material.Slate)
+			d.CanCollide = false
+		end
+	end
+end
+
+local function isleDeck(i)
+	local c = ISLES[i]
+	return Vector3.new(c.x, c.y + ISLE_DECK, c.z)
+end
+
+-- floating stepping stones from `a` to `b` (both deck tops), bowed sideways a little so the climb
+-- reads as a path; neither end gets a stone
+local function steps(ctx, a, b, rng)
+	local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+	local n = math.max(math.ceil(math.abs(b.Y - a.Y) / ISLE_STEP_RISE), math.ceil(flat.Magnitude / ISLE_STEP_GAP))
+	local side = flat.Magnitude > 0 and Vector3.new(-flat.Z, 0, flat.X).Unit or Vector3.zero
+	for i = 1, n - 1 do
+		local t = i / n
+		local p = a:Lerp(b, t) + side * math.sin(t * math.pi) * 3
+		islet(ctx, p, p.Y, 5.2, 4.5)
+		cyl(ctx, 0.3, 4.6, CFrame.new(p.X, p.Y + 0.15, p.Z), SP.jade, Enum.Material.Marble) -- a jade cap to land on
+		if i % 2 == 1 then
+			cloud(ctx, CFrame.new(p.X, p.Y - 3, p.Z), rng:NextNumber(6, 8), rng)
+		end
+	end
+end
+
+function Builders.lotusIsle(ctx, i)
+	local rng = Random.new(i * 17)
+	Lowpoly.skyReady(4)
+	local c = ISLES[i]
+	local at = Vector3.new(c.x, c.y, c.z)
+	-- the islet under a lotus in bloom, the jade deck in its heart
+	islet(ctx, at, c.y, 16, 13)
+	local k = 21 / LOTUS.native.X
+	local lotus = part(ctx, Vector3.new(21, LOTUS.native.Y * k * 0.28, 21), CFrame.new(c.x, c.y + 0.6, c.z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
+	local sm = Instance.new("SpecialMesh")
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = LOTUS.mesh
+	sm.TextureId = LOTUS.tex
+	sm.Scale = Vector3.new(k, k * 0.28, k)
+	sm.Parent = lotus
+	cyl(ctx, 0.6, ISLE_R * 2, CFrame.new(c.x, c.y + 1.4, c.z), SP.jade, Enum.Material.Marble)
+	cyl(ctx, 0.25, ISLE_R * 2 + 0.5, CFrame.new(c.x, c.y + 1.2, c.z), SP.gold, Enum.Material.Metal)
+	-- a palace lantern in the middle (a real lamp: light only from a visible lamp, R3)
+	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.x, c.y + ISLE_DECK + 1.6, c.z), true)
+	if lantern then
+		local l = Instance.new("PointLight")
+		l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 175, 95), 9, 1.2
+		l.Parent = lantern
+	end
+	-- clouds hugging the islet's rim and trailing under it
+	for _ = 1, 7 do
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(6.5, 9.5)
+		cloud(ctx, CFrame.new(c.x + math.cos(a) * r, c.y + rng:NextNumber(-2, 0.2), c.z + math.sin(a) * r), rng:NextNumber(7, 12), rng)
+	end
+	for _ = 1, 3 do
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(2, 5)
+		cloud(ctx, CFrame.new(c.x + math.cos(a) * r, c.y - rng:NextNumber(6, 9), c.z + math.sin(a) * r), rng:NextNumber(8, 12), rng)
+	end
+	-- the stepping stones up from the platform's rim, or from the isle before
+	local deck = isleDeck(i)
+	local from
+	if i == 1 then
+		-- from the platform's rim a quarter turn round from the isle: straight below it the stones
+		-- would stack (each one a ceiling over the last)
+		local a = math.atan2(deck.Z, deck.X) + math.rad(100)
+		from = Vector3.new(math.cos(a) * 11, PLATFORM_TOP, math.sin(a) * 11)
+	else
+		local prev = isleDeck(i - 1)
+		local dir = Vector3.new(deck.X - prev.X, 0, deck.Z - prev.Z).Unit
+		from = prev + dir * (ISLE_R - 1)
+	end
+	local back = Vector3.new(from.X - deck.X, 0, from.Z - deck.Z).Unit
+	steps(ctx, from, deck + back * (ISLE_R - 1), rng)
+end
+Builders.lotus1 = function(ctx)
+	Builders.lotusIsle(ctx, 1)
+end
+Builders.lotus2 = function(ctx)
+	Builders.lotusIsle(ctx, 2)
+end
+Builders.lotus3 = function(ctx)
+	Builders.lotusIsle(ctx, 3)
+end
+
 -- A seated cultivator on the meditation platform (slot 1..). `look` is the disciple's own look (D60;
 -- the slot picks one when missing); the rarity picks the robe colour and the aura (Cultivators.luau,
 -- mock docs/art/mocks/cultivators_lineup.jpg).
-function Builders.disciple(ctx, slot, rarity, arrive, look)
-	local a = math.rad(-90 + (slot - 3) * 40)
-	local x, z = math.cos(a) * 8.5, -math.sin(a) * 8.5 -- arc on the hub side of the platform
-	local face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
+-- `isle` (1..3) seats it on a Floating Lotus Isle instead, at seat `k` (1..4), facing out.
+function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
+	local face
+	if isle then
+		local d = isleDeck(isle)
+		local a = math.rad(45 + (k - 1) * 90)
+		local x, z = math.cos(a) * ISLE_SEAT_R, math.sin(a) * ISLE_SEAT_R
+		face = CFrame.new(d.X + x, d.Y - PLATFORM_TOP, d.Z + z) * CFrame.Angles(0, math.atan2(x, z) + math.pi, 0)
+	else
+		local a = math.rad(-90 + (slot - 3) * 40)
+		local x, z = math.cos(a) * 8.5, -math.sin(a) * 8.5 -- arc on the hub side of the platform
+		face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
+	end
 	local m = Cultivators.build(ctx.folder, ctx.frame * face, look or slot, rarity, Config.RARITIES, { arrive = arrive })
 	m.Name = "Disciple" .. slot
 	return m

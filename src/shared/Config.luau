@@ -52,6 +52,16 @@ Config.LOWPOLY_MAX = 2 -- studs across: bigger balls and cylinders stay true par
 Config.ROCK_MESH = { "", "", "", "" }
 -- Koi (owner 2026-10-22: "just find a model"): a free Creator Store fish, `length` studs nose to
 -- tail, `turn` = the rotation that points its nose toward -Z (this mesh faces +Z). mesh "" = no koi.
+-- Floating Lotus Isles (Builders.lotusIsle): free scriptless Creator Store meshes, rebuilt by id: a puffy
+-- cloud (model 4862433614), a rock floating islet (5565039117), a bronze ding (132759878349743) and an
+-- ancient palace lantern (91953058256983, its texture). Empty = not loaded: part stand-ins.
+Config.SKY_MESH = {
+	cloud = "rbxassetid://4862430258",
+	islet = "rbxassetid://5564853241",
+	ding = "rbxassetid://84550079612246",
+	lantern = "rbxassetid://131650726315765",
+	lanternTex = "rbxassetid://130929930789056",
+}
 Config.KOI = { mesh = "rbxassetid://5946959434", texture = "rbxassetid://5946959571", length = 3, turn = CFrame.Angles(0, math.pi, 0) }
 -- Leaf-card tree canopies (src/server/Nature.luau, tools/nature_assets.py writes art/meshes/canopy_*.obj).
 -- The owner uploads them (R11); empty = not uploaded yet, the old part trees stay. The leaf textures
@@ -220,6 +230,13 @@ Config.PADS = {
 	{ id = "library", name = "Scripture Library", cost = 23000, income = 170, unlock = 18, req = { "expand2" }, x = 40, z = -140, district = "heart", islet = "summit" },
 	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = 44, z = -184, district = "dao", islet = "summit" },
 	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 72, z = -146, district = "heart", islet = "summit" },
+	-- Floating Lotus Isles (owner pick C 2026-10-22, captures docs/art/captures/2026-10-22_platform_C_v2_islets.jpg):
+	-- jade lotus discs on rock islets floating over the Meditation Platform, each seating `seats` more
+	-- disciples; floating stepping stones let the player jump up to each, one after the other
+	-- (Builders.lotusIsle). The model floats over the platform; `x`/`z` place only the buy pad.
+	{ id = "lotus1", name = "Floating Lotus Isle", cost = 9000, income = 20, unlock = 12, req = { "platform", "expand1" }, x = -24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4 },
+	{ id = "lotus2", name = "Twin Lotus Isle", cost = 19000, income = 40, unlock = 16, req = { "lotus1", "expand2" }, x = 24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4 },
+	{ id = "lotus3", name = "Heavenly Lotus Isle", cost = 31000, income = 60, unlock = 21, req = { "lotus2" }, x = 0, z = -19, feature = "+4 disciple seats", district = "heart", seats = 4 },
 	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Hall level 5", district = "heart" },
 	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
 	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
@@ -526,14 +543,15 @@ Config.BADGES = {
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end
-Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
+Config.SLOT_PADS = { "quarters1", "quarters2", "lotus1", "lotus2", "lotus3" } -- each owned one adds its pad's `seats` (1 when missing)
 
 -- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
 function Config.maxDisciples(owned, vip)
 	local n = Config.MAX_DISCIPLES + (vip and Config.VIP_SLOTS or 0)
 	for _, id in Config.SLOT_PADS do
 		if owned[id] then
-			n += 1
+			local pad = Config.padById(id)
+			n += pad and pad.seats or 1
 		end
 	end
 	return n
@@ -586,7 +604,7 @@ Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
 Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
 Config.INDEX_STEP_STARS = 10
 Config.INDEX_STEP_SUMMONS = 3
-Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
+Config.DISCIPLE_CAP = 21 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
 -- item stands where it acts, on the owner's peak. `x` = across the peak; `z` = along it, or
@@ -1045,9 +1063,9 @@ end
 -- The building looks thread reads Config.padRealm for its skin steps.
 Config.REALM_PADS = {
 	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
-	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training" },
-	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2" },
-	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3" },
+	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training", "lotus1" },
+	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2", "lotus2" },
+	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3" },
 }
 local padRealm = {}
 for r, ids in Config.REALM_PADS do
