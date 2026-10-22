@@ -357,3 +357,6 @@ the log as a D-number.
   Store meshes rebuilt from ids, no inserted scripts). Each board has a global and a per-country
   OrderedDataStore (Ranks.luau, batched writes, reads every RANK_REFRESH s); Lives joins Realm in
   the player list. Why: rankings are the cheapest status push and give the skins (D53) an audience.
+- **D64** Every shop product is on sale at every realm (owner 2026-10-22: "open all products to any
+  level, who cares if someone pays to rush the game"): the `minRealm` gates of Celestial, Dao Ancestor,
+  Heavenly Emperor and Primordial (D28) are gone; the gate code stays for any future item.
