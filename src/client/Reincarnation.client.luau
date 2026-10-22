@@ -96,38 +96,6 @@ local function link(parent, order, done)
 	return l
 end
 
--- Karma Shop icons, drawn from shapes in a 64-unit box (Toy.Icon)
-local DRAW = {}
-function DRAW.sworn(ic)
-	for _, x in { 22, 42 } do
-		ic:rect(x, 46, 16, 20, Color3.fromHex("5096FF"), 6)
-		ic:circle(x, 26, 9, Color3.fromHex("F2CFAE"))
-	end
-end
-function DRAW.seat(ic)
-	ic:rect(32, 48, 44, 12, Color3.fromHex("E65B4F"), 6)
-	ic:rect(32, 34, 14, 18, Color3.fromHex("9A6BFF"), 6)
-	ic:circle(32, 20, 9, Color3.fromHex("F2CFAE"))
-end
-function DRAW.foundation(ic)
-	ic:rect(32, 44, 36, 20, Color3.fromHex("FFF4DC"), 2)
-	ic:rect(32, 28, 50, 12, Color3.fromHex("C0392B"), 4)
-	ic:rect(32, 47, 10, 14, Color3.fromHex("8A5A3C"), 2)
-end
-function DRAW.elixir(ic)
-	ic:rect(23, 32, 22, 20, Color3.fromHex("E65B4F"), 10)
-	ic:rect(41, 32, 22, 20, Color3.fromHex("FFF4DC"), 10)
-	ic.box.Rotation = -35
-end
-function DRAW.meditation(ic)
-	ic:circle(30, 32, 20, Color3.fromHex("FFE36B"))
-	ic:detail(40, 26, 16, Color3.fromHex(TILE.meditation))
-end
-function DRAW.echo(ic)
-	ic:karma(22, 40, 0.6)
-	ic:karma(42, 26, 0.75)
-end
-
 -- an amount of a currency: its icon, then the number (owner: every currency always shows its icon)
 local function amount(parent, key, size, color, props)
 	local row = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
@@ -275,11 +243,7 @@ local function buildKarma(body)
 		local holder, btn = Toy.button(col, UDim2.fromOffset(px(58), px(58)), Color3.fromHex(TILE[node.key] or "C9FFE4"), px(16))
 		holder.LayoutOrder = 1
 		local iconProps = { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) }
-		if DRAW[node.key] then
-			DRAW[node.key](Toy.Icon.new(btn, px(44), iconProps))
-		else
-			Toy.icon(btn, node.key, px(44), iconProps) -- drawings the HUD shares (Toy ICONS)
-		end
+		Toy.icon(btn, node.key, px(44), iconProps) -- the shared icon sheet
 		text(col, node.name, px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 		local lineLabel = text(col, node.line, px(11), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
 		local pipRow = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })

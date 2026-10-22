@@ -148,6 +148,8 @@ local function floatText(pos, str, color)
 				TweenService:Create(d, info, { Transparency = 1 }):Play()
 			elseif d:IsA("Frame") and d.BackgroundTransparency < 1 then
 				TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+			elseif d:IsA("ImageLabel") then
+				TweenService:Create(d, info, { ImageTransparency = 1 }):Play()
 			end
 		end
 	end)

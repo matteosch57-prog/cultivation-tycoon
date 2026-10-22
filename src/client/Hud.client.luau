@@ -1,5 +1,5 @@
 -- Cultivation Tycoon HUD (mock C, docs/mocks/hud_C_*): no panels, chunky outlined numbers,
--- toy buttons. Icons are drawn from UI shapes (no uploaded images). The layout follows the
+-- toy buttons. Icons come from the shared icon sheet (Toy.icon). The layout follows the
 -- device: phone sizes from a 390px-tall reference, computer ~1.3x, and it steers around
 -- Roblox's own topbar, thumbstick and jump button.
 local Players = game:GetService("Players")
@@ -145,91 +145,23 @@ local function text(parent, str, size, color, props)
 	return t
 end
 
--- Shapes in a 64-unit icon box (like the mock's SVGs). Each shape gets a dark outline copy
--- underneath (lower ZIndex) so overlapping fills merge into one outlined silhouette.
-local Icon = {}
-Icon.__index = Icon
-function Icon.new(parent, size, props)
-	local box = frame(parent, { Size = UDim2.fromOffset(size, size) })
-	for k, v in props or {} do
-		box[k] = v
-	end
-	return setmetatable({ box = box, u = size / 64, ow = math.max(2, size / 64 * 4.5) }, Icon)
-end
-function Icon:_shape(cx, cy, w, h, color, radius, rot, outline)
-	local u = self.u
-	local function make(extra, col, z)
-		local f = frame(self.box, {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(cx * u, cy * u),
-			Size = UDim2.fromOffset(w * u + extra * 2, h * u + extra * 2),
-			BackgroundTransparency = 0,
-			BackgroundColor3 = col,
-			Rotation = rot or 0,
-			ZIndex = z,
-		})
-		if radius then
-			corner(f, radius)
-		end
-		return f
-	end
-	if outline ~= false then
-		make(self.ow, INK, 1)
-	end
-	return make(0, color, 2)
-end
-function Icon:circle(cx, cy, r, color, outline)
-	return self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, outline)
-end
-function Icon:rect(cx, cy, w, h, color, radius, rot, outline)
-	return self:_shape(cx, cy, w, h, color, radius and UDim.new(0, radius * self.u) or nil, rot, outline)
-end
-function Icon:detail(cx, cy, r, color, transparency) -- un-outlined highlight on top
-	local f = self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, false)
-	f.ZIndex = 3
-	f.BackgroundTransparency = transparency or 0
-	return f
-end
-
+-- Icons come from the shared icon sheet (Toy.icon, Config.ICON_ATLAS)
 local function qiIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:circle(32, 40, 20, Color3.fromHex("6FD6AE"))
-	ic:rect(32, 23, 27, 27, Color3.fromHex("6FD6AE"), 3, 45)
-	ic:detail(37, 40, 9, Color3.fromHex("E8FFF4"))
-	ic:detail(23, 35, 4, Color3.new(1, 1, 1), 0.2)
-	return ic.box
+	return Toy.icon(parent, "qi", size, props)
 end
 
-local function discipleIcon(parent, size, robe, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 52, 38, 22, robe or Color3.fromHex("5096FF"), 9)
-	ic:circle(32, 12, 7, INK)
-	ic:circle(32, 29, 13, Color3.fromHex("F2CFAE"))
-	local hair = ic:rect(32, 21, 24, 7, INK, 3, 0, false)
-	hair.ZIndex = 3
-	local collar = ic:rect(32, 47, 8, 12, Color3.new(1, 1, 1), 2, 0, false)
-	collar.ZIndex = 3
-	return ic.box
+local function discipleIcon(parent, size, props)
+	return Toy.icon(parent, "disciple", size, props)
 end
 
 -- the Spirit Tide: a blue wave crest
 local function tideIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 46, 54, 22, TIDE, 6)
-	ic:circle(18, 34, 12, TIDE)
-	ic:circle(42, 30, 14, TIDE)
-	ic:detail(44, 26, 6, TIDE_LIGHT)
-	ic:detail(20, 31, 4, Color3.new(1, 1, 1), 0.2)
-	return ic.box
+	return Toy.icon(parent, "tide", size, props)
 end
 
 -- a little hall (buildings owned, on the realm bar)
 local function hallIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 42, 38, 24, Color3.fromHex("FFF4DC"), 2)
-	ic:rect(32, 22, 54, 14, Color3.fromHex("E65B4F"), 4)
-	ic:rect(32, 47, 10, 14, Color3.fromHex("8A5A3C"), 1, 0, false).ZIndex = 3
-	return ic.box
+	return Toy.icon(parent, "hall", size, props)
 end
 
 -- returns (slot, spinner): the slot sits in the layout, the spinner inside it is what rotates
@@ -238,10 +170,7 @@ local function arrowIcon(parent, size, props)
 	for k, v in props or {} do
 		slot[k] = v
 	end
-	local ic = Icon.new(slot, size)
-	ic:rect(24, 32, 30, 14, GOLD, 3)
-	ic:rect(42, 32, 26, 26, GOLD, 3, 45)
-	return slot, ic.box
+	return slot, Toy.icon(slot, "goal", size)
 end
 
 -- toy button: solid shadow + outlined face + glass shine (Toy.glass). Returns (holder, button).
@@ -386,11 +315,7 @@ local function build()
 	sLayout.Parent = sCol
 	local sHolder, sBtn = toy(sCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
 	sHolder.LayoutOrder = 1
-	local bag = Icon.new(sBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	bag:rect(32, 15, 18, 9, Color3.fromHex("E65B4F"), 2)
-	bag:circle(32, 40, 22, Color3.fromHex("FFD34D"))
-	bag:rect(32, 22, 22, 6, Color3.fromHex("E65B4F"), 2)
-	qiIcon(sBtn, px(17), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(4)) })
+	Toy.icon(sBtn, "shop", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	text(sCol, "Shop", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	sBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ShopOpen")
@@ -405,7 +330,7 @@ local function build()
 	dLayout.Parent = dCol
 	local dHolder, dBtn = toy(dCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("9FD0FF"), px(14))
 	dHolder.LayoutOrder = 1
-	discipleIcon(dBtn, px(40), nil, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	discipleIcon(dBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	-- the label is the count (less text, mock less_text A)
 	ui.dLabel = text(dCol, "0", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
@@ -418,10 +343,7 @@ local function build()
 	pLayout2.Parent = pCol
 	local pHolder, pBtn = toy(pCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFD36B"), px(14))
 	pHolder.LayoutOrder = 1
-	local pill = Icon.new(pBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Rotation = -35 })
-	pill:rect(23, 32, 22, 20, Color3.fromHex("E65B4F"), 10)
-	pill:rect(41, 32, 22, 20, Color3.fromHex("FFF4DC"), 10)
-	pill:detail(20, 27, 3, Color3.new(1, 1, 1), 0.3)
+	Toy.icon(pBtn, "pill", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	ui.pillLabel = text(pCol, "Pill", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.pCol = pCol
 	ui.pillHolder = pHolder
@@ -448,11 +370,7 @@ local function build()
 	gLayout.Parent = gCol
 	local gHolder, gBtn = toy(gCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("FFB3A8"), px(14))
 	gHolder.LayoutOrder = 1
-	local gift = Icon.new(gBtn, px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	gift:rect(32, 42, 42, 28, Color3.fromHex("E65B4F"), 4)
-	gift:rect(32, 25, 50, 12, Color3.fromHex("FF7A6B"), 3)
-	gift:rect(32, 37, 8, 38, Color3.fromHex("FFD34D"), nil, 0, false)
-	gift:detail(22, 22, 3, Color3.new(1, 1, 1), 0.3)
+	Toy.icon(gBtn, "gift", px(40), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(18), px(18)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
 	corner(gDot, UDim.new(1, 0))
 	local gst = Instance.new("UIStroke")
@@ -817,6 +735,8 @@ local function fadeOut(root, t)
 			TweenService:Create(d, info, { Transparency = 1 }):Play()
 		elseif d:IsA("Frame") and d.BackgroundTransparency < 1 then
 			TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+		elseif d:IsA("ImageLabel") then
+			TweenService:Create(d, info, { ImageTransparency = 1 }):Play()
 		end
 	end
 end

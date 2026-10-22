@@ -19,7 +19,7 @@ local top -- world position of the altar's top centre
 local braziers = {} -- { flame = Part, fire = Fire, light = PointLight }
 local springs = {} -- Parts on the plaza (clients launch themselves from them)
 local round = nil -- { untilT, holder, hold, joined = {[player]=true}, out = {[player]=true} }
-local crowned = nil -- player wearing the crown until the next round
+local crowned = nil -- the winner wearing the light aura until the next round
 local lastPush = {}
 
 local GOLD = Color3.fromHex("D4A445")
@@ -218,7 +218,14 @@ local function setSprings(on)
 end
 
 ---------------------------------------------------------------------------------------------
--- The crown: a small gold crown on the winner's head until the next round opens.
+-- The winner's light aura until the next round opens (owner 2026-10-22: "Crown is ugly, add a light
+-- aura better"; picked W3 of docs/art/mocks/aura_options.jpg): a gold rim light on the whole body
+-- (a Highlight: gold outline + a faint gold fill) and gold sparkles twinkling around it. Glowing
+-- objects only, no Light (R3). Kept in a folder "AltarCrown" on the character (names kept from the
+-- crown).
+local TEX = "rbxasset://textures/particles/"
+local AURA_GOLD = Color3.fromHex("FFD34D")
+local AURA_PALE = Color3.fromHex("FFF1B8")
 local function removeCrown()
 	if crowned then
 		local c = crowned.Character and crowned.Character:FindFirstChild("AltarCrown")
@@ -234,49 +241,50 @@ local function giveCrown(player)
 	removeCrown()
 	crowned = player
 	player:SetAttribute("AltarCrown", true)
-	local head = player.Character and player.Character:FindFirstChild("Head")
-	if not head then
+	local char = player.Character
+	local head = char and char:FindFirstChild("Head")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not head or not hrp then
 		return
 	end
-	local m = Instance.new("Model")
+	local m = Instance.new("Folder")
 	m.Name = "AltarCrown"
-	local base = Instance.new("Part")
-	base.Shape = Enum.PartType.Cylinder
-	base.Size = Vector3.new(0.45, 1.5, 1.5)
-	base.Color = Color3.fromHex("FFD34D")
-	base.Material = Enum.Material.Metal
-	base.CanCollide, base.CanQuery, base.CanTouch, base.Massless = false, false, false, true
-	base.CFrame = head.CFrame * CFrame.new(0, head.Size.Y / 2 + 0.3, 0) * CFrame.Angles(0, 0, math.pi / 2)
-	base.Parent = m
-	for k = 0, 4 do
-		local a = k / 5 * math.pi * 2
-		local spike = Instance.new("WedgePart")
-		spike.Size = Vector3.new(0.2, 0.55, 0.35)
-		spike.Color = base.Color
-		spike.Material = Enum.Material.Metal
-		spike.CanCollide, spike.CanQuery, spike.CanTouch, spike.Massless = false, false, false, true
-		spike.CFrame = head.CFrame
-			* CFrame.new(math.cos(a) * 0.62, head.Size.Y / 2 + 0.75, math.sin(a) * 0.62)
-			* CFrame.Angles(0, -a + math.pi / 2, 0)
-		spike.Parent = m
-		local w = Instance.new("WeldConstraint")
-		w.Part0, w.Part1 = base, spike
-		w.Parent = spike
-	end
-	local gem = Instance.new("Part")
-	gem.Shape = Enum.PartType.Ball
-	gem.Size = Vector3.new(0.35, 0.35, 0.35)
-	gem.Color = Color3.fromHex("FF6B5E")
-	gem.CanCollide, gem.CanQuery, gem.CanTouch, gem.Massless = false, false, false, true
-	gem.CFrame = head.CFrame * CFrame.new(0, head.Size.Y / 2 + 0.3, -0.72)
-	gem.Parent = m
-	local wg = Instance.new("WeldConstraint")
-	wg.Part0, wg.Part1 = base, gem
-	wg.Parent = gem
-	local wh = Instance.new("WeldConstraint")
-	wh.Part0, wh.Part1 = head, base
-	wh.Parent = base
-	m.Parent = player.Character
+	-- the gold rim light on the body
+	local hl = Instance.new("Highlight")
+	hl.Name = "Glow"
+	hl.FillColor = AURA_GOLD
+	hl.FillTransparency = 0.82
+	hl.OutlineColor = AURA_PALE
+	hl.OutlineTransparency = 0.15
+	hl.DepthMode = Enum.HighlightDepthMode.Occluded
+	hl.Adornee = char
+	hl.Parent = m
+	-- gold sparkles twinkling around the body: thrown out a little in every direction, slowed by drag,
+	-- they swell and fade on the spot
+	local att = Instance.new("Attachment")
+	att.Name = "AltarAura"
+	att.Parent = hrp
+	local pe = Instance.new("ParticleEmitter")
+	pe.Name = "Sparkles"
+	pe.Texture = TEX .. "sparkles_main.dds"
+	pe.Color = ColorSequence.new(AURA_PALE)
+	pe.LightEmission = 1
+	pe.LightInfluence = 0
+	pe.Brightness = 3
+	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Speed = NumberRange.new(5, 7) -- out past the body (they start inside it), then drag stops them
+	pe.Drag = 2.5
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.35, 0.9), NumberSequenceKeypoint.new(1, 0) })
+	pe.Transparency = NumberSequence.new(0.05)
+	pe.Lifetime = NumberRange.new(0.9, 1.3)
+	pe.Rotation = NumberRange.new(0, 360)
+	pe.Rate = 6
+	pe.Parent = att
+	-- the attachment sits on the root, outside the folder: destroying the folder clears it too
+	m.Destroying:Connect(function()
+		att:Destroy()
+	end)
+	m.Parent = char
 end
 
 local KNOCK_CHECK = 1.2 -- s after a knock is sent: room for a 500 ms ping both ways

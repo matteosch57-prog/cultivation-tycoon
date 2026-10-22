@@ -1,5 +1,5 @@
 -- The HUD language (mock C) as a kit for new screens: outlined chunky text, toy buttons, icons
--- drawn from UI shapes. Same look as Hud.client.luau (which still carries its own copy).
+-- from the shared icon sheet. Same look as Hud.client.luau (which still carries its own copy).
 -- Every size goes through Toy.px, so a screen scales with Toy.S (set by the caller).
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -130,149 +130,6 @@ function Toy.button(parent, size, color, radius)
 	return holder, btn
 end
 
--- Shapes in a 64-unit icon box; each shape gets a dark outline copy underneath (lower ZIndex) so
--- overlapping fills merge into one outlined silhouette.
-local Icon = {}
-Icon.__index = Icon
-Toy.Icon = Icon
-function Icon.new(parent, size, props)
-	local box = frame(parent, { Size = UDim2.fromOffset(size, size) })
-	for k, v in props or {} do
-		box[k] = v
-	end
-	return setmetatable({ box = box, u = size / 64, ow = math.max(2, size / 64 * 4.5) }, Icon)
-end
-function Icon:_shape(cx, cy, w, h, color, radius, rot, outline)
-	local u = self.u
-	local function make(extra, col, z)
-		local f = frame(self.box, {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(cx * u, cy * u),
-			Size = UDim2.fromOffset(w * u + extra * 2, h * u + extra * 2),
-			BackgroundTransparency = 0,
-			BackgroundColor3 = col,
-			Rotation = rot or 0,
-			ZIndex = z,
-		})
-		if radius then
-			corner(f, radius)
-		end
-		return f
-	end
-	if outline ~= false then
-		make(self.ow, Toy.INK, 1)
-	end
-	return make(0, color, 2)
-end
-function Icon:circle(cx, cy, r, color, outline)
-	return self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, outline)
-end
-function Icon:rect(cx, cy, w, h, color, radius, rot, outline)
-	return self:_shape(cx, cy, w, h, color, radius and UDim.new(0, radius * self.u) or nil, rot, outline)
-end
-function Icon:detail(cx, cy, r, color, transparency) -- un-outlined highlight on top
-	local f = self:_shape(cx, cy, r * 2, r * 2, color, UDim.new(0.5, 0), 0, false)
-	f.ZIndex = 3
-	f.BackgroundTransparency = transparency or 0
-	return f
-end
-
--- the qi drop (same drawing as the HUD counter); `s` scales it inside the box, (cx, cy) its centre
-function Icon:qi(cx, cy, s)
-	s = s or 1
-	self:circle(cx, cy + 8 * s, 20 * s, Color3.fromHex("6FD6AE"))
-	self:rect(cx, cy - 9 * s, 27 * s, 27 * s, Color3.fromHex("6FD6AE"), 3 * s, 45)
-	self:detail(cx + 5 * s, cy + 8 * s, 9 * s, Color3.fromHex("E8FFF4"))
-	self:detail(cx - 9 * s, cy + 3 * s, 4 * s, Color3.new(1, 1, 1), 0.2)
-end
-
--- the karma orb (reincarnation currency): a purple orb with a light swirl; same box rules as qi
-function Icon:karma(cx, cy, s)
-	s = s or 1
-	self:circle(cx, cy, 22 * s, Color3.fromHex("9A6BFF"))
-	self:detail(cx + 4 * s, cy + 3 * s, 12 * s, Color3.fromHex("D9B8FF"))
-	self:detail(cx + 7 * s, cy + 5 * s, 5 * s, Color3.fromHex("9A6BFF"))
-	self:detail(cx - 9 * s, cy - 9 * s, 4 * s, Color3.new(1, 1, 1), 0.15)
-end
-
--- Item icons for the shop (one drawing per key). Every currency has one: "qi", "karma" (R4 owner
--- rule: an amount of a currency always shows its icon)
-local ICONS = {}
-function ICONS.qi(ic)
-	ic:qi(32, 34, 0.95)
-end
-function ICONS.karma(ic)
-	ic:karma(32, 32, 1.1)
-end
-function ICONS.x2(ic)
-	ic:qi(26, 28, 0.85)
-	return "2x"
-end
-function ICONS.auto(ic)
-	ic:circle(10, 16, 5, Color3.fromHex("9FF5D0"))
-	ic:circle(14, 48, 6, Color3.fromHex("9FF5D0"))
-	ic:circle(21, 31, 7, Color3.fromHex("9FF5D0"))
-	ic:circle(43, 32, 17, Color3.fromHex("9FF5D0"))
-	ic:detail(37, 26, 6, Color3.new(1, 1, 1), 0.15)
-end
-function ICONS.vip(ic)
-	local gold = Color3.fromHex("FFD34D")
-	ic:rect(32, 38, 46, 22, gold, 3)
-	ic:rect(12, 22, 14, 14, gold, 2, 45)
-	ic:rect(32, 16, 16, 16, gold, 2, 45)
-	ic:rect(52, 22, 14, 14, gold, 2, 45)
-	ic:rect(32, 51, 50, 10, Color3.fromHex("FFB02E"), 3)
-	ic:circle(32, 36, 5, Color3.fromHex("59D39F"))
-	ic:detail(17, 32, 3, Color3.new(1, 1, 1), 0.3)
-end
-function ICONS.pill(ic)
-	ic:rect(23, 32, 22, 20, Color3.fromHex("E65B4F"), 10)
-	ic:rect(41, 32, 22, 20, Color3.fromHex("FFF4DC"), 10)
-	ic:detail(20, 27, 3, Color3.new(1, 1, 1), 0.3)
-	ic.box.Rotation = -35
-end
-local PACKS = { pack1 = 1, pack2 = 3, pack3 = 6 }
-local PACK_AT = { { 32, 40, 0.62 }, { 18, 44, 0.5 }, { 46, 44, 0.5 }, { 25, 24, 0.44 }, { 40, 22, 0.44 }, { 32, 12, 0.38 } }
-local function pack(n)
-	return function(ic)
-		for i = n, 1, -1 do
-			local a = PACK_AT[i]
-			ic:qi(a[1], a[2], a[3])
-		end
-	end
-end
-for key, n in PACKS do
-	ICONS[key] = pack(n)
-end
-function ICONS.bag(ic)
-	ic:rect(32, 15, 18, 9, Color3.fromHex("E65B4F"), 2)
-	ic:circle(32, 40, 22, Color3.fromHex("FFD34D"))
-	ic:rect(32, 22, 22, 6, Color3.fromHex("E65B4F"), 2)
-	ic:qi(32, 39, 0.42)
-	ic:detail(18, 36, 3, Color3.new(1, 1, 1), 0.3)
-end
-
--- Karma Shop nodes drawn here because the HUD shows them too
-function ICONS.hands(ic) -- Heavenly Hands: an open gold hand
-	local gold = Color3.fromHex("FFD34D")
-	for i, x in { 20, 28.5, 37, 45.5 } do
-		ic:rect(x, 25 + math.abs(i - 2.5) * 3, 8, 24, gold, 4)
-	end
-	ic:rect(15, 42, 8, 20, gold, 4, -40)
-	ic:rect(33, 44, 34, 26, gold, 9)
-	ic:detail(25, 38, 3.5, Color3.new(1, 1, 1), 0.3)
-end
-function ICONS.rebirth(ic) -- Rebirth Gate: a moon gate with steps climbing through it
-	ic:circle(32, 30, 26, Color3.fromHex("C0392B"))
-	ic:circle(32, 32, 15, Color3.fromHex("9FF5C8"))
-	local cream = Color3.fromHex("FFF4DC")
-	ic:rect(25, 42, 8, 8, cream, 1)
-	ic:rect(33, 39, 8, 14, cream, 1)
-	ic:rect(41, 36, 8, 20, cream, 1)
-	ic:rect(32, 56, 56, 8, Color3.fromHex("8A5A3C"), 3)
-end
-
----------------------------------------------------------------------------------------------
 -- Moving auras behind a disciple icon (mock docs/art/mocks/disciple_auras.gif, owner OK
 -- 2026-10-21), climbing with the rarity like the RNG games' aura ladders: 1 a breathing glow,
 -- 2 two motes circling, 3 a turning ring of dots, 4 slow rays and rising motes, 5 a halo, gold rays
@@ -568,13 +425,20 @@ end
 
 -- Currency marks (owner rule: every price or amount shows its currency's icon)
 function Toy.qiIcon(parent, size, props)
-	return Toy.icon(parent, "qi", size, props) -- the shared currency drawing (ICONS.qi)
+	return Toy.icon(parent, "qi", size, props)
 end
 function Toy.robuxIcon(parent, size, props)
-	local ic = Icon.new(parent, size, props)
-	ic:rect(32, 32, 46, 46, Color3.new(1, 1, 1), 13)
-	ic:rect(32, 32, 18, 18, Toy.INK, 3, 0, false).ZIndex = 3
-	return ic.box
+	local img = Instance.new("ImageLabel")
+	img.Name = "Icon"
+	img.BackgroundTransparency = 1
+	img.Image = Config.ROBUX_ICON
+	img.Size = UDim2.fromOffset(size, size)
+	img.ZIndex = 2 -- over a toy button's glass cap
+	for k, v in props or {} do
+		img[k] = v
+	end
+	img.Parent = parent
+	return img
 end
 
 -- An amount with its currency icon in front: returns (row, label). `currency` = "qi" | "karma" | "robux"
@@ -595,25 +459,52 @@ function Toy.amount(parent, currency, size, color, props)
 	return row, label
 end
 
+-- one cell of the icon sheet (Config.ICON_ATLAS) as an ImageLabel, size x size px
+local ICON_ATLAS = Config.ICON_ATLAS
+local function atlasIcon(parent, key, size, props)
+	local i = ICON_ATLAS.keys[key]
+	local c = ICON_ATLAS.cell
+	local img = Instance.new("ImageLabel")
+	img.Name = "Icon"
+	img.BackgroundTransparency = 1
+	img.Image = ICON_ATLAS.image
+	img.ImageRectOffset = Vector2.new(i % 8 * c, i // 8 * c)
+	img.ImageRectSize = Vector2.new(c, c)
+	img.Size = UDim2.fromOffset(size, size)
+	img.ZIndex = 2 -- over a toy button's glass cap
+	for k, v in props or {} do
+		img[k] = v
+	end
+	img.Parent = parent
+	return img
+end
+
 -- Draws icon `key` in a size x size box; returns the box. A shop item with a `rarity` draws that
 -- rarity's disciple with its moving aura.
 function Toy.icon(parent, key, size, props)
 	local item = Config.shopItem(key)
 	if item and item.qiBonus then
 		-- the Welcome Pouch: the qi pouch with its disciple peeking out of the corner
-		local ic = Icon.new(parent, size, props)
-		ICONS.bag(ic)
-		Toy.disciple(ic.box, math.floor(size * 0.6), item.rarity, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1.12, 1.12), ZIndex = 4 })
-		return ic.box
+		local box = atlasIcon(parent, "shop", size, props)
+		Toy.disciple(box, math.floor(size * 0.6), item.rarity, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1.12, 1.12), ZIndex = 4 })
+		return box
 	elseif item and item.rarity then
 		return well(parent, size, Config.rarityIndex(item.rarity), props)
+	elseif key == "robux" then
+		return Toy.robuxIcon(parent, size, props)
+	elseif key == "disciple" then
+		-- the disciple keeps its approved figure (owner 2026-10-22: "disciples have a better shape
+		-- already"): the Core Disciple, blue robe, from the disciple atlas
+		local img = figureImage(parent, size, 3, props)
+		if not (props and props.ZIndex) then
+			img.ZIndex = 2 -- over a toy button's glass cap
+		end
+		return img
+	elseif ICON_ATLAS.keys[key] then
+		return atlasIcon(parent, key, size, props)
 	end
-	local ic = Icon.new(parent, size, props)
-	local badge = ICONS[key] and ICONS[key](ic)
-	if badge then
-		Toy.text(ic.box, badge, math.floor(size * 0.36), Color3.fromHex("FFE36B"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.72, 0.8), ZIndex = 4 })
-	end
-	return ic.box
+	warn("[Toy] no icon for key", key)
+	return Toy.frame(parent, { Size = UDim2.fromOffset(size, size) })
 end
 
 return Toy

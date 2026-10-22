@@ -48,44 +48,18 @@ local function computeScale()
 	return math.clamp(vp.Y / 554, 1, 1.7)
 end
 
--- person with a plus (Invite)
-local function personIcon(parent, size)
-	local ic = Toy.Icon.new(parent, size, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) })
-	ic:rect(24, 48, 34, 22, Color3.new(1, 1, 1), 10)
-	ic:circle(24, 24, 11, Color3.new(1, 1, 1))
-	ic:rect(50, 26, 6, 22, Color3.new(1, 1, 1), 2)
-	ic:rect(50, 26, 22, 6, Color3.new(1, 1, 1), 2)
-	return ic
+-- icons from the shared icon sheet (Toy.icon)
+local function personIcon(parent, size) -- person with a plus (Invite)
+	return Toy.icon(parent, "invite", size, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) })
 end
-
--- the sect banner (Group)
-local function bannerIcon(parent, size, props)
-	local ic = Toy.Icon.new(parent, size, props)
-	ic:rect(16, 34, 6, 54, Color3.fromHex("8A5A3C"), 2)
-	ic:rect(36, 22, 34, 26, Color3.fromHex("B06BFF"), 3)
-	ic:circle(36, 22, 6, GOLD)
-	return ic
+local function bannerIcon(parent, size, props) -- the sect banner (Group)
+	return Toy.icon(parent, "group", size, props)
 end
-
--- a gold gift box with a red ribbon (the group gift button)
-local function giftIcon(parent, size, props)
-	local ic = Toy.Icon.new(parent, size, props)
-	ic:rect(32, 42, 42, 28, GOLD, 4)
-	ic:rect(32, 25, 50, 12, Color3.fromHex("FFE58A"), 3)
-	ic:rect(32, 37, 8, 38, Color3.fromHex("E65B4F"), nil, 0, false)
-	ic:rect(24, 14, 14, 10, Color3.fromHex("E65B4F"), 4, 30)
-	ic:rect(40, 14, 14, 10, Color3.fromHex("E65B4F"), 4, -30)
-	ic:detail(18, 34, 3, Color3.new(1, 1, 1), 0.2)
-	return ic
+local function giftIcon(parent, size, props) -- the group gift button
+	return Toy.icon(parent, "gift", size, props)
 end
-
--- thumbs up (Like)
-local function thumbIcon(parent, size, props)
-	local ic = Toy.Icon.new(parent, size, props)
-	ic:rect(14, 40, 12, 28, GREEN, 3)
-	ic:rect(38, 42, 30, 26, GREEN, 6)
-	ic:rect(36, 20, 12, 22, GREEN, 5, -15)
-	return ic
+local function thumbIcon(parent, size, props) -- thumbs up (Like)
+	return Toy.icon(parent, "like", size, props)
 end
 
 local function head(parent, userId, order)
@@ -275,8 +249,7 @@ local function draw()
 	iHolder.LayoutOrder = 3
 	local il = frame(iBtn, { Size = UDim2.fromScale(1, 1) })
 	Toy.list(il, true, px(4))
-	local ic = personIcon(il, px(24))
-	ic.box.LayoutOrder = 1
+	personIcon(il, px(24)).LayoutOrder = 1
 	text(il, "Invite", px(17), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	iBtn.Activated:Connect(invite)
 	if showGroup then

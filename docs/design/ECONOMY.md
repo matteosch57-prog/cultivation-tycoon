@@ -112,7 +112,7 @@ server starts, then every `ALTAR_INTERVAL` s, half a tide cycle after each tide;
 alone for `ALTAR_HOLD` s to claim it (two or more pause the timer; eight rim braziers light as it
 runs). Palm Strike (button above Jump, F) knocks rivals back; a fall locks you out until the round
 ends. Winner: `ALTAR_WIN_SECONDS` of their own income (`ALTAR_SOLO_SECONDS` if nobody else came) and
-a crown until the next round; everyone else who stood on it: `ALTAR_JOIN_SECONDS`. If nobody holds it
+a gold light aura (rim light and sparkles; D51) until the next round; everyone else who stood on it: `ALTAR_JOIN_SECONDS`. If nobody holds it
 within `ALTAR_WINDOW` s it fades (joiners are still paid). HUD: Workspace attributes `AltarNext`,
 `AltarUntil`, `AltarHolder`, `AltarHold`, `AltarCrowd`; player attribute `AltarOut`. Why: the owner's
 "something to oppose other players" without stealing (2026-10-21); about +20% live income per round
