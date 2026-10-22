@@ -129,3 +129,5 @@ Closed by the owner ("document and close for now"); nothing uploaded to Roblox y
   (juice 4 of 5; sky-only backgrounds read better than bursts). The cutout keys only board pixels connected
   to the frame edge (pink-lit robes went see-through otherwise), and `ImageDraw.floodfill` silently does
   nothing on an image made by `Image.fromarray` unless it is copied first.
+
+**The picks live in [store/](../../store/) at the repo root** (owner 2026-10-22: one folder high in the tree); `docs/art/mocks/store/` is the working archive.
