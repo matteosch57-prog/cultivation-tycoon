@@ -171,3 +171,29 @@ the log as a D-number.
   realm, fully built, and `PAST_LIVES_MULT` is 2.5: lives stay 10 to 40 min for ~2 weeks, ~1 h by
   life 30 (day 14), ~4 h by life 40 (day 36), no hard wall. Karma still pays only a new record (D37).
   A second layer (Ascension) is the next lever once live data shows where players stop.
+- **D34** Less text and a light step (owner, 2026-10-21: "too much text everywhere"; picked mock A of
+  `docs/art/mocks/less_text_*.jpg`; "walking speed a bit higher, redo moving and jumping, fit our
+  style"). HUD labels are one short word or a number (Shop, 7/7, Use!, a timer), the next goal names
+  the pad without "Next:", the realm bar shows a hall icon and n/total, the Rebirth chip a karma orb and
+  n/10, the Spirit Tide a wave icon and a timer, the disciples card is a row of disciples in their
+  rarity colours (no panel, R4); pad cards show name and price, the 2 to 3 word feature line only up
+  close; messages are a few words, every amount with its icon (R18). On a phone the side buttons
+  stay between Roblox's top bar and the thumbstick (two columns when tall); while the Shop or
+  Reincarnation screen is open the HUD steps aside (toasts stay). Movement (`Config.MOVE`,
+  `Movement.client`): faster walk, higher jump with a soft fall, one cloud step in the air with a jade
+  ring, Roblox's Ninja run and Levitation jump/fall. Toy buttons keep the first look and their shine becomes a glass cap
+  (`Toy.glass`, mock `glass_bars` 3, owner pick out of 10 after "make it slightly more premium"). Recruit reveal (mock
+  `recruit_b.gif`, owner: "B with nice sound and auras"): `RecruitReveal.client` flies a qi orb from the
+  Recruit button, charges one step per rarity, bursts into the disciple card in an aura that grows
+  with rarity (`Config.REVEAL`); the platform column lands at the burst; a tap skips. Disciple icons
+  (mocks `disciple_icons` A and `disciple_auras.gif`, owner: "A but ... make a big work on [auras],
+  something moving and pretty"): `Toy.disciple` draws a meditating disciple per rarity and `Toy.aura`
+  a moving aura that climbs with the rarity (glow, motes, ring, rays, halo, clouds, yin-yang, twin
+  rays, rainbow flames), on the HUD disciples row, the Shop tiles and the shop island pads; one
+  shared animator moves only the auras on screen. The Recruit button is a round formation seal (mock
+  `recruit_button_c.gif`, owner pick C): the qi orb charging through the rarity colours in a turning
+  ring, rays and a glow from the aura atlas; still and dim when a recruit is out of reach.
+- **D38** Welcome Pouch (owner: "a good fixed bonus as entry door, like an epic disciple and a 10%
+  Qi boost", "after a big building after 5-10 minutes"): 5 Robux once, an Elder + 10% Qi forever,
+  offered once by a card after a big building between 5 and 10 min of play (MONETIZATION "Welcome
+  Pouch"); cheap repeatable qi left out (research `2026-10-22_cheap_buys.md`).

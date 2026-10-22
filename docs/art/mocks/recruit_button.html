@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Recruit button redesign (2026-10-22, owner: "redesign the recruit button into something more
+     attracting, maybe use the animation asset"). ?v=a|b|c&t=<s> draws one frame of a 3 s loop, phone
+     HUD size 844 x 390. Pieces: the disciple atlas (art/ui/disciple_atlas.png) and the reveal's orb.
+     A: the qi orb inside the button, charging through the rarity colours (the reveal's start).
+     B: a disciple whose robe shuffles through the rarities, in its glow.
+     C: a round formation seal: a turning ring around the orb, the price under it. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap}
+.tag{position:absolute;left:8px;top:8px;font:600 12px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:9}
+.abs{position:absolute}
+.jump{position:absolute;right:4%;bottom:7%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18)}
+</style></head>
+<body><div class="scene"><div class="jump"></div><div id="m"></div><div class="tag" id="tag"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const v=q.get('v')||'a';const t=parseFloat(q.get('t')||'0');
+const TAU=Math.PI*2, INK='#1b1420';
+const COL=['#c8c8c8','#5ac878','#5096ff','#be64ff','#ffc83c','#6ee1eb','#e6323c','#ff8c28','#ff6edc'];
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const ph=t/3; // 0..1 loop
+const cyc=Math.floor(t/0.6)%5; // a colour step every 0.6 s through the first five tiers
+const col=COL[cyc];
+const pulse=1+0.06*Math.sin(t*TAU*1.2);
+function face(w,h,r,c,inner,extra=''){ // the toy button with the glass cap
+  return `<div style="position:relative;width:${w}px;height:${h}px">
+   <div style="position:absolute;inset:0;transform:translateY(4px);border-radius:${r}px;background:${INK}"></div>
+   <div style="position:absolute;inset:0;border-radius:${r}px;border:3px solid ${INK};background:${c};overflow:hidden">
+    <div style="position:absolute;left:5%;right:5%;top:5%;height:46%;border-radius:${r-3}px;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.03))"></div>${extra}</div>
+   <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px">${inner}</div></div>`;}
+function orb(s,c){return `<div style="position:relative;width:${s}px;height:${s}px">
+  <div class="abs" style="inset:-35%;background:radial-gradient(circle,${c}cc,${c}00 65%)"></div>
+  <div class="abs" style="inset:0;border-radius:50%;border:3px solid ${INK};background:radial-gradient(circle at 35% 30%,#fff 0 13%,${c} 48%,${c})"></div>
+  ${[0,1,2,3].map(i=>{const a=ph*TAU*2+i*TAU/4;return `<div class="abs" style="left:${s/2+Math.cos(a)*s*0.72-3}px;top:${s/2+Math.sin(a)*s*0.72-3}px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 6px ${c}"></div>`}).join('')}</div>`;}
+const price=`<span style="display:flex;align-items:center;gap:3px">${qi(16)}<span class="big" style="font-size:15px;color:#c9ffe4;--sw:4px">1.2M</span></span>`;
+const rays=(s,c,op)=>`<div class="abs" style="left:50%;top:50%;width:${s}px;height:${s}px;margin:-${s/2}px 0 0 -${s/2}px;background:url('_rays12.png') center/contain no-repeat;transform:rotate(${t*30}deg);opacity:${op};filter:drop-shadow(0 0 0 ${c})"></div>`;
+const glow=(s,c,op)=>`<div class="abs" style="left:50%;top:50%;width:${s}px;height:${s}px;margin:-${s/2}px 0 0 -${s/2}px;border-radius:50%;background:radial-gradient(circle,${c}${op},${c}00 68%)"></div>`;
+let h='', tag='';
+if(v==='a'){
+  tag='A: the qi orb charging in the button (recommended)';
+  h=`<div class="abs" style="right:120px;bottom:24px;transform:rotate(${-2+Math.sin(t*TAU*1.5)*1.5}deg) scale(${pulse})">
+     ${rays(250,col,.35)}${glow(250,col,'cc')}
+     ${face(186,66,16,'#b06bff',`${orb(40,col)}<div style="display:flex;flex-direction:column;line-height:1;gap:2px"><span class="big" style="font-size:24px">Recruit</span>${price}</div>`)}</div>`;
+}
+if(v==='b'){
+  tag='B: a disciple shuffling through the rarities';
+  const fig=cyc+1;
+  h=`<div class="abs" style="right:120px;bottom:24px;transform:rotate(-2deg) scale(${pulse})">
+     ${glow(240,col,'cc')}
+     ${face(196,70,16,'#b06bff',`<div style="position:relative;width:58px;height:58px">${glow(90,col,'99')}<div class="abs" style="inset:0;background:url('_fig${fig}.png') center/contain no-repeat"></div></div><div style="display:flex;flex-direction:column;line-height:1;gap:2px"><span class="big" style="font-size:24px">Recruit</span>${price}</div>`)}</div>`;
+}
+if(v==='c'){
+  tag='C: a round formation seal';
+  h=`<div class="abs col" style="right:118px;bottom:14px;display:flex;flex-direction:column;align-items:center;gap:2px;transform:scale(${pulse})">
+     <div style="position:relative;width:104px;height:104px">
+       ${rays(220,col,.35)}${glow(210,col,'cc')}
+       <div class="abs" style="inset:0;transform:translateY(4px);border-radius:50%;background:${INK}"></div>
+       <div class="abs" style="inset:0;border-radius:50%;border:3px solid ${INK};background:radial-gradient(circle at 50% 40%,#c99bff,#8a4fe0);overflow:hidden">
+         <div class="abs" style="left:8%;right:8%;top:5%;height:44%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.02))"></div></div>
+       <div class="abs" style="inset:6px;background:url('_ring.png') center/contain no-repeat;transform:rotate(${t*60}deg);opacity:.9"></div>
+       <div class="abs" style="left:30px;top:30px">${orb(44,col)}</div>
+     </div>
+     <span class="big" style="font-size:20px">Recruit</span>${price}</div>`;
+}
+document.getElementById('m').innerHTML=h;document.getElementById('tag').textContent=tag;
+</script></body></html>

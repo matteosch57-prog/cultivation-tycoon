@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Disciple icons (2026-10-21, owner: "I'd do something specific for the disciples tho. Like the icon").
+     A: drawn icons, one per rarity: a meditating disciple whose robe, headpiece and aura climb with
+        the rarity (UI shapes, like every other icon; no upload).
+     B: portraits of the real disciple avatar (a ViewportFrame of the cultivator) in a round frame
+        with a rarity rim. Crops here come from docs/art/mocks/cultivators_top_tiers.jpg.
+     Rendered to disciple_icons.jpg at 1300 x 760. -->
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1300px;height:760px;font-family:Fredoka,sans-serif;background:url('../captures/26_check_full_peak.jpg') center/cover;position:relative;overflow:hidden}
+body::before{content:"";position:absolute;inset:0;background:rgba(20,16,30,.55)}
+.wrap{position:relative;padding:18px 28px}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap}
+h2{font-size:26px;color:#ffe36b;--sw:5px;margin:6px 0 2px}
+.sub{font-size:14px;color:#e8e0f0;--sw:3px;margin-bottom:10px}
+.row{display:flex;gap:18px;align-items:flex-end}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.name{font-size:13px;--sw:3px}
+.port{width:104px;height:104px;border-radius:50%;border:4px solid #1b1420;overflow:hidden;position:relative;background-size:cover;background-position:center 30%}
+.ctx{display:flex;gap:40px;margin-top:16px;align-items:flex-start}
+</style></head>
+<body><div class="wrap" id="w"></div>
+<script>
+const INK='#1b1420', SKIN='#f2cfae';
+const R=[
+ ['Outer Disciple','#c8c8c8',0],['Inner Disciple','#5ac878',1],['Core Disciple','#5096ff',2],['Elder','#be64ff',3],
+ ['Immortal','#ffc83c',4],['Celestial','#6ee1eb',5],['Dao Ancestor','#e6323c',6],['Heavenly Emperor','#ff8c28',7],['Primordial','#ff6edc',8]];
+// a seated, meditating disciple; tier adds pieces: 1 hair pin, 2 sash, 3 hair crown + aura ring,
+// 4 halo, 5 cloud ribbon, 6 yin-yang orb, 7 emperor crown, 8 rainbow robe + flames
+function icon(s,col,tier){
+  const robe= tier===8?'url(#rb)':col;
+  let back='', front='';
+  if(tier>=3) back+=`<circle cx="32" cy="34" r="29" fill="${col}" opacity=".28"/>`;
+  if(tier>=3) back+=`<circle cx="32" cy="34" r="29" fill="none" stroke="${col}" stroke-width="2.5" opacity=".8"/>`;
+  if(tier===8) back+=`<path d="M8 50c-4-14 4-22 6-30 4 8 2 12 6 16 0-8 6-14 6-22 6 10 4 16 6 22 2-6 8-8 8-16 6 10 8 20 4 30z" fill="#ffb3e6" opacity=".7"/>`;
+  if(tier===4||tier===5) back+=`<ellipse cx="32" cy="9" rx="13" ry="4.5" fill="none" stroke="#ffe36b" stroke-width="3.5"/>`;
+  if(tier===5) back+=`<path d="M6 40c6-6 10 2 16-2M58 40c-6-6-10 2-16-2" fill="none" stroke="#e8ffff" stroke-width="4" stroke-linecap="round"/>`;
+  // body: crossed legs + robe + hands
+  let body=`<ellipse cx="32" cy="55" rx="23" ry="7" fill="${robe}" stroke="${INK}" stroke-width="3.5"/>
+   <path d="M15 54c0-14 7-20 17-20s17 6 17 20z" fill="${robe}" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+   <path d="M32 34l-5 12h10z" fill="#fff"/>
+   <ellipse cx="32" cy="50" rx="7" ry="4" fill="${SKIN}" stroke="${INK}" stroke-width="2.5"/>`;
+  if(tier>=2) body+=`<path d="M17 47c8 3 22 3 30 0" fill="none" stroke="${tier>=4?'#ffe36b':'#fff'}" stroke-width="3"/>`;
+  let head=`<circle cx="32" cy="10" r="5.5" fill="${INK}"/><circle cx="32" cy="23" r="11" fill="${SKIN}" stroke="${INK}" stroke-width="3.5"/>
+   <path d="M21 21c2-8 20-8 22 0-5-3-17-3-22 0z" fill="${INK}"/>
+   <path d="M27 25q2 2 4 0M33 25q2 2 4 0" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`;
+  if(tier===1) head+=`<rect x="36" y="6" width="9" height="3" rx="1.5" fill="#5ac878" stroke="${INK}" stroke-width="1.5"/>`;
+  if(tier===3) head+=`<path d="M26 8l3-5 3 4 3-4 3 5z" fill="#d9b8ff" stroke="${INK}" stroke-width="1.8"/>`;
+  if(tier===6) front+=`<g transform="translate(51 46)"><circle r="7" fill="#fff" stroke="${INK}" stroke-width="2.5"/><path d="M0-7a3.5 3.5 0 0 1 0 7a3.5 3.5 0 0 0 0 7a7 7 0 0 1 0-14z" fill="${INK}"/></g>`;
+  if(tier===7) head+=`<path d="M22 9l3-7 4 5 3-6 3 6 4-5 3 7z" fill="#ffd34d" stroke="${INK}" stroke-width="2"/><circle cx="32" cy="6" r="1.8" fill="#e6323c"/>`;
+  if(tier===8) head+=`<circle cx="32" cy="3" r="2.5" fill="#fff"/>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" overflow="visible"><defs><linearGradient id="rb" x1="0" x2="1"><stop offset="0" stop-color="#ff6e6e"/><stop offset=".25" stop-color="#ffd34d"/><stop offset=".5" stop-color="#6ee1a0"/><stop offset=".75" stop-color="#6eaaff"/><stop offset="1" stop-color="#d06eff"/></linearGradient></defs>${back}${body}${head}${front}</svg>`;
+}
+const old=(s,col)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="${INK}"/><circle cx="32" cy="28" r="13" fill="${SKIN}" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="${col}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+let h=`<h2 class="big">Now</h2><div class="sub big">one figure for everyone, only the robe colour changes</div><div class="row">`;
+for(const [n,c] of R) h+=`<div class="cell">${old(56,c)}</div>`;
+h+=`</div><h2 class="big">A: drawn, one per rarity (recommended)</h2><div class="sub big">a meditating disciple; headpiece, sash, halo and aura climb with the rarity (UI shapes, no upload)</div><div class="row">`;
+for(const [n,c,t] of R) h+=`<div class="cell">${icon(84,c,t)}<span class="big name" style="color:${c}">${n}</span></div>`;
+h+=`</div><h2 class="big">B: the real avatar's portrait</h2><div class="sub big">your actual disciple in a round frame with a rarity rim (a 3D view per icon: heavier on phones)</div><div class="row">`;
+for(const [n,c,f] of [['Elder','#be64ff','portrait_elder'],['Immortal','#ffc83c','portrait_immortal'],['Celestial','#6ee1eb','portrait_celestial'],['Dao Ancestor','#e6323c','portrait_dao'],['Elder','#be64ff','portrait_maiden_elder'],['Immortal','#ffc83c','portrait_maiden_immortal']])
+  h+=`<div class="cell"><div class="port" style="background-image:url('${f}.png');border-color:${INK};box-shadow:0 0 0 4px ${c},0 0 18px 4px ${c}88"></div><span class="big name" style="color:${c}">${n}</span></div>`;
+h+=`</div>`;
+document.getElementById('w').innerHTML=h;
+</script></body></html>

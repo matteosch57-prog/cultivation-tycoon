@@ -57,6 +57,23 @@ Config.NATURE_MESH = {
 	pine = "rbxassetid://91206435364540",
 }
 
+-- Movement (Movement.client.luau, owner 2026-10-21: "walking a bit faster, redo moving and jumping,
+-- fit our style"): a cultivator's light step. Roblox defaults are walk 16, jump height 7.2.
+Config.MOVE = {
+	walk = 21, -- studs/s
+	jumpHeight = 8.5, -- studs
+	floatFall = 0.45, -- share of gravity taken away while falling (a soft, floaty landing)
+	airSteps = 1, -- cloud steps: jump again in the air, once per jump
+	stepUp = 46, -- studs/s upward on a cloud step (~5.4 studs higher)
+	-- Roblox's own animation packs (any game may play them), slot = Animate value to replace:
+	-- Ninja run (a light forward dash), Levitation jump and fall (the robes float down). nil = keep.
+	anims = {
+		run = "rbxassetid://656118852",
+		jump = "rbxassetid://616008936",
+		fall = "rbxassetid://616005863",
+	},
+}
+
 -- Realms: each breakthrough multiplies income and costs.
 Config.REALMS = {
 	"Qi Condensation",
@@ -145,30 +162,30 @@ Config.PADS = {
 	{ id = "path", name = "Stone Path", cost = 10, income = 1, unlock = 0, req = {}, x = 0, z = 40, district = "heart" },
 	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -20, z = 24, district = "fields" },
 	{ id = "lanterns", name = "Lantern Row", cost = 60, income = 3, unlock = 0, req = {}, x = 10, z = 30, district = "heart" },
-	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Your sect's heart: upgrade it", district = "heart" },
-	{ id = "platform", name = "Meditation Platform", cost = 150, income = 4, unlock = 2, req = {}, x = 0, z = 0, feature = "Disciples meditate here", district = "heart" },
+	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Main Hall", district = "heart" },
+	{ id = "platform", name = "Meditation Platform", cost = 150, income = 4, unlock = 2, req = {}, x = 0, z = 0, feature = "Disciples meditate", district = "heart" },
 	{ id = "garden", name = "Herb Garden", cost = 300, income = 8, unlock = 3, req = {}, x = -36, z = 36, district = "fields" },
 	{ id = "vein2", name = "Twin Spirit Vein", cost = 600, income = 14, unlock = 4, req = {}, x = -18, z = 34, district = "fields" },
-	{ id = "mainhall2", name = "Sect Hall", cost = 900, income = 20, unlock = 4, req = { "mainhall1" }, x = 0, z = -30, feature = "Main Hall level 2", district = "heart" },
-	{ id = "furnace", name = "Alchemy Furnace", cost = 1200, income = 10, unlock = 6, req = {}, x = 26, z = 20, feature = "Brews a 2x Qi pill", district = "dao" },
-	{ id = "hall", name = "Disciple Hall", cost = 1500, income = 10, unlock = 6, req = {}, x = -50, z = 0, feature = "Unlocks recruiting", district = "disciples" },
+	{ id = "mainhall2", name = "Sect Hall", cost = 900, income = 20, unlock = 4, req = { "mainhall1" }, x = 0, z = -30, feature = "Hall level 2", district = "heart" },
+	{ id = "furnace", name = "Alchemy Furnace", cost = 1200, income = 10, unlock = 6, req = {}, x = 26, z = 20, feature = "2x Qi pills", district = "dao" },
+	{ id = "hall", name = "Disciple Hall", cost = 1500, income = 10, unlock = 6, req = {}, x = -50, z = 0, feature = "Recruit disciples", district = "disciples" },
 	{ id = "gate", name = "Sect Gate", cost = 2200, income = 25, unlock = 8, req = {}, x = 0, z = 52, district = "heart" },
-	{ id = "array", name = "Qi Gathering Array", cost = 3200, income = 30, unlock = 9, req = {}, x = 44, z = -2, feature = "Spawns qi orbs to collect", district = "dao" },
-	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Main Hall level 3", district = "heart" },
+	{ id = "array", name = "Qi Gathering Array", cost = 3200, income = 30, unlock = 9, req = {}, x = 44, z = -2, feature = "Qi orbs", district = "dao" },
+	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Hall level 3", district = "heart" },
 	{ id = "quarters1", name = "Disciple Quarters", cost = 5000, income = 5, unlock = 10, req = { "hall", "expand1" }, x = -54, z = -32, feature = "+1 disciple slot", district = "disciples" },
-	{ id = "expand1", name = "Expand the Peak", cost = 6000, income = 0, unlock = 11, req = {}, x = -14, z = 8, feature = "Your island grows" },
+	{ id = "expand1", name = "Expand the Peak", cost = 6000, income = 0, unlock = 11, req = {}, x = -14, z = 8, feature = "More land" },
 	{ id = "bamboo", name = "Bamboo Grove", cost = 7500, income = 60, unlock = 12, req = { "expand1" }, x = -84, z = -6, district = "fields" },
 	{ id = "training", name = "Training Ground", cost = 8500, income = 60, unlock = 12, req = { "expand1" }, x = 74, z = 8, district = "dao" },
-	{ id = "mainhall4", name = "Sect Palace", cost = 11000, income = 100, unlock = 13, req = { "mainhall3" }, x = 0, z = -30, feature = "Main Hall level 4", district = "heart" },
+	{ id = "mainhall4", name = "Sect Palace", cost = 11000, income = 100, unlock = 13, req = { "mainhall3" }, x = 0, z = -30, feature = "Hall level 4", district = "heart" },
 	{ id = "bell", name = "Bell Tower", cost = 12000, income = 90, unlock = 14, req = { "expand2" }, x = 40, z = -74, district = "heart" },
 	{ id = "koi", name = "Koi Pond", cost = 13000, income = 90, unlock = 14, req = { "expand1" }, x = -74, z = 14, district = "fields" },
 	{ id = "quarters2", name = "Grand Quarters", cost = 15000, income = 10, unlock = 15, req = { "quarters1", "expand1" }, x = -58, z = -62, feature = "+1 disciple slot", district = "disciples" },
-	{ id = "expand2", name = "Expand the Peak II", cost = 18000, income = 0, unlock = 16, req = { "expand1" }, x = 14, z = 8, feature = "Your island grows again" },
+	{ id = "expand2", name = "Expand the Peak II", cost = 18000, income = 0, unlock = 16, req = { "expand1" }, x = 14, z = 8, feature = "More land" },
 	{ id = "pagoda1", name = "Pagoda", cost = 21000, income = 150, unlock = 17, req = { "expand2" }, x = 0, z = -60, district = "heart" },
 	{ id = "library", name = "Scripture Library", cost = 23000, income = 170, unlock = 18, req = { "expand2" }, x = -26, z = -76, district = "heart" },
 	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = 64, z = -26, district = "dao" },
 	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 12, z = -66, district = "heart" },
-	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Main Hall final level", district = "heart" },
+	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Hall level 5", district = "heart" },
 	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
 	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
 	{ id = "vein3", name = "Third Spirit Vein", cost = 1800, income = 10, unlock = 7, req = { "vein2" }, x = -30, z = 10, district = "fields" },
@@ -356,6 +373,9 @@ Config.SHOP_PASSES = {
 	{ key = "vip", id = 0, name = "VIP Sect", line = "+1 disciple, gold name" },
 }
 Config.SHOP_PRODUCTS = {
+	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
+	-- Elder plus `qiBonus` more qi forever (kept through every life); offered once by WELCOME
+	{ key = "welcome", id = 0, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
 	{ key = "pill", id = 0, name = "Instant Pill", line = "2x Qi for 60 s now" },
 	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
 	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
@@ -373,6 +393,9 @@ Config.SHOP_PRODUCTS = {
 	{ key = "primordial", id = 0, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
+-- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
+-- play, or after any building from `late` s (owner: "after a big building after 5-10 minutes")
+Config.WELCOME = { after = 300, late = 600 }
 Config.VIP_SLOTS = 1
 Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
@@ -503,6 +526,53 @@ end
 -- `recruits` = disciples recruited in the current realm (data.realmRecruits)
 function Config.recruitCost(realm, recruits)
 	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruits * Config.RECRUIT_GROWTH))
+end
+
+-- The recruit reveal (mock recruit_b, owner pick 2026-10-21): a qi orb flies `fly` s from the
+-- Recruit button, then charges one `step` per rarity above the first (an Outer Disciple bursts at
+-- once, an Elder after 3 steps), bursts and shows the card for `hold` s (+ `holdPer` per tier).
+Config.REVEAL = { fly = 0.4, step = 0.3, hold = 1.6, holdPer = 0.25 }
+
+-- The disciple icons and their auras (D34): one uploaded 1024 x 1024 sheet drawn by
+-- tools/disciple_atlas.html (art/ui/disciple_atlas.png). Cells are { x, y, w, h } in px.
+Config.DISCIPLE_ATLAS = {
+	image = "rbxassetid://114202512373902",
+	cells = {
+		glow = { 0, 0, 256, 256 },
+		rays12 = { 256, 0, 256, 256 },
+		rays8 = { 512, 0, 256, 256 },
+		ring = { 768, 0, 256, 256 },
+		yinyang = { 0, 256, 256, 256 },
+		halo = { 256, 256, 256, 104 },
+		cloud = { 256, 384, 128, 80 },
+		flame = { 384, 384, 80, 128 },
+		sparkle = { 512, 256, 64, 64 },
+		mote = { 576, 256, 64, 64 },
+		fig1 = { 0, 512, 128, 128 },
+		fig2 = { 128, 512, 128, 128 },
+		fig3 = { 256, 512, 128, 128 },
+		fig4 = { 384, 512, 128, 128 },
+		fig5 = { 512, 512, 128, 128 },
+		fig6 = { 640, 512, 128, 128 },
+		fig7 = { 768, 512, 128, 128 },
+		fig8 = { 896, 512, 128, 128 },
+		fig9 = { 0, 640, 128, 128 },
+	},
+}
+
+-- index of a rarity in RARITIES (1 = Outer Disciple)
+function Config.rarityIndex(name)
+	for i, r in Config.RARITIES do
+		if r.name == name then
+			return i
+		end
+	end
+	return 1
+end
+
+-- seconds from the Recruit press to the burst (Juice lights the platform then)
+function Config.revealBurst(name)
+	return Config.REVEAL.fly + (Config.rarityIndex(name) - 1) * Config.REVEAL.step
 end
 
 function Config.rarity(name)

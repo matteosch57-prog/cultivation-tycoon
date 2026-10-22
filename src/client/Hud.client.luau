@@ -63,6 +63,10 @@ local function compact(n) -- for small price tags: 3.5K
 	local f = 10 ^ digits
 	return string.format("%." .. digits .. "f%s", math.floor(v * f) / f, units[i])
 end
+-- an amount piece for a toast: its currency icon, then the number (R18)
+local function amt(currency, n, sign)
+	return { icon = currency, text = (sign or "") .. compact(n) }
+end
 
 ---------------------------------------------------------------------------------------------
 -- device + scale
@@ -208,6 +212,26 @@ local function discipleIcon(parent, size, robe, props)
 	return ic.box
 end
 
+-- the Spirit Tide: a blue wave crest
+local function tideIcon(parent, size, props)
+	local ic = Icon.new(parent, size, props)
+	ic:rect(32, 46, 54, 22, TIDE, 6)
+	ic:circle(18, 34, 12, TIDE)
+	ic:circle(42, 30, 14, TIDE)
+	ic:detail(44, 26, 6, TIDE_LIGHT)
+	ic:detail(20, 31, 4, Color3.new(1, 1, 1), 0.2)
+	return ic.box
+end
+
+-- a little hall (buildings owned, on the realm bar)
+local function hallIcon(parent, size, props)
+	local ic = Icon.new(parent, size, props)
+	ic:rect(32, 42, 38, 24, Color3.fromHex("FFF4DC"), 2)
+	ic:rect(32, 22, 54, 14, Color3.fromHex("E65B4F"), 4)
+	ic:rect(32, 47, 10, 14, Color3.fromHex("8A5A3C"), 1, 0, false).ZIndex = 3
+	return ic.box
+end
+
 -- returns (slot, spinner): the slot sits in the layout, the spinner inside it is what rotates
 local function arrowIcon(parent, size, props)
 	local slot = frame(parent, { Size = UDim2.fromOffset(size, size) })
@@ -220,7 +244,7 @@ local function arrowIcon(parent, size, props)
 	return slot, ic.box
 end
 
--- toy button: solid shadow + outlined face + shine. Returns (holder, face, button).
+-- toy button: solid shadow + outlined face + glass shine (Toy.glass). Returns (holder, button).
 local function toy(parent, size, color, radius)
 	local holder = frame(parent, { Size = size })
 	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(4)), BackgroundTransparency = 0, BackgroundColor3 = INK })
@@ -238,8 +262,7 @@ local function toy(parent, size, color, radius)
 	st.Thickness = px(3)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
-	local shine = frame(btn, { Size = UDim2.new(0.8, 0, 0.2, 0), Position = UDim2.fromScale(0.1, 0.1), BackgroundTransparency = 0.62, BackgroundColor3 = Color3.new(1, 1, 1) })
-	corner(shine, UDim.new(1, 0))
+	Toy.glass(btn, radius)
 	-- feel: hover grows it a touch, press sinks it onto its shadow and squishes, release springs
 	local sc = Instance.new("UIScale")
 	sc.Parent = holder
@@ -332,15 +355,27 @@ local function build()
 	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	ui.rate = text(col, "+0/s", px(16), Color3.fromHex("9FF5C8"), { LayoutOrder = 2 })
 	-- Spirit Tide line (mock tycoon_ideas idea 3 A): countdown, then the 2x timer
-	ui.tide = text(col, "", px(12), TIDE_LIGHT, { LayoutOrder = 3 })
+	local tideRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
+	local trl = Instance.new("UIListLayout")
+	trl.FillDirection = Enum.FillDirection.Horizontal
+	trl.VerticalAlignment = Enum.VerticalAlignment.Center
+	trl.Padding = UDim.new(0, px(3))
+	trl.Parent = tideRow
+	tideIcon(tideRow, px(15), { LayoutOrder = 1 })
+	ui.tide = text(tideRow, "", px(12), TIDE_LIGHT, { LayoutOrder = 2 })
+	ui.tideRow = tideRow
 	ui.counter = counter
 	counter.Name = "Counter" -- Juice flies qi drops into it
 
 	-- left column: Disciples (others appear when their features exist)
-	local left = frame(root, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(12), 0.45, 0), AutomaticSize = Enum.AutomaticSize.XY })
+	-- (layout() fits it between Roblox's top bar and the thumbstick: a column too tall for that band
+	-- wraps into a second one, so 4 buttons never sit under the Roblox menu on a phone)
+	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	local leftLayout = Instance.new("UIListLayout")
 	leftLayout.Padding = UDim.new(0, px(10))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	leftLayout.Wraps = true
 	leftLayout.Parent = left
 	-- Shop (mock shop B, D24): always shown, on top; opens Shop.client's screen
 	local sCol = frame(left, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 0 })
@@ -370,16 +405,8 @@ local function build()
 	local dHolder, dBtn = toy(dCol, UDim2.fromOffset(px(54), px(54)), Color3.fromHex("9FD0FF"), px(14))
 	dHolder.LayoutOrder = 1
 	discipleIcon(dBtn, px(40), nil, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	local badge = frame(dBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(22), px(22)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
-	corner(badge, UDim.new(1, 0))
-	local bst = Instance.new("UIStroke")
-	bst.Color = INK
-	bst.Thickness = px(3)
-	bst.Parent = badge
-	ui.badge = text(badge, "0", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 6 })
-	ui.badgeFrame = badge
-	local dLabel = text(dCol, "Disciples", px(13))
-	dLabel.LayoutOrder = 2
+	-- the label is the count (less text, mock less_text A)
+	ui.dLabel = text(dCol, "0", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
 
 	-- Pill (Alchemy Furnace): brewing countdown -> ready (wobbles) -> active 2x timer
@@ -404,10 +431,11 @@ local function build()
 				return remotes.UsePill:InvokeServer()
 			end)
 			if ok and used then
-				toast("Pill swallowed: 2x Qi for 60 s!", GOLD, 2)
+				toast("2x Qi!", GOLD, 2)
 			end
 		else
-			toast("The furnace is still brewing (Instant Pill in the Shop)", PINK, 1.6)
+			local s = player:GetAttribute("PillIn") or 0
+			toast(string.format("Brewing %d:%02d", s // 60, s % 60), PINK, 1.6)
 		end
 	end)
 	-- Playtime gift (mock tycoon_ideas idea 2 A): countdown -> ready (wobbles, red dot) -> claim
@@ -440,31 +468,23 @@ local function build()
 			end)
 			if ok and gain then
 				popGain(gain, true)
-				toast("Gift  +" .. compact(gain) .. " Qi", GOLD, 2)
+				toast({ amt("qi", gain, "+") }, GOLD, 2)
 			end
 		else
-			toast("Keep playing: your next gift is on its way", PINK, 1.5)
+			local g = math.max(0, player:GetAttribute("GiftIn") or 0)
+			toast(string.format("Gift in %d:%02d", g // 60, g % 60), PINK, 1.5)
 		end
 	end)
 	ui.left = left
 	ui.dBtn = dBtn
 
 	-- disciples card (opens beside the button)
-	local card = frame(root, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(80), 0.45, 0), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FFF4DC"), Visible = state.discOpen })
-	corner(card, UDim.new(0, px(14)))
-	local cst = Instance.new("UIStroke")
-	cst.Color = INK
-	cst.Thickness = px(3)
-	cst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	cst.Parent = card
-	local cpad = Instance.new("UIPadding")
-	cpad.PaddingTop = UDim.new(0, px(8))
-	cpad.PaddingBottom = UDim.new(0, px(10))
-	cpad.PaddingLeft = UDim.new(0, px(12))
-	cpad.PaddingRight = UDim.new(0, px(12))
-	cpad.Parent = card
+	-- (no panel, R4: disciples in their rarity colours, 4 to a row, their bonus under each)
+	local card = frame(root, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(80), 0.45, 0), Size = UDim2.fromOffset(px(4 * 52), 0), AutomaticSize = Enum.AutomaticSize.Y, Visible = state.discOpen })
 	local cLayout = Instance.new("UIListLayout")
-	cLayout.Padding = UDim.new(0, px(3))
+	cLayout.FillDirection = Enum.FillDirection.Horizontal
+	cLayout.Wraps = true
+	cLayout.Padding = UDim.new(0, px(4))
 	cLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	cLayout.Parent = card
 	ui.card = card
@@ -489,9 +509,17 @@ local function build()
 	rrLayout.Padding = UDim.new(0, px(8))
 	rrLayout.Parent = realmRow
 	ui.realm = text(realmRow, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 1 })
-	local chipHolder, chipBtn = toy(realmRow, UDim2.fromOffset(px(104), px(26)), Color3.fromHex("B06BFF"), px(9))
+	local chipHolder, chipBtn = toy(realmRow, UDim2.fromOffset(px(84), px(26)), Color3.fromHex("B06BFF"), px(9))
 	chipHolder.LayoutOrder = 2
-	ui.rebirth = text(chipBtn, "", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local chipRow = frame(chipBtn, { Size = UDim2.fromScale(1, 1), ZIndex = 3 })
+	local crl = Instance.new("UIListLayout")
+	crl.FillDirection = Enum.FillDirection.Horizontal
+	crl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	crl.VerticalAlignment = Enum.VerticalAlignment.Center
+	crl.Padding = UDim.new(0, px(3))
+	crl.Parent = chipRow
+	Toy.icon(chipRow, "karma", px(18), { LayoutOrder = 1 })
+	ui.rebirth = text(chipRow, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.rebirthBtn = chipBtn
 	chipBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ReincOpen")
@@ -511,24 +539,80 @@ local function build()
 	tst.Parent = track
 	ui.fill = frame(track, { Size = UDim2.fromScale(0, 1), BackgroundTransparency = 0, BackgroundColor3 = JADE })
 	corner(ui.fill, UDim.new(1, 0))
-	ui.progText = text(track, "", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local progRow = frame(track, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 3 })
+	local prl2 = Instance.new("UIListLayout")
+	prl2.FillDirection = Enum.FillDirection.Horizontal
+	prl2.VerticalAlignment = Enum.VerticalAlignment.Center
+	prl2.Padding = UDim.new(0, px(4))
+	prl2.Parent = progRow
+	ui.progIcon = hallIcon(progRow, px(17), { LayoutOrder = 1 })
+	ui.progText = text(progRow, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.prog = prog
 
-	-- recruit: bottom right (placed by layout())
-	local rHolder, rBtn = toy(root, UDim2.fromOffset(px(150), px(56)), Color3.fromHex("B06BFF"), px(14))
-	rHolder.AnchorPoint = Vector2.new(1, 1)
-	rHolder.Rotation = -2
-	local rRow = frame(rBtn, { Size = UDim2.fromScale(1, 1) })
-	local rl = Instance.new("UIListLayout")
-	rl.FillDirection = Enum.FillDirection.Horizontal
-	rl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	rl.VerticalAlignment = Enum.VerticalAlignment.Center
-	rl.Padding = UDim.new(0, px(6))
-	rl.Parent = rRow
-	discipleIcon(rRow, px(34), nil, { LayoutOrder = 1 })
-	local rText = frame(rRow, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	-- recruit: the formation seal (mock docs/art/mocks/recruit_button_c.gif, owner pick 2026-10-22: "C,
+	-- but needs to look as good as your mock"), bottom right, placed by layout(). A round button with
+	-- a qi orb charging through the rarity colours inside a turning ring, rays and a glow behind; the
+	-- soft pieces are the uploaded aura atlas (Toy.atlasPiece), moved in the frame loop. Still and dim
+	-- when a recruit is out of reach.
+	local SEAL = px(104)
+	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44)) })
+	local seal = frame(rHolder, { Size = UDim2.fromOffset(SEAL, SEAL) })
+	local sealScale = Instance.new("UIScale")
+	sealScale.Parent = seal
+	local rays = Toy.atlasPiece(seal, "rays12", SEAL * 2.1, SEAL * 2.1, Color3.new(1, 1, 1), 0.4)
+	local glow = Toy.atlasPiece(seal, "glow", SEAL * 2, SEAL * 2, JADE, 0)
+	local shadow = frame(seal, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(4)), BackgroundTransparency = 0, BackgroundColor3 = INK })
+	corner(shadow, UDim.new(0.5, 0))
+	local rBtn = Instance.new("TextButton")
+	rBtn.Name = "RecruitSeal" -- the recruit reveal's orb starts here
+	rBtn.Text = ""
+	rBtn.AutoButtonColor = false
+	rBtn.Size = UDim2.fromScale(1, 1)
+	rBtn.BackgroundColor3 = Color3.fromHex("A070F0")
+	rBtn.BorderSizePixel = 0
+	rBtn.Parent = seal
+	corner(rBtn, UDim.new(0.5, 0))
+	local rst = Instance.new("UIStroke")
+	rst.Color = INK
+	rst.Thickness = px(3)
+	rst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	rst.Parent = rBtn
+	-- the face's soft light (a radial lift from the glow piece) and its glass cap
+	Toy.atlasPiece(rBtn, "glow", SEAL * 0.95, SEAL * 0.95, Color3.fromHex("D9B8FF"), 0.35, { Position = UDim2.fromScale(0.5, 0.42) })
+	local cap = frame(rBtn, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.05), Size = UDim2.fromScale(0.84, 0.44), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1) })
+	corner(cap, UDim.new(0.5, 0))
+	local capG = Instance.new("UIGradient")
+	capG.Rotation = 90
+	capG.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0.98) })
+	capG.Parent = cap
+	local ring = Toy.atlasPiece(rBtn, "ring", SEAL - px(12), SEAL - px(12), Color3.new(1, 1, 1), 0.1)
+	-- the orb: a glow, the ball, its highlight, four motes circling
+	local ORB = px(44)
+	local orbGlow = Toy.atlasPiece(rBtn, "glow", ORB * 1.9, ORB * 1.9, JADE, 0.1)
+	local orb = frame(rBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(ORB, ORB), BackgroundTransparency = 0, BackgroundColor3 = JADE })
+	corner(orb, UDim.new(0.5, 0))
+	local ost = Instance.new("UIStroke")
+	ost.Color = INK
+	ost.Thickness = px(3)
+	ost.Parent = orb
+	-- the ball's shading: light from the top left into its colour (the mock's radial sphere)
+	orb.BackgroundColor3 = Color3.new(1, 1, 1)
+	local orbShade = Instance.new("UIGradient")
+	orbShade.Rotation = 50
+	orbShade.Parent = orb
+	Toy.atlasPiece(orb, "mote", ORB * 0.9, ORB * 0.9, Color3.new(1, 1, 1), 0.55, { Position = UDim2.fromScale(0.42, 0.38) })
+	local hi = frame(orb, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.35, 0.3), Size = UDim2.fromScale(0.26, 0.26), BackgroundTransparency = 0.05, BackgroundColor3 = Color3.new(1, 1, 1) })
+	corner(hi, UDim.new(0.5, 0))
+	local motes = {}
+	for i = 1, 4 do
+		motes[i] = Toy.atlasPiece(rBtn, "mote", px(10), px(10), Color3.new(1, 1, 1), 0)
+	end
+	-- "Recruit" and its price under the seal
+	local rText = frame(rHolder, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, SEAL + px(2)), AutomaticSize = Enum.AutomaticSize.XY })
 	local rtl = Instance.new("UIListLayout")
+	rtl.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	rtl.Padding = UDim.new(0, px(1))
+	rtl.SortOrder = Enum.SortOrder.LayoutOrder
 	rtl.Parent = rText
 	text(rText, "Recruit", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	local priceRow = frame(rText, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
@@ -541,6 +625,19 @@ local function build()
 	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
+	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
+	-- press feel, like the toy buttons
+	rBtn.MouseButton1Down:Connect(function()
+		seal.Position = UDim2.fromOffset(0, px(3))
+	end)
+	for _, ev in { rBtn.MouseButton1Up, rBtn.MouseLeave } do
+		ev:Connect(function()
+			seal.Position = UDim2.new()
+		end)
+	end
+	rBtn.Activated:Connect(function()
+		Sfx.play("click")
+	end)
 
 	-- next goal: top right, under Roblox's own buttons
 	local goal = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY, Rotation = 2 })
@@ -556,7 +653,15 @@ local function build()
 	gtl.Padding = UDim.new(0, px(2))
 	gtl.Parent = gt
 	ui.goalName = text(gt, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 1 })
-	ui.goalCost = text(gt, "", px(13), PINK, { LayoutOrder = 2 })
+	-- the price shows its qi drop (R18)
+	local gcRow = frame(gt, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	local gcl = Instance.new("UIListLayout")
+	gcl.FillDirection = Enum.FillDirection.Horizontal
+	gcl.VerticalAlignment = Enum.VerticalAlignment.Center
+	gcl.Padding = UDim.new(0, px(3))
+	gcl.Parent = gcRow
+	qiIcon(gcRow, px(15), { LayoutOrder = 1 })
+	ui.goalCost = text(gcRow, "", px(13), PINK, { LayoutOrder = 2 })
 	ui.goal = goal
 	-- Heavenly Hands (Karma Shop): a gold hand that builds the Next pad from anywhere (mock A)
 	local hHolder, hBtn = toy(goal, UDim2.fromOffset(px(50), px(42)), Color3.fromHex("FFD34D"), px(12))
@@ -592,12 +697,12 @@ local function build()
 		end)
 		state.recruiting = false -- always release, whatever happens below
 		if ok and res and res.ok then
-			local r = Config.rarity(res.rarity)
+			-- the orb reveal on screen (RecruitReveal) and the light column on the platform (Juice);
+			-- the reveal names the disciple, so no toast
 			local fxEvent = playerGui:FindFirstChild("RecruitFx")
 			if fxEvent then
-				fxEvent:Fire(res.rarity, res.kept) -- sound + light column on the platform (Juice)
+				fxEvent:Fire(res.rarity, res.kept)
 			end
-			toast(res.kept and ("New disciple: " .. res.rarity .. "!") or (res.rarity .. " left: your disciples are stronger"), r.color, 2.5)
 		elseif ok and res then
 			toast(res.reason, PINK, 1.5)
 		end
@@ -606,22 +711,65 @@ end
 
 ---------------------------------------------------------------------------------------------
 -- toasts and the little "+N" that pops off the counter
-toast = function(str, color, hold)
+
+-- one line of pieces (strings, or amt() pieces) laid out left to right
+local function line(parent, pieces, size, color, props)
+	local row = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
+	for k, v in props or {} do
+		row[k] = v
+	end
+	local l = Instance.new("UIListLayout")
+	l.FillDirection = Enum.FillDirection.Horizontal
+	l.VerticalAlignment = Enum.VerticalAlignment.Center
+	l.SortOrder = Enum.SortOrder.LayoutOrder
+	l.Padding = UDim.new(0, math.floor(size * 0.18))
+	l.Parent = row
+	for i, p in type(pieces) == "table" and pieces or { pieces } do
+		if type(p) == "table" then
+			local cell = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
+			local cl = Instance.new("UIListLayout")
+			cl.FillDirection = Enum.FillDirection.Horizontal
+			cl.VerticalAlignment = Enum.VerticalAlignment.Center
+			cl.SortOrder = Enum.SortOrder.LayoutOrder
+			cl.Padding = UDim.new(0, math.max(1, math.floor(size * 0.08)))
+			cl.Parent = cell
+			Toy.icon(cell, p.icon, math.floor(size * 1.15), { LayoutOrder = 1, ZIndex = row.ZIndex })
+			text(cell, p.text, size, color, { LayoutOrder = 2, ZIndex = row.ZIndex })
+		else
+			text(row, p, size, color, { LayoutOrder = i, ZIndex = row.ZIndex })
+		end
+	end
+	return row
+end
+
+-- fades everything a line drew (text, outlines, icon shapes) over `t` seconds
+local function fadeOut(root, t)
+	local info = TweenInfo.new(t)
+	for _, d in root:GetDescendants() do
+		if d:IsA("TextLabel") then
+			TweenService:Create(d, info, { TextTransparency = 1 }):Play()
+		elseif d:IsA("UIStroke") then
+			TweenService:Create(d, info, { Transparency = 1 }):Play()
+		elseif d:IsA("Frame") and d.BackgroundTransparency < 1 then
+			TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+		end
+	end
+end
+
+-- toast(pieces, color, hold): a string, or a list of strings and amt() pieces
+toast = function(pieces, color, hold)
 	if not toastLayer then
 		return
 	end
-	local t = text(toastLayer, str, px(22), color or Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), ZIndex = 21, TextWrapped = false })
+	local t = line(toastLayer, pieces, px(22), color or Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), ZIndex = 21 })
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.4
 	sc.Parent = t
 	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	Sfx.play("toast")
 	task.delay(hold or 2.5, function()
-		local st = t:FindFirstChildOfClass("UIStroke")
-		TweenService:Create(t, TweenInfo.new(0.5), { TextTransparency = 1, Position = UDim2.fromScale(0.5, 0.27) }):Play()
-		if st then
-			TweenService:Create(st, TweenInfo.new(0.5), { Transparency = 1 }):Play()
-		end
+		TweenService:Create(t, TweenInfo.new(0.5), { Position = UDim2.fromScale(0.5, 0.27) }):Play()
+		fadeOut(t, 0.5)
 		task.wait(0.55)
 		t:Destroy()
 	end)
@@ -638,16 +786,13 @@ popGain = function(amount, big)
 	bump.Scale = big and 1.22 or 1.08
 	TweenService:Create(bump, TweenInfo.new(big and 0.5 or 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	local abs = ui.counter.AbsolutePosition - ui.root.AbsolutePosition
-	local t = text(ui.root, "+" .. compact(amount), px(18), GOLD, {
+	local t = line(ui.root, { amt("qi", amount, "+") }, px(18), GOLD, {
 		Position = UDim2.fromOffset(abs.X + ui.counter.AbsoluteSize.X + px(2), abs.Y + px(4)),
 		Rotation = -8,
 		ZIndex = 10,
 	})
-	local st = t:FindFirstChildOfClass("UIStroke")
-	TweenService:Create(t, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { Position = t.Position - UDim2.fromOffset(0, px(22)), TextTransparency = 1 }):Play()
-	if st then
-		TweenService:Create(st, TweenInfo.new(0.9), { Transparency = 1 }):Play()
-	end
+	TweenService:Create(t, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { Position = t.Position - UDim2.fromOffset(0, px(22)) }):Play()
+	fadeOut(t, 0.9)
 	task.delay(0.95, function()
 		t:Destroy()
 	end)
@@ -655,6 +800,19 @@ end
 
 ---------------------------------------------------------------------------------------------
 -- layout: place things around Roblox's own controls (called on any change)
+-- a full-screen screen (Shop, Reincarnation) is open: the HUD steps aside (toasts stay), so nothing
+-- peeks out from under that screen's veil or under its title on a phone (phone check 2026-10-21)
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer" }
+local function modalOpen()
+	for _, name in MODALS do
+		local g = playerGui:FindFirstChild(name)
+		if g and g:IsA("ScreenGui") and g.Enabled then
+			return true
+		end
+	end
+	return false
+end
+
 local function layout()
 	if not ui.root then
 		return
@@ -666,14 +824,27 @@ local function layout()
 	end
 	local inset = GuiService.TopbarInset
 	ui.goal.Position = UDim2.new(1, -px(14), 0, inset.Max.Y + px(8))
+	-- left buttons: the band under the top bar and above the thumbstick (bottom-left on a phone)
+	local rootScale = ui.root:FindFirstChildOfClass("UIScale") -- (a phone check scales the root)
+	local rootH = ui.root.AbsoluteSize.Y / (rootScale and rootScale.Scale or 1)
+	local top = inset.Max.Y + px(8)
+	local bottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
+	ui.left.Position = UDim2.fromOffset(px(12), top)
+	ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
+	ui.card.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
 	local hasHall = player:GetAttribute("HasHall") == true
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
-	ui.recruit.Visible = hasHall
 	ui.dCol.Visible = hasHall
 	ui.pCol.Visible = hasFurnace
 	local hasGift = (player:GetAttribute("GiftIn") or -1) >= 0
 	ui.gCol.Visible = hasGift
-	ui.left.Visible = true -- the Shop button is always there
+	local modal = modalOpen()
+	state.modal = modal
+	ui.recruit.Visible = hasHall and not modal
+	ui.prog.Visible = not modal
+	ui.counter.Visible = not modal
+	ui.left.Visible = not modal -- the Shop button is always there otherwise
+	ui.card.Visible = state.discOpen and hasHall and not modal
 	if not hasHall then
 		state.discOpen = false
 		ui.card.Visible = false
@@ -707,39 +878,48 @@ local function refreshStatic()
 	local realmNow = player:GetAttribute("Realm") or 1
 	-- a new life pays once this one goes deeper than every life before (D37)
 	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
-	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("Rebirth %d/%d", realmNow, target)
+	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("%d/%d", realmNow, target)
 	ui.recruitCost.Text = compact(player:GetAttribute("RecruitCost") or 0)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
 	local pulledRaw = player:GetAttribute("Pulled") or ""
 	local pulled = pulledRaw == "" and {} or string.split(pulledRaw, ",")
-	ui.badge.Text = tostring(#list)
-	ui.badgeFrame.Visible = #list > 0
 	for _, c in ui.card:GetChildren() do
-		if c:IsA("TextLabel") then
+		if not c:IsA("UIListLayout") then
 			c:Destroy()
 		end
 	end
 	local max = player:GetAttribute("MaxDisciples") or Config.MAX_DISCIPLES
-	ui.badge.Text = tostring(math.min(#list, max))
-	text(ui.card, string.format("Disciples %d/%d", math.min(#list, max), max), px(17), Color3.fromHex("FFE9A8"), { LayoutOrder = 0 })
-	if #list == 0 then
-		text(ui.card, "Recruit one with the purple button", px(13), Color3.new(1, 1, 1), { LayoutOrder = 1 })
-	end
+	ui.dLabel.Text = string.format("%d/%d", math.min(#list, max), max)
 	for i, name in list do
 		local r = Config.rarity(name)
 		if i > max then
-			text(ui.card, string.format("%d resting (build Quarters)", #list - max), px(12), Color3.fromHex("C8C0D0"), { LayoutOrder = i })
+			-- the rest wait for more Quarters: one grey "+N"
+			text(ui.card, "+" .. (#list - max), px(16), Color3.fromHex("C8C0D0"), { LayoutOrder = i })
 			break
 		end
-		-- a sold rarity the player also rolled carries its "first pulled" mark
-		local mark = table.find(pulled, name) and Config.shopItem(Config.shopKeyOf(name)) and "  first pulled" or ""
-		text(ui.card, string.format("%s  +%d%%%s", name, r.bonus * 100, mark), px(14), r.color, { LayoutOrder = i })
+		local cell = frame(ui.card, { Size = UDim2.fromOffset(px(48), 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = i })
+		local cl = Instance.new("UIListLayout")
+		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		cl.SortOrder = Enum.SortOrder.LayoutOrder
+		cl.Parent = cell
+		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }) -- its rarity's look and moving aura
+		-- a sold rarity the player also rolled carries its "first pulled" mark: a gold dot
+		if table.find(pulled, name) and Config.shopItem(Config.shopKeyOf(name)) then
+			local dot = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.8, 0.2), Size = UDim2.fromOffset(px(10), px(10)), BackgroundTransparency = 0, BackgroundColor3 = GOLD, ZIndex = 5 })
+			corner(dot, UDim.new(1, 0))
+			local ds = Instance.new("UIStroke")
+			ds.Color = INK
+			ds.Thickness = px(2)
+			ds.Parent = dot
+		end
+		text(cell, string.format("+%d%%", r.bonus * 100), px(11), r.color, { LayoutOrder = 2 })
 	end
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
 	local total = #Config.PADS
-	ui.progText.Text = owned >= total and "Ready to break through!" or string.format("%d / %d built", owned, total)
+	ui.progIcon.Visible = owned < total
+	ui.progText.Text = owned >= total and "Break through!" or string.format("%d/%d", owned, total)
 	TweenService:Create(ui.fill, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(math.clamp(owned / total, 0.04, 1), 1) }):Play()
 	ui.fill.BackgroundColor3 = owned >= total and GOLD or JADE
 end
@@ -784,6 +964,15 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(functio
 end)
 GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(layout)
 player:GetAttributeChangedSignal("HudDevice"):Connect(rebuildAll)
+local function watchModal(g)
+	if table.find(MODALS, g.Name) and g:IsA("ScreenGui") then
+		g:GetPropertyChangedSignal("Enabled"):Connect(layout)
+	end
+end
+for _, g in playerGui:GetChildren() do
+	watchModal(g)
+end
+playerGui.ChildAdded:Connect(watchModal)
 playerGui.ChildAdded:Connect(function(c)
 	if c.Name == "TouchGui" then
 		task.wait(0.5)
@@ -830,10 +1019,11 @@ RunService.RenderStepped:Connect(function(dt)
 		goalPad = best
 	end
 	if goalPad and goalPad.Parent then
-		put(ui.goal, "Visible", true)
+		put(ui.goal, "Visible", not state.modal)
 		local cost = goalPad:GetAttribute("Cost") or 0
-		put(ui.goalName, "Text", "Next: " .. (goalPad:GetAttribute("Title") or ""))
-		put(ui.goalCost, "Text", compact(cost) .. " Qi")
+		local title = goalPad:GetAttribute("Title") or ""
+		put(ui.goalName, "Text", title:match("^(.-):") or title) -- "Breakthrough: X" says just Breakthrough
+		put(ui.goalCost, "Text", compact(cost))
 		put(ui.goalCost, "TextColor3", target >= cost and Color3.fromHex("9FF5C8") or PINK)
 		put(ui.hands, "Visible", (player:GetAttribute("Dao_hands") or 0) > 0)
 		local cam = workspace.CurrentCamera
@@ -849,12 +1039,13 @@ RunService.RenderStepped:Connect(function(dt)
 	local tideIn = (workspace:GetAttribute("TideNext") or 0) - now
 	local tideText = ""
 	if tideLeft > 0 then
-		tideText = string.format("2x Spirit Tide %d:%02d", tideLeft // 60, math.floor(tideLeft % 60))
+		tideText = string.format("2x %d:%02d", tideLeft // 60, math.floor(tideLeft % 60))
 	elseif tideIn > 0 then
-		tideText = string.format("Spirit Tide in %d:%02d", tideIn // 60, math.floor(tideIn % 60))
+		tideText = string.format("%d:%02d", tideIn // 60, math.floor(tideIn % 60))
 	end
 	if ui.tide.Text ~= tideText then
 		put(ui.tide, "Text", tideText)
+		put(ui.tideRow, "Visible", tideText ~= "")
 		put(ui.tide, "TextColor3", tideLeft > 0 and TIDE or TIDE_LIGHT)
 		put(ui.tide, "TextSize", tideLeft > 0 and px(13) or px(12))
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
@@ -878,7 +1069,7 @@ RunService.RenderStepped:Connect(function(dt)
 			put(ui.giftBtn, "Rotation", math.sin(os.clock() * 7) * 6)
 			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
 		else
-			put(ui.giftLabel, "Text", string.format("Gift %d:%02d", g // 60, g % 60))
+			put(ui.giftLabel, "Text", string.format("%d:%02d", g // 60, g % 60))
 			put(ui.giftLabel, "TextColor3", Color3.new(1, 1, 1))
 			put(ui.giftBtn, "Rotation", 0)
 			put(ui.giftBtn, "BackgroundColor3", Color3.fromHex("FFB3A8"))
@@ -893,7 +1084,7 @@ RunService.RenderStepped:Connect(function(dt)
 			put(ui.pillBtn, "Rotation", 0)
 			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFE9A0"))
 		elseif player:GetAttribute("PillReady") then
-			put(ui.pillLabel, "Text", "Use pill!")
+			put(ui.pillLabel, "Text", "Use!")
 			put(ui.pillLabel, "TextColor3", Color3.new(1, 1, 1))
 			put(ui.pillBtn, "Rotation", math.sin(os.clock() * 7) * 6)
 			put(ui.pillBtn, "BackgroundColor3", Color3.fromHex("FFD36B"))
@@ -907,66 +1098,104 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	if ui.recruit.Visible then
+		-- the Recruit seal: while a recruit is affordable the orb charges through the first five
+		-- rarity colours (a step every 0.6 s), the ring and rays turn and it breathes; else still, dim
 		local can = target >= (player:GetAttribute("RecruitCost") or math.huge)
-		put(ui.recruit, "Rotation", can and (-2 + math.sin(os.clock() * 6) * 2.5) or -2)
-		put(ui.recruitBtn, "BackgroundColor3", can and Color3.fromHex("B06BFF") or Color3.fromHex("8C72A8"))
+		local sl = ui.seal
+		local t = os.clock()
+		put(ui.recruitBtn, "BackgroundColor3", can and Color3.fromHex("A070F0") or Color3.fromHex("8C72A8"))
+		put(sl.rays, "Visible", can)
+		put(sl.glow, "Visible", can)
+		put(sl.orbGlow, "Visible", can)
+		if can then
+			local col = Config.RARITIES[math.floor(t / 0.6) % 5 + 1].color
+			if sl.col ~= col then
+				sl.col = col
+				sl.shade.Color = ColorSequence.new(col:Lerp(Color3.new(1, 1, 1), 0.55), col)
+			end
+			put(sl.glow, "ImageColor3", col)
+			put(sl.orbGlow, "ImageColor3", col)
+			sl.rays.Rotation = t * 30
+			sl.ring.Rotation = t * 60
+			sl.scale.Scale = 1 + 0.06 * math.sin(t * math.pi * 2.4)
+			for i, m in sl.motes do
+				local a = t * math.pi * 4 / 3 + i * math.pi / 2
+				m.Visible = true
+				m.Position = UDim2.new(0.5, math.cos(a) * sl.orbSize * 0.72, 0.5, math.sin(a) * sl.orbSize * 0.72)
+			end
+		else
+			if sl.col ~= false then
+				sl.col = false
+				sl.shade.Color = ColorSequence.new(Color3.fromHex("D8D2E2"), Color3.fromHex("A8A0B8"))
+			end
+			put(sl.scale, "Scale", 1)
+			for _, m in sl.motes do
+				put(m, "Visible", false)
+			end
+		end
 	end
 	PerfMark.finish("hud", t0)
 end)
 
-remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
+remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 	if kind == "orb" then
 		popGain(a, true)
-		toast("Qi orb  +" .. compact(a), Color3.fromHex("9FF5D0"), 1.2)
+		toast({ amt("qi", a, "+") }, Color3.fromHex("9FF5D0"), 1.2)
 		return
 	elseif kind == "pill" then
-		toast("A pill is ready in your furnace!", GOLD, 2.5)
+		toast("Pill ready!", GOLD, 2.5)
 		return
 	elseif kind == "expand" then
-		toast("Your peak grows! New land to build on", Color3.fromHex("9FF5C8"), 3)
+		toast("More land!", Color3.fromHex("9FF5C8"), 3)
 		return
 	elseif kind == "tideSoon" then
-		toast(string.format("A Spirit Tide rises in %d s", a), Color3.fromHex("9FD0FF"), 3)
+		toast(string.format("Spirit Tide in %ds", a), Color3.fromHex("9FD0FF"), 3)
 		return
 	elseif kind == "shopPass" then
-		toast(a .. " is yours. Thank you!", GOLD, 3)
+		toast(a .. " is yours!", GOLD, 3)
 		return
 	elseif kind == "shopQi" then
 		popGain(a, true)
-		toast(b .. "  +" .. compact(a) .. " Qi", GOLD, 2.5)
+		toast({ b, amt("qi", a, "+") }, GOLD, 2.5)
 		return
 	elseif kind == "shopPill" then
-		toast(string.format("Instant Pill: 2x Qi for %d s!", a), GOLD, 2.5)
+		toast("2x Qi!", GOLD, 2.5)
+		return
+	elseif kind == "shopWelcome" then
+		-- after the recruit reveal of its disciple: the forever bonus (`c` = 0.1)
+		task.delay(Config.revealBurst(a) + Config.REVEAL.hold + 1, function()
+			toast({ "+" .. math.floor((c or 0) * 100 + 0.5) .. "%", { icon = "qi", text = "forever!" } }, GOLD, 3)
+		end)
 		return
 	elseif kind == "shopDisciple" then
-		toast((b and "New disciple: " or "New disciple resting: ") .. a .. "!", Config.rarity(a).color, 3)
+		toast(a .. (b and "!" or " (resting)"), Config.rarity(a).color, 3)
 		return
 	elseif kind == "shopGate" then
 		toast(a .. " opens at " .. b, PINK, 2.5)
 		return
 	elseif kind == "shopLimit" then
-		toast("You already have your " .. a .. " from the Shop", Color3.fromHex("9FF5C8"), 2)
+		toast("Already yours", Color3.fromHex("9FF5C8"), 2)
 		return
 	elseif kind == "shopFull" then
-		toast("Your sect is full of stronger disciples", PINK, 2)
+		toast("Sect full", PINK, 2)
 		return
 	elseif kind == "shopOwned" then
-		toast("You already own " .. a, Color3.fromHex("9FF5C8"), 1.6)
+		toast("Already yours", Color3.fromHex("9FF5C8"), 1.6)
 		return
 	elseif kind == "realmLook" then
 		toast(a, GOLD, 4) -- what this realm changed on the peak (Config.realmLookLine)
 		return
 	elseif kind == "tide" then
-		toast(string.format("Spirit Tide! Every sect earns 2x Qi for %d s", a), Color3.fromHex("9FD0FF"), 4)
+		toast("Spirit Tide! 2x Qi", Color3.fromHex("9FD0FF"), 4)
 		return
 	end
 	if kind == "built" then
-		toast("Built: " .. a, Color3.fromHex("9FF5C8"), 1.6)
+		toast(a .. "!", Color3.fromHex("9FF5C8"), 1.6)
 	elseif kind == "offline" then
-		toast(string.format("Your sect gathered %s Qi while you were away", short(a)), Color3.fromHex("9FD0FF"), 5)
+		toast({ "Away", { icon = "qi", text = "+" .. short(a) } }, Color3.fromHex("9FD0FF"), 5)
 	elseif kind == "breakthrough" then
-		toast(a .. " broke through to " .. b .. "!", GOLD, 4)
+		toast(a == player.DisplayName and (b .. "!") or (a .. ": " .. b .. "!"), GOLD, 4)
 	elseif kind == "reincarnate" then
-		toast(string.format("%s begins life %d!", a, b), Color3.fromHex("D9B8FF"), 4)
+		toast(a == player.DisplayName and string.format("Life %d!", b) or string.format("%s: life %d!", a, b), Color3.fromHex("D9B8FF"), 4)
 	end
 end)

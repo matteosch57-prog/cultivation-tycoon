@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Sfx = require(Shared:WaitForChild("Sfx"))
 local PadLook = require(Shared:WaitForChild("PadLook"))
 local Toy = require(Shared:WaitForChild("Toy"))
+local PerfMark = require(Shared:WaitForChild("PerfMark"))
 
 local PREVIEW_RANGE = 18 -- studs (horizontal) from the pad centre where the preview wakes
 local REACH = 2.6 -- the server buys inside this (Main PAD_REACH)
@@ -270,8 +271,12 @@ local function makeCard(pad, kind)
 	end
 	text(1, 22, PadLook.TEXT.title).Text = pad:GetAttribute("Title") or ""
 	local feature = pad:GetAttribute("Feature")
+	local featureLine
 	if feature then
-		text(2, 15, PadLook.TEXT.line).Text = feature -- feature buildings say what they DO
+		-- feature buildings say what they DO, in 2 or 3 words, only up close (less text, mock A)
+		featureLine = text(2, 15, PadLook.TEXT.line)
+		featureLine.Text = feature
+		featureLine.Visible = false
 	end
 	-- a worker hire pad: one dot per worker the building can take, gold for the ones hired
 	local max = pad:GetAttribute("HireMax")
@@ -323,7 +328,7 @@ local function makeCard(pad, kind)
 	ic:qi(32, 32, 1)
 	local amount = part(3, "")
 	local more = part(4, "more")
-	local costText = { need = need, amount = amount, more = more }
+	local costText = { need = need, amount = amount, more = more, feature = featureLine }
 	local free = pad:GetAttribute("FreeText") -- a free pad (the idle chest) says what it does instead of a price
 	if free then
 		row.Visible = false
@@ -760,6 +765,13 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
+-- a property write only when the value changed (R16 rule 4: each BillboardGui write redraws it)
+local function put(obj, prop, value)
+	if obj[prop] ~= value then
+		obj[prop] = value
+	end
+end
+
 -- Card text, affordability and stepping, a few times a second (cheap: a handful of pads)
 local acc = 0
 RunService.Heartbeat:Connect(function(dt)
@@ -768,6 +780,7 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 	acc = 0
+	local t0 = PerfMark.begin()
 	local qi = player:GetAttribute("Qi") or 0
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -814,20 +827,25 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		-- a beam right beside the camera would fill the screen: fade it out up close
 		local camNear = Vector2.new(cam.CFrame.Position.X - pad.Position.X, cam.CFrame.Position.Z - pad.Position.Z).Magnitude < 14
-		rec.beacon.core.Enabled = not camNear
-		rec.beacon.glow.Enabled = not camNear
+		put(rec.beacon.core, "Enabled", not camNear)
+		put(rec.beacon.glow, "Enabled", not camNear)
 		-- far cards shrink so a distant pad never buries the HUD; near ones stay full size
+		-- (in 0.05 steps, so a camera drifting by a stud does not redraw every card)
 		local camDist = (cam.CFrame.Position - pad.Position).Magnitude
-		rec.scale.Scale = math.clamp(40 / math.max(camDist, 1), 0.6, 1)
+		put(rec.scale, "Scale", math.floor(math.clamp(40 / math.max(camDist, 1), 0.6, 1) * 20 + 0.5) / 20)
 		-- up close the building is the focus: the card drops to just above the pad
 		local near = (rec.k or 0) > 0.3
 		if near ~= rec.cardLow then
 			rec.cardLow = near
+			if rec.costText.feature then
+				rec.costText.feature.Visible = near
+			end
 			TweenService:Create(rec.card, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { StudsOffset = Vector3.new(0, near and 2.6 or 5.5, 0) }):Play()
 		end
 		local need = onPad and not ok
-		rec.costText.need.Visible = need
-		rec.costText.more.Visible = need
-		rec.costText.amount.Text = need and fmt(rec.cost - qi) or fmt(rec.cost)
+		put(rec.costText.need, "Visible", need)
+		put(rec.costText.more, "Visible", need)
+		put(rec.costText.amount, "Text", need and fmt(rec.cost - qi) or fmt(rec.cost))
 	end
+	PerfMark.finish("padcards", t0)
 end)

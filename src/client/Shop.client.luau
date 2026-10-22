@@ -26,11 +26,11 @@ local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
-local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8" }
+local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B" }
 -- disciples for sale: a pale tile of their rarity colour
 local function tileColor(key)
 	local it = Config.shopItem(key)
-	if it and it.rarity then
+	if it and it.rarity and not it.qiBonus then
 		return Config.rarity(it.rarity).color:Lerp(Color3.new(1, 1, 1), 0.55)
 	end
 	return Color3.fromHex(TILE[key] or "C9FFE4")
@@ -112,11 +112,15 @@ local PAGES = {
 		items = function()
 			local list = table.clone(Config.SHOP_PASSES)
 			table.insert(list, (Config.shopItem("pill")))
+			-- the Welcome Pouch leads the row until it is bought (it is once per player)
+			if not player:GetAttribute("Limit_welcome") then
+				table.insert(list, 1, (Config.shopItem("welcome")))
+			end
 			return list
 		end,
 	},
 	{ key = "qi", name = "Qi", icon = "pack2", items = products(function(it) return it.seconds ~= nil end) },
-	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(function(it) return it.rarity ~= nil end) },
+	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(function(it) return it.rarity ~= nil and not it.qiBonus end) },
 }
 
 local function computeScale()
@@ -139,7 +143,8 @@ local function tile(parent, key, order, name, line)
 	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
 	holder.LayoutOrder = 1
 	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	if key == BEST then
+	local ribbon = (key == BEST and "Best value") or (key == "welcome" and "Once") or nil
+	if ribbon then
 		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, px(12), 0, -px(2)), Rotation = 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF6B5E"), ZIndex = 5 })
 		Toy.corner(rib, UDim.new(0, px(8)))
 		local st = Instance.new("UIStroke")
@@ -150,14 +155,14 @@ local function tile(parent, key, order, name, line)
 		local pad = Instance.new("UIPadding")
 		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(7)), UDim.new(0, px(7))
 		pad.Parent = rib
-		text(rib, "Best value", px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
+		text(rib, ribbon, px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
 	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = col
 	-- a disciple's name in its rarity colour (the Index and recruit language)
 	local it = Config.shopItem(key)
-	local nameColor = it and it.rarity and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
+	local nameColor = it and it.rarity and not it.qiBonus and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
 	text(col, name, px(17), nameColor, { LayoutOrder = 2 })
 	local lineLabel
 	if key ~= "more" and Config.shopItem(key) and Config.shopItem(key).seconds then
@@ -510,6 +515,119 @@ task.spawn(function()
 		lastPad = here
 		if nudgeGui.Enabled and (os.clock() - nudgeShown > NUDGE_SECONDS or gui.Enabled) then
 			nudgeGui.Enabled = false
+		end
+	end
+end)
+
+---------------------------------------------------------------------------------------------
+-- The Welcome Pouch offer card (mock docs/art/mocks/welcome_pouch_a.jpg, owner pick 2026-10-21):
+-- the server sends "welcomeOffer" once (Config.WELCOME); the card shows what it gives and buys
+-- through the usual prompt. "Not now" closes it; the Boosts tile stays until it is bought. A bought
+-- Pouch plays the recruit reveal for its Elder.
+local offerGui = Instance.new("ScreenGui")
+offerGui.Name = "WelcomeOffer"
+offerGui.ResetOnSpawn = false
+offerGui.IgnoreGuiInset = true
+offerGui.DisplayOrder = 6
+offerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+offerGui.Enabled = false
+offerGui.Parent = playerGui
+
+local function showOffer()
+	local it = Config.shopItem("welcome")
+	if not it or player:GetAttribute("Limit_welcome") then
+		return
+	end
+	offerGui:ClearAllChildren()
+	Toy.S = computeScale()
+	local veil = Instance.new("TextButton")
+	veil.Text = ""
+	veil.AutoButtonColor = false
+	veil.Size = UDim2.fromScale(1, 1)
+	veil.BackgroundColor3 = Color3.fromHex("140E1E")
+	veil.BackgroundTransparency = 0.45
+	veil.BorderSizePixel = 0
+	veil.Parent = offerGui
+	local body = Toy.frame(offerGui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
+	Toy.list(body, false, px(8))
+	local head = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	Toy.list(head, true, px(8))
+	Toy.icon(head, "bag", px(46), { LayoutOrder = 1 })
+	text(head, it.name, px(34), GOLD, { LayoutOrder = 2 })
+	-- what it gives: the Elder (with its aura) + more qi forever
+	local gives = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	Toy.list(gives, true, px(20), { VerticalAlignment = Enum.VerticalAlignment.Bottom })
+	local r = Config.rarity(it.rarity)
+	local left = Toy.frame(gives, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	Toy.list(left, false, px(1))
+	Toy.disciple(left, px(86), it.rarity, { LayoutOrder = 1 })
+	text(left, it.rarity, px(20), r.color, { LayoutOrder = 2 })
+	text(left, string.format("+%d%%", math.floor(r.bonus * 100 + 0.5)), px(14), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	local plusCol = Toy.frame(gives, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	Toy.list(plusCol, false, 0)
+	text(plusCol, "+", px(30), GOLD, { LayoutOrder = 1 })
+	Toy.frame(plusCol, { Size = UDim2.fromOffset(1, px(34)), LayoutOrder = 2 })
+	local right = Toy.frame(gives, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	Toy.list(right, false, px(1))
+	local drop = Toy.frame(right, { Size = UDim2.fromOffset(px(86), px(86)), LayoutOrder = 1 })
+	Toy.icon(drop, "qi", px(60), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local pct = string.format("%d%%", math.floor(it.qiBonus * 100 + 0.5))
+	text(drop, pct, px(22), GOLD, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, px(4), 1, -px(6)), ZIndex = 4 })
+	text(right, "+" .. pct .. " Qi", px(20), Color3.fromHex("9FF5C8"), { LayoutOrder = 2 })
+	text(right, "forever", px(14), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	-- the price button, then "Not now"
+	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(150), px(52)), BUY, px(14))
+	bHolder.LayoutOrder = 3
+	local priceRow, label = Toy.amount(bBtn, "robux", px(26), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local function paint()
+		local t, canBuy = priceText("welcome")
+		label.Text = t
+		local icon = priceRow:FindFirstChild("Currency")
+		if icon then
+			icon.Visible = canBuy
+		end
+	end
+	paint()
+	fetchPrices(paint)
+	local notNow = Instance.new("TextButton")
+	notNow.BackgroundTransparency = 1
+	notNow.AutomaticSize = Enum.AutomaticSize.XY
+	notNow.Size = UDim2.new()
+	notNow.Text = ""
+	notNow.LayoutOrder = 4
+	notNow.Parent = body
+	text(notNow, "Not now", px(15), Color3.fromHex("D9D0E8"))
+	local function closeOffer()
+		offerGui.Enabled = false
+	end
+	notNow.Activated:Connect(closeOffer)
+	veil.Activated:Connect(closeOffer)
+	bBtn.Activated:Connect(function()
+		local _, canBuy = priceText("welcome")
+		if canBuy then
+			remotes.ShopBuy:FireServer("welcome")
+		end
+	end)
+	offerGui.Enabled = true
+	Sfx.play("toast")
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.85
+	sc.Parent = body
+	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+end
+
+remotes.Notify.OnClientEvent:Connect(function(kind, rarity, kept)
+	if kind == "welcomeOffer" then
+		if not gui.Enabled then
+			showOffer()
+		end
+	elseif kind == "shopWelcome" then
+		-- bought: close the card and the shop, and let the recruit reveal show the Elder arrive
+		offerGui.Enabled = false
+		close()
+		local fx = playerGui:FindFirstChild("RecruitFx")
+		if fx then
+			fx:Fire(rarity, kept)
 		end
 	end
 end)

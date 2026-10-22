@@ -1,0 +1,98 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Recruit reveal mocks (2026-10-21, owner: "now the recruit animation, mock it").
+     ?v=a|b|c&t=<seconds> draws one frame (rendered to GIFs by tools in the scratchpad).
+     A Scroll: a jade scroll unrolls and paints the disciple.
+     B Qi orb: an orb flies from the Recruit button, charges through the rarity colours, bursts.
+     C Ladder: a light climbs the nine rarity gems and stops on the roll, which becomes the card.
+     Example roll: Elder (+150%, 1 in 40). Commons would skip the build-up (about 1 s); rarer = longer. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.veil{position:absolute;inset:0;background:#140e1e}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap}
+.abs{position:absolute;left:50%;top:50%;transform-origin:center}
+.tag{position:absolute;left:10px;top:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50}
+</style></head>
+<body><div class="scene" id="s"><div class="veil" id="veil"></div><div id="fx"></div><div class="tag" id="tag"></div></div>
+<script>
+const q=new URLSearchParams(location.search);const v=q.get('v')||'b';const t=parseFloat(q.get('t')||'1.6');
+const ELDER='#be64ff', INK='#1b1420';
+const TIERS=['#c8c8c8','#5ac878','#5096ff','#be64ff','#ffc83c','#6ee1eb','#e6323c','#ff8c28','#ff6edc'];
+const disc=(s,robe)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="${INK}"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="${robe}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/></svg>`;
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(a,b)=>clamp((t-a)/(b-a));               // 0..1 progress of [a,b]
+const back=x=>{const c=1.7;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const out=x=>1-Math.pow(1-x,3);
+const F=document.getElementById('fx');
+let fade=1-seg(2.55,2.85);                           // whole reveal fades out at the end
+document.getElementById('veil').style.opacity=(0.5*out(seg(0,0.3)))*fade;
+function rays(scale,rot,alpha,color){
+  let r='';for(let i=0;i<12;i++)r+=`<div style="position:absolute;left:-14px;top:-190px;width:28px;height:190px;background:linear-gradient(0deg,${color},transparent);transform-origin:50% 100%;transform:rotate(${i*30}deg);clip-path:polygon(35% 0,65% 0,100% 100%,0 100%)"></div>`;
+  return `<div class="abs" style="transform:translate(-50%,-50%) rotate(${rot}deg) scale(${scale});opacity:${alpha};width:0;height:0">${r}</div>`;
+}
+function card(p,y=0){ // the reveal: disciple, name, bonus. p = 0..1 pop
+  const s=back(p);
+  return `<div class="abs" style="transform:translate(-50%,calc(-50% + ${y}px)) scale(${s});opacity:${clamp(p*3)};display:flex;flex-direction:column;align-items:center">
+    ${disc(118,ELDER)}
+    <span class="big" style="font-size:44px;color:${ELDER};--sw:6px;margin-top:-4px">Elder!</span>
+    <span class="big" style="font-size:26px;color:#fff;--sw:5px;display:flex;align-items:center;gap:5px">+150% ${qi(26)}</span></div>`;
+}
+let h='';
+if(v==='a'){
+  document.getElementById('tag').textContent='A: Scroll';
+  const open=out(seg(0.25,0.9)); const w=60+open*400;
+  const appear=back(seg(0,0.3));
+  h+=rays(1+0.2*seg(1.0,2.5),t*25,0.55*seg(1.0,1.3)*fade,'rgba(255,227,107,.55)');
+  h+=`<div class="abs" style="transform:translate(-50%,-50%) scale(${appear});opacity:${fade}">
+    <div style="position:relative;width:${w}px;height:230px;transform:translateX(-50%);left:50%">
+      <div style="position:absolute;inset:14px 0;background:linear-gradient(180deg,#fff7e2,#f3e2b8);border:4px solid ${INK};border-radius:8px"></div>
+      <div style="position:absolute;left:-14px;top:0;width:24px;height:230px;background:#59d39f;border:4px solid ${INK};border-radius:12px"></div>
+      <div style="position:absolute;right:-14px;top:0;width:24px;height:230px;background:#59d39f;border:4px solid ${INK};border-radius:12px"></div>
+    </div></div>`;
+  const ink=seg(0.85,1.35);
+  h+=`<div class="abs" style="transform:translate(-50%,-62%) scale(${0.4+ink*0.8});opacity:${ink*0.85*fade};width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,${ELDER}88,${ELDER}00 70%)"></div>`;
+  h+=`<div style="opacity:${fade}">${card(seg(1.0,1.45),-6)}</div>`;
+}
+if(v==='b'){
+  document.getElementById('tag').textContent='B: Qi orb (recommended)';
+  // fly from the Recruit button (bottom right) to the centre on an arc
+  const f=out(seg(0,0.45)); const x0=330,y0=150; const x=x0*(1-f), y=y0*(1-f)-Math.sin(f*Math.PI)*60;
+  const charge=seg(0.45,1.45); const steps=4; // Elder = 4th colour
+  const idx=Math.min(steps-1,Math.floor(charge*steps*0.999)); const col=t<0.45?TIERS[0]:TIERS[idx];
+  const shake=charge>0&&t<1.45?Math.sin(t*70)*(2+idx*2):0;
+  const pulse=1+0.12*Math.abs(Math.sin(charge*steps*Math.PI));
+  const size=(40+f*50)*pulse*(1+charge*0.25);
+  if(t<1.5){
+    h+=`<div class="abs" style="transform:translate(calc(-50% + ${x+shake}px),calc(-50% + ${y}px));width:${size}px;height:${size}px;border-radius:50%;border:4px solid ${INK};background:radial-gradient(circle at 35% 30%,#fff 0 12%,${col} 45%,${col})"></div>`;
+    for(let i=0;i<6&&charge>0;i++){const a=i/6*6.28+t*4;const r=size*0.9;h+=`<div class="abs" style="transform:translate(calc(-50% + ${Math.cos(a)*r}px),calc(-50% + ${Math.sin(a)*r}px));width:8px;height:8px;border-radius:50%;background:${col};opacity:.8"></div>`;}
+  }
+  const burst=seg(1.45,1.85);
+  if(burst>0&&burst<1){
+    h+=`<div class="abs" style="transform:translate(-50%,-50%) scale(${0.3+burst*3});width:120px;height:120px;border-radius:50%;border:${10*(1-burst)}px solid #fff;opacity:${1-burst}"></div>`;
+    for(let i=0;i<10;i++){const a=i/10*6.28;const r=40+burst*170;h+=`<div class="abs" style="transform:translate(calc(-50% + ${Math.cos(a)*r}px),calc(-50% + ${Math.sin(a)*r}px));width:12px;height:12px;border-radius:50%;background:${ELDER};border:3px solid ${INK};opacity:${1-burst}"></div>`;}
+  }
+  h+=rays(1+0.2*seg(1.5,2.5),t*25,0.6*seg(1.45,1.7)*fade,`${ELDER}aa`);
+  h+=`<div style="opacity:${fade}">${card(seg(1.5,1.9))}</div>`;
+}
+if(v==='c'){
+  document.getElementById('tag').textContent='C: Rarity ladder';
+  // a light steps up the gems; ticks slow down near the stop (Elder = index 3)
+  const ticks=[0.35,0.62,0.95,1.4]; let at=-1; ticks.forEach((k,i)=>{if(t>=k)at=i});
+  const ladderOut=seg(1.75,2.0);
+  let g='';
+  TIERS.forEach((c,i)=>{const on=i<=at; const now=i===at; const pop=now?1+0.35*(1-clamp((t-ticks[i])/0.2)):1;
+    g+=`<div style="width:30px;height:30px;transform:rotate(45deg) scale(${pop});border:4px solid ${INK};border-radius:6px;background:${on?c:'#3a2d40'};box-shadow:${now?`0 0 18px 6px ${c}`:'none'}"></div>`;});
+  h+=`<div class="abs" style="transform:translate(-50%,calc(-50% - 120px));opacity:${(1-ladderOut)*seg(0,0.25)};display:flex;gap:16px">${g}</div>`;
+  h+=`<div class="abs big" style="transform:translate(-50%,calc(-50% - 82px));font-size:15px;color:#fff2c4;--sw:3px;opacity:${seg(1.4,1.6)*(1-ladderOut)}">1 in 40</div>`;
+  h+=rays(1+0.2*seg(1.6,2.5),t*25,0.6*seg(1.55,1.8)*fade,`${ELDER}aa`);
+  h+=`<div style="opacity:${fade}">${card(seg(1.55,2.0),10)}</div>`;
+}
+// the HUD's Recruit button stays at the bottom right (pressed at t = 0)
+const press=t<0.12?0.92:1;
+h+=`<div style="position:absolute;right:120px;bottom:22px;transform:rotate(-2deg) scale(${press});opacity:${0.35+0.65*(1-seg(0.1,0.3))+0.65*seg(2.6,2.85)}"><div style="position:relative;width:150px;height:56px"><div style="position:absolute;inset:0;transform:translateY(4px);background:${INK};border-radius:14px"></div><div style="position:absolute;inset:0;background:#b06bff;border:3px solid ${INK};border-radius:14px;display:flex;align-items:center;justify-content:center;gap:6px">${disc(32,'#5096ff')}<span class="big" style="font-size:20px">Recruit</span></div></div></div>`;
+F.innerHTML=h;
+</script></body></html>
