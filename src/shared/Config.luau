@@ -470,7 +470,7 @@ Config.SHOP_PASSES = {
 Config.SHOP_PRODUCTS = {
 	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
 	-- Elder plus `qiBonus` more qi forever (kept through every life); offered once by WELCOME
-	{ key = "welcome", id = 0, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
+	{ key = "welcome", id = 3721094927, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
 	{ key = "pill", id = 3721095019, name = "Instant Pill", line = "2x Qi for 60 s now" },
 	{ key = "pack1", id = 3721095093, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
 	{ key = "pack2", id = 3721095259, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
