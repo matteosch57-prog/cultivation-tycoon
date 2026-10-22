@@ -83,18 +83,19 @@ local function realmAura(folder, hrp, hum, tier, color)
 	local R = 7 + 4 * k -- glyph diameter, studs
 	local ground = holder(folder, hrp, "AuraGround", Vector3.new(1, 0.1, 1), feet)
 	-- the glyph: two overlapping at any time, turning slowly
-	flat(ground, {
+	local glyph = flat(ground, {
 		Name = "Glyph",
 		Texture = TEX .. "forcefield_vortex_main.dds",
 		Color = ColorSequence.new(color, pale),
 		Size = NumberSequence.new(R),
 		Transparency = HOLD,
-		Brightness = 1.5 + k,
+		Brightness = 2.5 + k,
 		Lifetime = NumberRange.new(4),
 		Rate = 0.6,
 		Rotation = NumberRange.new(0, 360),
 		RotSpeed = NumberRange.new(25),
 	})
+	task.defer(glyph.Emit, glyph, 1) -- on screen at once, not after the first emit tick (realms 2-3 looked empty)
 	-- motes rising from the circle's edge
 	local rim = holder(folder, hrp, "AuraRim", Vector3.new(R * 0.8, 0.1, R * 0.8), feet)
 	emitter(rim, {

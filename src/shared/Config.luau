@@ -821,7 +821,7 @@ Config.TITLE_SEE = 110 -- studs: farther titles are hidden
 -- (owner: "like 20 yellow then 20 red then 20 blue and with more aura each time... easily to 100").
 -- After the last band the halo stays full.
 Config.AURA_BEAD_BAND = 20
-Config.AURA_BEAD_COLORS = { Color3.fromHex("FFD36A"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF"), Color3.fromHex("B46BFF"), Color3.fromHex("E8FFF6") } -- rebirths 1-20, 21-40, 41-60, 61-80, 81-100
+Config.AURA_BEAD_COLORS = { Color3.fromHex("FFD36A"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF"), Color3.fromHex("B46BFF"), Color3.fromHex("BFF2E0") } -- rebirths 1-20, 21-40, 41-60, 61-80, 81-100
 function Config.ordinal(n)
 	local t = n % 100
 	local suffix = (t >= 11 and t <= 13) and "th" or ({ "st", "nd", "rd" })[n % 10] or "th"
