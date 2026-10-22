@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Recruit x10 mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Recruit x10 (owner 2026-10-22: "recruiting too easy ... add a x10"). ?opt=A|B|C, phone 844x390.
+     The seal is the HUD's formation seal (recruit_button_c). Rendered to recruit_x10_<opt>.jpg (Edge headless). -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420}
+.scene{position:relative;width:100vw;height:100vh;background:url('altar_bg.jpg') center/cover}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:4px var(--ink);paint-order:stroke fill;line-height:1.05}
+.abs{position:absolute}
+.lbl{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;white-space:nowrap}
+.toy{border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38)}
+.stick{position:absolute;left:5%;bottom:8%;width:110px;height:110px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:4%;bottom:8%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+</style></head>
+<body><div class="scene"><div class="stick"></div><div class="jump"></div><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/></svg>`;
+// the formation seal: purple disc, dashed rune ring, pearl
+const seal=(s,label,price,glow)=>`<div style="display:flex;flex-direction:column;align-items:center">
+ <div style="position:relative;width:${s}px;height:${s}px">
+  ${glow?`<div class="abs" style="inset:-18px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35),rgba(255,255,255,0) 70%)"></div>`:''}
+  <svg width="${s}" height="${s}" viewBox="0 0 100 100" style="position:relative">
+   <circle cx="50" cy="50" r="46" fill="#a070f0" stroke="${INK}" stroke-width="6"/>
+   <circle cx="50" cy="50" r="34" fill="none" stroke="#e2d0ff" stroke-width="3" stroke-dasharray="8 6"/>
+   ${[0,1,2,3,4,5].map(i=>{const a=i/6*Math.PI*2;return `<circle cx="${50+Math.cos(a)*34}" cy="${50+Math.sin(a)*34}" r="3.2" fill="#fff"/>`}).join('')}
+   <circle cx="50" cy="50" r="18" fill="#f2f2f6" stroke="${INK}" stroke-width="4"/><circle cx="44" cy="44" r="6" fill="#fff"/>
+  </svg></div>
+ <span class="big" style="font-size:19px;margin-top:3px">${label}</span>
+ <span class="big" style="font-size:15px;display:flex;gap:4px;align-items:center">${qi(15)}${price}</span></div>`;
+const chip=(t,on,w)=>`<div class="toy" style="width:${w||44}px;height:30px;border-radius:999px;background:${on?'#ffd34d':'#3a2c44'};display:flex;align-items:center;justify-content:center"><span class="big" style="font-size:16px;-webkit-text-stroke:3px ${INK}">${t}</span></div>`;
+let hud='',lbl='';
+if(opt==='A'){
+ // A: the seal stays x1; a small gold x10 seal sits above it with the total for ten
+ hud=`<div class="abs" style="right:120px;bottom:30px">${seal(86,'Recruit','1.2M',true)}</div>
+ <div class="abs" style="right:132px;bottom:190px;display:flex;flex-direction:column;align-items:center">
+  <div class="toy" style="width:62px;height:62px;border-radius:50%;background:#ffd34d;display:flex;align-items:center;justify-content:center"><span class="big" style="font-size:22px">x10</span></div>
+  <span class="big" style="font-size:13px;display:flex;gap:3px;align-items:center;margin-top:2px">${qi(13)}31M</span></div>`;
+ lbl='A: a small gold x10 seal above the Recruit seal (shows the price of the next ten)';
+}else if(opt==='B'){
+ // B: one seal, an x1 / x10 switch under it; the label and price follow the switch
+ hud=`<div class="abs" style="right:120px;bottom:52px">${seal(86,'Recruit x10','31M',true)}</div>
+ <div class="abs" style="right:128px;bottom:14px;display:flex;gap:6px">${chip('x1',false)}${chip('x10',true)}</div>`;
+ lbl='B: an x1 / x10 switch under the seal (x10 picked: label and price follow)';
+}else{
+ // C: hold the seal: one recruit, then after 0.6 s it rolls ten in a row; a ring fills while held
+ hud=`<div class="abs" style="right:120px;bottom:30px">${seal(86,'Hold for x10','1.2M',true)}</div>
+ <svg class="abs" style="right:116px;bottom:76px" width="104" height="104" viewBox="0 0 104 104"><circle cx="52" cy="52" r="48" fill="none" stroke="#ffd34d" stroke-width="7" stroke-dasharray="${2*Math.PI*48*0.6} 999" transform="rotate(-90 52 52)" stroke-linecap="round"/></svg>`;
+ lbl='C: tap = one recruit, hold = ten (a gold ring fills while you hold)';
+}
+document.getElementById('hud').innerHTML=hud;document.getElementById('lbl').textContent=lbl;
+</script></body></html>

@@ -145,7 +145,12 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def cmult(r=None):
         r = S["realm"] if r is None else r
         lf = int(C["REALM_COST_LATE_FROM"])
-        return C["REALM_COST_MULT"] ** (min(r, lf) - 1) * C["REALM_COST_LATE"] ** max(0, r - lf)
+        m = C["REALM_COST_MULT"] ** (min(r, lf) - 1) * C["REALM_COST_LATE"] ** max(0, r - lf)
+        # PRICE_PL_EXP (proposal lever): prices follow the Past Lives multiplier ^ this, so a rich soul
+        # still has to choose what to build first
+        if C.get("PRICE_PL_EXP"):
+            m *= (C["PAST_LIVES_MULT"] ** max(0, S["soul"] - (C["REINC_REALM"] - 1))) ** C["PRICE_PL_EXP"]
+        return m
 
     def max_disc():
         return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(1 for p in C["SLOT_PADS"] if p in S["owned"])
@@ -202,7 +207,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         S["soul"] = max(S["soul"], S["realm"])
         S["life"] += 1
         # LAND_HALF (proposal lever): a new life starts at half the deepest realm, fully built
-        land = max(1, int(S["soul"] * C["LAND_HALF"])) if C.get("LAND_HALF") else 1
+        share = C.get("LAND_HALF") or C.get("REINC_LAND_SHARE")  # Config.REINC_LAND_SHARE (D40)
+        land = max(1, int(S["soul"] * share)) if share else 1
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
         S["owned"] = {p["id"] for p in C["PADS"]} if lvl("foundation") or land > 1 else set()
         keep = sorted(S["disciples"], reverse=True)[:C["SWORN_BASE"] + lvl("sworn")]
@@ -288,9 +294,13 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                                 return out, led_src, led_sink
                     continue
                 target = min(choices, key=lambda p: p["cost"])
-                tcost = target["cost"] * cmult()
+                # PRICE_FLOOR_S (proposal lever): a building costs at least this many seconds of income
+                floor = base() * C.get("PRICE_FLOOR_S", 0)
+                tcost = max(target["cost"] * cmult(), floor)
                 hire = hires()
-                rc = C["RECRUIT_BASE"] * cmult() * (1 + S["realm_recruits"] * C["RECRUIT_GROWTH"])
+                # RECRUIT_POW (proposal lever): each recruit in a realm costs x RECRUIT_POW the last (else +GROWTH, linear)
+                n_r = S["realm_recruits"]
+                rc = C["RECRUIT_BASE"] * cmult() * (C["RECRUIT_POW"] ** n_r if C.get("RECRUIT_POW") else 1 + n_r * C["RECRUIT_GROWTH"])
                 if "hall" in S["owned"] and rc <= st["recruit"] * tcost and S["qi"] >= rc:
                     sink("recruits", rc)
                     S["realm_recruits"] += 1
@@ -309,8 +319,22 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     walking = walking if walking is not None else s + walk
                     if s >= walking:
                         walking = None
+                        # choice metrics: how many open pads could be paid right now, how long since the last buy
+                        afford = sum(1 for p in choices if max(p["cost"] * cmult(), floor) <= S["qi"])
+                        out.setdefault("buys", []).append(dict(life=S["life"], realm=S["realm"], afford=afford, open=len(choices),
+                                                               wait=played - out.get("last_buy", played)))
+                        out["last_buy"] = played
                         sink("buildings", tcost)
                         S["owned"].add(target["id"])
+                        if len(choices) == 1:  # that was the realm's last building: how many recruits does a minute buy now?
+                            budget, n, k = base() * 60, S["realm_recruits"], 0
+                            while k < 500:
+                                rck = C["RECRUIT_BASE"] * cmult() * (C.get("RECRUIT_POW", 0) and C["RECRUIT_POW"] ** (n + k) or (1 + (n + k) * C["RECRUIT_GROWTH"]))
+                                if rck > budget:
+                                    break
+                                budget -= rck
+                                k += 1
+                            out.setdefault("spam", []).append(dict(life=S["life"], realm=S["realm"], per_min=k))
                         out["milestones"].setdefault(target["id"], played)
     return out, led_src, led_sink
 
