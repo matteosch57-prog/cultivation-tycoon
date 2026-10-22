@@ -580,14 +580,9 @@ local function build()
 	rst.Thickness = px(3)
 	rst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	rst.Parent = rBtn
-	-- the face's soft light (a radial lift from the glow piece) and its glass cap
+	-- the face's soft light (a radial lift from the glow piece). No glass cap on this round seal
+	-- (owner 2026-10-22: the cap "looks weird on round shape"); the square toy buttons keep theirs.
 	Toy.atlasPiece(rBtn, "glow", SEAL * 0.95, SEAL * 0.95, Color3.fromHex("D9B8FF"), 0.35, { Position = UDim2.fromScale(0.5, 0.42) })
-	local cap = frame(rBtn, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0.05), Size = UDim2.fromScale(0.84, 0.44), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1) })
-	corner(cap, UDim.new(0.5, 0))
-	local capG = Instance.new("UIGradient")
-	capG.Rotation = 90
-	capG.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0.98) })
-	capG.Parent = cap
 	local ring = Toy.atlasPiece(rBtn, "ring", SEAL - px(12), SEAL - px(12), Color3.new(1, 1, 1), 0.1)
 	-- the orb: a glow, the ball, its highlight, four motes circling
 	local ORB = px(44)

@@ -249,14 +249,6 @@ Config.ROADS = {
 -- sooner, the fast-then-hard steps kept; never above 0.10 (0.20 flattens D25's step).
 Config.DISTRICT_BONUS = 0.05
 Config.DISTRICT_NAMES = { fields = "Fields", dao = "Alchemy", disciples = "Disciple" }
--- the price card's line for a district building (nil for the heart): "+5% per Fields building"
-function Config.districtLine(pad)
-	local name = pad.district and Config.DISTRICT_NAMES[pad.district]
-	if not name or pad.income <= 0 then
-		return nil
-	end
-	return string.format("+%d%% per %s building", math.floor(Config.DISTRICT_BONUS * 100 + 0.5), name)
-end
 function Config.districtMult(owned, pad)
 	if not pad.district or pad.district == "heart" or pad.income <= 0 then -- the heart is the hub, not a resource district
 		return 1

@@ -344,12 +344,15 @@ local function padCard(pad)
 	if not it or cards[pad] then
 		return
 	end
-	local big = key == "x2" -- the market's eye catcher at its gate
+	-- a small tag low over the pad, name and price only (mock card_text_shop A, owner 2026-10-22:
+	-- the text hid the disciples, "the models are enough"). Only the passes at the gate, which have
+	-- no model of their own, keep a small icon.
+	local iconSize = (key == "x2" or key == "vip") and 40 or nil
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "ShopCard"
 	bb.Adornee = pad
-	bb.Size = UDim2.fromOffset(260, big and 200 or 150)
-	bb.StudsOffset = Vector3.new(0, big and 7 or 5.5, 0)
+	bb.Size = UDim2.fromOffset(260, iconSize and 90 or 50)
+	bb.StudsOffset = Vector3.new(0, 2.6, 0)
 	bb.MaxDistance = 80 -- every island has ten cards: only the near ones draw
 	bb.AlwaysOnTop = true -- same as the build pad cards (Build.client)
 	bb.LightInfluence = 0
@@ -374,11 +377,13 @@ local function padCard(pad)
 		t.Parent = f
 		return t
 	end
-	local holder = Toy.frame(f, { Size = UDim2.fromOffset(big and 104 or 62, big and 104 or 62), LayoutOrder = 0 })
-	local bob = Toy.icon(holder, key, big and 104 or 62)
-	line(1, big and 28 or 22, big and Color3.fromHex("FFE36B") or PadLook.TEXT.title, it.name)
-	line(2, 15, PadLook.TEXT.line, it.line)
-	local priceRow, price = Toy.amount(f, "robux", 26, PadLook.TEXT.shop, { LayoutOrder = 3 })
+	local bob
+	if iconSize then
+		local holder = Toy.frame(f, { Size = UDim2.fromOffset(iconSize, iconSize), LayoutOrder = 0 })
+		bob = Toy.icon(holder, key, iconSize)
+	end
+	line(1, 16, PadLook.TEXT.title, it.name)
+	local priceRow, price = Toy.amount(f, "robux", 17, PadLook.TEXT.shop, { LayoutOrder = 3 })
 	cards[pad] = { bb = bb, price = price, robux = priceRow:FindFirstChild("Currency"), key = key, icon = bob, phase = pad.Position.X * 0.37 }
 	bb.Parent = playerGui
 end
@@ -418,7 +423,7 @@ RunService.RenderStepped:Connect(function()
 	local eye = cam.CFrame.Position
 	for pad, c in cards do
 		local at = pad.Position
-		if (at - eye).Magnitude < c.bb.MaxDistance and PerfMark.onScreen(cam, at, 8) then
+		if c.icon and (at - eye).Magnitude < c.bb.MaxDistance and PerfMark.onScreen(cam, at, 8) then
 			c.icon.Position = UDim2.fromOffset(0, math.sin(t * 2 + c.phase) * 4)
 		end
 	end
