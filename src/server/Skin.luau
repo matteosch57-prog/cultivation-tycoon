@@ -105,6 +105,23 @@ local function lanterns(model, cf, size, n)
 	end
 end
 
+-- the Main Hall grows with the life (Config.SKIN_HALL_SCALE), about the middle of its front edge
+function Skin.scale(model, pad, lives, frame)
+	if not pad.id:match("^mainhall%d$") then
+		return
+	end
+	local k = Config.SKIN_HALL_SCALE[math.min(lives or 1, #Config.SKIN_HALL_SCALE)]
+	if k == 1 or not model:FindFirstChildWhichIsA("BasePart", true) then
+		return
+	end
+	local at = frame * CFrame.new(pad.x or 0, 0, pad.z or 0)
+	model.WorldPivot = at
+	local cf, size = model:GetBoundingBox()
+	local front = at:PointToObjectSpace(cf.Position).Z + size.Z / 2
+	model.WorldPivot = at * CFrame.new(0, 0, front)
+	model:ScaleTo(k)
+end
+
 -- `frame` = the peak frame (+Z faces the hub); the Main Hall stands at its pad facing +Z
 function Skin.extras(model, pad, realm, lives, frame)
 	local level = Config.skinLevel(realm, lives)
