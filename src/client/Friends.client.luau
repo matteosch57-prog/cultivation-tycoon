@@ -140,7 +140,8 @@ local function openCard()
 		end)
 		busy = false
 		if ok and res == "claimed" then
-			Sfx.play("smallBell")
+			Toy.reward(claimBtn, { sound = "smallBell" })
+			task.wait(0.45)
 			closeCard()
 		elseif ok and res == "notMember" then
 			Sfx.play("deny")

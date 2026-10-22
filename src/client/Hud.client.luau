@@ -198,28 +198,7 @@ local function toy(parent, size, color, radius)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
 	Toy.glass(btn, radius)
-	-- feel: hover grows it a touch, press sinks it onto its shadow and squishes, release springs
-	local sc = Instance.new("UIScale")
-	sc.Parent = holder
-	local function to(s, t, style)
-		TweenService:Create(sc, TweenInfo.new(t, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = s }):Play()
-	end
-	btn.MouseEnter:Connect(function()
-		to(1.06, 0.12)
-	end)
-	btn.MouseButton1Down:Connect(function()
-		btn.Position = UDim2.fromOffset(0, px(3))
-		to(0.92, 0.06)
-	end)
-	local function up()
-		btn.Position = UDim2.new()
-		to(1, 0.35, Enum.EasingStyle.Back)
-	end
-	btn.MouseButton1Up:Connect(up)
-	btn.MouseLeave:Connect(up)
-	btn.Activated:Connect(function()
-		Sfx.play("click")
-	end)
+	Toy.feel(btn, { scale = holder, squash = { btn, shadow } }) -- sound, buzz and jelly (shared with every screen)
 	return holder, btn
 end
 
@@ -687,17 +666,7 @@ local function build()
 	hover(rBtn)
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
 	-- press feel, like the toy buttons
-	rBtn.MouseButton1Down:Connect(function()
-		seal.Position = UDim2.fromOffset(0, px(3))
-	end)
-	for _, ev in { rBtn.MouseButton1Up, rBtn.MouseLeave } do
-		ev:Connect(function()
-			seal.Position = UDim2.new()
-		end)
-	end
-	rBtn.Activated:Connect(function()
-		Sfx.play("click")
-	end)
+	Toy.feel(rBtn, { squash = { rBtn, shadow }, hover = false })
 
 	-- next goal: top right, under Roblox's own buttons
 	local goal = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY, Rotation = 2 })

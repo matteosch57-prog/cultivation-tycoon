@@ -361,6 +361,7 @@ local function build(away, summons, mode)
 			state = "hidden",
 			bob = i * 0.7,
 		}
+		Toy.feel(face, { hover = false })
 		face.Activated:Connect(function()
 			task.spawn(openBall, b)
 		end)
@@ -380,6 +381,7 @@ local function build(away, summons, mode)
 			return
 		end
 		busy = true
+		Toy.reward(btn, { sound = "land" })
 		for _, b in balls do -- whatever is still closed opens now, quickly
 			if b.state == "closed" then
 				openBall(b)

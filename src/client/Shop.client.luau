@@ -215,7 +215,11 @@ local function freeTile(parent)
 			return remotes.ClaimShopFree:InvokeServer()
 		end)
 		busy = false
-		Sfx.play(ok and gain and "buyChime" or "deny")
+		if ok and gain then
+			Toy.reward(pBtn)
+		else
+			Sfx.play("deny")
+		end
 	end
 	btn.Activated:Connect(claim)
 	pBtn.Activated:Connect(claim)
@@ -643,6 +647,7 @@ local function showOffer()
 	notNow.LayoutOrder = 4
 	notNow.Parent = body
 	text(notNow, "Not now", px(15), Color3.fromHex("D9D0E8"))
+	Toy.feel(notNow)
 	local function closeOffer()
 		offerGui.Enabled = false
 	end

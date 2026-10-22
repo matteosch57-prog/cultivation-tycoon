@@ -183,8 +183,8 @@ local function build()
 		local bar = frame(x, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(px(10), px(2.5)), Rotation = rot, BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 6 })
 		Toy.corner(bar, UDim.new(1, 0))
 	end
+	Toy.feel(x)
 	x.Activated:Connect(function()
-		Sfx.play("click")
 		dismissed = workspace:GetAttribute("AltarUntil") or 0
 		row.Visible = false
 		guideToAltar(false)

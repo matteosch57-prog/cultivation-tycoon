@@ -1,0 +1,174 @@
+<title>Button Feel Picks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap">
+<style>
+/* Layout: one column of tap-to-try rows, game HUD look (ink outline, solid shadow, glass cap) over the realm sky */
+:root{
+  --sky1:#2B2140; --sky2:#3E2F5C; --ink:#1B1420; --jade:#3FD9A0; --gold:#FFC23D; --coral:#FF7A6B;
+  --violet:#A070F0; --text:#FFFFFF; --muted:#CBBFD6; --card:#2A2036;
+  --display:"Fredoka","FredokaOne","Baloo 2",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{background:var(--sky1)}
+body{background:linear-gradient(180deg,var(--sky2),var(--sky1) 60%);color:var(--text);font-family:var(--display);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;min-height:100%}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:22px}
+h1{font-size:26px;margin:0;font-weight:700;text-wrap:balance}
+.sub{color:var(--muted);font-size:15px;margin:4px 0 0;font-weight:500;max-width:60ch}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{font:600 13px var(--display);color:var(--muted);background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.pill[aria-pressed="true"]{color:var(--ink);background:var(--jade)}
+section{background:var(--card);border:3px solid var(--ink);border-radius:20px;padding:18px;display:grid;gap:14px;box-shadow:0 5px 0 var(--ink)}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tag{font-weight:700;font-size:22px;color:var(--gold);-webkit-text-stroke:1px var(--ink)}
+.name{font-weight:700;font-size:20px}
+.what{color:var(--muted);font-size:14px;font-weight:500;margin:0;max-width:62ch}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:10px 0 6px}
+.who{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+
+/* the toy button: holder (scale) > shadow + face (sinks) > glass cap */
+.toy{position:relative;width:var(--w,150px);height:var(--h,52px);border:0;background:none;padding:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transform-origin:50% 60%}
+.toy:focus-visible{outline:3px solid var(--jade);outline-offset:6px;border-radius:18px}
+.toy .sh{position:absolute;inset:0;transform:translateY(4px);background:var(--ink);border-radius:var(--r,14px)}
+.toy .face{position:absolute;inset:0;background:var(--c,var(--jade));border:3px solid var(--ink);border-radius:var(--r,14px);overflow:hidden;display:grid;place-items:center;transition:transform .06s}
+.toy .face::before{content:"";position:absolute;left:5%;top:5%;width:90%;height:46%;border-radius:calc(var(--r,14px) - 3px);background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,.22) 60%,rgba(255,255,255,.03))}
+.toy .lbl{position:relative;font-weight:700;font-size:var(--fs,22px);color:#fff;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill}
+.toy.down .face{transform:translateY(3px)}
+.toy .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.round{--w:84px;--h:84px;--r:50%;--c:var(--violet)}
+.round .face::before{display:none}
+.orb{position:relative;width:42px;height:42px;border-radius:50%;border:3px solid var(--ink);background:radial-gradient(circle at 35% 30%,#fff 0 18%,var(--jade) 60%)}
+.sq{--w:56px;--h:56px;--r:14px}
+.ic{position:relative;width:26px;height:26px}
+
+.ring{position:absolute;pointer-events:none;border:3px solid #fff;border-radius:var(--r,14px);inset:0}
+.spark,.coin{position:fixed;pointer-events:none;z-index:20}
+.spark{width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px var(--gold)}
+.coin{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink);background:radial-gradient(circle at 35% 30%,#fff 0 15%,var(--jade) 55%)}
+.rays{position:absolute;left:50%;top:50%;width:260px;height:260px;margin:-130px 0 0 -130px;pointer-events:none;opacity:0;
+  background:repeating-conic-gradient(rgba(255,226,107,.55) 0 10deg,transparent 10deg 30deg);border-radius:50%;
+  -webkit-mask:radial-gradient(circle,#000 20%,transparent 68%);mask:radial-gradient(circle,#000 20%,transparent 68%)}
+.counter{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:20px;background:var(--ink);border-radius:999px;padding:4px 12px 4px 6px}
+.counter .dot{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 15%,var(--jade) 55%);border:2px solid #000}
+.stage{position:relative;display:grid;place-items:center;padding:30px 0 14px;overflow:visible}
+.notes{color:var(--muted);font-size:13px;font-weight:500;line-height:1.5;margin:0}
+.notes b{color:var(--text)}
+@media (prefers-reduced-motion:reduce){.toy .face{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>How should a click feel?</h1>
+    <p class="sub">Tap each button. Every pick adds a press sound and a phone buzz (Roblox UIClick haptic). Pick one for all buttons, and one for claim moments.</p>
+  </header>
+  <div class="bar" role="group" aria-label="Preview options">
+    <button class="pill" id="snd" aria-pressed="true">Sound on</button>
+    <button class="pill" id="buzz" aria-pressed="true">Buzz on (Android)</button>
+  </div>
+
+  <section data-style="A">
+    <div class="head"><span class="tag">A</span><span class="name">Squish</span></div>
+    <p class="what">Sinks onto its shadow and squeezes on touch, springs back with a small overshoot. Sound and buzz on touch, not on release, so it feels instant.</p>
+    <div class="row"></div>
+  </section>
+
+  <section data-style="B">
+    <div class="head"><span class="tag">B</span><span class="name">Squish + glint</span></div>
+    <p class="what">A, plus the face flashes white for a blink and a thin ring pops off the edge on release.</p>
+    <div class="row"></div>
+  </section>
+
+  <section data-style="C">
+    <div class="head"><span class="tag">C</span><span class="name">Jelly</span></div>
+    <p class="what">Squashes wide on touch, then wobbles tall and settles like jelly. The most playful; Pet Simulator style.</p>
+    <div class="row"></div>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">Claim</span><span class="name">Reward moments</span></div>
+    <p class="what">For Claim, chests, gifts. Pick one. Both use a stronger buzz and the chime.</p>
+    <div class="head"><span class="tag" style="font-size:18px">X</span><span class="name" style="font-size:17px">Burst</span><span class="counter" id="cx"><span class="dot"></span><span>1,240</span></span></div>
+    <div class="stage" id="stageX"></div>
+    <div class="head"><span class="tag" style="font-size:18px">Y</span><span class="name" style="font-size:17px">Rays + fly to counter</span><span class="counter" id="cy"><span class="dot"></span><span>1,240</span></span></div>
+    <div class="stage" id="stageY"></div>
+  </section>
+
+  <p class="notes"><b>Research:</b> Roblox's HapticEffect (UIClick, UINotification) is fully released on iPhone, Android and gamepads since Sept 2025; one shared effect per type, played on touch. Top simulators (Pet Simulator 99, Adopt Me) all use press-down sound + squish + spring. This page buzzes only on Android browsers; iPhone browsers block vibration, the game itself will buzz on both.</p>
+</div>
+
+<script>
+let sound=true,buzz=true,ac;
+const $=s=>document.querySelector(s);
+$('#snd').onclick=e=>{sound=!sound;e.target.setAttribute('aria-pressed',sound);e.target.textContent=sound?'Sound on':'Sound off'};
+$('#buzz').onclick=e=>{buzz=!buzz;e.target.setAttribute('aria-pressed',buzz);e.target.textContent=buzz?'Buzz on (Android)':'Buzz off'};
+function ctx(){if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();return ac}
+function tick(pitch=1){if(!sound)return;const a=ctx(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+  o.type='triangle';o.frequency.setValueAtTime(900*pitch*(0.96+Math.random()*.08),t);o.frequency.exponentialRampToValueAtTime(420*pitch,t+.06);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.09);
+  o.connect(g).connect(a.destination);o.start(t);o.stop(t+.1)}
+function chime(){if(!sound)return;const a=ctx(),t=a.currentTime;[784,988,1175,1568].forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.value=f;
+  g.gain.setValueAtTime(.0001,t+i*.06);g.gain.exponentialRampToValueAtTime(.22,t+i*.06+.01);g.gain.exponentialRampToValueAtTime(.0001,t+i*.06+.7);o.connect(g).connect(a.destination);o.start(t+i*.06);o.stop(t+i*.06+.75)})}
+function vib(p){if(buzz&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+
+function make(parent,{label,cls='',c,w,h,fs,inner}){
+  const b=document.createElement('button');b.className='toy '+cls;
+  if(c)b.style.setProperty('--c',c);if(w)b.style.setProperty('--w',w);if(h)b.style.setProperty('--h',h);if(fs)b.style.setProperty('--fs',fs);
+  b.innerHTML='<span class="sh"></span><span class="face">'+(inner||'<span class="lbl">'+label+'</span>')+'<span class="flash"></span></span>';
+  b.setAttribute('aria-label',label);parent.appendChild(b);return b}
+const ICON='<svg class="ic" viewBox="0 0 24 24" fill="#fff" stroke="#1B1420" stroke-width="2"><path d="M4 7h16l-1.5 12h-13z"/><path d="M8 7a4 4 0 0 1 8 0" fill="none"/></svg>';
+
+function anim(el,frames,ms,ease='cubic-bezier(.34,1.56,.64,1)'){el.getAnimations().forEach(a=>a.cancel());return el.animate(frames,{duration:ms,easing:ease,fill:'forwards'})}
+const STYLES={
+  A:{down(b){anim(b,[{transform:'scale(.92)'}],60,'ease-out')},up(b){anim(b,[{transform:'scale(1)'}],350)}},
+  B:{down(b){anim(b,[{transform:'scale(.92)'}],60,'ease-out');b.querySelector('.flash').animate([{opacity:.55},{opacity:0}],{duration:160})},
+     up(b){anim(b,[{transform:'scale(1)'}],350);const r=document.createElement('span');r.className='ring';b.appendChild(r);
+       r.animate([{transform:'scale(1)',opacity:.8},{transform:'scale(1.35,1.5)',opacity:0}],{duration:380,easing:'ease-out'}).onfinish=()=>r.remove()}},
+  C:{down(b){anim(b,[{transform:'scale(1.08,.86)'}],70,'ease-out')},
+     up(b){anim(b,[{transform:'scale(1.08,.86)'},{transform:'scale(.94,1.1)',offset:.3},{transform:'scale(1.03,.97)',offset:.6},{transform:'scale(1)'}],480,'ease-out')}}
+};
+function wire(b,style,onAct){const s=STYLES[style];let held=false;
+  const down=e=>{held=true;b.classList.add('down');s.down(b);tick();vib(12)};
+  const up=e=>{if(!held)return;held=false;b.classList.remove('down');s.up(b);onAct&&onAct()};
+  b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',()=>{if(held){held=false;b.classList.remove('down');s.up(b)}});
+  b.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!held){e.preventDefault();down()}});b.addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')up()})}
+
+document.querySelectorAll('section[data-style]').forEach(sec=>{const st=sec.dataset.style,row=sec.querySelector('.row');
+  wire(make(row,{label:'Upgrade'}),st);
+  wire(make(row,{label:'Shop',cls:'sq',inner:ICON,c:'var(--gold)'}),st);
+  wire(make(row,{label:'Recruit',cls:'round',inner:'<span class="orb"></span>'}),st);
+  wire(make(row,{label:'Close',cls:'sq',c:'var(--coral)',inner:'<span class="lbl" style="font-size:24px">✕</span>'}),st);
+});
+
+// reward moments
+function count(el,from,to){const s=el.querySelector('span:last-child');const t0=performance.now();
+  (function f(n){const k=Math.min(1,(n-t0)/600);s.textContent=Math.round(from+(to-from)*(1-Math.pow(1-k,3))).toLocaleString();if(k<1)requestAnimationFrame(f)})(t0);
+  el.animate([{transform:'scale(1)'},{transform:'scale(1.18)'},{transform:'scale(1)'}],{duration:350,delay:450,easing:'ease-out'})}
+function center(el){const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2]}
+let qx=1240,qy=1240;
+function claimBtn(stage,kind){
+  const b=make(stage,{label:'Claim',c:'var(--gold)',w:'220px',h:'58px',fs:'28px'});
+  let rays;if(kind==='Y'){rays=document.createElement('div');rays.className='rays';stage.prepend(rays)}
+  let held=false;
+  b.addEventListener('pointerdown',()=>{held=true;b.classList.add('down');anim(b,[{transform:'scale(.9)'}],70,'ease-out');tick(.8);vib(15)});
+  const go=()=>{if(!held)return;held=false;b.classList.remove('down');chime();vib([30,40,60]);
+    anim(b,[{transform:'scale(.9)'},{transform:'scale(1.16)',offset:.35},{transform:'scale(1)'}],520,'ease-out');
+    b.querySelector('.flash').animate([{opacity:.8},{opacity:0}],{duration:260});
+    const [x,y]=center(b);
+    if(kind==='X'){
+      const r=document.createElement('span');r.className='ring';r.style.setProperty('--r','16px');b.appendChild(r);
+      r.animate([{transform:'scale(1)',opacity:1},{transform:'scale(1.6,2.4)',opacity:0}],{duration:500,easing:'ease-out'}).onfinish=()=>r.remove();
+      for(let i=0;i<16;i++){const p=document.createElement('span');p.className='spark';document.body.appendChild(p);const a=Math.PI*2*i/16+Math.random()*.3,d=80+Math.random()*60;
+        p.animate([{transform:`translate(${x-5}px,${y-5}px) scale(1)`,opacity:1},{transform:`translate(${x-5+Math.cos(a)*d}px,${y-5+Math.sin(a)*d*.7}px) scale(.2)`,opacity:0}],{duration:600+Math.random()*200,easing:'cubic-bezier(.2,.8,.3,1)'}).onfinish=()=>p.remove()}
+      count($('#cx'),qx,qx+=250);
+    }else{
+      rays.animate([{opacity:0,transform:'scale(.5) rotate(0)'},{opacity:1,transform:'scale(1.1) rotate(40deg)',offset:.3},{opacity:0,transform:'scale(1.2) rotate(110deg)'}],{duration:1300,easing:'ease-out'});
+      const [tx,ty]=center($('#cy'));
+      for(let i=0;i<8;i++){const p=document.createElement('span');p.className='coin';document.body.appendChild(p);const a=Math.random()*Math.PI*2,d=40+Math.random()*50,mx=x+Math.cos(a)*d,my=y+Math.sin(a)*d*.6;
+        p.animate([{transform:`translate(${x-11}px,${y-11}px) scale(.3)`},{transform:`translate(${mx-11}px,${my-11}px) scale(1.1)`,offset:.35},{transform:`translate(${tx-11}px,${ty-11}px) scale(.6)`}],{duration:700+i*45,easing:'cubic-bezier(.5,0,.3,1)'}).onfinish=()=>{p.remove();tick(1.4+i*.05);vib(8)}}
+      setTimeout(()=>count($('#cy'),qy,qy+=250),250);
+    }};
+  b.addEventListener('pointerup',go);b.addEventListener('pointerleave',()=>{if(held){held=false;b.classList.remove('down');anim(b,[{transform:'scale(1)'}],300)}});
+  b.addEventListener('keydown',e=>{if(e.key==='Enter'){held=true;go()}});
+}
+claimBtn($('#stageX'),'X');claimBtn($('#stageY'),'Y');
+</script>
