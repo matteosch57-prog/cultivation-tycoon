@@ -282,7 +282,11 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         del S["disciples"][C["DISCIPLE_CAP"] + vip:]
                         led_src["free summons"] = led_src.get("free summons", 0)
             tide_phase = rng.uniform(0, C["TIDE_INTERVAL"])
-            gift_i, walking = 0, None
+            walking = None
+            # GIFT_DAILY (D49): the ladder counts play time over the whole day and restarts each day
+            if not C.get("GIFT_DAILY") or S.get("gift_day") != day:
+                S.update(gift_day=day, gift_i=0, gift_play=0)
+            gift_i = S["gift_i"]
             walk = 0 if lvl("hands") else st["walk"] * C["WALK_SCALE"]  # WALK_SCALE: islets' longer walks
             for s in range(int(K["session"] * 60)):
                 played += 1
@@ -313,9 +317,15 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 if S["orbs"] and (auto_orbs or s % st["orb_every"] == 0):
                     src("qi orbs", S["orbs"] * int(r * C["ORB_VALUE"]))
                     S["orbs"] = 0
-                if gift_i < len(C["GIFT_TIMES"]) and s >= C["GIFT_TIMES"][gift_i]:
+                S["gift_play"] = S.get("gift_play", 0) + 1
+                if gift_i < len(C["GIFT_TIMES"]) and S["gift_play"] >= C["GIFT_TIMES"][gift_i]:
                     src("playtime gifts", b * C["GIFT_VALUE"][gift_i])
+                    for _ in range(int((C.get("GIFT_SUMMONS") or [0] * 99)[gift_i])):  # free summons on some gifts
+                        S["disciples"].append(roll())
+                        S["disciples"].sort(reverse=True)
+                        del S["disciples"][C["DISCIPLE_CAP"] + vip:]
                     gift_i += 1
+                    S["gift_i"] = gift_i
                 if altar_win is not None and "ALTAR_INTERVAL" in C and (s + tide_phase - C["TIDE_INTERVAL"] / 2) % C["ALTAR_INTERVAL"] < 1:
                     won = rng.random() < altar_win
                     src("heavenly altar", b * (C["ALTAR_WIN_SECONDS"] if won else C["ALTAR_JOIN_SECONDS"]))

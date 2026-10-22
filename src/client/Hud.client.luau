@@ -464,10 +464,11 @@ local function build()
 	ui.giftDot = gDot
 	gBtn.Activated:Connect(function()
 		if (player:GetAttribute("GiftIn") or -1) == 0 then
-			local ok, gain = pcall(function()
+			local ok, res = pcall(function()
 				return remotes.ClaimGift:InvokeServer()
 			end)
-			if ok and gain then
+			local gain = ok and type(res) == "table" and res.qi or nil -- { qi, summons } (D49)
+			if gain then
 				popGain(gain, true)
 				toast({ amt("qi", gain, "+") }, GOLD, 2)
 			end

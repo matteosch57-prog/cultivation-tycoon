@@ -252,3 +252,9 @@ the log as a D-number.
   far, a new life lands with its landing realm's pads. The breakthrough costs `BREAKTHROUGH_SECONDS`
   of the price income (buildings x realm x disciples x Past Lives x Harmony; the paid passes are left
   out, so they make goals come sooner instead of raising them; the D44 floor uses it too).
+- **D49** Daily playtime gifts (owner 2026-10-22: "always show what's the next reward, reset daily, up to
+  2h online"): 8 gifts at 5, 10, 20, 30, 45, 60, 90, 120 min of play TODAY (UTC day, summed over
+  sessions, saved as `data.giftDay/giftPlay/giftIdx`), paying `GIFT_VALUE` s of income and
+  `GIFT_SUMMONS` free summons (into the idle chest pool). The server publishes GiftIn, GiftNext,
+  GiftQi, GiftSummons and GiftResetIn so the HUD always shows the next reward; ClaimGift returns
+  `{ qi, summons }`. Simmed: no pace change, ~9% of a regular player's qi.

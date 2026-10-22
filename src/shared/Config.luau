@@ -432,10 +432,18 @@ Config.ALTAR_PUSH_COOLDOWN = 2
 Config.ALTAR_PUSH_REACH = 9 -- studs in front of the striker
 Config.ALTAR_PUSH_SPEED = 62 -- knockback, studs/s (sideways), plus a hop
 Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's timer runs
--- Playtime gifts: claimable after this many seconds of play in one session (research
--- 2026-10-21_tycoon_study); each pays GIFT_VALUE[i] seconds of income (no tide, no pill)
-Config.GIFT_TIMES = { 300, 900, 1800 }
-Config.GIFT_VALUE = { 120, 300, 600 }
+-- Playtime gifts, D49 (owner 2026-10-22: "always show the next reward, reset daily, up to 2 h
+-- online"): gift i is claimable after GIFT_TIMES[i] seconds of play TODAY (UTC day, summed over
+-- every session; the ladder restarts at 00:00 UTC). Each pays GIFT_VALUE[i] seconds of income (no
+-- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
+-- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
+Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
+Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
+Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
+Config.GIFT_DAILY = true -- read by the sim
+function Config.giftDay(t)
+	return math.floor((t or os.time()) / 86400)
+end
 Config.SLOT_PADS = { "quarters1", "quarters2" } -- each owned one adds a disciple slot
 
 -- `vip` = owns the VIP Sect pass (VIP_SLOTS more)

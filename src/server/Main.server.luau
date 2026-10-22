@@ -575,10 +575,15 @@ local function publish(player)
 	player:SetAttribute("PillReady", d.pillReady == true)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
 	player:SetAttribute("BoostUntil", d.boostUntil or 0)
-	-- playtime gifts: GiftIn = seconds to the next one (0 = ready), -1 = all claimed this session
-	local gi = s.giftIdx or 1
+	-- playtime gifts (D49, daily): GiftIn = seconds to the next one (0 = ready), -1 = all claimed
+	-- today; GiftNext / GiftQi / GiftSummons = what it pays; GiftResetIn = seconds to 00:00 UTC
+	local gi = d.giftIdx or 1
 	local at = Config.GIFT_TIMES[gi]
-	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (s.playTime or 0))) or -1)
+	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (d.giftPlay or 0))) or -1)
+	player:SetAttribute("GiftNext", at and gi or 0)
+	player:SetAttribute("GiftQi", at and math.floor(rate(s, true) * Config.GIFT_VALUE[gi]) or 0)
+	player:SetAttribute("GiftSummons", at and Config.GIFT_SUMMONS[gi] or 0)
+	player:SetAttribute("GiftResetIn", (Config.giftDay() + 1) * 86400 - os.time())
 	local built = 0
 	for _, pad in Config.PADS do
 		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
@@ -1559,18 +1564,25 @@ giftFn.OnServerInvoke = function(player)
 	if not s then
 		return nil
 	end
-	local gi = s.giftIdx or 1
+	local d = s.data
+	local gi = d.giftIdx or 1
 	local at = Config.GIFT_TIMES[gi]
-	if not at or (s.playTime or 0) < at then
+	if not at or (d.giftPlay or 0) < at then
 		return nil
 	end
 	local gain = math.floor(rate(s, true) * Config.GIFT_VALUE[gi])
-	s.giftIdx = gi + 1
-	s.data.qi += gain
-	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(s.data.realm))
+	local summons = Config.GIFT_SUMMONS[gi] or 0
+	d.giftIdx = gi + 1
+	d.qi += gain
+	if summons > 0 then -- free summons wait in the idle chest's pool (ChestSummon reveals them)
+		d.chestSummons = (d.chestSummons or 0) + summons
+		player:SetAttribute("ChestSummons", d.chestSummons)
+	end
+	Telemetry.source(player, d, gain, "gift", true)
+	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(d.realm))
 	publish(player)
-	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
-	return gain
+	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
+	return { qi = gain, summons = summons }
 end
 
 -- Group gift (D35): the card asks for a like, then the group join, then Claim. Only the group is
@@ -2042,6 +2054,12 @@ while true do
 		s.earned = (s.earned or 0) + gain
 		s.playTime = (s.playTime or 0) + dt
 		d.playSec = (d.playSec or 0) + dt
+		-- daily gifts (D49): play time today; a new UTC day restarts the ladder
+		local today = Config.giftDay()
+		if d.giftDay ~= today then
+			d.giftDay, d.giftPlay, d.giftIdx = today, 0, 1
+		end
+		d.giftPlay = (d.giftPlay or 0) + dt
 		Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then
