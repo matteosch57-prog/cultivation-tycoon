@@ -41,3 +41,13 @@ so at a realm's end income buys hundreds.
 - The minimum price (income x seconds, the DevForum rule) keeps every building a small saving goal
   in every life, so you pick which one comes first; it slows lives about 2 to 3x (the climb was fast).
 - Not proposed: prices that follow Past Lives (x power^1 stalled life 10 at day 19).
+
+## Keeping disciples (owner: "losing disciples is complicated, we should let people accumulate them")
+Today a breakthrough keeps disciples but drops the Quarters seats (the extras rest until they are
+rebuilt), a new life keeps only the sworn ones and the bought ones, and the list is capped at
+`DISCIPLE_CAP` (8), so extra rolls leave. Roblox rebirth games differ: Pet Simulator 99 keeps every pet
+through a rebirth (https://holdtoreset.com/pet-simulator-99-rebirth-system-explained/), Tap Simulator
+and Build a Base and Steal wipe them (https://www.pockettactics.com/tap-simulator-guide). Sim: keeping
+every disciple through a new life changes nothing measurable (life 20 day 16 with or without, option 2),
+because only the best `maxDisciples` work and the best ones come back fast anyway. So keeping them is
+free for the pace; it is a feel and collection decision.
