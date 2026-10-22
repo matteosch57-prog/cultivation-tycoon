@@ -873,6 +873,7 @@ local function rebuild(s)
 		-- only the highest Main Hall level stands
 		if s.data.owned[pad.id] and (not lv or lv == hallLevel) then
 			local m = buildModel(s, pad)
+			Skin.extras(m, pad, s.data.realm, s.data.lives, s.plot.frame)
 			m.Parent = s.plot.built
 			paintGround(m)
 			attachName(s, m)
@@ -954,6 +955,7 @@ refreshPads = function(player, s)
 						end
 					end
 					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
+					Skin.extras(m, pad, s.data.realm, s.data.lives, s.plot.frame) -- lanterns and motes (not on previews)
 					m.Parent = s.plot.built
 					paintGround(m)
 					attachName(s, m)

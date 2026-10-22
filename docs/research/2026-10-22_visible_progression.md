@@ -38,7 +38,7 @@ interesting because you get a bigger, more beautiful island slowly".
 - **A, material per realm:** Timber, Red Lacquer (the art), Jade, Imperial Gold over realms 1 to 4
   (the island's 4 opening realms), White Jade from the 2nd life.
 - **B, gilding per realm:** the art colours, gold ridges, then beams, then gold leaf. Subtle from far.
-- **C, the life picks the grade, the realm adds gilding (recommended):** life 1 Red Lacquer, 2 Jade,
+- **C, the life picks the grade, the realm adds gilding:** life 1 Red Lacquer, 2 Jade,
   3 Imperial Gold, 4+ White Jade; gilding climbs over realms 2 to 4. Reincarnation is the big jump
   (rare, the status), the realm shows through the growing island plus the gold.
 - All: a title over the head, the realm name in its colour, then "3rd Life · Jade" from life 2.
@@ -48,3 +48,6 @@ A recolour pass after each build (`src/server/Skin.luau`): each part is matched 
 `Style.PAL` colour and moved by the same offset, so the shading the builders baked in survives;
 Neon is left alone. One switch, `Config.SKIN_MODE`, picks A, B or C. The title is drawn by each
 client from the Realm and Lives attributes the server already sets (nothing new on the wire).
+
+## Outcome
+Owner picked A ("A is better still"), with the material on realms and lives adding the extras (D53).
