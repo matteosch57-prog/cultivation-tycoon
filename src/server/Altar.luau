@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Guard = require(script.Parent:WaitForChild("Guard"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Altar = {}
@@ -278,6 +279,9 @@ local function giveCrown(player)
 	m.Parent = player.Character
 end
 
+local KNOCK_CHECK = 1.2 -- s after a knock is sent: room for a 500 ms ping both ways
+local KNOCK_MIN_MOVE = 5 -- studs; a real knock carries the body ~14 studs sideways
+
 ---------------------------------------------------------------------------------------------
 -- Who stands on the altar: a body inside the floor circle, from just below the floor to a jump
 -- above it (positions only, read on the server).
@@ -368,7 +372,7 @@ end
 
 local function openRound(now)
 	removeCrown()
-	round = { untilT = now + Config.ALTAR_WINDOW, holder = nil, hold = 0, joined = {}, out = {} }
+	round = { untilT = now + Config.ALTAR_WINDOW, holder = nil, hold = 0, joined = {}, out = {}, knocked = {} }
 	workspace:SetAttribute("AltarUntil", round.untilT)
 	workspace:SetAttribute("AltarNext", now + Config.ALTAR_INTERVAL)
 	setHud()
@@ -397,7 +401,24 @@ local function tick(dt)
 	end
 	-- who is on it; whoever stood on it and is now below the floor is out for this round
 	local crowd = {}
+	local clock = os.clock()
 	for _, player in Players:GetPlayers() do
+		-- The knockback runs on the struck player's own client (it owns its character), so a cheat
+		-- can simply drop it and never fall. A real knock moves the body ~14 studs in 0.22 s; a body
+		-- that is still on the altar and has barely moved KNOCK_CHECK s later ignored it, and counts
+		-- as fallen (security pass 2026-10-22).
+		local k = round.knocked[player]
+		if k and clock - k.t >= KNOCK_CHECK then
+			round.knocked[player] = nil
+			local hrp = onTop(player) and player.Character.HumanoidRootPart
+			local moved = hrp and (hrp.Position - k.at) * Vector3.new(1, 0, 1)
+			if moved and moved.Magnitude < KNOCK_MIN_MOVE and not round.out[player] then
+				round.out[player] = true
+				player:SetAttribute("AltarOut", true)
+				ctx.notify:FireClient(player, "altarOut")
+				print(string.format("[Tycoon][guard] user=%d ignored a knock", player.UserId))
+			end
+		end
 		if onTop(player) then
 			if round.out[player] then
 				-- out players never count; if one got back up anyway, drop them off the edge
@@ -457,6 +478,9 @@ end
 -- Palm Strike: the striker must be on the altar in an open round, with the cooldown spent. Every
 -- rival on it within reach and in front (a wide cone) gets knocked back away from the striker.
 local function strike(player)
+	if not Guard.allow(player, "AltarPush") then
+		return
+	end
 	if not round or round.out[player] or not onTop(player) then
 		return
 	end
@@ -476,6 +500,7 @@ local function strike(player)
 			if d.Magnitude <= Config.ALTAR_PUSH_REACH and (d.Magnitude < 2.5 or d.Unit:Dot(look) > 0.25) then
 				local dir = d.Magnitude > 0.1 and d.Unit or look
 				ctx.notify:FireClient(other, "altarKnock", dir * Config.ALTAR_PUSH_SPEED + Vector3.new(0, 34, 0))
+				round.knocked[other] = { t = os.clock(), at = o }
 				hit += 1
 			end
 		end
@@ -500,7 +525,7 @@ function Altar.init(context, parent)
 			crowned = nil
 		end
 		if round then
-			round.joined[p], round.out[p] = nil, nil
+			round.joined[p], round.out[p], round.knocked[p] = nil, nil, nil
 		end
 	end)
 	-- a winner who respawns keeps the crown

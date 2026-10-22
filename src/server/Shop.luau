@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
+local Guard = require(script.Parent:WaitForChild("Guard"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 
@@ -333,7 +334,9 @@ function Shop.init(a)
 	buy.Name = "ShopBuy"
 	buy.Parent = api.remotes
 	buy.OnServerEvent:Connect(function(player, key)
-		prompt(player, key)
+		if Guard.allow(player, "ShopBuy") then
+			prompt(player, key)
+		end
 	end)
 	local opened = Instance.new("RemoteEvent")
 	opened.Name = "ShopOpened"
@@ -341,7 +344,7 @@ function Shop.init(a)
 	opened.OnServerEvent:Connect(function(player, from)
 		local s = api.sessions[player]
 		local now = os.clock()
-		if s and OPEN_SOURCES[from] and now - (lastOpen[player] or 0) >= 3 then
+		if s and Guard.allow(player, "ShopOpened") and OPEN_SOURCES[from] and now - (lastOpen[player] or 0) >= 3 then
 			lastOpen[player] = now
 			Telemetry.custom(player, "Shop", "open", from, realm(s))
 		end

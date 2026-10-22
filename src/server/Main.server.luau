@@ -17,6 +17,7 @@ local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
+local Guard = require(script.Parent:WaitForChild("Guard"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -1289,6 +1290,9 @@ end
 
 -- one free summon from the idle chest: the same roll and seating as a recruit, no qi
 chestFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ChestSummon") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or s.recruiting or (s.data.chestSummons or 0) <= 0 then
 		return nil
@@ -1308,6 +1312,9 @@ chestFn.OnServerInvoke = function(player)
 end
 
 recruitFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "Recruit") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or s.recruiting then
 		return nil
@@ -1341,6 +1348,9 @@ end
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.
 pillFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "UsePill") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or not s.data.owned.furnace or not s.data.pillReady then
 		return false
@@ -1354,6 +1364,9 @@ pillFn.OnServerInvoke = function(player)
 end
 
 giftFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ClaimGift") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s then
 		return nil
@@ -1375,6 +1388,9 @@ end
 -- checked or paid (a like has no API and rewarding one breaks Roblox rules). A fresh check, since
 -- IsInGroup is cached for the whole session.
 groupFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ClaimGroup") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or Config.GROUP_ID <= 0 then
 		return nil
@@ -1409,6 +1425,9 @@ end
 
 -- Heavenly Gift (D36): paid once per save, on the intro's GO
 welcomeFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ClaimWelcome") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or s.data.welcomed ~= false then
 		return nil
@@ -1422,6 +1441,9 @@ welcomeFn.OnServerInvoke = function(player)
 end
 
 inviteEv.OnServerEvent:Connect(function(player)
+	if not Guard.allow(player, "SocialInvite") then
+		return -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or os.clock() - (s.inviteAt or 0) < 10 then
 		return
@@ -1484,6 +1506,9 @@ end
 
 -- Karma Shop: buy the next level of one node (server checks the price and the cap, R9)
 daoFn.OnServerInvoke = function(player, key)
+	if not Guard.allow(player, "DaoBuy") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	local node = type(key) == "string" and Config.daoNode(key)
 	if not s or not node then
@@ -1509,8 +1534,11 @@ end
 -- Heavenly Hands (Karma Shop): build one of your open pads from anywhere. The client names the pad
 -- its HUD "Next" card shows; the server checks the node, the owner, the price and a cooldown (R9).
 handsFn.OnServerInvoke = function(player, padId)
+	if not Guard.allow(player, "HandsBuild") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
-	if not s or type(padId) ~= "string" or dao(s.data, "hands") <= 0 then
+	if not s or type(padId) ~= "string" or #padId > 32 or dao(s.data, "hands") <= 0 then
 		return false
 	end
 	local now = os.clock()
@@ -1528,6 +1556,9 @@ handsFn.OnServerInvoke = function(player, padId)
 end
 
 reincFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "Reincarnate") then
+		return nil -- over its call budget (Guard)
+	end
 	local s = sessions[player]
 	if not s or s.reincBusy then
 		return nil
