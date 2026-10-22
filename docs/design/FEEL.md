@@ -25,7 +25,7 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Once a day after the launch screen and the gift (a brand-new save's first session waits 90 s):
   a veil, slow gold rays, "Daily Blessing", seven tiles (done = jade with a tick, today = gold,
   lifted and breathing, disciple days pale gold with the disciple in its aura), a shining Claim.
-- Claim: today's tile turns jade, the reward line replaces the "streak waits for you" note, the
+- Claim: Toy.reward bursts on the button (D61), today's tile punches, flashes and turns jade, the reward line pops in under the row, the
   button reads "See you tomorrow!" and closes the card. Studio hooks `StreakOpen`, `StreakClaim`.
 
 ## HUD (src/client/Hud.client.luau, D54 D55 D59)
