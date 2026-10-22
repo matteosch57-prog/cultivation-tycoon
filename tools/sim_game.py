@@ -276,6 +276,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     for day in range(days):
         # STREAK (login streak, proposal lever): day d's reward on the first join of the day; a list of
         # dicts {qi_s, summons, disciple (rarity name, once per save; repeats give `else_summons`)}
+        if C.get("DAILY_QI_S"):  # DAILY_QI_S (lever): seconds of income paid once a day (free shop gift, blessings)
+            src("daily extras", base() * C["DAILY_QI_S"])
         if C.get("STREAK"):
             r = C["STREAK"][day % len(C["STREAK"])]
             if r.get("qi_s"):
