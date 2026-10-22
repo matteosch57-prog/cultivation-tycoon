@@ -98,7 +98,9 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
   Immortal a fan of spirit swords behind the back (3, then 5 / 7 / 7 / 9); Celestial a second wider
   circle; Dao Ancestor a lotus seat; Heavenly Emperor a ring pulse on each breath; Primordial runs through
   every colour. Circle, swords and lotus are free Creator Store meshes drawn through SpecialMesh
-  (Cultivators.luau names the ids). Captures: `characters_play_*.jpg`.
+  (Cultivators.luau names the ids). The swords are a real steel jian with a black and gold hilt (owner
+  pick D, `characters_sword_options.jpg`): never painted in the rarity colour, the rarity shows as a
+  rim glow (Highlight) and light orbs along the blade (`characters_sword_D.jpg`). Captures: `characters_play_*.jpg`.
 - Ornaments grow with the rarity: blossom hairpins (lotus maiden, Inner to Elder), jade bead necklace
   from Core, the RUYI sun crown (Xi Guan) from Immortal, the great gold crown (Jin Guan) from Heavenly
   Emperor. Top female gowns: Ethereal Blossom black (Dao Ancestor), Gold Koi Empress red (Emperor).

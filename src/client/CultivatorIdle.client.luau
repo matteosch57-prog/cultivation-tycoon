@@ -92,10 +92,23 @@ local function add(m)
 		elseif p.Name == "SigilCircle" or p.Name == "SigilCircle2" then
 			table.insert(f.circles, { part = p, base = p.CFrame, dir = p.Name == "SigilCircle" and 1 or -1 })
 		elseif p.Name == "Sword" then
+			-- a spirit sword is a Model of mesh pieces: every piece bobs with the same phase
 			table.insert(f.swords, p)
-			table.insert(f.swordBase, p.CFrame)
+			local pieces = {}
+			for _, q in p:GetDescendants() do
+				if q:IsA("BasePart") then
+					table.insert(pieces, { part = q, base = q.CFrame })
+				end
+			end
+			table.insert(f.swordBase, pieces)
 		elseif p.Name == "MountSword" then
-			f.mount, f.mountBase = p, p.CFrame -- a flyer's sword rides the float with its rider
+			-- a flyer's sword rides the float with its rider
+			f.mount = {}
+			for _, q in p:GetDescendants() do
+				if q:IsA("BasePart") then
+					table.insert(f.mount, { part = q, base = q.CFrame })
+				end
+			end
 		elseif p.Name == "HaloCircle" then
 			-- the halo circle stands just behind the head, wherever the template put the head
 			f.haloCircle = p
@@ -382,14 +395,17 @@ RunService.RenderStepped:Connect(function(dt)
 				table.insert(parts, f.haloCircle)
 				table.insert(cfs, CFrame.new(f.haloPos + Vector3.new(0, up, 0)) * f.haloTurn * CFrame.Angles(0, now * 0.4, 0))
 			end
-			if f.mount then
-				table.insert(parts, f.mount)
-				table.insert(cfs, f.mountBase + Vector3.new(0, up, 0))
+			for _, piece in f.mount or {} do
+				table.insert(parts, piece.part)
+				table.insert(cfs, piece.base + Vector3.new(0, up, 0))
 			end
 			-- the spirit swords hover with the figure, each on its own small rhythm
-			for i, sword in f.swords do
-				table.insert(parts, sword)
-				table.insert(cfs, f.swordBase[i] + Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0))
+			for i, pieces in f.swordBase do
+				local hover = Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0)
+				for _, piece in pieces do
+					table.insert(parts, piece.part)
+					table.insert(cfs, piece.base + hover)
+				end
 			end
 			-- the orbs circle (alternate directions from 4 orbs); in a surge they race and rise
 			local spin = CFrame.Angles(0, f.orbAngle, 0)
@@ -420,7 +436,11 @@ RunService.RenderStepped:Connect(function(dt)
 						c2.part.Color = c
 					end
 					for _, sword in f.swords do
-						sword.Color = c
+						local h = sword:FindFirstChild("Aura")
+						if h then
+							h.FillColor = c
+							h.OutlineColor = c:Lerp(Color3.new(1, 1, 1), 0.3)
+						end
 					end
 					if f.haloCircle then
 						f.haloCircle.Color = c
