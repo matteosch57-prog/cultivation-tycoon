@@ -88,8 +88,8 @@ function Toy.glass(face, radius)
 	return g
 end
 
--- Click feel for every button in the game: "Jelly" (owner pick C, mock "Button Feel Picks",
--- _local/button_feel_mock.html). On touch, not on release, so it answers instantly: the click
+-- Click feel for every button in the game: "Jelly" (D61, owner pick C of
+-- docs/art/mocks/button_feel.html). On touch, not on release, so it answers instantly: the click
 -- sound, a phone buzz (Haptic), and the face squashes wide and short onto its shadow; release
 -- wobbles it tall, then wide, then settles. Gamepad and keyboard presses (Activated with no touch
 -- first) get the same thing in one go.

@@ -334,3 +334,12 @@ the log as a D-number.
   figure on its seat is its index entry; an old save fills looks from list order and starts its book
   with the disciples it has. Why B over A: nine entries fill in a day; PS99-style variants multiply the
   book without a new rarity. Captures `docs/art/captures/disciple_index_play.jpg`, `..._reveal_play.jpg`.
+- **D61** Button feel (owner 2026-10-22: "when clicking on stuff we want a nice animation and sound +
+  reactivity and haptics"; picked C + X of `docs/art/mocks/button_feel.html`). Every toy button goes
+  through `Toy.feel`: on touch (not release) the click sound and a phone buzz (`Haptic.luau`, one
+  Roblox `HapticEffect` per kind, UIClick / UINotification), the face squashes wide onto its shadow,
+  release wobbles it tall then settles (C, Jelly). Claim moments call `Toy.reward(button)` (X, Burst:
+  pop, white blink, ring, gold motes, chime, double buzz): group gift Claim, chest Collect, Shop
+  Daily Gift; the streak Claim can call it too. Why: top simulators answer on press with sound,
+  squash and spring; HapticEffect is fully released on iPhone, Android and pads since Sept 2025.
+  Tested in Play (Shop button 57x57 -> 61x49 -> 56x58 -> 57x57, no errors).
