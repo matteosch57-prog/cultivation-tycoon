@@ -903,41 +903,62 @@ local function layout()
 		ui.card.Visible = false
 	end
 	-- recruit: left of the phone jump button, or above it when the progress bar is in the way
+	-- (positions in the root's own units: a phone check scales the root, AbsolutePosition does not)
+	local unscale = rootScale and rootScale.Scale or 1
+	local rootW = ui.root.AbsoluteSize.X / unscale
+	local recruitW, recruitH = ui.recruit.Size.X.Offset, ui.recruit.Size.Y.Offset
 	local jump = player:GetAttribute("HudDevice") ~= "pc" and jumpButton() or nil
 	local rootPos = ui.root.AbsolutePosition
+	local sealRight, sealBottom -- the seal's bottom-right corner (it hangs from AnchorPoint 1,1)
 	if jump then
-		local jx = jump.AbsolutePosition.X - rootPos.X
-		local jy = jump.AbsolutePosition.Y - rootPos.Y
-		local barRight = ui.prog.AbsolutePosition.X - rootPos.X + ui.prog.AbsoluteSize.X
-		local leftOfJump = jx - px(12)
-		if leftOfJump - ui.recruit.AbsoluteSize.X < barRight + px(8) then
-			ui.recruit.Position = UDim2.fromOffset(jx + jump.AbsoluteSize.X, jy - px(10)) -- above it
-		else
-			ui.recruit.Position = UDim2.fromOffset(leftOfJump, jy + jump.AbsoluteSize.Y)
+		local jx = (jump.AbsolutePosition.X - rootPos.X) / unscale
+		local jy = (jump.AbsolutePosition.Y - rootPos.Y) / unscale
+		local jh = jump.AbsoluteSize.Y / unscale
+		-- left of the jump button; lifted above the realm bar when it reaches over the bar's end
+		-- (stacking it above the jump button instead put it over the next goal on big touch screens)
+		local barRight = (ui.prog.AbsolutePosition.X - rootPos.X + ui.prog.AbsoluteSize.X) / unscale
+		local barTop = (ui.prog.AbsolutePosition.Y - rootPos.Y) / unscale
+		sealRight, sealBottom = jx - px(12), jy + jh
+		if sealRight - recruitW < barRight + px(8) then
+			sealBottom = math.min(sealBottom, barTop - px(6))
 		end
 	else
-		ui.recruit.Position = UDim2.new(1, -px(20), 1, -px(20))
+		sealRight, sealBottom = rootW - px(20), rootH - px(20)
 	end
-	-- right stack: under the next goal, down to the Recruit seal (and its x10 / x50 picker above it);
-	-- a column when it fits that band, else one row under the goal
-	local unscale = rootScale and rootScale.Scale or 1
+	ui.recruit.Position = UDim2.fromOffset(sealRight, sealBottom)
+	-- right stack: under the next goal, at the right edge. It must stay clear of the Recruit seal and
+	-- the x10 / x50 picker that pops above it: a column if it ends above them, else a row if that
+	-- does; else (the seal sits high, above the jump button) it moves left of the seal.
 	local stackTop = inset.Max.Y + px(8) + math.max(px(34), ui.goal.AbsoluteSize.Y / unscale) + px(10)
-	local stackBottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
-	if ui.recruit.Visible then
-		stackBottom = math.min(stackBottom, (ui.recruit.AbsolutePosition.Y - rootPos.Y) / unscale - px(50))
-	end
-	local need, n = 0, 0
+	local floor = state.phoneMode and rootH * 0.72 or rootH - px(24)
+	local need, rowH, n = 0, 0, 0
 	for _, c in ui.right:GetChildren() do
 		if c:IsA("GuiObject") and c.Visible then
-			need += c.AbsoluteSize.Y / unscale
+			local h = c.AbsoluteSize.Y / unscale
+			need += h
+			rowH = math.max(rowH, h)
 			n += 1
 		end
 	end
 	need += math.max(0, n - 1) * px(8)
-	local column = need <= stackBottom - stackTop
+	local edge = rootW - px(14)
+	local clearBottom = floor
+	local sealLeft = sealRight - recruitW
+	if ui.recruit.Visible and sealLeft < edge then
+		clearBottom = math.min(floor, sealBottom - recruitH - px(50))
+	end
+	local column, right = true, edge
+	if stackTop + need <= clearBottom then
+		column = true
+	elseif stackTop + rowH <= clearBottom then
+		column = false
+	else
+		right = sealLeft - px(10)
+		column = stackTop + need <= floor
+	end
 	ui.rightLayout.FillDirection = column and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal
 	ui.rightLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	ui.right.Position = UDim2.new(1, -px(14), 0, stackTop)
+	ui.right.Position = UDim2.fromOffset(right, stackTop)
 end
 
 ---------------------------------------------------------------------------------------------

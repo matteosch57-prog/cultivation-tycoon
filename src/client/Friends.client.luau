@@ -228,6 +228,7 @@ local function draw()
 		Position = UDim2.new(1, -px(14), 0, GuiService.TopbarInset.Max.Y + px(58)),
 		AutomaticSize = Enum.AutomaticSize.XY,
 	})
+	root.Name = "FriendsRow"
 	Toy.list(root, false, px(6), { HorizontalAlignment = Enum.HorizontalAlignment.Right })
 	local pct = math.round(#ids * Config.FRIEND_STEP * 100)
 	if alone then
@@ -290,6 +291,40 @@ local function place()
 	groupHolder.Visible = true
 end
 
+-- the card is a row of the HUD's right stack (PlayerGui.HudSlots, D54): under the next goal with the
+-- gift, pill and altar rows, so it never covers them; its own corner only if the HUD is missing
+local function rightStack()
+	local slots = playerGui:FindFirstChild("HudSlots")
+	local right = slots and slots:FindFirstChild("Right")
+	return right and right.Value
+end
+local function placeCard()
+	if not root then
+		return
+	end
+	local stack = rightStack()
+	if stack then
+		if root.Parent ~= stack then
+			root.AnchorPoint = Vector2.new(0, 0)
+			root.Position = UDim2.new()
+			root.LayoutOrder = 4
+			root.Parent = stack
+		end
+	elseif root.Parent ~= gui then
+		root.AnchorPoint = Vector2.new(1, 0)
+		root.Position = UDim2.new(1, -px(14), 0, GuiService.TopbarInset.Max.Y + px(58))
+		root.Parent = gui
+	end
+end
+task.spawn(function()
+	local slots = playerGui:WaitForChild("HudSlots", 30)
+	if slots then
+		slots:WaitForChild("Rebuilt").Event:Connect(function()
+			task.defer(placeCard)
+		end)
+	end
+end)
+
 local function rescale()
 	Toy.S = computeScale()
 	shown = nil
@@ -305,6 +340,7 @@ rescale()
 task.spawn(function()
 	while true do
 		place() -- writes only on a change (R16)
+		placeCard()
 		task.wait(0.25)
 	end
 end)
