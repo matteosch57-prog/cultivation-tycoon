@@ -684,7 +684,7 @@ Config.RANK_WALL_R = 25 -- studs from the hub centre
 -- HUD teleports (owner 2026-10-22: "MY BASE" and "RANKINGS" at the top of the HUD): seconds between two
 -- jumps, and how far in front of the ranking wall you land (facing it)
 Config.TELEPORT_COOLDOWN = 3
-Config.TELEPORT_RANK_FRONT = 13
+Config.TELEPORT_RANK_FRONT = 9 -- 13 put the follow camera inside the cauldron and the altar
 -- The Robux purchase moment (BuyMoment.client, owner pick A "Spotlight" 2026-10-22): seconds for the
 -- item's pop, the hold on screen, the flight home; the HUD bumps the qi counter at buyArrive()
 Config.BUY_MOMENT = { pop = 0.45, hold = 1.7, fly = 0.6 }
@@ -696,7 +696,7 @@ Config.RANK_SEE = 140 -- studs: the boards' text draws within this
 -- Free Creator Store models on the ranking wall (owner: "search free assets"), rebuilt from their
 -- meshes by RankBoard (no inserted scripts): "Chinese Gate Door" and "Chinese Lion Stone Statue" by
 -- funshine_4321 (assets 131931560252959, 78030834541623).
-Config.RANK_GATE = { name = "Gate", height = 22, size = Vector3.new(26.567, 29.477, 5.462), parts = {
+Config.RANK_GATE = { name = "Gate", height = 29, size = Vector3.new(26.567, 29.477, 5.462), parts = {
 	{ mesh = "rbxassetid://7299159581", texture = "rbxassetid://7299159924", size = Vector3.new(5.462, 9.489, 26.567), at = CFrame.new(0, 24.7322, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
 	{ mesh = "rbxassetid://7299136679", texture = "rbxassetid://7299137242", size = Vector3.new(2.213, 24.828, 22.612), at = CFrame.new(-0.0459, 12.4141, -0.0386, 0, 0, -1, 0, 1, 0, 1, 0, 0) },
 } }
