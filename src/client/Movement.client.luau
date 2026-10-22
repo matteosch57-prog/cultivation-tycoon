@@ -49,17 +49,8 @@ local function setup(char)
 	hum.WalkSpeed = MOVE.walk
 	hum.UseJumpPower = false
 	hum.JumpHeight = MOVE.jumpHeight
-	-- the packs in Config.MOVE.anims replace Roblox's default run / jump / fall (the default Animate
-	-- script reloads a slot when its value changes)
-	local animate = char:WaitForChild("Animate", 10)
-	for slot, id in animate and MOVE.anims or {} do
-		local folder = animate:FindFirstChild(slot)
-		for _, a in folder and folder:GetChildren() or {} do
-			if a:IsA("Animation") then
-				a.AnimationId = id
-			end
-		end
-	end
+	-- the player's own animations stay untouched (owner 2026-10-22: "I want to use my avatar
+	-- fully"; a Ninja run and Levitation jump used to replace them here)
 
 	-- the soft fall: an upward force that takes part of gravity away while falling
 	local att = Instance.new("Attachment")

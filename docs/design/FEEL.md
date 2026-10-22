@@ -53,7 +53,8 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   upward VectorForce takes `floatFall` of gravity away, so landings float down.
 - **Cloud step:** a new jump press in the air (keys, pad or the phone's jump button) kicks the avatar
   up once per jump and leaves a jade ring under the feet (a plain part, not a light, R3).
-- Run, jump and fall play Roblox's own Ninja and Levitation animation packs (`MOVE.anims`).
+- Run, jump and fall play the player's own avatar animations (owner 2026-10-22: "I want to use my
+  avatar fully"; the Ninja run and Levitation jump that replaced them are gone).
 
 ## Constant motion (src/client/Juice.client.luau)
 - "+qi" floats off every earning building every 3 s (staggered).
