@@ -7,6 +7,7 @@
 -- (BLESS_MIN_ACCOUNT_DAYS, BLESS_MIN_PLAY): an alt feeds nobody. Today's sticks stay lit and a
 -- plaque counts every blessing the sect ever had (`blessTotal`, a monotonic record).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Bless = {}
@@ -81,12 +82,23 @@ function Bless.mark(player, s)
 	player:SetAttribute("BlessedTo", table.concat(ids, ","))
 end
 
+-- Studio test hook (a solo Play cannot bless: your own shrine is hidden). Set the workspace
+-- attribute BlessTest = true: every EMPTY peak's shrine then acts as owned by you, so you bless it
+-- as a visitor and get both toasts (giver and owner) on your own session. Never on a live server.
+local function testOwner(plot, player)
+	if RunService:IsStudio() and workspace:GetAttribute("BlessTest") and not plot.owner then
+		return player
+	end
+	return plot.owner
+end
+
 local function trigger(plot, player)
 	local api_ = api
-	local owner = plot.owner
+	local owner = testOwner(plot, player)
+	local test = owner == player and plot.owner == nil
 	local s = api_.sessions[player]
 	local os_ = owner and api_.sessions[owner]
-	if not s or not os_ or owner == player or s.blessBusy then
+	if not s or not os_ or (owner == player and not test) or s.blessBusy then
 		return
 	end
 	s.blessBusy = true
@@ -107,7 +119,7 @@ local function trigger(plot, player)
 		local mine = math.floor(api_.rate(s, true) * Config.BLESS_SECONDS)
 		s.data.qi += mine
 		api_.telemetry.source(player, s.data, mine, "bless")
-		local real = player.AccountAge >= Config.BLESS_MIN_ACCOUNT_DAYS and (s.data.playSec or 0) >= Config.BLESS_MIN_PLAY
+		local real = test or player.AccountAge >= Config.BLESS_MIN_ACCOUNT_DAYS and (s.data.playSec or 0) >= Config.BLESS_MIN_PLAY
 		local theirs = real and math.floor(api_.rate(os_, true) * Config.BLESS_SECONDS) or 0
 		if theirs > 0 then
 			os_.data.qi += theirs

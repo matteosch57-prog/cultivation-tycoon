@@ -15,7 +15,8 @@ local function update()
 		local prompt = shrine and shrine:FindFirstChild("ProximityPrompt", true)
 		if prompt then
 			local owner = shrine:GetAttribute("OwnerId") or 0
-			prompt.Enabled = owner ~= 0 and owner ~= player.UserId and not blessed[tostring(owner)]
+			local test = owner == 0 and workspace:GetAttribute("BlessTest") == true -- Studio hook (Bless.luau)
+			prompt.Enabled = test or (owner ~= 0 and owner ~= player.UserId and not blessed[tostring(owner)])
 		end
 	end
 end
