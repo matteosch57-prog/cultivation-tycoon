@@ -200,6 +200,27 @@ Config.TIDE_INTERVAL = 600 -- s from one tide's start to the next
 Config.TIDE_DURATION = 90
 Config.TIDE_MULT = 2
 Config.TIDE_WARN = 30 -- s of heads-up before a tide
+-- Heavenly Altar (owner idea 2026-10-21, mock A docs/art/mocks/altar_A_phone.jpg): king of the hill
+-- over the hub. It opens half a tide cycle after each tide (never with one); stand on it ALONE for
+-- ALTAR_HOLD s to claim it (two or more on it pause the timer); Palm Strike pushes, a fall locks
+-- you out until the round ends. Rewards are seconds of the player's own income (fair at any
+-- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a crown until the next round (only
+-- ALTAR_SOLO_SECONDS if nobody else came to fight), everyone else who stood on it
+-- ALTAR_JOIN_SECONDS. That is ~+20% live income per round on average (research 2026-10-21_economy_math).
+Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
+Config.ALTAR_INTERVAL = Config.TIDE_INTERVAL
+Config.ALTAR_WARN = 30 -- s of heads-up (walking from a peak to the hub takes ~20 s)
+Config.ALTAR_WINDOW = 60 -- s the altar stays open without a claim
+Config.ALTAR_HOLD = 20
+Config.ALTAR_WIN_SECONDS = 300
+Config.ALTAR_JOIN_SECONDS = 60
+Config.ALTAR_SOLO_SECONDS = 120
+Config.ALTAR_HEIGHT = 15 -- studs above the hub plaza
+Config.ALTAR_RADIUS = 9
+Config.ALTAR_PUSH_COOLDOWN = 2
+Config.ALTAR_PUSH_REACH = 9 -- studs in front of the striker
+Config.ALTAR_PUSH_SPEED = 62 -- knockback, studs/s (sideways), plus a hop
+Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's timer runs
 -- Playtime gifts: claimable after this many seconds of play in one session (research
 -- 2026-10-21_tycoon_study); each pays GIFT_VALUE[i] seconds of income (no tide, no pill)
 Config.GIFT_TIMES = { 300, 900, 1800 }

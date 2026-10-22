@@ -63,6 +63,19 @@ summon balls pop out; a tap opens one through `ChestSummon`, the same roll and s
 no qi). Collect opens any left. Event `IdleChest` (hours away, summons waiting, realm). Free summons
 don't move the pace (tools/sim_game.py).
 
+## Heavenly Altar (server-wide, king of the hill)
+A floating jade altar above the hub cauldron (`src/server/Altar.luau`) opens `ALTAR_FIRST` s after the
+server starts, then every `ALTAR_INTERVAL` s, half a tide cycle after each tide; a toast warns
+`ALTAR_WARN` s before. Two Spirit Springs on the plaza throw players up while it is open. Stand on it
+alone for `ALTAR_HOLD` s to claim it (two or more pause the timer; eight rim braziers light as it
+runs). Palm Strike (button above Jump, F) knocks rivals back; a fall locks you out until the round
+ends. Winner: `ALTAR_WIN_SECONDS` of their own income (`ALTAR_SOLO_SECONDS` if nobody else came) and
+a crown until the next round; everyone else who stood on it: `ALTAR_JOIN_SECONDS`. If nobody holds it
+within `ALTAR_WINDOW` s it fades (joiners are still paid). HUD: Workspace attributes `AltarNext`,
+`AltarUntil`, `AltarHolder`, `AltarHold`, `AltarCrowd`; player attribute `AltarOut`. Why: the owner's
+"something to oppose other players" without stealing (2026-10-21); about +20% live income per round
+on average, which moves a regular player's realm 10 by about a day (research 2026-10-21_economy_math).
+
 ## Playtime gifts
 After `GIFT_TIMES[i]` seconds of play in one session a gift button on the HUD's left column can be
 claimed (server `ClaimGift`) for `GIFT_VALUE[i]` seconds of income, counted without tide or pill. The

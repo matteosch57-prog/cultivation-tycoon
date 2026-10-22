@@ -15,6 +15,7 @@ local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
+local Altar = require(script.Parent:WaitForChild("Altar"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -1442,6 +1443,10 @@ if game:GetService("RunService"):IsStudio() then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
 				return true
 			end
+			if key == "altar" then
+				Altar.debugOpen() -- DebugSet:Invoke(player, "altar") opens a Heavenly Altar round now
+				return true
+			end
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
@@ -1473,6 +1478,16 @@ end
 
 -- Boot -------------------------------------------------------------------------------
 buildHub()
+Altar.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	notify = notify,
+	remotes = remotes,
+	telemetry = Telemetry,
+	style = Style,
+	baseY = BASE_Y,
+}, world)
 Shop.init({
 	sessions = sessions,
 	rate = rate,
