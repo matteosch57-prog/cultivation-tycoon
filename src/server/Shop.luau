@@ -285,7 +285,7 @@ function Shop.buildIsland(plot)
 			end
 		end
 	end
-	api.kit.gate(folder, f * CFrame.new(0, 0, R - 2), 9, 9, "Disciple Garden")
+	api.kit.gate(folder, f * CFrame.new(0, 0, R - 2), 11, 15, "Disciple Garden") -- taller gate (owner 2026-10-21)
 	-- the walk: flat stones from the gate to the pavilion at the back
 	local steps = 14
 	for i = 0, steps do

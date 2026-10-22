@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local GroupService = game:GetService("GroupService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
@@ -62,6 +63,15 @@ daoFn.Parent = remotes
 local handsFn = Instance.new("RemoteFunction")
 handsFn.Name = "HandsBuild"
 handsFn.Parent = remotes
+local groupFn = Instance.new("RemoteFunction")
+groupFn.Name = "ClaimGroup"
+groupFn.Parent = remotes
+local inviteEv = Instance.new("RemoteEvent")
+inviteEv.Name = "SocialInvite" -- the client opened Roblox's invite prompt (telemetry only)
+inviteEv.Parent = remotes
+local welcomeFn = Instance.new("RemoteFunction")
+welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
+welcomeFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -176,29 +186,72 @@ local function keepClear(x, z)
 	return false
 end
 
-local WATERFALL_ANGLE = -1.75 -- back-left rim: clear of the Main Hall towers and the pagoda at every size
+local WATERFALL_ANGLE = 0.55 -- front-right rim, between the shop bridge and the east lobe (layout A keeps it clear of every lobe)
 
--- The peak's ground: island (terrain grass on top), rim trees, waterfall, rope bridge and
--- the entrance archway with the owner's name. Rebuilt whenever the island grows or shrinks.
-local function buildGrounds(plot, radius)
+-- is (x, z) on one of these lobes of land?
+local function onLobe(lobes, x, z, margin)
+	for _, l in lobes do
+		if (Vector2.new(x, z) - Vector2.new(l.x, l.z)).Magnitude < l.r + (margin or 0) then
+			return true
+		end
+	end
+	return false
+end
+
+-- The peak's ground: island (terrain grass on top) with the lobes its expansions added, roads,
+-- rim trees, waterfall, rope bridge and the entrance archway with the owner's name. Rebuilt
+-- whenever the land changes (an expansion, a breakthrough).
+local function buildGrounds(plot, radius, lobes)
+	lobes = lobes or {}
 	if plot.grounds then
 		plot.grounds:Destroy()
 	end
 	-- clear the old terrain grass (largest island + margin; never reaches the hub or neighbours)
 	-- (islands reach at most 1.05 x radius, so 1.05 x max + 6 stays clear of the neighbours at
 	-- PLOT_RADIUS 215 and of the hub)
-	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADII[#Config.ISLAND_RADII] * 1.05 + 6, Enum.Material.Air)
+	workspace.Terrain:FillCylinder(plot.frame * CFrame.new(0, -6, 0), 20, Config.ISLAND_RADIUS * 1.05 + 6, Enum.Material.Air)
+	for _, l in Config.ISLAND_LOBES do -- every lobe a peak can own (layout A), each with its margin
+		workspace.Terrain:FillCylinder(plot.frame * CFrame.new(l.x, -6, l.z), 20, l.r * 1.05 + 4, Enum.Material.Air)
+	end
 	local g = Instance.new("Folder")
 	g.Name = "Grounds"
 	groundRadius = radius
-	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true)
-	-- trees around the rim, wherever nothing is planned
+	Style.island(g, plot.frame, radius, 100 + plot.index, keepClear, true, lobes)
+	-- roads: the plaza ring and the paths into each district this land reaches (Config.ROADS)
+	local level = #lobes > 0 and (lobes[#lobes].exp or 0) or 0
+	local roads = Instance.new("Folder")
+	roads.Name = "Roads"
+	Style.road(roads, plot.frame, {}, 5, Config.ROAD_RING)
+	for _, r in Config.ROADS do
+		if r.exp <= level then
+			Style.road(roads, plot.frame, r, 4.5)
+		end
+	end
+	roads.Parent = g
+	-- trees around the rim of the base disc and of each lobe, wherever nothing is planned
+	local rim = {}
 	local n = math.floor(radius / 4)
 	for k = 0, n - 1 do
 		local a = k / n * math.pi * 2 + 0.13
 		local r = radius - 8 - (k % 2) * 3
-		local x, z = math.cos(a) * r, math.sin(a) * r
-		if not keepClear(x, z) then
+		table.insert(rim, { math.cos(a) * r, math.sin(a) * r, k })
+	end
+	for li, l in lobes do
+		local ln = math.floor(l.r / 4)
+		for k = 0, ln - 1 do
+			local a = k / ln * math.pi * 2
+			local r = l.r - 6 - (k % 2) * 3
+			local x, z = l.x + math.cos(a) * r, l.z + math.sin(a) * r
+			if Vector2.new(x, z).Magnitude > radius - 2 then -- only on the new land, not over the base disc
+				table.insert(rim, { x, z, li * 20 + k })
+			end
+		end
+	end
+	for _, t in rim do
+		local x, z, k = t[1], t[2], t[3]
+		-- base-rim trees that a lobe now surrounds would stand in the middle of the new land
+		local inner = Vector2.new(x, z).Magnitude < radius and onLobe(lobes, x, z, -4)
+		if not inner and not keepClear(x, z) then
 			if k % 3 == 0 then
 				Style.sakura(g, plot.frame * CFrame.new(x, 0, z), plot.index * 50 + k)
 			else
@@ -216,7 +269,7 @@ local function buildGrounds(plot, radius)
 	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
 	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
 	-- entrance archway carrying the owner's name
-	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 11, 10)
+	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 13, 16) -- taller (owner 2026-10-21)
 	sign.Name = "Sign"
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Back -- the board's +Z side (Front faced the frame: the name never showed)
@@ -434,22 +487,38 @@ local function tideOn()
 	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
 end
 
--- `away` = offline qi (and gifts), which never count the live tide or a pill; the 2x Qi pass counts
--- everywhere
+-- Friends here (D35): [player] = { [other player] = true } for Roblox friends on this server, checked
+-- once at join, in memory only; a friend counts while their session exists
+local friendsOf = {}
+
+local function friendCount(s)
+	local n = 0
+	for other in friendsOf[s.player] or {} do
+		if sessions[other] then
+			n += 1
+		end
+	end
+	return math.min(n, Config.FRIEND_MAX)
+end
+
+-- `away` = offline qi (and gifts), which never count the live tide, a pill or friends; the 2x Qi
+-- pass counts everywhere
 local function rate(s, away)
 	local data = s.data
 	local base = Config.BASE_RATE
 	for id in data.owned do
 		local pad = Config.padById(id)
 		if pad then
-			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0))
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
 		end
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
 	local pill = (not away and boosted(data)) and 2 or 1
 	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
 	local past = Config.pastLivesMult(data.soulPeak)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past
+	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
+	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group
 end
 
 -- share of this realm's pads owned (0..1)
@@ -472,6 +541,18 @@ local function publish(player)
 	player:SetAttribute("Qi", math.floor(d.qi))
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
+	local friends = friendCount(s)
+	player:SetAttribute("FriendsHere", friends)
+	local ids = {}
+	for other in friendsOf[player] or {} do
+		if sessions[other] and #ids < Config.FRIEND_MAX then
+			table.insert(ids, other.UserId)
+		end
+	end
+	player:SetAttribute("FriendIds", table.concat(ids, ",")) -- head shots on the HUD card
+	player:SetAttribute("GroupBonus", (s.inGroup and d.groupClaimed) == true)
+	player:SetAttribute("WelcomeQi", d.welcomed == false and Config.WELCOME_QI or 0) -- > 0: show the intro
+	s.friendsPeak = math.max(s.friendsPeak or 0, friends)
 	player:SetAttribute("Realm", d.realm)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
 	player:SetAttribute("HasHall", d.owned.hall == true)
@@ -615,7 +696,7 @@ local function makePad(player, s, pad, cost, label, income, onBuy, kind)
 	p:SetAttribute("Title", label)
 	p:SetAttribute("Cost", cost)
 	p:SetAttribute("Income", income)
-	p:SetAttribute("Feature", pad.feature)
+	p:SetAttribute("Feature", pad.feature or Config.districtLine(pad)) -- what it does, or its district bonus
 	p:SetAttribute("OwnerId", player.UserId)
 	p:SetAttribute("PadId", pad.id)
 	buildPreview(s, pad, p)
@@ -711,9 +792,11 @@ local function rebuild(s)
 	s.pads = {}
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
 	local radius = Config.islandRadius(s.data.owned)
+	local level = Config.expansionLevel(s.data.owned)
 	s.plot.realm = s.data.realm
-	if s.plot.radius ~= radius then
-		buildGrounds(s.plot, radius)
+	if s.plot.radius ~= radius or s.plot.landLevel ~= level then
+		s.plot.landLevel = level
+		buildGrounds(s.plot, radius, Config.islandLobes(s.data.owned))
 	else
 		RealmLook.apply(s.plot) -- what this realm shows around the peak (nothing below REALM_LOOK_FROM)
 	end
@@ -788,7 +871,8 @@ refreshPads = function(player, s)
 					end
 					-- an expansion grows the island under the player's feet
 					if pad.id == "expand1" or pad.id == "expand2" then
-						buildGrounds(s.plot, Config.islandRadius(s.data.owned))
+						s.plot.landLevel = Config.expansionLevel(s.data.owned)
+						buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned))
 						notify:FireClient(player, "expand")
 					end
 					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
@@ -946,13 +1030,62 @@ local KICK_TEXT = {
 }
 
 -- Join / leave -----------------------------------------------------------------------
-local function freePlot()
+-- a free peak beside a friend's when there is one (D35), else the first free peak; second value =
+-- placed next to a friend
+local function freePlot(friends)
 	for _, plot in plots do
-		if not plot.owner then
-			return plot
+		if plot.owner and friends[plot.owner] then
+			for _, step in { 1, -1 } do
+				local side = plots[(plot.index - 1 + step) % Config.PLOT_COUNT + 1]
+				if not side.owner then
+					return side, true
+				end
+			end
 		end
 	end
-	return nil
+	for _, plot in plots do
+		if not plot.owner then
+			return plot, false
+		end
+	end
+	return nil, false
+end
+
+-- the Roblox friends of `player` on this server, both ways; yields (one web call per other player)
+local function findFriends(player)
+	local mine = {}
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
+			if ok and yes then
+				mine[other] = true
+			end
+		end
+	end
+	if not player.Parent then
+		return mine
+	end
+	for other, theirs in friendsOf do
+		if theirs[player] then
+			mine[other] = true -- found us while our own check was still running
+		end
+	end
+	friendsOf[player] = mine
+	for other in mine do
+		if friendsOf[other] then
+			friendsOf[other][player] = true
+		end
+	end
+	return mine
+end
+
+-- after a friend's session starts or ends, their friends' rates change
+local function publishFriends(player)
+	for other in friendsOf[player] or {} do
+		if sessions[other] then
+			publish(other)
+		end
+	end
 end
 
 local function placeOnPeak(player)
@@ -971,10 +1104,17 @@ local function onJoin(player)
 	realm.Parent = ls
 	ls.Parent = player
 
-	local plot = freePlot()
+	local friends = findFriends(player)
+	if not player.Parent then
+		return
+	end
+	local plot, nextDoor = freePlot(friends)
 	if not plot then
 		warn("[Tycoon] no free peak for", player.Name)
 		return
+	end
+	if nextDoor then
+		Telemetry.custom(player, "Social", "next_door")
 	end
 	plot.owner = player
 	player:SetAttribute("PlotIndex", plot.index) -- clients place their effects with it
@@ -1000,11 +1140,21 @@ local function onJoin(player)
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Shop.onJoin(player, s) -- yields for the pass checks
+	if Config.GROUP_ID > 0 then
+		local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID) -- yields; before the offline qi
+		s.inGroup = okG and member == true
+	end
 	if not player.Parent then
 		return -- onLeave already ran (it found the session) and saved
 	end
 	if plot.vip then
 		plot.radius = nil -- rebuild() below redraws the grounds with the gold arch
+	end
+
+	-- Heavenly Gift (D36): only a save that never joined before gets it; a save from before the gift
+	-- existed counts as already welcomed. Stamped once, so it can never be paid twice.
+	if data.welcomed == nil then
+		data.welcomed = (data.sessions or 0) > 0
 	end
 
 	-- offline qi
@@ -1030,6 +1180,7 @@ local function onJoin(player)
 	rebuild(s)
 	refreshPads(player, s)
 	publish(player)
+	publishFriends(player)
 	if offlineGain > 0 or data.chestSummons > 0 then
 		task.delay(3, function()
 			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
@@ -1047,10 +1198,25 @@ end
 
 local function onLeave(player)
 	local s = sessions[player]
+	local friends = friendsOf[player] or {}
+	friendsOf[player] = nil
+	for other in friends do
+		if friendsOf[other] then
+			friendsOf[other][player] = nil
+		end
+	end
 	if not s then
 		return
 	end
 	sessions[player] = nil
+	for other in friends do
+		if sessions[other] then
+			publish(other)
+		end
+	end
+	if (s.friendsPeak or 0) > 0 then
+		Telemetry.custom(player, "Social", "friends_here", tostring(s.friendsPeak), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())))
+	end
 	local built = 0
 	for id in s.data.owned do
 		if Config.padById(id) then
@@ -1067,6 +1233,7 @@ local function onLeave(player)
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
 	s.plot.realm = nil
+	s.plot.landLevel = 0
 	buildGrounds(s.plot, Config.ISLAND_RADIUS) -- back to a fresh peak for the next owner
 end
 
@@ -1208,6 +1375,65 @@ giftFn.OnServerInvoke = function(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
 	return gain
 end
+
+-- Group gift (D35): the card asks for a like, then the group join, then Claim. Only the group is
+-- checked or paid (a like has no API and rewarding one breaks Roblox rules). A fresh check, since
+-- IsInGroup is cached for the whole session.
+groupFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or Config.GROUP_ID <= 0 then
+		return nil
+	end
+	if s.data.groupClaimed and s.inGroup then
+		return "claimed"
+	end
+	local now = os.clock()
+	if now - (s.groupAskAt or 0) < 3 then
+		return nil
+	end
+	s.groupAskAt = now
+	local ok, groups = pcall(GroupService.GetGroupsAsync, GroupService, player.UserId)
+	if not ok then
+		warn("[Tycoon] group check failed")
+		return "error"
+	end
+	for _, g in groups do
+		if g.Id == Config.GROUP_ID then
+			s.inGroup = true
+			local first = not s.data.groupClaimed
+			s.data.groupClaimed = true
+			publish(player)
+			if first then
+				Telemetry.custom(player, "Social", "group_claim", "", Telemetry.minuteBucket(s.data.playSec or 0))
+			end
+			return "claimed"
+		end
+	end
+	return "notMember"
+end
+
+-- Heavenly Gift (D36): paid once per save, on the intro's GO
+welcomeFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or s.data.welcomed ~= false then
+		return nil
+	end
+	s.data.welcomed = true
+	local gain = Config.WELCOME_QI
+	s.data.qi += gain
+	Telemetry.source(player, s.data, gain, "welcome")
+	publish(player)
+	return gain
+end
+
+inviteEv.OnServerEvent:Connect(function(player)
+	local s = sessions[player]
+	if not s or os.clock() - (s.inviteAt or 0) < 10 then
+		return
+	end
+	s.inviteAt = os.clock()
+	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
+end)
 
 -- Reincarnation: the ONE function every caller goes through, so the gate lives here. A new life
 -- lands at realm 1, below the REINC_REALM gate, so it can never be repeated for free.
@@ -1448,6 +1674,19 @@ if game:GetService("RunService"):IsStudio() then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
 				return true
 			end
+			if key == "friend" then
+				-- DebugSet:Invoke(player, "friend", other) counts `other` as a friend here (Studio test
+				-- players are never Roblox friends; `other` may be `player` itself in a solo Play)
+				friendsOf[player] = friendsOf[player] or {}
+				friendsOf[player][value] = true
+				friendsOf[value] = friendsOf[value] or {}
+				friendsOf[value][player] = true
+				publish(player)
+				if sessions[value] then
+					publish(value)
+				end
+				return true
+			end
 			if key == "altar" then
 				Altar.debugOpen() -- DebugSet:Invoke(player, "altar") opens a Heavenly Altar round now
 				return true
@@ -1475,7 +1714,7 @@ end
 local function passChanged(player, s, key)
 	if key == "vip" then
 		s.plot.vip = true
-		buildGrounds(s.plot, Config.islandRadius(s.data.owned)) -- redraws the arch in gold
+		buildGrounds(s.plot, Config.islandRadius(s.data.owned), Config.islandLobes(s.data.owned)) -- redraws the arch in gold
 		buildDisciples(s) -- the extra slot seats a benched disciple
 	end
 	publish(player)

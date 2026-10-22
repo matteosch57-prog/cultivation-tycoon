@@ -1,0 +1,68 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Intro mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- First-join intro options, painted over the real Play capture docs/art/captures/friends_here_play.jpg
+     (1808 x 833, a fresh peak). Render one option per file:
+     msedge --headless --window-size=1808,833 --screenshot=out.png "intro.html?A" -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1808px;height:833px;overflow:hidden}
+body{font-family:Fredoka,sans-serif;background:url(../captures/friends_here_play.jpg) 0 0/1808px 833px no-repeat;position:relative}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:6px #1b1420;paint-order:stroke fill;line-height:1}
+.abs{position:absolute}
+.cover{position:absolute;left:860px;top:112px;width:200px;height:22px;backdrop-filter:blur(6px)}
+.note{position:absolute;left:20px;bottom:16px;max-width:680px;font:600 20px Fredoka;color:#fff;-webkit-text-stroke:4px #1b1420;paint-order:stroke fill}
+.qi{display:inline-block;vertical-align:middle}
+.spark{position:absolute;width:10px;height:10px;border-radius:50%;background:#ffe58a;box-shadow:0 0 0 2px #1b1420}
+</style></head><body>
+<div class="cover"></div>
+<div id="root"></div>
+<div class="note" id="note"></div>
+<script>
+const qi = s => `<svg class="qi" width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+const orb = (s) => `<svg width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#ffd34d" stroke="#1b1420" stroke-width="5"/><circle cx="50" cy="50" r="26" fill="#ffe58a"/><path d="M50 30c8 7 12 12 12 19a12 12 0 0 1-24 0c0-7 4-12 12-19z" fill="#6fd6ae" stroke="#1b1420" stroke-width="4"/><circle cx="36" cy="36" r="6" fill="#fff" opacity=".8"/></svg>`;
+const opt = location.search.slice(1) || "A";
+const R = document.getElementById("root"), N = document.getElementById("note");
+const sparks = (cx, cy, n, r) => Array.from({length:n},(_,i)=>{const a=i/n*6.283, d=r*(0.6+0.4*((i*37)%10)/10);return `<div class="spark" style="left:${cx+Math.cos(a)*d}px;top:${cy+Math.sin(a)*d}px"></div>`}).join("");
+if (opt === "A") {
+  // A: Heaven's Gift. A gold qi orb floats down onto the grass in front of you; walk into it (the
+  // same move as a pad) and +200 qi bursts into the counter. Zero seconds of non-play.
+  R.innerHTML = `
+  <div class="abs" style="left:1105px;top:330px">${orb(120)}</div>
+  ${sparks(1165, 390, 14, 95)}
+  <div class="abs" style="left:1165px;top:300px;width:3px;height:0"></div>
+  <div class="abs t" style="left:50%;top:190px;transform:translateX(-50%);font-size:58px;color:#ffd34d;white-space:nowrap">Heaven's Gift!</div>
+  <div class="abs t" style="left:50%;top:262px;transform:translateX(-50%);font-size:30px;white-space:nowrap">Walk into it</div>
+  <div class="abs" style="left:1000px;top:520px;display:flex;gap:26px;transform:rotate(-12deg)">
+    ${[0,1,2].map(i=>`<div style="width:38px;height:12px;background:#6fd6aa;border:3px solid #225c4a;border-radius:4px;transform:skewX(-30deg)"></div>`).join("")}
+  </div>`;
+  N.textContent = "A (my pick): a gold orb lands in front of you; walk into it for +200 Qi. No cutscene";
+} else if (opt === "A2") {
+  // A, the moment after: the burst and the qi flying to the counter
+  R.innerHTML = `
+  ${sparks(1165, 400, 22, 150)}
+  <div class="abs t" style="left:1060px;top:330px;font-size:64px;color:#9ff5c8;white-space:nowrap">+200 ${qi(56)}</div>
+  ${[0,1,2,3,4].map(i=>`<div class="abs" style="left:${1120-i*45}px;top:${300-i*45}px;opacity:${1-i*0.12}">${qi(40)}</div>`).join("")}
+  <div class="abs t" style="left:50%;top:190px;transform:translateX(-50%);font-size:40px;white-space:nowrap">Build your sect!</div>`;
+  N.textContent = "A, a second later: +200 Qi flies into the counter, the trail points at the first pad";
+} else if (opt === "B") {
+  // B: Sky arrival. A 3 s camera swoop from the clouds to your peak, the title, then the gift
+  R.innerHTML = `
+  <div class="abs" style="left:0;top:0;width:100%;height:90px;background:#120c18"></div>
+  <div class="abs" style="left:0;bottom:0;width:100%;height:90px;background:#120c18"></div>
+  <div class="abs t" style="left:50%;top:300px;transform:translateX(-50%);font-size:76px;color:#ffd34d;white-space:nowrap">Your Peak Awaits</div>
+  <div class="abs t" style="left:50%;top:395px;transform:translateX(-50%);font-size:34px;white-space:nowrap">+200 ${qi(32)} to start</div>
+  <div class="abs t" style="right:30px;bottom:110px;font-size:22px">Tap to skip</div>`;
+  N.textContent = "B: a 3 second swoop from the clouds with a title, then play (Gladiator's lesson: players leave in cutscenes)";
+} else if (opt === "C") {
+  // C: an elder at your gate. One line, one button, the qi
+  R.innerHTML = `
+  <div class="abs" style="left:520px;top:300px;background:#fff8e8;border:4px solid #1b1420;border-radius:22px;padding:18px 24px;box-shadow:0 6px 0 #1b1420;max-width:420px">
+    <div style="font:700 30px Fredoka;color:#1b1420">Welcome, disciple!</div>
+    <div style="font:600 22px Fredoka;color:#4a3a50;margin-top:6px">Take this qi and build your sect.</div>
+    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;background:#ffd34d;border:3px solid #1b1420;border-radius:14px;box-shadow:0 4px 0 #1b1420;padding:8px 18px" class="t"><span style="font-size:30px">Take +200</span>${qi(30)}</div>
+  </div>
+  <div class="abs" style="left:610px;top:470px;width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:24px solid #1b1420"></div>`;
+  N.textContent = "C: an elder at your gate (a real cultivator NPC) says one line and hands you the qi";
+}
+</script></body></html>

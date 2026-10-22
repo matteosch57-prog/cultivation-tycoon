@@ -1,4 +1,10 @@
 {
   "ClassName": "Folder",
-  "Children": []
+  "Children": [
+    { "Name": "sakura", "ClassName": "SurfaceAppearance", "Properties": { "ColorMap": "rbxassetid://109188186636012", "AlphaMode": "Transparency" } },
+    { "Name": "ginkgo", "ClassName": "SurfaceAppearance", "Properties": { "ColorMap": "rbxassetid://97124287694252", "AlphaMode": "Transparency" } },
+    { "Name": "maple", "ClassName": "SurfaceAppearance", "Properties": { "ColorMap": "rbxassetid://77393430566938", "AlphaMode": "Transparency" } },
+    { "Name": "green", "ClassName": "SurfaceAppearance", "Properties": { "ColorMap": "rbxassetid://75704171463635", "AlphaMode": "Transparency" } },
+    { "Name": "pine", "ClassName": "SurfaceAppearance", "Properties": { "ColorMap": "rbxassetid://95959167537015", "AlphaMode": "Transparency" } }
+  ]
 }

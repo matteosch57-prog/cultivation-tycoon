@@ -291,6 +291,44 @@ def write_obj(path, mesh, name):
     print(f"{path}: {len(mesh['f'])} triangles")
 
 
+def write_glb(path, mesh):
+    """The same canopy as binary glTF: asphalt (Open Cloud) uploads .glb but not .obj."""
+    import struct
+
+    v, vt, vn, f = mesh["v"], mesh["vt"], mesh["vn"], mesh["f"]
+    pos = b"".join(struct.pack("<3f", *x) for x in v)
+    nor = b"".join(struct.pack("<3f", *(np.array(x) / np.linalg.norm(x))) for x in vn)
+    uv = b"".join(struct.pack("<2f", u, 1 - w) for u, w in vt)  # glTF puts the uv origin top-left
+    idx = b"".join(struct.pack("<3I", *t) for t in f)
+    data = pos + nor + uv + idx
+    mn = [float(min(x[i] for x in v)) for i in range(3)]
+    mx = [float(max(x[i] for x in v)) for i in range(3)]
+    off = [0, len(pos), len(pos) + len(nor), len(pos) + len(nor) + len(uv)]
+    lens = [len(pos), len(nor), len(uv), len(idx)]
+    gltf = {
+        "asset": {"version": "2.0"},
+        "scene": 0,
+        "scenes": [{"nodes": [0]}],
+        "nodes": [{"mesh": 0, "name": os.path.splitext(os.path.basename(path))[0]}],
+        "meshes": [{"primitives": [{"attributes": {"POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2}, "indices": 3}]}],
+        "buffers": [{"byteLength": len(data)}],
+        "bufferViews": [{"buffer": 0, "byteOffset": off[i], "byteLength": lens[i], "target": 34963 if i == 3 else 34962} for i in range(4)],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": len(v), "type": "VEC3", "min": mn, "max": mx},
+            {"bufferView": 1, "componentType": 5126, "count": len(vn), "type": "VEC3"},
+            {"bufferView": 2, "componentType": 5126, "count": len(vt), "type": "VEC2"},
+            {"bufferView": 3, "componentType": 5125, "count": len(f) * 3, "type": "SCALAR"},
+        ],
+    }
+    js = json.dumps(gltf, separators=(",", ":")).encode()
+    js += b" " * ((4 - len(js) % 4) % 4)
+    data += b"\x00" * ((4 - len(data) % 4) % 4)
+    with open(path, "wb") as fh:
+        fh.write(struct.pack("<III", 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(data)))
+        fh.write(struct.pack("<II", len(js), 0x4E4F534A) + js)
+        fh.write(struct.pack("<II", len(data), 0x004E4942) + data)
+
+
 def main():
     for sub in ("meshes", "textures", "preview"):
         os.makedirs(os.path.join(ROOT, sub), exist_ok=True)
@@ -302,6 +340,7 @@ def main():
     }
     for name, m in meshes.items():
         write_obj(os.path.join(ROOT, "meshes", name + ".obj"), m, name)
+        write_glb(os.path.join(ROOT, "meshes", name + ".glb"), m)
         with open(os.path.join(ROOT, "preview", name + ".json"), "w") as fh:
             json.dump({"v": m["v"], "vt": m["vt"], "vn": m["vn"], "f": m["f"]}, fh, separators=(",", ":"))
     sheet = Image.new("RGBA", (TEX * len(KINDS), TEX), (40, 40, 40, 255))

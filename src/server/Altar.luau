@@ -158,7 +158,7 @@ local function build(parent)
 	end
 	-- Spirit Springs on the plaza, either side of the cauldron (clear of the spawn at z = 9)
 	for _, sx in { -1, 1 } do
-		local c = Vector3.new(sx * 9.5, ctx.baseY + 0.45, -2)
+		local c = Vector3.new(sx * 13, ctx.baseY + 0.45, -2) -- outside the rim: the arc must clear the underside
 		local ring = P(
 			m,
 			Vector3.new(0.3, 4.6, 4.6),

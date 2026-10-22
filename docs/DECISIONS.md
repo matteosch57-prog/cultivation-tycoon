@@ -130,6 +130,24 @@ the log as a D-number.
   prompts) and tycoon practice (upgrades beside what they upgrade); no public data compares pads
   with a screen, so the `Shop` event's sources are how we measure it. Research
   `docs/research/2026-10-21_shop_placement.md`; mocks `docs/art/mocks/shop_layout_*.png`.
+- **D35** Friends here (owner picked idea 1 of `docs/research/2026-10-21_playing_together.md`, "1
+  good"): each Roblox friend on the server adds +10% live qi, at most 3 (+30%), and a friend's peak
+  is placed next door. Why: playing together is what Roblox measures and rewards, and this is the
+  smallest form that needs no screen and works alone (stealing, trading and guilds left out: "fair and
+  calm", scams, and Gladiator RNG's lesson that the first session decides, not the social layer).
+  Economy check (`sim_economy.py --set FRIENDS_LIVE_MULT=1.3`): realm 10 day 20 -> 19 for a regular
+  player with 3 friends all the time, so the 2x Qi pass keeps its value. Design: ECONOMY "Friends here".
+  Then (owner): the friends card on the right with Invite (mock A of `docs/art/mocks/friends_*.png`)
+  and a group gift card "Like the game, Join the group, Claim" with no group link in game ("they'd need
+  to get out, get in group and relaunch the game so they'd pass by to like eventually"). Only the group
+  is checked and paid (+`GROUP_BONUS` qi): a like reward breaks Roblox rules and has no API.
+- **D36** Intro = the Heavenly Gift (owner: "HEAVENLY GIFT with a nice shiny green GO button that
+  bursts", after mocks `docs/art/mocks/intro_*.png`; "give some Qi rewards so they can do the first
+  buildings with no wait"). A new save opens on the title, +`WELCOME_QI` and GO; GO pays once per save
+  (`data.welcomed`, old saves count as welcomed) and the qi bursts into the counter. 200 = the first
+  four buildings. Economy check (sim_pacing START_QI sweep 100 / 200 / 400): Main Hall ~0.5 min instead
+  of 1.1, realms 2 to 5 move under a minute, more than 200 just waits in the counter. One tap and no
+  cutscene, after Gladiator RNG's lesson that players leave during non-play.
 - **D37** First reincarnation at realm 2 (owner: "40m is long to hook. 5-10m is good"; he asked to
   "get to the loop FAST"). `REINC_REALM` 2, `PAST_LIVES_MULT` 1.5 (x2 or x3 kept every life under ~1 h
   forever, so it never got hard), karma `KARMA_GROWTH` ^ depth and paid only for a new record depth

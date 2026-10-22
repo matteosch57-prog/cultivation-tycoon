@@ -487,6 +487,68 @@ function Style.bellTower(parent, cf)
 	return m
 end
 
+---------------------------------------------------------------------------------------------
+-- Water kit (owner 2026-10-21: "the water sources and the waterfall can be improved"; Gladiator
+-- water research: no Glass, no Terrain water; flowing water = Beams with a scrolling texture over
+-- an opaque water part). Textures from tools/water_textures.py: white on alpha, tinted per beam.
+local WATER_FLOW = "rbxassetid://127092514641386" -- art/textures/water_flow.png
+local WATER_RIPPLE = "rbxassetid://125640503943862" -- art/textures/water_ripple.png
+local WATER = Color3.fromHex("4FA3C7")
+local SHINE = Color3.fromHex("E6F8FF")
+
+local function beam(parent, a0, a1, tex, props)
+	local b = Instance.new("Beam")
+	b.Attachment0, b.Attachment1 = a0, a1
+	b.Texture = tex
+	b.TextureMode = Enum.TextureMode.Wrap
+	b.Segments = 1
+	b.LightInfluence = 0.6
+	for k, v in props do
+		b[k] = v
+	end
+	b.Parent = parent
+	return b
+end
+
+-- Shimmering light ripples drifting over a flat water surface. `at` = the surface centre,
+-- `len` x `wide` studs (an inscribed square on a round pool: side = 0.7 x the diameter).
+local function shimmer(m, at, len, wide, speed)
+	local holder = P(m, Vector3.new(0.2, 0.2, 0.2), at, WATER)
+	holder.Transparency = 1
+	holder.CanCollide, holder.CanQuery, holder.CanTouch = false, false, false
+	-- attachments along X; their Y axis lies flat (along Z), which is where a flat beam's width goes
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.CFrame = CFrame.fromMatrix(Vector3.new(-len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
+	a1.CFrame = CFrame.fromMatrix(Vector3.new(len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
+	a0.Parent, a1.Parent = holder, holder
+	beam(holder, a0, a1, WATER_RIPPLE, {
+		FaceCamera = false,
+		Width0 = wide,
+		Width1 = wide,
+		TextureLength = wide,
+		TextureSpeed = speed or 0.05,
+		Color = ColorSequence.new(SHINE),
+		Transparency = NumberSequence.new(0.55),
+		LightEmission = 0.3,
+	})
+end
+
+-- A small round pond (resource plots: fire lotus, meditation spring): a ring of rim stones, the
+-- opaque water and its drifting ripples. `tint` colours the water. Returns the model.
+function Style.pond(parent, cf, radius, tint)
+	local m = Instance.new("Model")
+	m.Name = "Pond"
+	local n = math.max(8, math.floor(radius * 2.2))
+	for i = 0, n - 1 do
+		local a = i / n * math.pi * 2
+		P(m, Vector3.new(radius * 0.55 + 0.6, 0.8, 1.2), cf * CFrame.new(math.cos(a) * radius, 0.4, math.sin(a) * radius) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
+	end
+	cylY(m, 0.3, radius * 2 - 0.4, cf * CFrame.new(0, 0.45, 0), tint or WATER).Reflectance = 0.12
+	shimmer(m, cf * CFrame.new(0, 0.6, 0), radius * 1.3, radius * 1.3, 0.05)
+	m.Parent = parent
+	return m
+end
+
 function Style.koiPond(parent, cf, seed)
 	local rng = Random.new(seed or 8)
 	local m = Instance.new("Model")
@@ -496,8 +558,25 @@ function Style.koiPond(parent, cf, seed)
 		local a = i / 16 * math.pi * 2
 		P(m, Vector3.new(3.2, 1, 2.2), cf * CFrame.new(math.cos(a) * 8, 0.5, math.sin(a) * 8) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
 	end
-	cylY(m, 0.3, 15.6, cf * CFrame.new(0, 0.55, 0), Color3.fromHex("4FA3C7"))
-	cylY(m, 0.31, 9, cf * CFrame.new(1.5, 0.56, -1), Color3.fromHex("5DB6D6"))
+	cylY(m, 0.3, 15.6, cf * CFrame.new(0, 0.55, 0), WATER).Reflectance = 0.12
+	cylY(m, 0.31, 9, cf * CFrame.new(1.5, 0.56, -1), Color3.fromHex("5DB6D6")).Reflectance = 0.12
+	shimmer(m, cf * CFrame.new(0, 0.7, 0), 10.5, 10.5, 0.04)
+	-- now and then a ring spreads where a koi rose (Rate 0.5 x 2.5 s ~ 1 live)
+	local ringAt = P(m, Vector3.new(9, 0.2, 9), cf * CFrame.new(0, 0.75, 0), WATER)
+	ringAt.Transparency = 1
+	ringAt.CanCollide, ringAt.CanQuery, ringAt.CanTouch = false, false, false
+	local rings = Instance.new("ParticleEmitter")
+	rings.Texture = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+	rings.Shape = Enum.ParticleEmitterShape.Box
+	rings.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	rings.EmissionDirection = Enum.NormalId.Top
+	rings.Speed = NumberRange.new(0.01)
+	rings.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 3.5) })
+	rings.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	rings.Color = ColorSequence.new(SHINE)
+	rings.Lifetime = NumberRange.new(2.5)
+	rings.Rate = 0.5
+	rings.Parent = ringAt
 	-- lily pads, lotus flowers and koi
 	for i = 1, 7 do
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(2, 6.5)
@@ -704,10 +783,94 @@ end
 -- of a flat green part. Measured 2026-10-21: FillCylinder snaps the surface to the 4-stud grid
 -- (only world y = +2 or -2 are reachable), so islands using terrain must stand at world y = 2
 -- and the fill is always centred at world y = -4 (height 4), which surfaces exactly at y = 2.
-function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
+local LAWN = Color3.fromHex("7DAA5C") -- the terrain LeafyGrass colour (Main setupLighting)
+local QI = Color3.fromHex("6FF2C8")
+
+-- The magic that holds an island up (owner 2026-10-21: "under it some magical aura like flying,
+-- cheap for performance"; research 2026-10-21_nature): a slow jade sigil turning under the
+-- bottom, qi motes rising along the underside, and spirit crystals jutting from the rock, each
+-- with a small real light (R3). Particle budget per island: sigil and ring Rate 0.3 x 8 s = 2-3
+-- live each, motes Rate 5 x 6 s = 30 live; no per-frame code.
+local function levitation(m, cf, radius, depth, rng)
+	local sigilAt = P(m, Vector3.new(1, 1, 1), cf * CFrame.new(0, -6 - depth - 4, 0), QI)
+	sigilAt.Transparency = 1
+	sigilAt.CanCollide = false
+	sigilAt.CanQuery = false
+	sigilAt.CanTouch = false
+	local sigil = Instance.new("ParticleEmitter")
+	sigil.Name = "Sigil"
+	sigil.Texture = "rbxasset://textures/particles/forcefield_vortex_main.dds"
+	sigil.Color = ColorSequence.new(QI, Color3.fromHex("B9FFF0"))
+	sigil.LightEmission = 1
+	sigil.LightInfluence = 0
+	sigil.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	sigil.EmissionDirection = Enum.NormalId.Top
+	sigil.Speed = NumberRange.new(0.01)
+	sigil.Size = NumberSequence.new(radius * 1.8)
+	sigil.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.12), NumberSequenceKeypoint.new(0.7, 0.12), NumberSequenceKeypoint.new(1, 1) })
+	sigil.Lifetime = NumberRange.new(8)
+	sigil.Rate = 0.3
+	sigil.RotSpeed = NumberRange.new(8)
+	sigil.Rotation = NumberRange.new(0, 360)
+	sigil.Parent = sigilAt
+	-- a second, wider ring turning the other way (owner 2026-10-21 picked the stronger aura)
+	local ring = sigil:Clone()
+	ring.Name = "Ring"
+	ring.Texture = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+	ring.Size = NumberSequence.new(radius * 2.4)
+	ring.RotSpeed = NumberRange.new(-6)
+	ring.Parent = sigilAt
+	-- motes rise from a box under the island and fade before the grass
+	local moteBox = P(m, Vector3.new(radius * 1.4, 1, radius * 1.4), cf * CFrame.new(0, -6 - depth * 0.8, 0), QI)
+	moteBox.Transparency = 1
+	moteBox.CanCollide = false
+	moteBox.CanQuery = false
+	moteBox.CanTouch = false
+	local motes = Instance.new("ParticleEmitter")
+	motes.Name = "QiMotes"
+	motes.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	motes.Color = ColorSequence.new(QI, Color3.new(1, 1, 1))
+	motes.LightEmission = 1
+	motes.LightInfluence = 0
+	motes.Shape = Enum.ParticleEmitterShape.Box
+	motes.EmissionDirection = Enum.NormalId.Top
+	motes.Speed = NumberRange.new(1.5, 3)
+	motes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 1.8), NumberSequenceKeypoint.new(1, 0) })
+	motes.Lifetime = NumberRange.new(5, 7)
+	motes.Rate = 5
+	motes.Parent = moteBox
+	-- spirit crystals jutting down and out of the rock
+	for i = 1, 6 do
+		local a = i / 6 * math.pi * 2 + rng:NextNumber(-0.3, 0.3)
+		-- on the rock's outer face at that depth (the underside narrows like the rings in island())
+		local d = rng:NextNumber(0.2, 0.45)
+		local r = radius * 0.95 * (1 - d) ^ 0.9 + 1
+		local base = cf * CFrame.new(math.cos(a) * r, -6 - depth * d, math.sin(a) * r)
+		local out = CFrame.Angles(0, -a, 0) * CFrame.Angles(0, 0, math.rad(-55)) -- leaning out and down
+		for c = 1, 3 do
+			local len = radius * rng:NextNumber(0.1, 0.16) * (c == 1 and 1.5 or 1) -- grows with the island
+			local w = len * 0.28
+			local crystal = P(m, Vector3.new(w, len, w), base * out * CFrame.Angles(rng:NextNumber(-0.4, 0.4), rng:NextNumber(0, 6), rng:NextNumber(-0.4, 0.4)) * CFrame.new(0, -len * 0.45, 0) * CFrame.Angles(0, math.rad(45), 0), QI:Lerp(Color3.new(1, 1, 1), c == 1 and 0.15 or 0), Enum.Material.Neon)
+			crystal.CastShadow = false
+			if c == 1 then
+				local light = Instance.new("PointLight")
+				light.Color = QI
+				light.Range = 20
+				light.Brightness = 1.6
+				light.Shadows = false
+				light.Parent = crystal
+			end
+		end
+	end
+end
+
+-- `extra` = lobes of land the expansions added (Config.islandLobes: { x, z, r }), each with its own
+-- grass top, dirt band, rock underside and grass drips, joined to the base disc.
+function Style.island(parent, cf, radius, seed, keepClear, useTerrain, extra)
 	local rng = Random.new(seed or 5)
 	local m = Instance.new("Model")
 	m.Name = "Island"
+	extra = extra or {}
 	-- irregular outline: a main disc plus lobes
 	local lobes = { { 0, 0, radius } }
 	for i = 1, 7 do
@@ -715,6 +878,14 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		-- lobes reach at most 1.05 x radius (Main.server clears terrain on that promise)
 		local r = radius * rng:NextNumber(0.6, 0.68)
 		table.insert(lobes, { math.cos(a) * r, math.sin(a) * r, radius * rng:NextNumber(0.3, 0.37) })
+	end
+	for _, e in extra do
+		table.insert(lobes, { e.x, e.z, e.r })
+		for i = 1, 3 do
+			local a = math.atan2(e.z, e.x) + (i - 2) * 0.9 + rng:NextNumber(-0.2, 0.2)
+			local r = e.r * rng:NextNumber(0.45, 0.6)
+			table.insert(lobes, { e.x + math.cos(a) * r, e.z + math.sin(a) * r, e.r * rng:NextNumber(0.4, 0.48) })
+		end
 	end
 	for _, l in lobes do
 		local at = cf * CFrame.new(l[1], 0, l[2])
@@ -725,33 +896,45 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		else
 			cylY(m, 2, l[3] * 2, at * CFrame.new(0, -1, 0), PAL.grass, Enum.Material.SmoothPlastic)
 		end
-		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -1.9, 0), PAL.grassDark, Enum.Material.SmoothPlastic)
+		-- the lawn runs right to the border (owner 2026-10-21): the lip is the lawn's own green, its
+		-- top just under the grass surface and the terrain's own material, so the edge reads as the same
+		-- ground (a SmoothPlastic lip read as a flat green ring round the lawn)
+		cylY(m, 1.2, l[3] * 2 + 1.4, at * CFrame.new(0, -0.95, 0), useTerrain and LAWN or PAL.grass, useTerrain and Enum.Material.LeafyGrass or Enum.Material.SmoothPlastic)
 		cylY(m, 3, l[3] * 2 + 0.2, at * CFrame.new(0, -4, 0), PAL.dirt, Enum.Material.SmoothPlastic)
 	end
 	-- rock underside: rings of faceted chunks, narrowing and darkening with depth
-	local layers = 6
 	local depth = radius * 1.1
-	local step = depth / layers
-	for k = 0, layers - 1 do
-		local f = 1 - k / layers
-		local ringR = radius * 0.95 * f ^ 0.9
-		local h = step * 1.5
-		-- every chunk's TOP stays under the dirt band (y <= -6), so nothing pokes through the grass
-		local y = -6.5 - k * step - h / 2
-		local n = math.max(3, math.floor(ringR / 3.2))
-		-- warm sandstone near the grass, fading to a cool slate that melts into the clouds
-		local col = Color3.fromHex("A08A74"):Lerp(Color3.fromHex("5A5670"), (k / (layers - 1)) ^ 0.8)
-		-- chunks grow with the island and sit with their outer face on the ring (centred at 0.72 x
-		-- ring and capped at 14 studs, the body ended at ~0.77 x radius: a table top at r = 90)
-		local cap = math.max(14, radius * 0.22)
-		for i = 1, n do
-			local a = i / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
-			local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, cap)
-			local cr = ringR - s * 0.55
-			local at = cf * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr)
-			P(m, Vector3.new(s, h, s), at * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6), rng:NextNumber(-0.12, 0.12)), col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)))
+	local function under(ox, oz, R)
+		local layers = 6
+		local dep = R * 1.1
+		local step = dep / layers
+		local base = cf * CFrame.new(ox, 0, oz)
+		for k = 0, layers - 1 do
+			local f = 1 - k / layers
+			local ringR = R * 0.95 * f ^ 0.9
+			local h = step * 1.5
+			-- every chunk's TOP stays under the dirt band (y <= -6), so nothing pokes through the grass
+			local y = -6.5 - k * step - h / 2
+			local n = math.max(3, math.floor(ringR / 3.2))
+			-- warm sandstone near the grass, fading to a cool slate that melts into the clouds
+			local col = Color3.fromHex("A08A74"):Lerp(Color3.fromHex("5A5670"), (k / (layers - 1)) ^ 0.8)
+			-- chunks grow with the island and sit with their outer face on the ring (centred at 0.72 x
+			-- ring and capped at 14 studs, the body ended at ~0.77 x radius: a table top at r = 90)
+			local cap = math.max(14, R * 0.22)
+			for i = 1, n do
+				local a = i / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+				local s = math.min(ringR * rng:NextNumber(0.4, 0.55) + 3, cap)
+				local cr = ringR - s * 0.55
+				local at = base * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr)
+				P(m, Vector3.new(s, h, s), at * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6), rng:NextNumber(-0.12, 0.12)), col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)))
+			end
+			cylY(m, h, ringR * 1.8, base * CFrame.new(0, y, 0), col)
 		end
-		cylY(m, h, ringR * 1.8, cf * CFrame.new(0, y, 0), col)
+	end
+	under(0, 0, radius)
+	for _, e in extra do
+		under(e.x, e.z, e.r)
+		cylY(m, 1.6, e.r * 1.92, cf * CFrame.new(e.x, -6.2, e.z), Color3.fromHex("B8A48C")) -- the crisp shelf
 	end
 	-- hanging spires
 	for i = 1, 4 do
@@ -777,6 +960,7 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 			end
 		end
 	end
+	levitation(m, cf, radius, depth, rng)
 	-- a lighter rock shelf right under the dirt band (gives the cliff a crisp top edge)
 	cylY(m, 1.6, radius * 1.92, cf * CFrame.new(0, -6.2, 0), Color3.fromHex("B8A48C"))
 	-- grass drips over the rim: tapered green tongues hanging down the dirt band
@@ -786,8 +970,27 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		local r = radius * rng:NextNumber(0.97, 1.02)
 		local len = rng:NextNumber(1.6, 3.8)
 		local at = cf * CFrame.new(math.cos(a) * r, -1.6 - len / 2, math.sin(a) * r) * CFrame.Angles(0, -a + math.pi / 2, 0)
-		P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, i % 3 == 0 and PAL.grass or PAL.grassDark)
-		P(m, Vector3.new(0.9, len * 0.5, 0.7), at * CFrame.new(0, -len * 0.55, 0), PAL.grassDark)
+		local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, i % 3 == 0 and 0 or 0.35))
+		local tip = P(m, Vector3.new(0.9, len * 0.5, 0.7), at * CFrame.new(0, -len * 0.55, 0), PAL.grassDark)
+		if useTerrain then -- the same grass as the lawn, not plastic tabs
+			drip.Material = Enum.Material.LeafyGrass
+			tip.Material = Enum.Material.LeafyGrass
+		end
+	end
+	for _, e in extra do
+		local d = math.floor(e.r / 2.2)
+		for i = 1, d do
+			local a = i / d * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
+			local x, z = e.x + math.cos(a) * e.r, e.z + math.sin(a) * e.r
+			if Vector2.new(x, z).Magnitude > radius + 2 then
+				local len = rng:NextNumber(1.6, 3.8)
+				local at = cf * CFrame.new(x, -1.6 - len / 2, z) * CFrame.Angles(0, -a + math.pi / 2, 0)
+				local drip = P(m, Vector3.new(rng:NextNumber(1.6, 3), len, 0.8), at, LAWN:Lerp(PAL.grassDark, 0.2))
+				if useTerrain then
+					drip.Material = Enum.Material.LeafyGrass
+				end
+			end
+		end
 	end
 	-- dangling roots under the shelf
 	for i = 1, math.floor(radius / 8) do
@@ -808,9 +1011,18 @@ function Style.island(parent, cf, radius, seed, keepClear, useTerrain)
 		local r = radius * rng:NextNumber(1.15, 1.35)
 		local s = rng:NextNumber(2.5, 5)
 		local at = cf * CFrame.new(math.cos(a) * r, rng:NextNumber(-14, -4), math.sin(a) * r)
-		P(m, Vector3.new(s, s * 0.45, s), at, PAL.grass)
-		P(m, Vector3.new(s * 0.85, s * 0.9, s * 0.85), at * CFrame.new(0, -s * 0.6, 0) * CFrame.Angles(0, rng:NextNumber(0, 3), 0.15), Color3.fromHex("8E7C6C"))
-		P(m, Vector3.new(s * 0.45, s * 0.6, s * 0.45), at * CFrame.new(0, -s * 1.2, 0) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Color3.fromHex("5A5670"))
+		-- a lawn cap in the island's own grass on a faceted rock that narrows to a point, with a
+		-- small spirit crystal under it (the plain boxes read as cubes, review 2026-10-21)
+		local cap = cylY(m, s * 0.3, s * 1.1, at, useTerrain and LAWN or PAL.grass)
+		if useTerrain then
+			cap.Material = Enum.Material.LeafyGrass
+		end
+		for j = 0, 2 do
+			local w = s * (0.95 - j * 0.3)
+			P(m, Vector3.new(w, s * 0.5, w), at * CFrame.new(0, -s * (0.35 + j * 0.42), 0) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 3), rng:NextNumber(-0.15, 0.15)), Color3.fromHex("8E7C6C"):Lerp(Color3.fromHex("5A5670"), j / 2))
+		end
+		local gem = P(m, Vector3.new(s * 0.18, s * 0.6, s * 0.18), at * CFrame.new(0, -s * 1.45, 0) * CFrame.Angles(0, math.rad(45), 0), QI, Enum.Material.Glass)
+		gem.CastShadow = false
 	end
 	-- boulders and grass tufts on the top
 	for i = 1, 8 do
@@ -1006,33 +1218,149 @@ function Style.qiArray(parent, cf, r)
 	return m
 end
 
--- Plank rope bridge between two world points at deck height.
+-- Rope bridge between two world points at deck height (owner 2026-10-21: "make bridges better").
+-- The deck sags in a gentle curve like a real rope bridge, each plank follows the curve with a
+-- small gap and its own tilt and shade; two stringers run under the planks, posts with caps stand
+-- every few studs, and two ropes per side (a handrail and a knee rope) sag between them with
+-- thin hangers down to the deck. Each end has thick gate posts with a red paper lantern (a real
+-- light, R3) toward the far end of the span. Planks collide; ropes and stringers do not.
+local ROPE = Color3.fromHex("A8875A") -- hemp (the pale rope read as white pipes in the sun)
+local function ghost(p)
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	return p
+end
+-- a rod nothing collides with (ropes, stringers): the planks and posts carry the walking
+local function cord(parent, a, b, dia, color)
+	local len = (b - a).Magnitude
+	if len < 0.01 then
+		return
+	end
+	ghost(P(parent, Vector3.new(len, dia, dia), CFrame.lookAt((a + b) / 2, b) * CFrame.Angles(0, math.pi / 2, 0), color, nil, Enum.PartType.Cylinder)).CastShadow = false
+	ghost(P(parent, Vector3.new(dia, dia, dia), CFrame.new(b), color, nil, Enum.PartType.Ball)).CastShadow = false
+end
+
 function Style.bridge(parent, a, b, width)
 	local m = Instance.new("Model")
 	m.Name = "Bridge"
 	local len = (b - a).Magnitude
 	local base = CFrame.lookAt(a, b) -- -Z runs from a to b
 	local rng = Random.new(math.floor(a.X + b.Z))
-	local n = math.floor(len / 1.9)
+	local sag = math.min(len * 0.025, 3)
+	-- deck point at distance d along the span (the curve dips toward the middle)
+	local function at(d, x, y)
+		local t = d / len
+		return base * CFrame.new(x or 0, (y or 0) - sag * 4 * t * (1 - t), -d)
+	end
+	local function slope(d)
+		local t = d / len
+		return math.atan(sag * 4 * (1 - 2 * t) / len) -- the deck's rise per stud, as an angle
+	end
+	local woods = { PAL.timber, Color3.fromHex("6B4630"), Color3.fromHex("7A5236"), Color3.fromHex("5A3A28") }
+	local n = math.floor(len / 1.7)
 	for i = 0, n do
 		local d = i * len / n
-		local woods = { PAL.timber, Color3.fromHex("6B4630"), Color3.fromHex("4F3324") }
-		P(m, Vector3.new(width, 0.5, 1.55), base * CFrame.new(rng:NextNumber(-0.15, 0.15), -0.25, -d) * CFrame.Angles(0, math.rad(rng:NextNumber(-2, 2)), 0), woods[i % 3 + 1])
+		local plank = P(m, Vector3.new(width + rng:NextNumber(-0.3, 0.3), 0.45, 1.4), at(d, rng:NextNumber(-0.12, 0.12), -0.25) * CFrame.Angles(slope(d), math.rad(rng:NextNumber(-2.5, 2.5)), math.rad(rng:NextNumber(-1, 1))), woods[rng:NextInteger(1, #woods)])
+		plank.Material = Enum.Material.Wood
 	end
+	local posts = math.max(2, math.floor(len / 8))
 	for _, sx in { -1, 1 } do
-		P(m, Vector3.new(0.8, 0.8, len), base * CFrame.new(sx * (width / 2 - 0.8), -0.8, -len / 2), PAL.timberDark)
-		local posts = math.max(2, math.floor(len / 10))
+		-- stringers under the plank ends, segment by segment along the curve
 		local prev
 		for k = 0, posts do
 			local d = k * len / posts
-			local top = (base * CFrame.new(sx * (width / 2 + 0.2), 3.2, -d)).Position
-			P(m, Vector3.new(0.7, 3.8, 0.7), base * CFrame.new(sx * (width / 2 + 0.2), 1.4, -d), PAL.timber)
+			local p = at(d, sx * (width / 2 - 0.7), -0.75).Position
 			if prev then
-				local mid = (prev + top) / 2 - Vector3.new(0, 0.6, 0) -- rope sag
-				rod(m, prev, mid, 0.22, Color3.fromHex("C9B48A"))
-				rod(m, mid, top, 0.22, Color3.fromHex("C9B48A"))
+				cord(m, prev, p, 0.55, PAL.timberDark)
 			end
-			prev = top
+			prev = p
+		end
+		local rail, knee
+		for k = 0, posts do
+			local d = k * len / posts
+			local endPost = k == 0 or k == posts
+			local h = endPost and 5.2 or 3.9
+			local w = endPost and 1.1 or 0.6
+			local foot = at(d, sx * (width / 2 + 0.25))
+			P(m, Vector3.new(w, h, w), foot * CFrame.new(0, h / 2 - 0.6, 0), endPost and PAL.timberDark or PAL.timber).Material = Enum.Material.Wood
+			P(m, Vector3.new(w + 0.3, 0.3, w + 0.3), foot * CFrame.new(0, h - 0.45, 0), PAL.timberDark) -- cap
+			local r = foot * CFrame.new(0, 3.1, 0)
+			local kr = foot * CFrame.new(0, 1.5, 0)
+			if rail then
+				local mid = (rail.Position + r.Position) / 2 - Vector3.new(0, 0.55, 0)
+				cord(m, rail.Position, mid, 0.2, ROPE)
+				cord(m, mid, r.Position, 0.2, ROPE)
+				cord(m, knee.Position, kr.Position, 0.16, ROPE)
+				-- hangers from the handrail down to the deck edge
+				for q = 1, 2 do
+					local t = q / 3
+					local top = rail.Position:Lerp(mid, t * 2) -- first half
+					if t > 0.5 then
+						top = mid:Lerp(r.Position, (t - 0.5) * 2)
+					end
+					local dd = (k - 1 + t) * len / posts
+					cord(m, top, at(dd, sx * (width / 2 + 0.25), 0).Position, 0.1, ROPE)
+				end
+			end
+			rail, knee = r, kr
+			-- a red paper lantern hanging off each gate post, facing into the span
+			if endPost then
+				local inward = k == 0 and -1 or 1
+				local hang = foot * CFrame.new(0, h - 0.9, inward * 0.9)
+				cord(m, (foot * CFrame.new(0, h - 0.5, 0)).Position, hang.Position + Vector3.new(0, 0.6, 0), 0.08, PAL.timberDark)
+				local lantern = P(m, Vector3.new(0.9, 1.1, 0.9), hang * CFrame.new(0, -0.1, 0), Color3.fromHex("D9412F"), nil, Enum.PartType.Ball)
+				ghost(lantern)
+				P(m, Vector3.new(0.6, 0.18, 0.6), hang * CFrame.new(0, 0.48, 0), PAL.gold)
+				local light = Instance.new("PointLight")
+				light.Color = Color3.fromRGB(255, 150, 90)
+				light.Range = 9
+				light.Brightness = 0.9
+				light.Shadows = false
+				light.Parent = lantern
+			end
+		end
+	end
+	m.Parent = parent
+	return m
+end
+
+-- Roads (layout A, owner 2026-10-21): dressed stone slabs laid along a polyline (points in the
+-- peak frame, { x, z }), slightly turned so they read hand-laid, with a darker slab now and then.
+-- `ring` lays the plaza ring road instead (radius in studs). Flat and low: they never collide
+-- with a building, and the ground under them is painted earth by the caller (paintGround).
+function Style.road(parent, cf, points, width, ring)
+	local m = Instance.new("Model")
+	m.Name = "Road"
+	local rng = Random.new(#points * 7 + (ring or 0))
+	local w = width or 5
+	local function slab(pos, dir, i)
+		local c = (i % 4 == 0) and PAL.stone or PAL.stoneLight
+		local p = P(m, Vector3.new(w + rng:NextNumber(-0.4, 0.4), 0.3, 2.6), CFrame.lookAt(pos, pos + dir) * CFrame.Angles(0, math.rad(rng:NextNumber(-4, 4)), 0), c)
+		p.CastShadow = false
+	end
+	local i = 0
+	if ring then
+		local n = math.floor(2 * math.pi * ring / 2.9)
+		for k = 0, n - 1 do
+			local a = k / n * math.pi * 2
+			if math.sin(a) * ring > -12 then -- a horseshoe: the back would run under the Main Hall's front
+				local pos = cf * Vector3.new(math.cos(a) * ring, 0.15, math.sin(a) * ring)
+				local tangent = cf:VectorToWorldSpace(Vector3.new(-math.sin(a), 0, math.cos(a)))
+				i += 1
+				slab(pos, tangent, i)
+			end
+		end
+	else
+		for k = 1, #points - 1 do
+			local a = cf * Vector3.new(points[k][1], 0.15, points[k][2])
+			local b = cf * Vector3.new(points[k + 1][1], 0.15, points[k + 1][2])
+			local len = (b - a).Magnitude
+			local n = math.max(1, math.floor(len / 2.9))
+			for j = 0, n - 1 do
+				i += 1
+				slab(a:Lerp(b, (j + 0.5) / n), b - a, i)
+			end
 		end
 	end
 	m.Parent = parent
@@ -1225,16 +1553,76 @@ function Style.cloudSea(parent, center, r0, r1, count, seed)
 	return f
 end
 
--- Waterfall pouring off an island's rim at local angle `a` (radians): a pool on the grass,
--- a falling white stream (particles: no Glass, no Terrain water) and mist at its foot.
+-- Waterfall pouring off an island's rim at local angle `a` (radians): a stone-rimmed pool on the
+-- grass with light rippling over it, a channel running to the lip, then the fall itself as two
+-- scrolling beams (a bright core and a wide faint veil) with foam at the lip and mist below.
+-- Particles: foam Rate 10 x 1.2 s, mist Rate 4 x 3.5 s (~26 live).
 function Style.waterfall(parent, cf, radius, a)
 	local m = Instance.new("Model")
 	m.Name = "Waterfall"
 	-- edge frame: local -Z points outward over the rim
 	local edge = cf * CFrame.new(math.cos(a) * (radius - 1), 0, math.sin(a) * (radius - 1)) * CFrame.Angles(0, -a - math.pi / 2, 0)
-	cylY(m, 0.3, 7, edge * CFrame.new(0, 0.05, 3), Color3.fromHex("5FB7D8"))
-	cylY(m, 0.6, 8, edge * CFrame.new(0, -0.15, 3), PAL.stone)
-	P(m, Vector3.new(3, 0.25, 4), edge * CFrame.new(0, 0.1, 0), Color3.fromHex("7CCBE6"))
+	local pool = edge * CFrame.new(0, 0, 4)
+	-- pool: a ring of rim stones (a gap where the channel leaves, toward -Z), the water, its shimmer
+	for i = 0, 11 do
+		local t = i / 12 * math.pi * 2
+		if math.cos(t) < 0.85 then
+			P(m, Vector3.new(1.9, 0.9, 1.3), pool * CFrame.new(math.sin(t) * 4.3, 0.3, -math.cos(t) * 4.3) * CFrame.Angles(0, -t, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
+		end
+	end
+	cylY(m, 0.3, 8, pool * CFrame.new(0, 0.1, 0), WATER).Reflectance = 0.12
+	shimmer(m, pool * CFrame.new(0, 0.2, 0), 5.5, 5.5, 0.06)
+	-- the channel to the lip, its water flowing outward between two stone kerbs
+	P(m, Vector3.new(3, 0.25, 4.6), edge * CFrame.new(0, 0.1, 0.4), WATER).Reflectance = 0.12
+	for _, sx in { -1, 1 } do
+		P(m, Vector3.new(0.8, 0.7, 4.8), edge * CFrame.new(sx * 1.9, 0.25, 0.4), PAL.stone)
+	end
+	local function holder(at)
+		local h = P(m, Vector3.new(0.2, 0.2, 0.2), at, WATER)
+		h.Transparency = 1
+		h.CanCollide, h.CanQuery, h.CanTouch = false, false, false
+		return h
+	end
+	local ch = holder(edge * CFrame.new(0, 0.3, 0.4))
+	local c0, c1 = Instance.new("Attachment"), Instance.new("Attachment")
+	c0.CFrame = CFrame.fromMatrix(Vector3.new(0, 0, 2.3), Vector3.zAxis, Vector3.xAxis) -- width flat along X
+	c1.CFrame = CFrame.fromMatrix(Vector3.new(0, 0, -2.3), Vector3.zAxis, Vector3.xAxis)
+	c0.Parent, c1.Parent = ch, ch
+	beam(ch, c0, c1, WATER_FLOW, {
+		FaceCamera = false,
+		Width0 = 2.8,
+		Width1 = 2.8,
+		TextureLength = 4,
+		TextureSpeed = 1.2,
+		Color = ColorSequence.new(SHINE),
+		Transparency = NumberSequence.new(0.25),
+		LightEmission = 0.3,
+	})
+	-- the fall: a bright core and a wider faint veil, both scrolling down and widening as they drop
+	local top = holder(edge * CFrame.new(0, 0, -1.9))
+	local foot = holder(edge * CFrame.new(0, -46, -5))
+	local t0, t1 = Instance.new("Attachment"), Instance.new("Attachment")
+	t0.Parent, t1.Parent = top, foot
+	beam(top, t0, t1, WATER_FLOW, {
+		FaceCamera = true,
+		Width0 = 4.2,
+		Width1 = 8,
+		TextureLength = 12,
+		TextureSpeed = 2.2,
+		Color = ColorSequence.new(Color3.fromHex("F4FCFF"), Color3.fromHex("CDEFFB")),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.8, 0.25), NumberSequenceKeypoint.new(1, 1) }),
+		LightEmission = 0.35,
+	})
+	beam(top, t0, t1, WATER_FLOW, {
+		FaceCamera = true,
+		Width0 = 7,
+		Width1 = 15,
+		TextureLength = 20,
+		TextureSpeed = 1.4,
+		Color = ColorSequence.new(Color3.fromHex("DDF4FF")),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.7, 0.75), NumberSequenceKeypoint.new(1, 1) }),
+		LightEmission = 0.2,
+	})
 	local function emitterBox(size, at)
 		local b = P(m, size, at, Color3.new(1, 1, 1))
 		b.Transparency = 1
@@ -1243,20 +1631,21 @@ function Style.waterfall(parent, cf, radius, a)
 		b.CanTouch = false
 		return b
 	end
-	local fall = Instance.new("ParticleEmitter")
-	fall.Texture = SMOKE
-	fall.Shape = Enum.ParticleEmitterShape.Box
-	fall.Color = ColorSequence.new(Color3.fromHex("F2FBFF"), Color3.fromHex("BFE6F5"))
-	fall.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.6), NumberSequenceKeypoint.new(1, 4.5) })
-	fall.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(0.8, 0.4), NumberSequenceKeypoint.new(1, 1) })
-	fall.Lifetime = NumberRange.new(2.4, 2.8)
-	fall.Speed = NumberRange.new(2, 3)
-	fall.EmissionDirection = Enum.NormalId.Front
-	fall.Acceleration = Vector3.new(0, -16, 0)
-	fall.SpreadAngle = Vector2.new(4, 4)
-	fall.LightInfluence = 0.5
-	fall.Rate = 26
-	fall.Parent = emitterBox(Vector3.new(2.6, 0.2, 0.4), edge * CFrame.new(0, 0, -1.6))
+	-- white foam where the water tips over the lip
+	local foam = Instance.new("ParticleEmitter")
+	foam.Texture = SMOKE
+	foam.Shape = Enum.ParticleEmitterShape.Box
+	foam.Color = ColorSequence.new(Color3.fromHex("FFFFFF"))
+	foam.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 2.6) })
+	foam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	foam.Lifetime = NumberRange.new(1, 1.4)
+	foam.Speed = NumberRange.new(1, 2)
+	foam.EmissionDirection = Enum.NormalId.Front
+	foam.Acceleration = Vector3.new(0, -10, 0)
+	foam.SpreadAngle = Vector2.new(20, 20)
+	foam.LightInfluence = 0.5
+	foam.Rate = 10
+	foam.Parent = emitterBox(Vector3.new(3.6, 0.2, 0.4), edge * CFrame.new(0, 0, -1.8))
 	local spray = Instance.new("ParticleEmitter")
 	spray.Texture = SMOKE
 	spray.Shape = Enum.ParticleEmitterShape.Box
@@ -1268,7 +1657,7 @@ function Style.waterfall(parent, cf, radius, a)
 	spray.SpreadAngle = Vector2.new(180, 180)
 	spray.LightInfluence = 0.5
 	spray.Rate = 4
-	spray.Parent = emitterBox(Vector3.new(8, 2, 8), edge * CFrame.new(0, -48, -6))
+	spray.Parent = emitterBox(Vector3.new(8, 2, 8), edge * CFrame.new(0, -46, -6))
 	m.Parent = parent
 	return m
 end

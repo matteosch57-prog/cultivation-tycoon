@@ -21,10 +21,15 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 `mainhall1..5`: one building at the back centre, each level replaces the last (hut, sect hall, great
 hall, palace with wings, gold celestial palace with towers). Only the highest owned level stands.
 
-## Island expansions
-`expand1`, `expand2` grow the island through `ISLAND_RADII`; the outer ring holds the variety buildings
-(bamboo grove, training ground, bell tower, koi pond, library, moon gate, pagoda). A breakthrough
-shrinks the island back.
+## Island layout and expansions (layout A, owner 2026-10-21)
+Buildings stand in districts (`district` on each pad): Spirit Fields front left (veins, Lotus Garden,
+bamboo, koi), Alchemy and Training on the right (furnace, Qi Array, Training Ground, Moon Gate), the
+Disciples' corner back left (Disciple Hall, quarters, bell) and the heart (avenue, plaza, Main Hall, the
+summit with the pagodas and library). Each OTHER owned qi building in the same district adds
+`DISTRICT_BONUS` to a building's income (`districtMult`; the heart takes no bonus). The base disc keeps
+`ISLAND_RADIUS`; `expand1`/`expand2` add the lobes in `ISLAND_LOBES` where their districts grow, and
+`ROADS` (plus the plaza ring `ROAD_RING`) lay paths into each district as its land arrives. A
+breakthrough takes the lobes back. Mock and study: `docs/art/mocks/island_layout.html`.
 
 ## Features
 - **Recruiting** (Disciple Hall): costs qi (`recruitCost`: `RECRUIT_BASE` x `costMult` x +`RECRUIT_GROWTH`
@@ -53,6 +58,41 @@ Every peak on a server earns `TIDE_MULT` x for `TIDE_DURATION` s, first `TIDE_FI
 starts, then every `TIDE_INTERVAL` s; a toast warns `TIDE_WARN` s before. Workspace attributes `TideNext`
 and `TideUntil` (server time) carry the schedule. Offline qi ignores it. Why: a shared moment worth
 staying for (research 2026-10-21_tycoon_study, Grow a Garden weather).
+
+## Friends here (D35)
+Each Roblox friend on the same server adds `FRIEND_STEP` to the live qi rate, at most `FRIEND_MAX`
+friends (`friendsOf` in `Main.server.luau`, checked once at join with `IsFriendsWith`, in memory only;
+never in offline qi, gifts or Qi packs, which use the away rate). A player who joins a friend's server
+gets the free peak beside the friend's (`freePlot`). The friends card (owner pick mock A,
+`docs/art/mocks/friends_A.png`, `src/client/Friends.client.luau`) sits top right under the Next goal:
+friends' head shots and "+X% Qi" (player attributes `FriendsHere`, `FriendIds`), or, alone once the
+intro is done (owner wants the social card there from the start), "Play with friends +10% Qi each"; an Invite button opens Roblox's
+invite prompt. Event `Social` (friends_here at leave, next_door at join, invite).
+
+## Group gift (D35)
+A gift button just right of the HUD's qi total, a gold gift box, "+10%" and the qi drop, wobbling slowly (owner: "just show +10% Qi with an attractive icon"; only while `GROUP_ID` is set and the gift is not active) opens the Sect
+Gift card, the owner's three steps: 1 Like the game, 2 Join our group ("Find the group on the game
+page": no in-game join prompt on purpose, so players pass by the game page), 3 Claim. Only the group
+is checked and paid: remote `ClaimGroup` re-reads the player's groups (`GetGroupsAsync`; `IsInGroup`
+is cached per session), sets `data.groupClaimed`, and `rate` adds `GROUP_BONUS` everywhere while the
+player is still a member (checked at each join). Never reward or check a like (no API, against Roblox
+rules). Event `Social` group_claim. Why: co-play sessions last ~1.9x longer and Roblox favours co-play in discovery (research
+2026-10-21_playing_together); the sim puts 3 friends all the time at realm 10 one day sooner.
+Checked in Studio Play (mock save, 2026-10-21): `DebugSet` friend raised the rate 1 to 1.1/s, the away
+rate stayed 1, the line read "1 friend here +10% Qi" (`docs/art/captures/friends_here_play.jpg`), no
+script errors. Not checked: two real friends (the peak next door, the `Social` events).
+
+## Heavenly Gift (D36)
+A save that never joined before (`data.welcomed == false`; stamped at join, a save from before the gift
+counts as welcomed) opens on the intro (`src/client/Intro.client.luau`, player attribute `WelcomeQi`):
+all in the qi colours (owner: "make it sexier, keep the coloring like the Qi color"): a big qi drop
+breathing in premium rays (owner: "make rays premium": every ray fades out to its tips, a wide soft
+set and a thin bright set turn against each other, sparkles twinkle on a ring) and halos, HEAVENLY GIFT, +`WELCOME_QI`, a jade GO with a shine sweep.
+GO calls `ClaimWelcome`, which pays once and logs economy source `welcome`; the drop bursts, 36 qi
+drops explode across the screen and float, then fly one by one into the counter (nearest first, 0.08 s
+apart), each with an `orb` ding climbing in pitch ("collect it slowly, sound following it"). Live funnel times read about 0.5 min earlier than the onboarding table
+(compare with its 200 qi row). Checked in Studio Play (mock save, 2026-10-21): qi 8 -> 209 on GO, a
+second claim refused, no errors (`docs/art/captures/intro_heavenly_gift_play.jpg`, `intro_burst_play.jpg`, `intro_after_go_play.jpg`).
 
 ## Idle chest (D39)
 While away, income runs at `OFFLINE_RATE` of the rate (up to `OFFLINE_CAP` s) and the idle chest on the
