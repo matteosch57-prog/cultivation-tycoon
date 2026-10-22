@@ -721,7 +721,7 @@ local function buildModel(s, pad, attrs)
 	m.Name = pad.id
 	-- arrives on clients whole (streaming is on): a Default model arrived as ~10% of its parts, so the
 	-- build-in swirled those few, the rest popped in colliding and shoved the buyer, and a preview
-	-- held only the parts that had streamed in when its pad appeared (D70)
+	-- held only the parts that had streamed in when its pad appeared (D71)
 	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	for k, v in attrs or {} do
 		m:SetAttribute(k, v)

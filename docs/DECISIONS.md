@@ -435,3 +435,6 @@ the log as a D-number.
   "stand still": the server's step-out teleport is gone (it fired whenever you stood inside the new
   thing's box, so paths, groves and bridges threw you several studs), pieces that land on the buyer
   stay passable on their client until they step out. Pads stay where they are.
+  Found in the Studio test: built models stream `Atomic` now; with streaming on, a Default model
+  arrived as ~10% of its parts (Thatched Hut 47 of 483), so a preview held only those, the build-in
+  swirled only those and the rest popped in colliding and shoved the buyer about a stud.
