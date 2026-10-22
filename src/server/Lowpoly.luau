@@ -35,6 +35,61 @@ function Lowpoly.setTemplate(shape: Enum.PartType, mp: MeshPart?)
 	templates[shape] = mp
 end
 
+-- Pond boulders (Config.ROCK_MESH, tools/rock_meshes.py): 80 triangles, unit box like the others.
+local rocks: { MeshPart } = {}
+for i, id in Config.ROCK_MESH or {} do
+	if id ~= "" then
+		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
+			CollisionFidelity = Enum.CollisionFidelity.Box,
+			RenderFidelity = Enum.RenderFidelity.Automatic,
+		})
+		if ok and mp then
+			mp.Anchored = true
+			rocks[i] = mp
+		else
+			warn("[Tycoon][perf] event=rock_load_failed")
+			print("[Tycoon][perf] rock", i, id, mp)
+		end
+	end
+end
+
+-- Boulder `i` (1..4) as a fresh MeshPart, or nil until all four meshes are loaded.
+function Lowpoly.rock(i: number): MeshPart?
+	if #rocks < 4 then
+		return nil
+	end
+	return rocks[(i - 1) % 4 + 1]:Clone()
+end
+
+-- Koi for the koi pond (owner 2026-10-22: "just find a model"): a free Creator Store fish mesh,
+-- ids in Config.KOI; nil until it loads (the pond then has no fish).
+local koi: MeshPart? = nil
+local K = Config.KOI
+if K and K.mesh ~= "" then
+	local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, K.mesh, {
+		CollisionFidelity = Enum.CollisionFidelity.Box,
+		RenderFidelity = Enum.RenderFidelity.Automatic,
+	})
+	if ok and mp then
+		mp.Anchored = true
+		mp.TextureID = K.texture
+		mp.Size = mp.Size * (K.length / math.max(mp.Size.X, mp.Size.Y, mp.Size.Z))
+		mp.CFrame = K.turn
+		koi = mp
+	else
+		warn("[Tycoon][perf] event=koi_load_failed")
+		print("[Tycoon][perf] koi", K.mesh, mp)
+	end
+end
+function Lowpoly.koi(): MeshPart?
+	return koi and koi:Clone()
+end
+
+-- Studio test hook: preview the boulders before the upload (EditableMesh templates, art/preview/rocks.json).
+function Lowpoly.setRock(i: number, mp: MeshPart?)
+	rocks[i] = mp :: MeshPart
+end
+
 -- A fresh part for `shape` at `size`: a mesh clone when the shape is small enough, else a Part.
 -- Small = a Ball under LOWPOLY_MAX on every side; a Cylinder under LOWPOLY_MAX across (any length).
 function Lowpoly.part(shape: Enum.PartType?, size: Vector3): BasePart

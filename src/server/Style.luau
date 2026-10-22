@@ -510,43 +510,138 @@ local function beam(parent, a0, a1, tex, props)
 	return b
 end
 
--- Shimmering light ripples drifting over a flat water surface. `at` = the surface centre,
--- `len` x `wide` studs (an inscribed square on a round pool: side = 0.7 x the diameter).
-local function shimmer(m, at, len, wide, speed)
+-- Light ripples over a ROUND surface: strips cut to the circle (chords about one ripple tile wide,
+-- edge to edge: two translucent strips overlapping flicker), so no square patch shows on a round
+-- pond (owner 2026-10-22; Gladiator RNG's round basins, D311). `at` = the surface centre.
+local function roundShimmer(m, at, r, speed)
 	local holder = P(m, Vector3.new(0.2, 0.2, 0.2), at, WATER)
 	holder.Transparency = 1
 	holder.CanCollide, holder.CanQuery, holder.CanTouch = false, false, false
-	-- attachments along X; their Y axis lies flat (along Z), which is where a flat beam's width goes
-	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
-	a0.CFrame = CFrame.fromMatrix(Vector3.new(-len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
-	a1.CFrame = CFrame.fromMatrix(Vector3.new(len / 2, 0.06, 0), Vector3.xAxis, Vector3.zAxis)
-	a0.Parent, a1.Parent = holder, holder
-	beam(holder, a0, a1, WATER_RIPPLE, {
-		FaceCamera = false,
-		Width0 = wide,
-		Width1 = wide,
-		TextureLength = wide,
-		TextureSpeed = speed or 0.05,
-		Color = ColorSequence.new(SHINE),
-		Transparency = NumberSequence.new(0.55),
-		LightEmission = 0.3,
-	})
+	local k = math.max(2, math.ceil(2 * r / 4))
+	local sw = 2 * r / k
+	for i = 0, k - 1 do
+		local off = -r + sw * (i + 0.5)
+		local half = math.sqrt(math.max(0, r * r - off * off)) -- the ends tuck under the rim rocks
+		local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+		a0.CFrame = CFrame.fromMatrix(Vector3.new(-half, 0.06, off), Vector3.xAxis, Vector3.zAxis)
+		a1.CFrame = CFrame.fromMatrix(Vector3.new(half, 0.06, off), Vector3.xAxis, Vector3.zAxis)
+		a0.Parent, a1.Parent = holder, holder
+		beam(holder, a0, a1, WATER_RIPPLE, {
+			FaceCamera = false,
+			Width0 = sw,
+			Width1 = sw,
+			TextureLength = sw,
+			TextureSpeed = speed or 0.05,
+			Color = ColorSequence.new(SHINE),
+			Transparency = NumberSequence.new(0.55),
+			LightEmission = 0.3,
+		})
+	end
 end
 
--- A small round pond (resource plots: fire lotus, meditation spring): a ring of rim stones, the
--- opaque water and its drifting ripples. `tint` colours the water. Returns the model.
+-- Round water: a paler shallow disc reaching under the rim rocks (no gap at the edge), the deeper
+-- tint over its middle, the circle-cut ripples on top. `top` = the water line over `cf`.
+local function roundWater(m, cf, r, top, tint)
+	tint = tint or WATER
+	cylY(m, 0.3, 2 * r + 0.2, cf * CFrame.new(0, top - 0.17, 0), tint:Lerp(Color3.new(1, 1, 1), 0.15)).Reflectance = 0.12
+	cylY(m, 0.3, 2 * r - 0.9, cf * CFrame.new(0, top - 0.15, 0), tint).Reflectance = 0.12
+	roundShimmer(m, cf * CFrame.new(0, top + 0.02, 0), r - 0.1, 0.05)
+end
+
+-- A ring of boulders round a pond of radius `r` (owner 2026-10-22, pick B of the rim mock): the
+-- uploaded low-poly rocks (Lowpoly.rock) at their own size and turn, half sunk, pebbles in the gaps
+-- and a few dipping in the water. Before the meshes are uploaded each boulder is two tilted blocks.
+-- `gaps` (unit vectors in cf's space) leave the rim open where a channel leaves or a bridge lands, within
+-- `gapCos` (the cosine of the half angle, default 0.85).
+local ROCK_TONES = { PAL.stone, PAL.stoneLight, PAL.rock }
+local function rimRocks(m, cf, r, seed, gaps, gapCos)
+	local rng = Random.new(seed or 1)
+	local big = if r >= 6 then 1.3 else 1
+	local function stone(i, size, at, tilt, tone)
+		local mp = Lowpoly.rock(i)
+		if mp then
+			mp.Size = size
+			mp.CFrame = at * tilt
+			mp.Color = tone
+			mp.Material = Enum.Material.Slate
+			mp.CastShadow = size.X > 1.2
+			mp.Parent = m
+		else
+			P(m, size * Vector3.new(0.9, 0.85, 0.8), at * tilt, tone, Enum.Material.Slate)
+			P(m, size * Vector3.new(0.6, 0.7, 0.6), at * tilt * CFrame.new(size.X * 0.2, size.Y * 0.2, 0) * CFrame.Angles(0.4, 0.7, 0.3), tone:Lerp(Color3.new(0, 0, 0), 0.08), Enum.Material.Slate)
+		end
+	end
+	local function open(dir, cos)
+		for _, g in gaps or {} do
+			if dir:Dot(g) > cos then
+				return true
+			end
+		end
+		return false
+	end
+	local n = math.max(8, math.round(2 * math.pi * r / 1.6))
+	for i = 1, n do
+		local a = (i + rng:NextNumber(-0.25, 0.25)) / n * math.pi * 2
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		if not open(dir, gapCos or 0.85) then
+			local w = rng:NextNumber(1.1, 2.3) * big
+			local size = Vector3.new(w * rng:NextNumber(1, 1.3), w * rng:NextNumber(0.6, 0.85), w * rng:NextNumber(0.85, 1.05))
+			local d = r + 0.2 + rng:NextNumber(-0.2, 0.3)
+			stone(i, size, cf * CFrame.new(dir * d + Vector3.new(0, size.Y * 0.28, 0)), CFrame.Angles(rng:NextNumber(-0.2, 0.2), rng:NextNumber(0, 6.28), rng:NextNumber(-0.2, 0.2)), ROCK_TONES[rng:NextInteger(1, 3)])
+		end
+	end
+	for i = 1, math.round(r * 3) do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		if not open(dir, (gapCos or 0.85) - 0.05) then
+			local s = rng:NextNumber(0.35, 0.65)
+			stone(i, Vector3.new(s * 1.2, s * 0.6, s), cf * CFrame.new(dir * (r + rng:NextNumber(-0.4, 1.1)) + Vector3.new(0, 0.3, 0)), CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), ROCK_TONES[rng:NextInteger(1, 3)])
+		end
+	end
+end
+
+-- A small round pond (resource plots: fire lotus, meditation spring): a ring of boulders, the
+-- round water and its drifting ripples. `tint` colours the water. Returns the model.
 function Style.pond(parent, cf, radius, tint)
 	local m = Instance.new("Model")
 	m.Name = "Pond"
-	local n = math.max(8, math.floor(radius * 2.2))
-	for i = 0, n - 1 do
-		local a = i / n * math.pi * 2
-		P(m, Vector3.new(radius * 0.55 + 0.6, 0.8, 1.2), cf * CFrame.new(math.cos(a) * radius, 0.4, math.sin(a) * radius) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
-	end
-	cylY(m, 0.3, radius * 2 - 0.4, cf * CFrame.new(0, 0.45, 0), tint or WATER).Reflectance = 0.12
-	shimmer(m, cf * CFrame.new(0, 0.6, 0), radius * 1.3, radius * 1.3, 0.05)
+	rimRocks(m, cf, radius, math.round(radius * 10))
+	roundWater(m, cf, radius, 0.3, tint)
 	m.Parent = parent
 	return m
+end
+
+-- A red drum bridge across a round pond (owner 2026-10-22, pick A of the bridge mock): spans rim
+-- to rim along cf's Z, a curved plank deck on two arched stringers, rails following the curve and
+-- posts with gold caps every third plank. Walkable: the deck collides, the rails too.
+local function drumBridge(m, cf, span, rise)
+	local n, W = 18, 3
+	local function y(z)
+		return 0.5 + rise * (1 - (z / (span / 2)) ^ 2)
+	end
+	local function post(z, s)
+		P(m, Vector3.new(0.26, 1.25, 0.26), cf * CFrame.new(s * (W / 2 - 0.05), y(z) + 0.55, z), PAL.vermilion)
+		P(m, Vector3.new(0.38, 0.45, 0.38), cf * CFrame.new(s * (W / 2 - 0.05), y(z) + 1.3, z), PAL.gold, Enum.Material.Metal, Enum.PartType.Ball)
+	end
+	for i = 0, n - 1 do
+		local z0 = -span / 2 + span * i / n
+		local z1 = z0 + span / n
+		local dy = y(z1) - y(z0)
+		local len = math.sqrt((z1 - z0) ^ 2 + dy ^ 2)
+		local base = cf * CFrame.new(0, (y(z0) + y(z1)) / 2, (z0 + z1) / 2) * CFrame.Angles(-math.atan2(dy, z1 - z0), 0, 0)
+		P(m, Vector3.new(W, 0.22, len * 0.88), base, PAL.timber, Enum.Material.WoodPlanks)
+		for _, s in { -1, 1 } do
+			P(m, Vector3.new(0.3, 0.45, len + 0.02), base * CFrame.new(s * (W / 2 - 0.35), -0.3, 0), PAL.vermilion) -- stringer
+			P(m, Vector3.new(0.18, 0.18, len + 0.02), base * CFrame.new(s * (W / 2 - 0.05), 1.05, 0), PAL.vermilion) -- top rail
+			P(m, Vector3.new(0.12, 0.12, len + 0.02), base * CFrame.new(s * (W / 2 - 0.05), 0.55, 0), PAL.vermilion) -- mid rail
+			if i % 3 == 0 then
+				post(z0, s)
+			end
+		end
+	end
+	for _, s in { -1, 1 } do
+		post(span / 2, s)
+	end
 end
 
 function Style.koiPond(parent, cf, seed)
@@ -554,15 +649,10 @@ function Style.koiPond(parent, cf, seed)
 	local m = Instance.new("Model")
 	m.Name = "KoiPond"
 	-- stone rim, then still water (opaque tinted disc: no Glass, no Terrain water)
-	for i = 0, 15 do
-		local a = i / 16 * math.pi * 2
-		P(m, Vector3.new(3.2, 1, 2.2), cf * CFrame.new(math.cos(a) * 8, 0.5, math.sin(a) * 8) * CFrame.Angles(0, -a, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
-	end
-	cylY(m, 0.3, 15.6, cf * CFrame.new(0, 0.55, 0), WATER).Reflectance = 0.12
-	cylY(m, 0.31, 9, cf * CFrame.new(1.5, 0.56, -1), Color3.fromHex("5DB6D6")).Reflectance = 0.12
-	shimmer(m, cf * CFrame.new(0, 0.7, 0), 10.5, 10.5, 0.04)
+	rimRocks(m, cf, 7.8, (seed or 8) + 100, { Vector3.zAxis, -Vector3.zAxis }, 0.95) -- the bridge lands at both ends
+	roundWater(m, cf, 7.8, 0.4, Color3.fromHex("5DB6D6"))
 	-- now and then a ring spreads where a koi rose (Rate 0.5 x 2.5 s ~ 1 live)
-	local ringAt = P(m, Vector3.new(9, 0.2, 9), cf * CFrame.new(0, 0.75, 0), WATER)
+	local ringAt = P(m, Vector3.new(9, 0.2, 9), cf * CFrame.new(0, 0.45, 0), WATER)
 	ringAt.Transparency = 1
 	ringAt.CanCollide, ringAt.CanQuery, ringAt.CanTouch = false, false, false
 	local rings = Instance.new("ParticleEmitter")
@@ -577,32 +667,29 @@ function Style.koiPond(parent, cf, seed)
 	rings.Lifetime = NumberRange.new(2.5)
 	rings.Rate = 0.5
 	rings.Parent = ringAt
-	-- lily pads, lotus flowers and koi
+	-- lily pads and lotus flowers
 	for i = 1, 7 do
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(2, 6.5)
-		local at = cf * CFrame.new(math.cos(a) * r, 0.74, math.sin(a) * r)
+		local at = cf * CFrame.new(math.cos(a) * r, 0.44, math.sin(a) * r)
 		cylY(m, 0.08, rng:NextNumber(1.2, 2), at, Color3.fromHex("5E9A4A"))
 		if i % 2 == 0 then
 			P(m, Vector3.new(0.7, 0.6, 0.7), at * CFrame.new(0, 0.35, 0) * CFrame.Angles(0, math.rad(45), 0), Color3.fromHex("F7B8CC"))
 		end
 	end
-	for i = 1, 4 do
-		local a = rng:NextNumber(0, math.pi * 2)
-		local at = cf * CFrame.new(math.cos(a) * 4, 0.6, math.sin(a) * 4) * CFrame.Angles(0, -a, 0)
-		P(m, Vector3.new(0.5, 0.25, 1.4), at, i % 2 == 0 and Color3.fromHex("F28C38") or Color3.fromHex("FFFFFF"))
-		P(m, Vector3.new(0.6, 0.12, 0.5), at * CFrame.new(0, 0, 0.85), Color3.fromHex("F2A65A")) -- tail
-	end
-	-- little arched bridge across
-	for k = -3, 3 do
-		local y = 1.6 + (1 - (k / 3) ^ 2) * 1.4
-		P(m, Vector3.new(3, 0.4, 1.3), cf * CFrame.new(0, y, k * 1.25) * CFrame.Angles(math.rad(-k * 9), 0, 0), PAL.vermilion)
-	end
-	for _, sx in { -1, 1 } do
-		for k = -2, 2 do
-			local y = 1.6 + (1 - (k / 3) ^ 2) * 1.4
-			P(m, Vector3.new(0.3, 1.4, 0.3), cf * CFrame.new(sx * 1.4, y + 0.8, k * 1.6), PAL.vermilion)
+	-- koi just under the surface: a Creator Store fish (Config.KOI, loaded by Lowpoly.koi); none until it loads
+	for i = 1, 5 do
+		local fish = Lowpoly.koi()
+		if not fish then
+			break
 		end
+		local a = i / 5 * math.pi * 2 + rng:NextNumber(-0.3, 0.3)
+		local r = rng:NextNumber(3, 5.5)
+		fish.CFrame = cf * CFrame.new(math.cos(a) * r, 0.3, math.sin(a) * r) * CFrame.Angles(0, -a + rng:NextNumber(-0.6, 0.6), 0) * fish.CFrame.Rotation
+		fish.CanCollide, fish.CanQuery, fish.CanTouch = false, false, false
+		fish.CastShadow = false
+		fish.Parent = m
 	end
+	drumBridge(m, cf, 21, 2.6)
 	m.Parent = parent
 	return m
 end
@@ -1570,14 +1657,8 @@ function Style.waterfall(parent, cf, radius, a)
 	local edge = cf * CFrame.new(math.cos(a) * (radius - 1), 0, math.sin(a) * (radius - 1)) * CFrame.Angles(0, -a - math.pi / 2, 0)
 	local pool = edge * CFrame.new(0, 0, 4)
 	-- pool: a ring of rim stones (a gap where the channel leaves, toward -Z), the water, its shimmer
-	for i = 0, 11 do
-		local t = i / 12 * math.pi * 2
-		if math.cos(t) < 0.85 then
-			P(m, Vector3.new(1.9, 0.9, 1.3), pool * CFrame.new(math.sin(t) * 4.3, 0.3, -math.cos(t) * 4.3) * CFrame.Angles(0, -t, 0), i % 2 == 0 and PAL.stone or PAL.stoneLight)
-		end
-	end
-	cylY(m, 0.3, 8, pool * CFrame.new(0, 0.1, 0), WATER).Reflectance = 0.12
-	shimmer(m, pool * CFrame.new(0, 0.2, 0), 5.5, 5.5, 0.06)
+	rimRocks(m, pool, 3.9, 55, { -Vector3.zAxis })
+	roundWater(m, pool, 3.9, 0.25)
 	-- the channel to the lip, its water flowing outward between two stone kerbs
 	P(m, Vector3.new(3, 0.25, 4.6), edge * CFrame.new(0, 0.1, 0.4), WATER).Reflectance = 0.12
 	for _, sx in { -1, 1 } do

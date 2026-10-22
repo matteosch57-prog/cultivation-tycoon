@@ -383,7 +383,7 @@ local function fireLotus(ctx, pad)
 	Style.pond(ctx.folder, f, 5, Color3.fromHex("D9822B"))
 	for i = 0, 2 do
 		local a = i / 3 * math.pi * 2
-		Nature.lotus(ctx.folder, f * CFrame.new(math.cos(a) * 2.2, 0.55, math.sin(a) * 2.2), 70 + i, 0.75, Color3.fromHex("FFB347"), FIRE)
+		Nature.lotus(ctx.folder, f * CFrame.new(math.cos(a) * 2.2, 0.25, math.sin(a) * 2.2), 70 + i, 0.75, Color3.fromHex("FFB347"), FIRE)
 	end
 end
 Builders.firelotus1 = fireLotus
@@ -451,7 +451,7 @@ local function spring(ctx, pad)
 	holder.Anchored, holder.CanCollide, holder.CanQuery, holder.CanTouch = true, false, false, false
 	holder.Transparency = 1
 	holder.Size = Vector3.new(5, 0.2, 5)
-	holder.CFrame = f * CFrame.new(0, 0.7, 0)
+	holder.CFrame = f * CFrame.new(0, 0.4, 0)
 	holder.Parent = pond
 	local steam = Instance.new("ParticleEmitter") -- Rate 2 x 4 s, ~8 live
 	steam.Texture = "rbxasset://textures/particles/smoke_main.dds"
