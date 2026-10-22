@@ -204,3 +204,11 @@ the log as a D-number.
   Qi boost", "after a big building after 5-10 minutes"): 5 Robux once, an Elder + 10% Qi forever,
   offered once by a card after a big building between 5 and 10 min of play (MONETIZATION "Welcome
   Pouch"); cheap repeatable qi left out (research `2026-10-22_cheap_buys.md`).
+- **D42** Sky Islets (owner pick B of three, mock `docs/art/mocks/peak_layouts.html`; research
+  `2026-10-22_space_and_buildables.md`): the peak is a home island (plaza, Main Hall) plus four
+  district islets (Fields, Alchemy, Disciples, Summit) in the sky, each opened by a bridge pad; an
+  islet not yet bridged shows as dry ground (visible land to grow into, like TPT2). Nothing stands by
+  default: no roads, no rim trees. Paths and groves are pads that add a capped Harmony bonus
+  (decor pays through a rating, like Retail and Restaurant Tycoon 2). Two workers per building, and
+  every farm takes them (owner: "2 farmers on every farming spot"). PLOT_RADIUS 215 -> 280 so the
+  islets keep 15 studs from the neighbours. Prices of the new pads: the economy check owns them.

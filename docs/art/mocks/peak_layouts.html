@@ -1,0 +1,336 @@
+<title>Peak Layout Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a sky-blue sheet, three plan cards side by side (stacked on phones), then the shared rules and the research. */
+:root {
+  --bg: #e9f0f3; --paper: #f8fbfc; --ink: #1f2b2f; --muted: #56676d; --line: #c9d6db;
+  --accent: #2f8f6f; --warn: #b5532f;
+  --land0: #a9d48a; --land1: #8fc271; --land2: #77ad5b; --edge: #4a7a3a;
+  --heart: #d9a13a; --fields: #3c9a5b; --dao: #c8513f; --disc: #4a74c4;
+  --gate: #a8302a; --bridge: #a7835c;
+  --display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141c1f; --paper: #1c262a; --ink: #e3ecef; --muted: #9db0b6; --line: #34444a;
+  --accent: #5cc49c; --warn: #e48a66;
+  --land0: #4d7a3c; --land1: #426c33; --land2: #385e2b; --edge: #8fc271; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141c1f; --paper: #1c262a; --ink: #e3ecef; --muted: #9db0b6; --line: #34444a;
+  --accent: #5cc49c; --warn: #e48a66;
+  --land0: #4d7a3c; --land1: #426c33; --land2: #385e2b; --edge: #8fc271; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.lead { max-width: 68ch; color: var(--muted); margin: 6px 0 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card.now { opacity: .85; }
+.card h2 { font-size: 1.3rem; }
+.sub { margin: 2px 0 0; color: var(--accent); font-weight: 700; }
+.card p { margin: 0; }
+.plan { background: var(--bg); border-radius: 10px; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+.plan svg { width: 100%; height: 100%; }
+.plan .lbl { font: 9px var(--body); fill: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.stats div { border-top: 2px solid var(--line); padding-top: 4px; }
+.stats dt { font-size: .74rem; color: var(--muted); letter-spacing: .02em; }
+.stats dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pc { display: grid; gap: 6px; }
+.pc ul { margin: 0; padding-left: 1.1em; font-size: .93rem; }
+.pro li::marker { content: "+  "; color: var(--accent); font-weight: 700; }
+.con li::marker { content: "-  "; color: var(--warn); font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .9rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+section { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+section h2 { font-size: 1.35rem; }
+section p, section li { max-width: 72ch; }
+.build { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.build div { border-left: 3px solid var(--accent); padding-left: 10px; min-width: 0; }
+.build h3 { font-size: 1.02rem; }
+.build p { margin: 4px 0 0; font-size: .94rem; }
+.research { font-size: .95rem; }
+.research a { color: var(--accent); }
+.pick { font-size: 1.05rem; }
+</style>
+<div class="wrap">
+<header>
+<h1>Give the peak some room</h1>
+<p class="lead">Three ways to open up your sect. In all three you start on empty land: roads and trees are things you build, and every farm takes two farmers. Plans are drawn to scale from the real building list (front and hub at the top).</p>
+</header>
+<div class="legend" aria-label="Colours">
+<span style="--c: var(--heart)">Heart (plaza, Main Hall)</span>
+<span style="--c: var(--fields)">Spirit Fields</span>
+<span style="--c: var(--dao)">Alchemy and Training</span>
+<span style="--c: var(--disc)">Disciples</span>
+<span style="--c: var(--land2)">darker land = opens with Expand the Peak</span>
+</div>
+<div class="cards">
+<article class="card now" id="now">
+<header><h2>Today</h2></header>
+<div class="plan"><svg viewBox="-118 -116 236 236" role="img" aria-label="now layout plan">
+<circle cx="70.0" cy="-8.0" r="32.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="62.0" cy="30.0" r="28.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="88.0" cy="10.0" r="16.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-26.0" cy="78.0" r="26.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="14.0" cy="80.0" r="26.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="40.0" cy="74.0" r="18.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-70.0" cy="-6.0" r="34.0" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-60.0" cy="52.0" r="30.0" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-48.0" cy="-46.0" r="26.0" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="0.0" r="62.0" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="-40.0" r="4" fill="var(--heart)" opacity=".9"><title>Stone Path</title></circle>
+<circle cx="-20.0" cy="-24.0" r="5" fill="var(--fields)" opacity=".9"><title>Spirit Vein</title></circle>
+<circle cx="10.0" cy="-30.0" r="5" fill="var(--heart)" opacity=".9"><title>Lantern Row</title></circle>
+<circle cx="0.0" cy="-0.0" r="8" fill="var(--heart)" opacity=".9"><title>Meditation Platform</title></circle>
+<circle cx="-36.0" cy="-36.0" r="8" fill="var(--fields)" opacity=".9"><title>Herb Garden</title></circle>
+<circle cx="-18.0" cy="-34.0" r="5" fill="var(--fields)" opacity=".9"><title>Twin Spirit Vein</title></circle>
+<circle cx="26.0" cy="-20.0" r="8" fill="var(--dao)" opacity=".9"><title>Alchemy Furnace</title></circle>
+<circle cx="-50.0" cy="-0.0" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Hall</title></circle>
+<circle cx="0.0" cy="-52.0" r="8" fill="var(--heart)" opacity=".9"><title>Sect Gate</title></circle>
+<circle cx="44.0" cy="2.0" r="8" fill="var(--dao)" opacity=".9"><title>Qi Gathering Array</title></circle>
+<circle cx="-54.0" cy="32.0" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Quarters</title></circle>
+<circle cx="-84.0" cy="6.0" r="8" fill="var(--fields)" opacity=".9"><title>Bamboo Grove</title></circle>
+<circle cx="74.0" cy="-8.0" r="8" fill="var(--dao)" opacity=".9"><title>Training Ground</title></circle>
+<circle cx="40.0" cy="74.0" r="8" fill="var(--heart)" opacity=".9"><title>Bell Tower</title></circle>
+<circle cx="-74.0" cy="-14.0" r="8" fill="var(--fields)" opacity=".9"><title>Koi Pond</title></circle>
+<circle cx="-58.0" cy="62.0" r="8" fill="var(--disc)" opacity=".9"><title>Grand Quarters</title></circle>
+<circle cx="0.0" cy="60.0" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda</title></circle>
+<circle cx="-26.0" cy="76.0" r="8" fill="var(--heart)" opacity=".9"><title>Scripture Library</title></circle>
+<circle cx="64.0" cy="26.0" r="8" fill="var(--dao)" opacity=".9"><title>Moon Gate Garden</title></circle>
+<circle cx="12.0" cy="66.0" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda Spire</title></circle>
+<circle cx="0.0" cy="30.0" r="14" fill="var(--heart)" opacity=".9"><title>Celestial Palace</title></circle>
+<circle cx="-30.0" cy="-10.0" r="5" fill="var(--fields)" opacity=".9"><title>Third Spirit Vein</title></circle>
+<circle cx="34.0" cy="-40.0" r="8" fill="var(--dao)" opacity=".9"><title>Fire Lotus Pond</title></circle>
+<circle cx="50.0" cy="-14.0" r="8" fill="var(--dao)" opacity=".9"><title>Twin Fire Lotus</title></circle>
+<circle cx="-40.0" cy="-54.0" r="8" fill="var(--fields)" opacity=".9"><title>Second Lotus Garden</title></circle>
+<circle cx="-57.0" cy="-33.0" r="8" fill="var(--fields)" opacity=".9"><title>Spirit Tea Terrace</title></circle>
+<circle cx="-80.0" cy="41.0" r="8" fill="var(--disc)" opacity=".9"><title>Meditation Spring</title></circle>
+<circle cx="-60.0" cy="-48.0" r="8" fill="var(--fields)" opacity=".9"><title>Third Lotus Garden</title></circle>
+<circle cx="-73.0" cy="-31.0" r="8" fill="var(--fields)" opacity=".9"><title>High Tea Terrace</title></circle>
+<circle cx="-80.0" cy="60.0" r="8" fill="var(--disc)" opacity=".9"><title>Twin Spring</title></circle>
+<circle cx="62.0" cy="-30.0" r="8" fill="var(--dao)" opacity=".9"><title>Jade Quarry</title></circle>
+<circle cx="58.0" cy="50.0" r="8" fill="var(--dao)" opacity=".9"><title>Thunder Crystal</title></circle>
+<circle cx="78.0" cy="-28.0" r="8" fill="var(--dao)" opacity=".9"><title>Deep Jade Quarry</title></circle>
+<circle cx="74.0" cy="47.0" r="8" fill="var(--dao)" opacity=".9"><title>Storm Crystal</title></circle>
+<circle cx="90.0" cy="10.0" r="8" fill="var(--dao)" opacity=".9"><title>Heart of Jade</title></circle>
+<rect x="-8" y="-65" width="16" height="6" fill="var(--gate)"/>
+<line x1="0" y1="-62" x2="0" y2="-114.0" stroke="var(--bridge)" stroke-width="4"/>
+<text x="6" y="-104.0" class="lbl">to the hub</text>
+<line x1="-108.0" y1="110.0" x2="-60.0" y2="110.0" stroke="var(--ink)" stroke-width="2"/>
+<text x="-108.0" y="104.0" class="lbl">48 studs = 3 s walk</text>
+</svg></div>
+<p>One disc of land with every building about 2 studs from the next. A wall of rim trees and the default roads close it in.</p>
+<dl class="stats">
+<div><dt>Gap between buildings</dt><dd>2 studs</dd></div>
+<div><dt>Gate to farthest building</dt><dd>9.1 s</dd></div>
+<div><dt>Land at full size</dt><dd>32k studs²</dd></div>
+</dl>
+</article>
+<article class="card" id="wide">
+<header><h2>A. Wide Peak</h2><p class="sub">Everything 1.4x farther apart</p></header>
+<div class="plan"><svg viewBox="-160 -145 319 307" role="img" aria-label="wide layout plan">
+<circle cx="98.0" cy="-11.2" r="44.8" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="86.8" cy="42.0" r="39.2" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="123.2" cy="14.0" r="22.4" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-36.4" cy="109.2" r="36.4" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="19.6" cy="112.0" r="36.4" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="56.0" cy="103.6" r="25.2" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-98.0" cy="-8.4" r="47.6" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-84.0" cy="72.8" r="42.0" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-67.2" cy="-64.4" r="36.4" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="0.0" r="87.0" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="-56.0" r="4" fill="var(--heart)" opacity=".9"><title>Stone Path</title></circle>
+<circle cx="-28.0" cy="-33.6" r="5" fill="var(--fields)" opacity=".9"><title>Spirit Vein</title></circle>
+<circle cx="14.0" cy="-42.0" r="5" fill="var(--heart)" opacity=".9"><title>Lantern Row</title></circle>
+<circle cx="0.0" cy="-0.0" r="8" fill="var(--heart)" opacity=".9"><title>Meditation Platform</title></circle>
+<circle cx="-50.4" cy="-50.4" r="8" fill="var(--fields)" opacity=".9"><title>Herb Garden</title></circle>
+<circle cx="-25.2" cy="-47.6" r="5" fill="var(--fields)" opacity=".9"><title>Twin Spirit Vein</title></circle>
+<circle cx="36.4" cy="-28.0" r="8" fill="var(--dao)" opacity=".9"><title>Alchemy Furnace</title></circle>
+<circle cx="-70.0" cy="-0.0" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Hall</title></circle>
+<circle cx="0.0" cy="-72.8" r="8" fill="var(--heart)" opacity=".9"><title>Sect Gate</title></circle>
+<circle cx="61.6" cy="2.8" r="8" fill="var(--dao)" opacity=".9"><title>Qi Gathering Array</title></circle>
+<circle cx="-75.6" cy="44.8" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Quarters</title></circle>
+<circle cx="-117.6" cy="8.4" r="8" fill="var(--fields)" opacity=".9"><title>Bamboo Grove</title></circle>
+<circle cx="103.6" cy="-11.2" r="8" fill="var(--dao)" opacity=".9"><title>Training Ground</title></circle>
+<circle cx="56.0" cy="103.6" r="8" fill="var(--heart)" opacity=".9"><title>Bell Tower</title></circle>
+<circle cx="-103.6" cy="-19.6" r="8" fill="var(--fields)" opacity=".9"><title>Koi Pond</title></circle>
+<circle cx="-81.2" cy="86.8" r="8" fill="var(--disc)" opacity=".9"><title>Grand Quarters</title></circle>
+<circle cx="0.0" cy="84.0" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda</title></circle>
+<circle cx="-36.4" cy="106.4" r="8" fill="var(--heart)" opacity=".9"><title>Scripture Library</title></circle>
+<circle cx="89.6" cy="36.4" r="8" fill="var(--dao)" opacity=".9"><title>Moon Gate Garden</title></circle>
+<circle cx="16.8" cy="92.4" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda Spire</title></circle>
+<circle cx="0.0" cy="42.0" r="14" fill="var(--heart)" opacity=".9"><title>Celestial Palace</title></circle>
+<circle cx="-42.0" cy="-14.0" r="5" fill="var(--fields)" opacity=".9"><title>Third Spirit Vein</title></circle>
+<circle cx="47.6" cy="-56.0" r="8" fill="var(--dao)" opacity=".9"><title>Fire Lotus Pond</title></circle>
+<circle cx="70.0" cy="-19.6" r="8" fill="var(--dao)" opacity=".9"><title>Twin Fire Lotus</title></circle>
+<circle cx="-56.0" cy="-75.6" r="8" fill="var(--fields)" opacity=".9"><title>Second Lotus Garden</title></circle>
+<circle cx="-79.8" cy="-46.2" r="8" fill="var(--fields)" opacity=".9"><title>Spirit Tea Terrace</title></circle>
+<circle cx="-112.0" cy="57.4" r="8" fill="var(--disc)" opacity=".9"><title>Meditation Spring</title></circle>
+<circle cx="-84.0" cy="-67.2" r="8" fill="var(--fields)" opacity=".9"><title>Third Lotus Garden</title></circle>
+<circle cx="-102.2" cy="-43.4" r="8" fill="var(--fields)" opacity=".9"><title>High Tea Terrace</title></circle>
+<circle cx="-112.0" cy="84.0" r="8" fill="var(--disc)" opacity=".9"><title>Twin Spring</title></circle>
+<circle cx="86.8" cy="-42.0" r="8" fill="var(--dao)" opacity=".9"><title>Jade Quarry</title></circle>
+<circle cx="81.2" cy="70.0" r="8" fill="var(--dao)" opacity=".9"><title>Thunder Crystal</title></circle>
+<circle cx="109.2" cy="-39.2" r="8" fill="var(--dao)" opacity=".9"><title>Deep Jade Quarry</title></circle>
+<circle cx="103.6" cy="65.8" r="8" fill="var(--dao)" opacity=".9"><title>Storm Crystal</title></circle>
+<circle cx="126.0" cy="14.0" r="8" fill="var(--dao)" opacity=".9"><title>Heart of Jade</title></circle>
+<rect x="-8" y="-90" width="16" height="6" fill="var(--gate)"/>
+<line x1="0" y1="-87" x2="0" y2="-142.79999999999998" stroke="var(--bridge)" stroke-width="4"/>
+<text x="6" y="-132.79999999999998" class="lbl">to the hub</text>
+<line x1="-149.6" y1="152.4" x2="-101.6" y2="152.4" stroke="var(--ink)" stroke-width="2"/>
+<text x="-149.6" y="146.4" class="lbl">48 studs = 3 s walk</text>
+</svg></div>
+<p>The same island shape you know, scaled up. Buildings sit about 10 studs apart with lawn between them, and the peaks move out from the hub so the bigger islands still have sky around them.</p>
+<dl class="stats">
+<div><dt>Gap between buildings</dt><dd>10 studs</dd></div>
+<div><dt>Gate to farthest building</dt><dd>12.8 s</dd></div>
+<div><dt>Land at full size</dt><dd>64k studs²</dd></div>
+</dl><div class="pc"><ul class="pro"><li>Most breathing room per building</li><li>Same layout and districts: least to relearn</li><li>Least risky to build</li></ul><ul class="con"><li>Bridge from the hub grows from about 7 s to about 11 s of walking</li><li>Twice the ground to draw on phones</li></ul></div>
+</article>
+<article class="card" id="islets">
+<header><h2>B. Sky Islets</h2><p class="sub">A home island plus district islands</p></header>
+<div class="plan"><svg viewBox="-192 -102 388 308" role="img" aria-label="islets layout plan">
+<circle cx="10.0" cy="132.0" r="40.0" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-96.0" cy="150.0" r="42.0" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="0.0" r="58.0" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="-122.0" cy="18.0" r="56.0" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="124.0" cy="18.0" r="58.0" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<line x1="-57.4" y1="8.5" x2="-66.6" y2="9.8" stroke="var(--bridge)" stroke-width="5" stroke-dasharray="3 2"/>
+<line x1="57.4" y1="8.3" x2="66.6" y2="9.7" stroke="var(--bridge)" stroke-width="5" stroke-dasharray="3 2"/>
+<line x1="4.4" y1="57.8" x2="7.0" y2="92.1" stroke="var(--bridge)" stroke-width="5" stroke-dasharray="3 2"/>
+<line x1="-111.2" y1="72.9" x2="-104.1" y2="108.8" stroke="var(--bridge)" stroke-width="5" stroke-dasharray="3 2"/>
+<line x1="-29.4" y1="138.7" x2="-54.6" y2="143.0" stroke="var(--bridge)" stroke-width="5" stroke-dasharray="3 2"/>
+<circle cx="0.0" cy="-40.0" r="4" fill="var(--heart)" opacity=".9"><title>Stone Path</title></circle>
+<circle cx="-75.4" cy="24.1" r="5" fill="var(--fields)" opacity=".9"><title>Spirit Vein</title></circle>
+<circle cx="10.0" cy="-30.0" r="5" fill="var(--heart)" opacity=".9"><title>Lantern Row</title></circle>
+<circle cx="0.0" cy="-0.0" r="8" fill="var(--heart)" opacity=".9"><title>Meditation Platform</title></circle>
+<circle cx="-100.9" cy="4.9" r="8" fill="var(--fields)" opacity=".9"><title>Herb Garden</title></circle>
+<circle cx="-75.9" cy="8.8" r="5" fill="var(--fields)" opacity=".9"><title>Twin Spirit Vein</title></circle>
+<circle cx="84.3" cy="-5.2" r="8" fill="var(--dao)" opacity=".9"><title>Alchemy Furnace</title></circle>
+<circle cx="-85.6" cy="121.9" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Hall</title></circle>
+<circle cx="0.0" cy="-52.0" r="8" fill="var(--heart)" opacity=".9"><title>Sect Gate</title></circle>
+<circle cx="99.3" cy="21.9" r="8" fill="var(--dao)" opacity=".9"><title>Qi Gathering Array</title></circle>
+<circle cx="-79.4" cy="138.8" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Quarters</title></circle>
+<circle cx="-153.6" cy="48.7" r="8" fill="var(--fields)" opacity=".9"><title>Bamboo Grove</title></circle>
+<circle cx="147.3" cy="5.9" r="8" fill="var(--dao)" opacity=".9"><title>Training Ground</title></circle>
+<circle cx="37.7" cy="136.2" r="8" fill="var(--heart)" opacity=".9"><title>Bell Tower</title></circle>
+<circle cx="-160.4" cy="39.4" r="8" fill="var(--fields)" opacity=".9"><title>Koi Pond</title></circle>
+<circle cx="-88.0" cy="178.9" r="8" fill="var(--disc)" opacity=".9"><title>Grand Quarters</title></circle>
+<circle cx="-1.2" cy="117.6" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda</title></circle>
+<circle cx="-17.4" cy="137.8" r="8" fill="var(--heart)" opacity=".9"><title>Scripture Library</title></circle>
+<circle cx="131.3" cy="60.3" r="8" fill="var(--dao)" opacity=".9"><title>Moon Gate Garden</title></circle>
+<circle cx="18.0" cy="127.2" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda Spire</title></circle>
+<circle cx="0.0" cy="30.0" r="14" fill="var(--heart)" opacity=".9"><title>Celestial Palace</title></circle>
+<circle cx="-91.3" cy="46.5" r="5" fill="var(--fields)" opacity=".9"><title>Third Spirit Vein</title></circle>
+<circle cx="99.1" cy="-20.7" r="8" fill="var(--dao)" opacity=".9"><title>Fire Lotus Pond</title></circle>
+<circle cx="108.9" cy="-3.7" r="8" fill="var(--dao)" opacity=".9"><title>Twin Fire Lotus</title></circle>
+<circle cx="-107.4" cy="-23.5" r="8" fill="var(--fields)" opacity=".9"><title>Second Lotus Garden</title></circle>
+<circle cx="-134.5" cy="9.7" r="8" fill="var(--fields)" opacity=".9"><title>Spirit Tea Terrace</title></circle>
+<circle cx="-121.0" cy="153.2" r="8" fill="var(--disc)" opacity=".9"><title>Meditation Spring</title></circle>
+<circle cx="-139.3" cy="-14.3" r="8" fill="var(--fields)" opacity=".9"><title>Third Lotus Garden</title></circle>
+<circle cx="-160.1" cy="12.9" r="8" fill="var(--fields)" opacity=".9"><title>High Tea Terrace</title></circle>
+<circle cx="-113.9" cy="174.1" r="8" fill="var(--disc)" opacity=".9"><title>Twin Spring</title></circle>
+<circle cx="127.9" cy="-27.8" r="8" fill="var(--dao)" opacity=".9"><title>Jade Quarry</title></circle>
+<circle cx="122.7" cy="64.0" r="8" fill="var(--dao)" opacity=".9"><title>Thunder Crystal</title></circle>
+<circle cx="149.7" cy="-20.2" r="8" fill="var(--dao)" opacity=".9"><title>Deep Jade Quarry</title></circle>
+<circle cx="137.5" cy="62.0" r="8" fill="var(--dao)" opacity=".9"><title>Storm Crystal</title></circle>
+<circle cx="167.5" cy="32.9" r="8" fill="var(--dao)" opacity=".9"><title>Heart of Jade</title></circle>
+<rect x="-8" y="-61" width="16" height="6" fill="var(--gate)"/>
+<line x1="0" y1="-58" x2="0" y2="-100" stroke="var(--bridge)" stroke-width="4"/>
+<text x="6" y="-90" class="lbl">to the hub</text>
+<line x1="-182" y1="196" x2="-134" y2="196" stroke="var(--ink)" stroke-width="2"/>
+<text x="-182" y="190" class="lbl">48 studs = 3 s walk</text>
+</svg></div>
+<p>The plaza and Main Hall sit on your home island. Fields, Alchemy, Disciples and the Summit are their own small islands in the sky, and the bridges between them are roads you build.</p>
+<dl class="stats">
+<div><dt>Gap between buildings</dt><dd>6 studs</dd></div>
+<div><dt>Gate to farthest building</dt><dd>16.2 s</dd></div>
+<div><dt>Land at full size</dt><dd>42k studs²</dd></div>
+</dl><div class="pc"><ul class="pro"><li>The sky itself is the space: views across the gaps</li><li>Bridges make road-building feel like real progress</li><li>Each district reads as its own place</li></ul><ul class="con"><li>Most walking: a full lap is about 2x today</li><li>Biggest rebuild of the island code</li><li>Peaks move out from the hub</li></ul></div>
+</article>
+<article class="card" id="ridge">
+<header><h2>C. Long Ridge</h2><p class="sub">Terraces that climb away from the hub</p></header>
+<div class="plan"><svg viewBox="-104 -104 208 368" role="img" aria-label="ridge layout plan">
+<rect x="-90.0" y="162.0" width="180.0" height="88.0" rx="22" fill="var(--land2)" stroke="var(--edge)" stroke-width="1.5"/>
+<rect x="-90.0" y="62.0" width="180.0" height="88.0" rx="22" fill="var(--land1)" stroke="var(--edge)" stroke-width="1.5"/>
+<rect x="-90.0" y="-60.0" width="180.0" height="110.0" rx="22" fill="var(--land0)" stroke="var(--edge)" stroke-width="1.5"/>
+<circle cx="0.0" cy="-52.0" r="4" fill="var(--heart)" opacity=".9"><title>Stone Path</title></circle>
+<circle cx="-76.0" cy="18.7" r="5" fill="var(--fields)" opacity=".9"><title>Spirit Vein</title></circle>
+<circle cx="10.0" cy="-44.0" r="5" fill="var(--heart)" opacity=".9"><title>Lantern Row</title></circle>
+<circle cx="0.0" cy="-22.0" r="8" fill="var(--heart)" opacity=".9"><title>Meditation Platform</title></circle>
+<circle cx="-76.0" cy="-36.3" r="8" fill="var(--fields)" opacity=".9"><title>Herb Garden</title></circle>
+<circle cx="-76.0" cy="-8.8" r="5" fill="var(--fields)" opacity=".9"><title>Twin Spirit Vein</title></circle>
+<circle cx="40.0" cy="-36.3" r="8" fill="var(--dao)" opacity=".9"><title>Alchemy Furnace</title></circle>
+<circle cx="-40.0" cy="0.8" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Hall</title></circle>
+<circle cx="0.0" cy="-64.0" r="8" fill="var(--heart)" opacity=".9"><title>Sect Gate</title></circle>
+<circle cx="40.0" cy="18.7" r="8" fill="var(--dao)" opacity=".9"><title>Qi Gathering Array</title></circle>
+<circle cx="22.0" cy="82.4" r="8" fill="var(--disc)" opacity=".9"><title>Disciple Quarters</title></circle>
+<circle cx="-22.0" cy="131.6" r="8" fill="var(--fields)" opacity=".9"><title>Bamboo Grove</title></circle>
+<circle cx="66.0" cy="110.7" r="8" fill="var(--dao)" opacity=".9"><title>Training Ground</title></circle>
+<circle cx="-66.0" cy="224.2" r="8" fill="var(--heart)" opacity=".9"><title>Bell Tower</title></circle>
+<circle cx="-22.0" cy="110.7" r="8" fill="var(--fields)" opacity=".9"><title>Koi Pond</title></circle>
+<circle cx="66.0" cy="89.8" r="8" fill="var(--disc)" opacity=".9"><title>Grand Quarters</title></circle>
+<circle cx="-66.0" cy="182.4" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda</title></circle>
+<circle cx="-22.0" cy="189.8" r="8" fill="var(--heart)" opacity=".9"><title>Scripture Library</title></circle>
+<circle cx="22.0" cy="203.3" r="8" fill="var(--dao)" opacity=".9"><title>Moon Gate Garden</title></circle>
+<circle cx="-66.0" cy="203.3" r="8" fill="var(--heart)" opacity=".9"><title>Pagoda Spire</title></circle>
+<circle cx="0.0" cy="14.0" r="14" fill="var(--heart)" opacity=".9"><title>Celestial Palace</title></circle>
+<circle cx="-40.0" cy="-26.7" r="5" fill="var(--fields)" opacity=".9"><title>Third Spirit Vein</title></circle>
+<circle cx="-40.0" cy="28.3" r="8" fill="var(--dao)" opacity=".9"><title>Fire Lotus Pond</title></circle>
+<circle cx="40.0" cy="-8.8" r="8" fill="var(--dao)" opacity=".9"><title>Twin Fire Lotus</title></circle>
+<circle cx="-66.0" cy="82.4" r="8" fill="var(--fields)" opacity=".9"><title>Second Lotus Garden</title></circle>
+<circle cx="-66.0" cy="124.2" r="8" fill="var(--fields)" opacity=".9"><title>Spirit Tea Terrace</title></circle>
+<circle cx="22.0" cy="103.3" r="8" fill="var(--disc)" opacity=".9"><title>Meditation Spring</title></circle>
+<circle cx="-66.0" cy="103.3" r="8" fill="var(--fields)" opacity=".9"><title>Third Lotus Garden</title></circle>
+<circle cx="-22.0" cy="89.8" r="8" fill="var(--fields)" opacity=".9"><title>High Tea Terrace</title></circle>
+<circle cx="22.0" cy="124.2" r="8" fill="var(--disc)" opacity=".9"><title>Twin Spring</title></circle>
+<circle cx="-22.0" cy="210.7" r="8" fill="var(--dao)" opacity=".9"><title>Jade Quarry</title></circle>
+<circle cx="66.0" cy="189.8" r="8" fill="var(--dao)" opacity=".9"><title>Thunder Crystal</title></circle>
+<circle cx="-22.0" cy="231.6" r="8" fill="var(--dao)" opacity=".9"><title>Deep Jade Quarry</title></circle>
+<circle cx="22.0" cy="224.2" r="8" fill="var(--dao)" opacity=".9"><title>Storm Crystal</title></circle>
+<circle cx="22.0" cy="182.4" r="8" fill="var(--dao)" opacity=".9"><title>Heart of Jade</title></circle>
+<rect x="-8" y="-69" width="16" height="6" fill="var(--gate)"/>
+<line x1="0" y1="-66" x2="0" y2="-102" stroke="var(--bridge)" stroke-width="4"/>
+<text x="6" y="-92" class="lbl">to the hub</text>
+<line x1="-94" y1="254" x2="-46" y2="254" stroke="var(--ink)" stroke-width="2"/>
+<text x="-94" y="248" class="lbl">48 studs = 3 s walk</text>
+</svg></div>
+<p>Your land stretches outward in three terraces, each a step higher. The first terrace is small and open; Expand the Peak raises the next one behind it, so you always see the empty land you will grow into.</p>
+<dl class="stats">
+<div><dt>Gap between buildings</dt><dd>5 studs</dd></div>
+<div><dt>Gate to farthest building</dt><dd>18.6 s</dd></div>
+<div><dt>Land at full size</dt><dd>51k studs²</dd></div>
+</dl><div class="pc"><ul class="pro"><li>Neighbours and bridges stay where they are</li><li>Height gives views back over your sect</li><li>Growth reads as a climb, which fits cultivation</li></ul><ul class="con"><li>Farthest building is about 19 s from the gate</li><li>Only one direction to grow, so less sideways room</li></ul></div>
+</article>
+</div>
+<section>
+<h2>Same in all three: you build everything</h2>
+<div class="build">
+<div><h3>Empty land at the start</h3><p>No rim wall of trees and no roads on a new save. You see open lawn and sky, and the next land shows as dry ground with one "for sale" sign at its edge.</p></div>
+<div><h3>Roads as pads</h3><p>The plaza ring, then one path into each district. Each one you lay raises your peak's Harmony bonus a little (capped), and the next costs more. Prices come from the economy check.</p></div>
+<div><h3>Groves as pads</h3><p>A small grove per district (sakura by the fields, maples by the furnace, pines by the halls), also raising Harmony. Groves can be planted again for a fuller wood.</p></div>
+<div><h3>Two farmers per farm</h3><p>Every Herb and Lotus Garden and Tea Terrace gets its own hire pad for two farmers, instead of three on the first garden only. Miners, alchemists and fighters also go to two.</p></div>
+</div>
+</section>
+<section class="research">
+<h2>What the research says</h2>
+<ul>
+<li><b>Open feel comes from land you can see but not use yet.</b> Theme Park Tycoon 2 starts you on 4 of 64 plots and shows the rest as dry grass, with a "Land for sale" sign only on plots next to yours (<a href="https://tpt2.fandom.com/wiki/Plot_expansions">TPT2 wiki</a>). Restaurant Tycoon 2 and Retail Tycoon 2 also sell land in steps. So in all three options the next land shows as pale, dry ground with one sign at its edge.</li>
+<li><b>Decoration pays through a rating, not as income.</b> Retail Tycoon 2 averages decoration over the tiles customers stand on, and a better rating brings more customers (<a href="https://retail-tycoon.fandom.com/wiki/Ratings">Retail Tycoon wiki</a>, <a href="https://devforum.roblox.com/t/retail-tycoon-2-changelog/858524">changelog</a>). Restaurant Tycoon 2 gives a star per 7 nature decorations, with a cap (<a href="https://restaurant-tycoon-2.fandom.com/wiki/Restaurant_Ratings">RT2 wiki</a>). For us: roads and groves raise a capped <b>Harmony</b> bonus on your whole peak, so they matter but cannot replace buildings.</li>
+<li><b>Repeatable pads get pricier each time.</b> Idle games use cost = base x growth^owned (about 1.07), which keeps a count bonus from running away. Paths and groves can follow that.</li>
+<li><b>Choice needs waits.</b> A DevForum pricing thread sets each button at about 30 s of income early and 60 s late (<a href="https://devforum.roblox.com/t/how-to-balance-prices-in-tycoon/3553154">DevForum</a>). Choice only appears when buying A delays B (<a href="https://www.gamedeveloper.com/design/designing-interesting-decisions-in-games-and-when-not-to-">Game Developer</a>). That part goes to the economy check, which is already looking at "no real choice".</li>
+<li><b>Walking is cheap next to waiting.</b> At 16 studs/s, even option C's 19 s walk to the farthest building is shorter than one 30 s wait. I found no published plot sizes in studs for the big tycoons, so the plans above are measured against our own map.</li>
+</ul>
+
+</section>
+<section class="pick">
+<h2>Your pick</h2>
+<p>My pick is <b>A</b>: the most room around every building for the least extra walking and the least rebuild risk. Reply in the thread with A, B or C. You can also mix, for example "A, but with the summit as its own islet".</p>
+</section>
+</div>

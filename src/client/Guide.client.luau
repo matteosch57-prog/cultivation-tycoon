@@ -97,6 +97,48 @@ local function groundY(x, z, fallback)
 	return hit and hit.Position.Y or fallback
 end
 
+-- Sky Islets: the trail never points across open sky. When the pad stands on another islet, it
+-- leads to the bridge to take first (the foot of the bridge toward it, or this islet's own bridge
+-- back toward the heart). Islets and bridges: Config.ISLETS, Config.bridgeEnds.
+local function peakFrame()
+	local idx = player:GetAttribute("PlotIndex")
+	if not idx then
+		return nil
+	end
+	local a = (idx - 1) / Config.PLOT_COUNT * math.pi * 2
+	local c = Vector3.new(math.cos(a) * Config.PLOT_RADIUS, 0, math.sin(a) * Config.PLOT_RADIUS)
+	return CFrame.lookAt(c, Vector3.zero) * CFrame.Angles(0, math.pi, 0)
+end
+-- is islet `a` on the way from the heart to islet `b` (or b itself)?
+local function leadsTo(a, b)
+	while b do
+		if a == b then
+			return true
+		end
+		b = Config.ISLETS[b].from
+	end
+	return false
+end
+local function waypoint(fromWorld, toWorld)
+	local frame = peakFrame()
+	if not frame then
+		return toWorld
+	end
+	local lf, lt = frame:PointToObjectSpace(fromWorld), frame:PointToObjectSpace(toWorld)
+	local here, there = Config.isletAt(lf.X, lf.Z), Config.isletAt(lt.X, lt.Z)
+	if here == there then
+		return toWorld
+	end
+	for name, i in Config.ISLETS do
+		if i.from == here and leadsTo(name, there) then -- go out over the bridge toward it
+			local foot, land = Config.bridgeEnds(name)
+			return frame * (foot + (foot - land).Unit * 2)
+		end
+	end
+	local foot, land = Config.bridgeEnds(here) -- go back over this islet's own bridge
+	return frame * (land + (land - foot).Unit * 2)
+end
+
 local target
 local scan = 0
 local still, lastPos = 0, nil
@@ -127,7 +169,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local early = (player:GetAttribute("Built") or 0) < Config.GUIDE_BUILT and (player:GetAttribute("Realm") or 1) == 1
 	local want = hrp and target and target.Parent and (early or still >= Config.GUIDE_IDLE)
 	local from = hrp and Vector3.new(hrp.Position.X, 0, hrp.Position.Z)
-	local to = target and Vector3.new(target.Position.X, 0, target.Position.Z)
+	local goal = target and hrp and waypoint(hrp.Position, target.Position)
+	local to = goal and Vector3.new(goal.X, 0, goal.Z)
 	local length = want and (to - from).Magnitude - NEAR or 0
 	if length < 2 then
 		for _, c in chevrons do
