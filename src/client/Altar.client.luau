@@ -99,10 +99,10 @@ local function counterBottom()
 	return px(80)
 end
 
--- the HUD's right stack (gift, pill, ...): PlayerGui.HudSlots.Right, re-sent by HudSlots.Rebuilt
+-- the HUD's right stack (gift, pill, ...): Player.HudSlots.Right, re-sent by HudSlots.Rebuilt
 -- after every HUD build. Without it the row stands on its own in the top right.
 local function rightStack()
-	local slots = playerGui:FindFirstChild("HudSlots")
+	local slots = player:FindFirstChild("HudSlots")
 	local right = slots and slots:FindFirstChild("Right")
 	return right and right.Value
 end

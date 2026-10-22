@@ -72,6 +72,7 @@ end
 -- world tips: a BillboardGui over the target
 local board = Instance.new("BillboardGui")
 board.Name = "Tip"
+board.ResetOnSpawn = false -- in PlayerGui: the first spawn would wipe it (live joins spawn late)
 board.AlwaysOnTop = true
 board.Size = UDim2.fromOffset(260, 120)
 board.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)

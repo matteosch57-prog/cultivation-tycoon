@@ -1,6 +1,6 @@
 -- Rebirth screen (Muscle Legends' rebirth, docs/research/2026-10-22_rebirth_standard.md): the price in
 -- qi, the boost now and after, the karma it pays, one button. Opened by the HUD's Rebirth button
--- (PlayerGui.ReincOpen, a BindableEvent). Same language as the Shop: no board, toy pieces over a
+-- (Player.ReincOpen, a BindableEvent). Same language as the Shop: no board, toy pieces over a
 -- dark veil. The server decides (R9): the button only asks; a second tap confirms.
 -- A second page, the Karma Shop (Config.DAO), spends karma on permanent nodes.
 local Players = game:GetService("Players")
@@ -40,7 +40,7 @@ end
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ReincOpen"
-openEvent.Parent = playerGui
+openEvent.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Reincarnation"

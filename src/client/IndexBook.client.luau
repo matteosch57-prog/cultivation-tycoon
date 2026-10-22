@@ -2,7 +2,7 @@
 -- stars of disciple_index_C.png): one tile per rarity and look (9 x 4), a dark shape until pulled, its
 -- pulls in the corner and five stars under it (Config.INDEX_STARS). The foot shows the stars, the qi
 -- they add (INDEX_STAR_BONUS each, forever) and the next summons step. Opened from the HUD disciples
--- card (PlayerGui.IndexOpen); the server alone counts (data.index, published as the Index attribute).
+-- card (Player.IndexOpen); the server alone counts (data.index, published as the Index attribute).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -27,7 +27,7 @@ local INK = Toy.INK
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "IndexOpen"
-openEvent.Parent = playerGui
+openEvent.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Index"

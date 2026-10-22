@@ -1,7 +1,7 @@
 -- Shop screen (mock B, docs/art/mocks/shop_B_phone.jpg, D24): no board, toy tiles floating over a
 -- dark veil, one row per page: Boosts (passes + Instant Pill), Qi packs, Disciples, picked with
 -- toy tabs (with their icons) under the title. Opened by the HUD's Shop button and by the Get Qi
--- offer (PlayerGui.ShopOpen, a BindableEvent fired with the source and an optional page key). The
+-- offer (Player.ShopOpen, a BindableEvent fired with the source and an optional page key). The
 -- server prompts and grants (R9): a tap only sends the item key. Also draws the cards over the world
 -- shop's purple pads (D33) and the quiet Get Qi offer on a build pad the player cannot afford.
 local Players = game:GetService("Players")
@@ -39,7 +39,7 @@ local TILT = { -2, 1.5, -1, 2 }
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ShopOpen"
-openEvent.Parent = playerGui
+openEvent.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
 ---------------------------------------------------------------------------------------------
 -- prices: read from Roblox (regional pricing makes them per player); nil = not loaded yet
@@ -394,6 +394,7 @@ local function padCard(pad)
 	-- no model of their own, keep a small icon.
 	local iconSize = (key == "x2" or key == "vip") and 40 or nil
 	local bb = Instance.new("BillboardGui")
+	bb.ResetOnSpawn = false -- in PlayerGui: the first spawn would wipe it (live joins spawn late)
 	bb.Name = "ShopCard"
 	bb.Adornee = pad
 	bb.Size = UDim2.fromOffset(260, iconSize and 90 or 50)
@@ -677,7 +678,7 @@ remotes.Notify.OnClientEvent:Connect(function(kind, rarity, kept)
 		-- (owner 2026-10-22: every Robux disciple plays the recruit reveal)
 		offerGui.Enabled = false
 		close()
-		local fx = playerGui:FindFirstChild("RecruitFx")
+		local fx = player:FindFirstChild("RecruitFx")
 		if fx then
 			fx:Fire(rarity, kept)
 		end

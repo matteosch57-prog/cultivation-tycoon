@@ -371,7 +371,7 @@ local function build()
 
 	-- Owner pick B (2026-10-22, mock docs/art/mocks/hud_menus_B.jpg): the left column holds what you
 	-- OPEN (Shop, Disciples, Karma); the right stack under the next goal holds what TICKS (gift, pill,
-	-- and other scripts' rows through PlayerGui.HudSlots). layout() fits the left column between
+	-- and other scripts' rows through Player.HudSlots). layout() fits the left column between
 	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	local leftLayout = Instance.new("UIListLayout")
@@ -399,7 +399,7 @@ local function build()
 	sBtn.Name = "ShopButton"
 	ui.shopDot = Toy.dot(sBtn, px(17), { Visible = false })
 	sBtn.Activated:Connect(function()
-		local ev = playerGui:FindFirstChild("ShopOpen")
+		local ev = player:FindFirstChild("ShopOpen")
 		if ev then
 			ev:Fire("hud")
 		end
@@ -417,7 +417,7 @@ local function build()
 	kBtn.Name = "KarmaButton"
 	ui.karmaDot = Toy.dot(kBtn, px(17), { Visible = false })
 	kBtn.Activated:Connect(function()
-		local ev = playerGui:FindFirstChild("ReincOpen")
+		local ev = player:FindFirstChild("ReincOpen")
 		if ev then
 			ev:Fire("karma")
 		end
@@ -586,7 +586,7 @@ local function build()
 	ui.rebirthBtn = chipBtn
 	ui.reincDot = Toy.dot(chipBtn, px(15), { Visible = false })
 	chipBtn.Activated:Connect(function()
-		local ev = playerGui:FindFirstChild("ReincOpen")
+		local ev = player:FindFirstChild("ReincOpen")
 		if ev then
 			ev:Fire()
 		end
@@ -812,7 +812,7 @@ local function build()
 		if ok and res and res.ok then
 			-- the orb reveal on screen (RecruitReveal) and the light column on the platform (Juice);
 			-- the reveal names the disciple, so no toast
-			local fxEvent = playerGui:FindFirstChild("RecruitFx")
+			local fxEvent = player:FindFirstChild("RecruitFx")
 			if fxEvent then
 				fxEvent:Fire(res.rarity, res.kept, res.results) -- x10 / x50: every orb opens, then the best
 			end
@@ -1124,7 +1124,7 @@ refreshStatic = function()
 		Toy.dot(iHolder, px(17))
 	end
 	iBtn.Activated:Connect(function()
-		local ev = playerGui:FindFirstChild("IndexOpen")
+		local ev = player:FindFirstChild("IndexOpen")
 		if ev then
 			ev:Fire()
 		end
@@ -1138,7 +1138,7 @@ refreshStatic = function()
 	ui.fill.BackgroundColor3 = owned >= total and GOLD or JADE
 end
 
--- PlayerGui.HudSlots: other scripts add a row to the right stack (the altar chip) or the left rail
+-- Player.HudSlots: other scripts add a row to the right stack (the altar chip) or the left rail
 -- (the Friends button). The HUD rebuilds itself on a viewport change, so it points `Right` / `Left`
 -- at the current rails and fires `Rebuilt`: a row re-parents itself there on every Rebuilt
 -- (LayoutOrder: right = gift 1, pill 2, then yours; left = Shop 0, Disciples 1, Karma 2, then yours).
@@ -1153,7 +1153,7 @@ slotLeft.Parent = slots
 local slotRebuilt = Instance.new("BindableEvent")
 slotRebuilt.Name = "Rebuilt"
 slotRebuilt.Parent = slots
-slots.Parent = playerGui
+slots.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
 rebuildAll = function()
 	build()

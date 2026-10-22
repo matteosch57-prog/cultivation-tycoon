@@ -337,7 +337,7 @@ end)
 -- recruits: the Hud tells us the rarity through this local event
 local recruitFx = Instance.new("BindableEvent")
 recruitFx.Name = "RecruitFx"
-recruitFx.Parent = player:WaitForChild("PlayerGui")
+recruitFx.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 recruitFx.Event:Connect(function(rarityName, kept, results)
 	local r = Config.rarity(rarityName)
 	local c = plotCentre()

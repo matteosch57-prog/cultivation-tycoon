@@ -156,7 +156,7 @@ end
 -- docs/art/mocks/hud_phone_A.jpg): it replaces the "Play with friends" card and the "+10%" group chip.
 -- Caption = the friends bonus (live, or what one friend would add); a red dot while the Sect Gift
 -- (group) is unclaimed. Tap: the Sect Gift card (with Invite in it) while that gift is open, else Invite.
-local root -- the button's column, a row of the left rail (PlayerGui.HudSlots.Left)
+local root -- the button's column, a row of the left rail (Player.HudSlots.Left)
 local shown -- the key of what is drawn
 
 local FACE = Color3.fromHex("3A2C44") -- the HUD's button face
@@ -213,10 +213,10 @@ local function draw()
 	end)
 end
 
--- the button is a row of the HUD's left rail (PlayerGui.HudSlots, D54); its own corner only if the
+-- the button is a row of the HUD's left rail (Player.HudSlots, D54); its own corner only if the
 -- HUD is missing
 local function leftRail()
-	local slots = playerGui:FindFirstChild("HudSlots")
+	local slots = player:FindFirstChild("HudSlots")
 	local left = slots and slots:FindFirstChild("Left")
 	return left and left.Value
 end
@@ -238,7 +238,7 @@ local function placeCard()
 	end
 end
 task.spawn(function()
-	local slots = playerGui:WaitForChild("HudSlots", 30)
+	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
 			task.defer(placeCard)

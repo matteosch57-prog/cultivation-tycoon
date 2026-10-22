@@ -231,6 +231,7 @@ end
 -- Price card: the HUD language, bigger and plainer (name, what it does, the price)
 local function makeCard(pad, kind)
 	local bb = Instance.new("BillboardGui")
+	bb.ResetOnSpawn = false -- in PlayerGui: the first spawn would wipe it (live joins spawn late)
 	bb.Name = "PadCard"
 	bb.Adornee = pad
 	bb.Size = UDim2.fromOffset(260, 112)

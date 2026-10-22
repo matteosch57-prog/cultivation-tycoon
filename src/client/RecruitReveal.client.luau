@@ -754,9 +754,9 @@ local function startMulti(results)
 	end)
 end
 
--- Hud fires PlayerGui.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit (the
+-- Hud fires Player.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit (the
 -- idle chest too, with one result); results (x10 / x50) open every orb, else the single reveal
-local fx = playerGui:WaitForChild("RecruitFx")
+local fx = player:WaitForChild("RecruitFx")
 fx.Event:Connect(function(rarityName, kept, results)
 	if results and #results > 1 then
 		startMulti(results)

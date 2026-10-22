@@ -240,7 +240,7 @@ local function openBall(b)
 	local sc = b.holder:FindFirstChildOfClass("UIScale")
 	sc.Scale = 1.35
 	tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
-	local fx = playerGui:FindFirstChild("RecruitFx") -- Juice: the recruit sound and the column on the platform
+	local fx = player:FindFirstChild("RecruitFx") -- Juice: the recruit sound and the column on the platform
 	if fx then
 		fx:Fire(res.rarity, res.kept, { res }) -- the reveal shows its look and index star (D60)
 	else
