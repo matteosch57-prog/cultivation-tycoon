@@ -34,3 +34,6 @@ Append only. Retire a rule by striking it through, never renumber. Cite by numbe
   warns; MemoryStore and ordered stores follow TECH "Data" before their first use.
 - **R18** Every amount of a currency shows its icon (qi drop, karma orb, Robux mark), prices included;
   a new currency gets its icon the day it is added (`Toy.icon(parent, "qi" | "karma", size)`).
+- **R19** Nothing a script needs lives in PlayerGui unless it is a gui with `ResetOnSpawn = false`:
+  signals, folders and values go on the Player. The first `LoadCharacter` empties PlayerGui and live
+  it runs after the client scripts (Studio hides it). Gate: `python tools/check_playergui.py` (D68).

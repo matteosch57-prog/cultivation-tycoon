@@ -393,3 +393,13 @@ the log as a D-number.
   inside it the D44 floor and the D48 breakthrough rose with every path and grove, so decor's +20%
   mostly paid for itself. `tools/sim_check.py` / `sim_game.py` (`HARMONY_IN_PRICE` = the old rule):
   pace unchanged for a regular player over 30 days; decor now pays what its card says.
+- **D68** The live menus bug (2026-10-22, owner: "make sure it never happens again and log it"): live,
+  the Index, Shop, Reincarnation and the recruit reveal never opened and the Friends row left the rail,
+  while every Studio Play worked. Cause: their BindableEvents and the `HudSlots` folder were parented
+  to PlayerGui; `Main` loads the character itself (`CharacterAutoLoads = false`) after the save loads,
+  which on a live server is after the client scripts ran, and that first spawn empties PlayerGui of
+  everything but guis with `ResetOnSpawn = false`. Fixed in 6ab3311 (signals on the Player). Guard:
+  rule R19 and `tools/check_playergui.py` (fails on anything else parented to PlayerGui and on a
+  PlayerGui lookup by a name no script makes as a kept gui; `--selftest` is its positive control, and
+  it reports all 17 bug sites on the pre-fix tree de60f19, 0 after). Run it before every merge into
+  `integration` and before a publish. In Studio, reset the character once in Play to see this class of bug.
