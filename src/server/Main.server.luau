@@ -948,7 +948,7 @@ local function onJoin(player)
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
 	local offlineGain = 0
 	if away > 60 then
-		offlineGain = math.floor(rate(s, true) * away)
+		offlineGain = math.floor(rate(s, true) * away * Config.OFFLINE_RATE)
 		data.qi += offlineGain
 		Telemetry.source(player, data, offlineGain, "offline", true)
 	end

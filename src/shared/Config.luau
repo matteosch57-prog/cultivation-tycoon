@@ -8,6 +8,9 @@ Config.HUB_RADIUS = 36
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
+-- offline qi pays this share of the rate (owner 2026-10-22, "idle should pay half"): an hour played
+-- is worth twice an hour away (research 2026-10-22_full_game_sim: offline was 81% of late qi)
+Config.OFFLINE_RATE = 0.5
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
 Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)

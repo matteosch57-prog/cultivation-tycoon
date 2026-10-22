@@ -219,7 +219,13 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         for _ in range(K["per_day"]):
             if played:
                 away = min(session_gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
-                src("offline", base() * away * C.get("OFFLINE_RATE", 1))  # OFFLINE_RATE: proposal lever (server pays 1)
+                src("offline", base() * away * C.get("OFFLINE_RATE", 1))  # Main onJoin: x OFFLINE_RATE
+                if C.get("CHEST_SUMMON_EVERY"):  # idle chest: a free summon per CHEST_SUMMON_EVERY s away
+                    for _ in range(min(int(away // C["CHEST_SUMMON_EVERY"]), int(C.get("CHEST_SUMMON_MAX", 99)))):
+                        S["disciples"].append(roll())
+                        S["disciples"].sort(reverse=True)
+                        del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+                        led_src["free summons"] = led_src.get("free summons", 0)
             tide_phase = rng.uniform(0, C["TIDE_INTERVAL"])
             gift_i, walking = 0, None
             walk = 0 if lvl("hands") else st["walk"]

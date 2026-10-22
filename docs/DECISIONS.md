@@ -138,3 +138,9 @@ the log as a D-number.
   Heavenly Hands 5, because every life replays the early realms. Rhythm (2 x 30 min a day): first new
   life ~10 min, lives 10, 14, 20, 27 ... ~75 min by life 9 (day 6), ~4 h by life 14 (day 16).
   Evidence: `docs/research/2026-10-21_economy_math.md` section 11.
+- **D38** Idle pays half (owner, 2026-10-22: "Idle should pay half indeed ... breakthrough,
+  reincarnation etc. should always reset Qi"). `OFFLINE_RATE` 0.5: offline was 81% of late qi
+  (research 2026-10-22_full_game_sim), now an hour played is worth twice an hour away; regular player
+  life 14 moves from day 12 to day 13. Leftover qi stays reset at every breakthrough and reincarnation
+  (the carry-over proposal is dropped). An idle chest with free summons and a return screen comes next
+  (mock first).

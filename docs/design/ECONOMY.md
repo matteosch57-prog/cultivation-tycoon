@@ -5,7 +5,7 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 ## Qi
 - Income per second = (`BASE_RATE` + sum of owned pads' `income`) x `incomeMult(realm)` x disciple bonus
   x 2 while a pill is active. Ticked on the server every second.
-- Offline: income keeps flowing while away, capped at `OFFLINE_CAP` seconds.
+- Offline: income keeps flowing while away at `OFFLINE_RATE` of the rate (no tide, pill or friends), capped at `OFFLINE_CAP` seconds (+ Deep Meditation).
 
 ## Pads (`Config.PADS`)
 - A pad opens once `unlock` buildings are owned (any of them) and its `req` pads are owned. This keeps
