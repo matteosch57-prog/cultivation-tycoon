@@ -463,29 +463,29 @@ end
 -- MarketplaceService (regional pricing changes them per player).
 -- `seconds` (Qi packs) = seconds of the buyer's income (no tide, no pill, like gifts).
 Config.SHOP_PASSES = {
-	{ key = "x2", id = 0, name = "2x Qi", line = "Double income forever" },
-	{ key = "auto", id = 0, name = "Auto Orbs", line = "Orbs fly to you" },
-	{ key = "vip", id = 0, name = "VIP Sect", line = "+1 disciple, gold name" },
+	{ key = "x2", id = 2045637564, name = "2x Qi", line = "Double income forever" },
+	{ key = "auto", id = 2047412977, name = "Auto Orbs", line = "Orbs fly to you" },
+	{ key = "vip", id = 2048210735, name = "VIP Sect", line = "+1 disciple, gold name" },
 }
 Config.SHOP_PRODUCTS = {
 	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
 	-- Elder plus `qiBonus` more qi forever (kept through every life); offered once by WELCOME
 	{ key = "welcome", id = 0, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
-	{ key = "pill", id = 0, name = "Instant Pill", line = "2x Qi for 60 s now" },
-	{ key = "pack1", id = 0, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
-	{ key = "pack2", id = 0, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
-	{ key = "pack3", id = 0, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
+	{ key = "pill", id = 3721095019, name = "Instant Pill", line = "2x Qi for 60 s now" },
+	{ key = "pack1", id = 3721095093, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
+	{ key = "pack2", id = 3721095259, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
+	{ key = "pack3", id = 3721095401, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
 	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
 	-- when full). Every tier from Elder up is sold (owner, D28), priced by the owner as a ladder.
-	{ key = "elder", id = 0, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
-	{ key = "immortal", id = 0, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
+	{ key = "elder", id = 3721095583, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
+	{ key = "immortal", id = 3721095692, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
 	-- `limit` = times one player may buy it: the chase tiers once each, Elder / Immortal one sect's
 	-- worth (bought disciples are never trimmed, so this bounds the list and the save); `minRealm` = on sale only from
 	-- that realm (bought from the start they would flatten the early climb: economy check, D28)
-	{ key = "celestial", id = 0, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
-	{ key = "dao", id = 0, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
-	{ key = "emperor", id = 0, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1, minRealm = 7 },
-	{ key = "primordial", id = 0, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
+	{ key = "celestial", id = 3721095787, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1, minRealm = 3 },
+	{ key = "dao", id = 3721095866, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1, minRealm = 5 },
+	{ key = "emperor", id = 3721095940, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1, minRealm = 7 },
+	{ key = "primordial", id = 3721095995, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1, minRealm = 9 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
