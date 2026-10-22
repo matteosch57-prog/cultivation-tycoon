@@ -1,0 +1,144 @@
+<title>Neighbour Visit Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: sky sheet, three option cards (scene + phone toast + rules), then research and the pick. */
+:root {
+  --bg: #e9f0f3; --paper: #f8fbfc; --ink: #1f2b2f; --muted: #56676d; --line: #c9d6db;
+  --accent: #2f8f6f; --warn: #b5532f;
+  --sky1: #bfe0f0; --sky2: #eaf5fa; --grass: #8fc271; --grassD: #6f9f55; --rock: #a08a74;
+  --wood: #7b3b2a; --gold: #d9a13a; --jade: #6fd6aa; --smoke: #ffffff; --stone: #c7c2b6;
+  --toastbg: #1d2a2e; --toastfg: #f4efe2;
+  --display: "Zen Maru Gothic", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141c1f; --paper: #1c262a; --ink: #e3ecef; --muted: #9db0b6; --line: #34444a;
+  --accent: #5cc49c; --warn: #e48a66; --sky1: #2a4656; --sky2: #36586a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141c1f; --paper: #1c262a; --ink: #e3ecef; --muted: #9db0b6; --line: #34444a;
+  --accent: #5cc49c; --warn: #e48a66; --sky1: #2a4656; --sky2: #36586a; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 24px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); }
+.lead { max-width: 70ch; color: var(--muted); margin: 6px 0 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card h2 { font-size: 1.3rem; }
+.sub { margin: 0; color: var(--accent); font-weight: 700; }
+.card p { margin: 0; }
+.scene { border-radius: 10px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; }
+.scene svg { width: 100%; height: 100%; display: block; }
+.toast { background: var(--toastbg); color: var(--toastfg); border-radius: 12px; padding: 10px 12px; font-size: .92rem; display: flex; gap: 10px; align-items: center; }
+.toast b { color: var(--jade); }
+.toast .ic { width: 28px; height: 28px; flex: none; }
+ul { margin: 0; padding-left: 1.1em; font-size: .94rem; }
+.pc { display: grid; gap: 4px; }
+.pro li::marker { content: "+  "; color: var(--accent); font-weight: 700; }
+.con li::marker { content: "-  "; color: var(--warn); font-weight: 700; }
+section { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 10px; min-width: 0; }
+section li, section p { max-width: 74ch; }
+section a { color: var(--accent); }
+.pick { font-size: 1.05rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .smoke { animation: rise 3.2s ease-in-out infinite; transform-origin: center; }
+  .smoke.d2 { animation-delay: 1.1s; } .smoke.d3 { animation-delay: 2.1s; }
+  @keyframes rise { 0% { opacity: 0; transform: translateY(6px); } 30% { opacity: .8; } 100% { opacity: 0; transform: translateY(-22px); } }
+}
+</style>
+<div class="wrap">
+<header>
+<h1>Why walk to a neighbour's sect</h1>
+<p class="lead">Three gentle ways to visit another player's sect. In each one, both of you gain something and nobody loses anything. Every option works without a word of chat, and none of them is needed to progress, so a player alone on a server never falls behind.</p>
+</header>
+<div class="cards">
+
+<article class="card">
+<h2>A. Incense Blessing</h2>
+<p class="sub">Light a stick at their shrine</p>
+<div class="scene"><svg viewBox="0 0 320 240" role="img" aria-label="A visitor lights incense at a neighbour's shrine by the entrance gate">
+<rect width="320" height="240" fill="var(--sky1)"/><rect y="0" width="320" height="110" fill="var(--sky2)"/>
+<ellipse cx="160" cy="215" rx="190" ry="60" fill="var(--grass)"/><ellipse cx="160" cy="232" rx="150" ry="26" fill="var(--grassD)"/>
+<g transform="translate(212 70)"><rect x="-6" y="0" width="10" height="110" fill="var(--wood)"/><rect x="88" y="0" width="10" height="110" fill="var(--wood)"/><rect x="-18" y="-10" width="128" height="14" rx="3" fill="var(--wood)"/><rect x="18" y="10" width="56" height="16" fill="var(--gold)"/></g>
+<g transform="translate(120 150)">
+<rect x="-26" y="20" width="52" height="16" rx="3" fill="var(--stone)"/><rect x="-20" y="0" width="40" height="22" rx="8" fill="var(--rock)"/>
+<rect x="-14" y="-4" width="28" height="6" rx="2" fill="var(--gold)"/>
+<g stroke="var(--wood)" stroke-width="2"><line x1="-8" y1="-4" x2="-10" y2="-30"/><line x1="0" y1="-4" x2="0" y2="-34"/><line x1="8" y1="-4" x2="10" y2="-28"/></g>
+<circle cx="-10" cy="-31" r="2.4" fill="#ff8a3c"/><circle cx="0" cy="-35" r="2.4" fill="#ff8a3c"/><circle cx="10" cy="-29" r="2.4" fill="#ff8a3c"/>
+<g fill="var(--smoke)" opacity=".7"><circle class="smoke" cx="0" cy="-44" r="5"/><circle class="smoke d2" cx="-8" cy="-42" r="4"/><circle class="smoke d3" cx="9" cy="-40" r="4"/></g>
+<text x="0" y="52" text-anchor="middle" font-size="11" font-weight="700" fill="#1f2b2f" font-family="var(--body)">Blessed 37 times · 3 today</text>
+</g>
+<g transform="translate(70 140)"><circle cx="0" cy="0" r="9" fill="#f1c8a0"/><rect x="-10" y="9" width="20" height="30" rx="6" fill="#4a74c4"/><rect x="-2" y="14" width="18" height="5" rx="2" fill="#4a74c4" transform="rotate(-20)"/></g>
+</svg></div>
+<div class="toast"><svg class="ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#2f8f6f"/><line x1="14" y1="20" x2="14" y2="8" stroke="#fff" stroke-width="2"/><circle cx="14" cy="7" r="2" fill="#ff8a3c"/></svg><span><b>Lin</b> blessed your sect. You both gained 2 min of qi.</span></div>
+<p>Every sect has a small incense shrine beside its entrance gate. Stand at a neighbour's shrine for 3 seconds and a stick lights. You both get about 2 minutes of your own income, and the owner sees a toast. Today's sticks stay lit on the shrine, and a plaque counts every blessing the sect has ever had.</p>
+<div class="pc"><ul class="pro"><li>Closest to your idea, and to Adopt Me's trick-or-treat buckets, which worked</li><li>Visible status: a busy shrine shows a popular sect</li><li>Smallest to build: one shrine model and one server check</li></ul>
+<ul class="con"><li>You only see the neighbour's gate, not their whole sect</li></ul></div>
+</article>
+
+<article class="card">
+<h2>B. Tend Their Spirit Herb</h2>
+<p class="sub">Water the herb only visitors can water</p>
+<div class="scene"><svg viewBox="0 0 320 240" role="img" aria-label="A visitor waters a glowing spirit herb in the middle of a neighbour's plaza">
+<rect width="320" height="240" fill="var(--sky1)"/><rect y="0" width="320" height="110" fill="var(--sky2)"/>
+<ellipse cx="160" cy="215" rx="190" ry="60" fill="var(--grass)"/><ellipse cx="160" cy="232" rx="150" ry="26" fill="var(--grassD)"/>
+<rect x="196" y="70" width="96" height="70" fill="#c8513f"/><path d="M186 72 L244 40 L302 72 Z" fill="#2c3a44"/>
+<g transform="translate(150 170)"><ellipse cx="0" cy="14" rx="30" ry="9" fill="var(--rock)"/>
+<path d="M0 10 C -4 -10, -24 -14, -26 -30 C -8 -26, -2 -14, 0 0 Z" fill="#3c9a5b"/><path d="M0 10 C 4 -12, 24 -18, 28 -34 C 8 -28, 2 -14, 0 0 Z" fill="#47b06b"/><path d="M0 8 C -2 -18, 2 -40, 0 -52 C 6 -38, 4 -18, 0 8 Z" fill="#5cc47d"/>
+<circle cx="0" cy="-56" r="7" fill="var(--jade)"/><circle cx="0" cy="-56" r="13" fill="var(--jade)" opacity=".25"/>
+<text x="0" y="40" text-anchor="middle" font-size="11" font-weight="700" fill="#1f2b2f" font-family="var(--body)">Tended 4 times today: in bloom</text></g>
+<g transform="translate(92 150)"><circle cx="0" cy="0" r="9" fill="#f1c8a0"/><rect x="-10" y="9" width="20" height="30" rx="6" fill="#d9a13a"/><path d="M12 14 l18 8 l-4 6 z" fill="#8e979f"/><g fill="#7ec8e3"><circle cx="34" cy="30" r="2"/><circle cx="38" cy="36" r="2"/><circle cx="35" cy="42" r="2"/></g></g>
+</svg></div>
+<div class="toast"><svg class="ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#2f8f6f"/><circle cx="14" cy="12" r="5" fill="#6fd6aa"/><rect x="13" y="16" width="2" height="7" fill="#fff"/></svg><span><b>Lin</b> tended your Spirit Herb. It grows with every visitor today.</span></div>
+<p>A spirit herb grows in every sect's plaza, and only visitors can tend it. Tending gives both of you qi, and the herb grows bigger and glows brighter with each visitor that day. The visitor walks into the middle of your sect and sees everything you have built.</p>
+<div class="pc"><ul class="pro"><li>The visitor walks through the whole sect, so your buildings get an audience</li><li>The FarmVille and Hay Day "help your neighbour" loop, kept calm</li></ul>
+<ul class="con"><li>A new model that grows in stages, so more art</li><li>The plaza already holds the platform and the Main Hall</li></ul></div>
+</article>
+
+<article class="card">
+<h2>C. Admire a Sect</h2>
+<p class="sub">Bow at their Main Hall: fame for them, qi for you</p>
+<div class="scene"><svg viewBox="0 0 320 240" role="img" aria-label="A visitor bows before a neighbour's Main Hall, a fame banner above it">
+<rect width="320" height="240" fill="var(--sky1)"/><rect y="0" width="320" height="110" fill="var(--sky2)"/>
+<ellipse cx="160" cy="215" rx="190" ry="60" fill="var(--grass)"/><ellipse cx="160" cy="232" rx="150" ry="26" fill="var(--grassD)"/>
+<rect x="100" y="86" width="120" height="78" fill="#c8513f"/><path d="M84 90 L160 46 L236 90 Z" fill="#2c3a44"/><rect x="96" y="160" width="128" height="10" fill="var(--stone)"/>
+<rect x="124" y="20" width="72" height="22" rx="4" fill="var(--gold)"/><text x="160" y="35" text-anchor="middle" font-size="11" font-weight="700" fill="#3a2410" font-family="var(--body)">Fame 128</text>
+<g transform="translate(160 196) rotate(28)"><circle cx="0" cy="-30" r="9" fill="#f1c8a0"/><rect x="-10" y="-22" width="20" height="30" rx="6" fill="#4a74c4"/></g>
+</svg></div>
+<div class="toast"><svg class="ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#d9a13a"/><path d="M14 6 l2.4 5 5.4.6-4 3.7 1.1 5.3-4.9-2.7-4.9 2.7 1.1-5.3-4-3.7 5.4-.6z" fill="#fff"/></svg><span><b>Lin</b> admired your sect. Fame 128.</span></div>
+<p>Bow at a neighbour's Main Hall for 3 seconds. You get about 2 minutes of your own income, and their sect gains a point of Fame. Fame is a lifetime number shown on the sect's gate and in the player list, and the sect board can rank by it later. The owner gets status, not qi.</p>
+<div class="pc"><ul class="pro"><li>Answers "what are you worth if nobody sees it": fame is social status</li><li>Feeds the ranking and the board you asked for</li></ul>
+<ul class="con"><li>The owner gains no qi, so it is less of a two-way gift</li><li>A Fame number invites alt accounts, so it needs account-age limits</li></ul></div>
+</article>
+</div>
+
+<section>
+<h2>Same in all three</h2>
+<ul>
+<li><b>Once per pair per day:</b> you can bless, tend or admire each sect once a day, and never your own. Up to 5 a day given and 5 received (FarmVille capped help per farm per day).</li>
+<li><b>Scaled to your own income</b>, so a brand-new alt account gives almost nothing. Reward sizes go through the economy check (proposed: 2 minutes of income each side).</li>
+<li><b>A bonus for breadth:</b> bless every other sect on the server in a day for a small extra (an Adopt Me event paid for visiting 15 different houses).</li>
+<li><b>Never asked for:</b> no popup ever tells you to go ask for blessings. FarmVille was criticised for pushing players to spam their friends.</li>
+<li><b>Found easily:</b> a soft glow on neighbour shrines you can still use today, so the feature doesn't hide (DevForum: social systems die when nobody finds them).</li>
+</ul>
+</section>
+
+<section>
+<h2>What the research says</h2>
+<ul>
+<li>Adopt Me's trick-or-treat: press E on a house's bucket, the visitor and the owner both get 15 candy, each bucket once a day and it goes dark when used (<a href="https://www.gfinityesports.com/article/adopt-me-trick-or-treat">Gfinity</a>).</li>
+<li>The Simpsons: Tapped Out capped neighbour actions per day and tapered the rewards, with a prize calendar for regular visitors (<a href="https://tstoaddicts.com/2016/06/16/superheroes-sequel-101-neighbor-visits-social-prize-calendar/">TSTO Addicts</a>).</li>
+<li>FarmVille capped help per farm per day and was criticised for making players exploit their friends (<a href="https://en.wikipedia.org/wiki/FarmVille">Wikipedia</a>).</li>
+<li>Alt accounts feeding a main are the known exploit. The fixes are a per-pair daily limit, paying both sides, rewards scaled to the receiver's income and a minimum account age (<a href="https://dev.to/truongpx396/the-social-games-playbook-2i51">Social games playbook</a>).</li>
+<li>Tiny Town Tycoon shows each owner's name over their city and features one city per server (<a href="https://devforum.roblox.com/t/tiny-town-tycoon-guide-info/949073">DevForum</a>).</li>
+</ul>
+</section>
+
+<section class="pick">
+<h2>Your pick</h2>
+<p>My pick is <b>A, plus C's lifetime count on the shrine</b>: the shrine shows "Blessed 37 times", which gives you the social status, and both of you still get qi. Reply A, B or C, or a mix.</p>
+</section>
+</div>

@@ -407,6 +407,18 @@ Config.FRIEND_MAX = 3
 -- everywhere. 0 = no group yet: the Group button is hidden (the owner pastes the group id, R5)
 Config.GROUP_ID = 172156768 -- Cultivation Tycoon community (owner, 2026-10-22)
 Config.GROUP_BONUS = 0.1
+-- Incense Blessing (owner pick A 2026-10-22, src/server/Bless.luau): hold a neighbour's shrine
+-- prompt BLESS_HOLD s; both get BLESS_SECONDS of their own offline-rate income (PROPOSED, the
+-- economy check confirms). Once per visitor and sect a UTC day; at most BLESS_GIVE_MAX given and
+-- BLESS_GET_MAX received a day. The owner's share needs a real giver: Roblox account age and play
+-- time (alts feed nobody, research 2026-10-22_neighbour_visits).
+Config.BLESS_SHRINE_AT = Vector3.new(-13, 0, 47) -- home island, left of the avenue just inside the entrance (between the VIP pad and the lanterns)
+Config.BLESS_HOLD = 3
+Config.BLESS_SECONDS = 120
+Config.BLESS_GIVE_MAX = 5
+Config.BLESS_GET_MAX = 5
+Config.BLESS_MIN_ACCOUNT_DAYS = 7
+Config.BLESS_MIN_PLAY = 600
 -- Heavenly Gift (D36): a brand-new save's intro screen pays this once (the first four buildings,
 -- 10 + 25 + 60 + 90, with no wait; Economy check 2026-10-21: realms 2 to 5 move under a minute)
 Config.WELCOME_QI = 200
