@@ -552,7 +552,8 @@ local function buildPreview(s, pad, parent)
 	m.Parent = parent
 end
 
-local function buildDisciples(s)
+-- `newcomer`: the name of a disciple who just joined; its seat walks it in (Cultivators arrival)
+local function buildDisciples(s, newcomer)
 	local old = s.plot.built:FindFirstChild("Disciples")
 	if old then
 		old:Destroy()
@@ -568,7 +569,11 @@ local function buildDisciples(s)
 		if slot > max then
 			break -- benched
 		end
-		Builders.disciple(ctx, slot, Config.rarity(name))
+		local arrive = name == newcomer
+		if arrive then
+			newcomer = nil -- only one seat walks in, the first with that name
+		end
+		Builders.disciple(ctx, slot, Config.rarity(name), arrive)
 	end
 	ctx.folder.Parent = s.plot.built
 end
@@ -1116,7 +1121,7 @@ local function addDisciple(s, name, force)
 			table.remove(list, i)
 		end
 	end
-	buildDisciples(s)
+	buildDisciples(s, kept and name or nil)
 	return kept
 end
 

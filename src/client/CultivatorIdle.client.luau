@@ -128,8 +128,116 @@ local function add(m)
 	figures[m] = f
 end
 
+-- Arrival (owner 2026-10-22): a new recruit walks in from behind its cushion with Roblox's own R15
+-- walk (a Roblox animation plays in any experience, nothing to upload), bows to the sect, then
+-- its seated figure fades in where it stood. Research: a keyframed walk reads natural where a
+-- procedural one reads stiff, and the default walk is what players know from their own avatar.
+local WALK_ANIM = "rbxassetid://507777826"
+local WALK_SPEED = 5 -- studs per second
+local function arrive(m)
+	local walker = m:FindFirstChild("Walker")
+	local avatar = m:FindFirstChild("Avatar")
+	local cushion = m:FindFirstChild("Cushion")
+	local at = m:GetAttribute("ArrivedAt")
+	if not walker or not avatar or not cushion or not at then
+		return
+	end
+	local hrp = walker:FindFirstChild("HumanoidRootPart")
+	local hum = walker:FindFirstChildOfClass("Humanoid")
+	if not hrp or not hum or workspace:GetServerTimeNow() - at > 8 then
+		walker:Destroy() -- joined late: only the seated figure
+		return
+	end
+	local seated = {}
+	for _, p in avatar:GetDescendants() do
+		if p:IsA("BasePart") then
+			table.insert(seated, p)
+			p.LocalTransparencyModifier = 1
+		end
+	end
+	local animator = hum:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = hum
+	end
+	local anim = Instance.new("Animation")
+	anim.AnimationId = WALK_ANIM
+	local ok, track = pcall(animator.LoadAnimation, animator, anim)
+	if ok then
+		track.Looped = true
+		track:Play(0.2)
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { m }
+	local lift = hum.HipHeight + hrp.Size.Y / 2
+	local function groundY(x, z, fallback)
+		local hit = workspace:Raycast(Vector3.new(x, fallback + 8, z), Vector3.new(0, -20, 0), params)
+		return hit and hit.Position.Y or fallback
+	end
+	local from = hrp.Position
+	local goal = Vector3.new(cushion.Position.X, 0, cushion.Position.Z)
+	local flat = Vector3.new(goal.X - from.X, 0, goal.Z - from.Z)
+	local dir = flat.Unit
+	local baseY = cushion.Position.Y
+	local dist = flat.Magnitude - 0.5
+	local t0 = os.clock()
+	while walker.Parent and m.Parent do
+		local d = math.min(dist, (os.clock() - t0) * WALK_SPEED)
+		local x, z = from.X + dir.X * d, from.Z + dir.Z * d
+		local pos = Vector3.new(x, groundY(x, z, baseY) + lift, z)
+		hrp.CFrame = CFrame.lookAt(pos, pos + dir)
+		if d >= dist then
+			break
+		end
+		RunService.RenderStepped:Wait()
+	end
+	if ok then
+		track:Stop(0.25)
+	end
+	-- a bow to the sect: the whole figure tips forward from the feet and rises again
+	local stand = hrp.CFrame
+	local feet = stand * CFrame.new(0, -lift, 0)
+	local b0 = os.clock()
+	while walker.Parent and m.Parent and os.clock() - b0 < 1.3 do
+		local k = math.sin(math.pi * math.clamp((os.clock() - b0 - 0.2) / 1.1, 0, 1))
+		hrp.CFrame = feet * CFrame.Angles(-math.rad(28) * k, 0, 0) * feet:ToObjectSpace(stand)
+		RunService.RenderStepped:Wait()
+	end
+	-- the walker fades out as the seated figure fades in on its cushion, with a puff of qi
+	local aura = m:FindFirstChild("Aura")
+	local motes = aura and aura:FindFirstChild("Motes", true)
+	if motes then
+		motes:Emit(16)
+	end
+	local walkerParts = {}
+	for _, p in walker:GetDescendants() do
+		if p:IsA("BasePart") then
+			table.insert(walkerParts, p)
+		end
+	end
+	local f0 = os.clock()
+	while m.Parent and os.clock() - f0 < 0.5 do
+		local k = (os.clock() - f0) / 0.5
+		for _, p in walkerParts do
+			p.LocalTransparencyModifier = k
+		end
+		for _, p in seated do
+			p.LocalTransparencyModifier = 1 - k
+		end
+		RunService.RenderStepped:Wait()
+	end
+	for _, p in seated do
+		p.LocalTransparencyModifier = 0
+	end
+	if walker.Parent then
+		walker:Destroy()
+	end
+end
+
 CollectionService:GetInstanceAddedSignal(TAG):Connect(function(m)
 	task.spawn(add, m)
+	task.spawn(arrive, m)
 end)
 CollectionService:GetInstanceRemovedSignal(TAG):Connect(function(m)
 	figures[m] = nil

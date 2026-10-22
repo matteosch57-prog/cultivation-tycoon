@@ -497,6 +497,50 @@ end
 -- Build one cultivator. look: one of LOOKS (or an index), rarity: a Config.RARITIES entry.
 -- Returns the model at once (cushion + aura); the avatar arrives a moment later, once its
 -- catalog assets load, unless the model was destroyed meanwhile.
+-- A standing, unposed copy for the arrival walk: joints live (the client's Animator plays Roblox's own
+-- R15 walk on it), only the root anchored so the client can carry it along the path.
+local walkers, walkerPending = {}, {}
+local function walkerTemplate(look, tier)
+	local key = look .. tier
+	if walkers[key] then
+		return walkers[key]
+	end
+	if walkerPending[key] then
+		table.insert(walkerPending[key], coroutine.running())
+		return coroutine.yield()
+	end
+	walkerPending[key] = {}
+	local ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, describe(look, tier), Enum.HumanoidRigType.R15)
+	if ok then
+		local hum = m:FindFirstChildOfClass("Humanoid")
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		if not hum:FindFirstChildOfClass("Animator") then
+			Instance.new("Animator").Parent = hum
+		end
+		for _, p in m:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored = p.Name == "HumanoidRootPart"
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+				p.Massless = true
+			end
+		end
+		walkers[key] = m
+	else
+		warn("[Cultivators] walker build failed", look, tier, m)
+		m = nil
+	end
+	local waiting = walkerPending[key]
+	walkerPending[key] = nil
+	for _, co in waiting do
+		task.spawn(co, m)
+	end
+	return m
+end
+
+Cultivators.WALK_FROM = 14 -- studs behind the cushion where an arriving recruit appears
+
 function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 	local poseName = opts and opts.pose or "seated"
 	local flying = poseName == "fly"
@@ -549,6 +593,25 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 		avatar:PivotTo(cf * avatar:GetPivot())
 		rim(avatar, rarity.color, tier)
 		avatar.Parent = m
+		-- a new recruit walks in (owner 2026-10-22: "arrival is ok"): a standing copy waits behind
+		-- the cushion; the client walks it in, bows, then swaps it for the seated figure
+		if opts and opts.arrive then
+			local w = walkerTemplate(look, tier)
+			if w and m.Parent then
+				local walker = w:Clone()
+				walker.Name = "Walker"
+				local _, size = walker:GetBoundingBox()
+				-- front is -Z: behind the cushion is +Z
+				walker:PivotTo(cf * CFrame.new(0, size.Y / 2, Cultivators.WALK_FROM))
+				walker.Parent = m
+				m:SetAttribute("ArrivedAt", workspace:GetServerTimeNow())
+				task.delay(20, function()
+					if walker.Parent then
+						walker:Destroy() -- late joiners only ever see the seated figure
+					end
+				end)
+			end
+		end
 		CollectionService:AddTag(m, Cultivators.TAG)
 	end)
 	return m
