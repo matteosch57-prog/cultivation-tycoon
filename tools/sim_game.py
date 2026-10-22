@@ -50,6 +50,7 @@ def load(path):
 
     def val(expr):
         expr = expr.split("--")[0].strip()
+        expr = {"true": "True", "false": "False"}.get(expr, expr)
         expr = re.sub(r"Config\.(\w+)", lambda m: repr(env[m.group(1)]), expr)
         return eval(expr, {"math": math})
 
@@ -197,6 +198,9 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and all(r in S["owned"] for r in p["req"])]
 
+    def needed(p):  # Config.neededForBreakthrough: paths and groves are optional when DECOR_OPTIONAL
+        return not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
+
     def hires():
         if not st["workers"]:
             return []
@@ -291,6 +295,11 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
 
                 # spend: breakthrough / reincarnation, else the cheapest thing on offer
                 choices = open_pads()
+                # DECOR_OPTIONAL: once every required pad is owned the player saves for the breakthrough
+                # (they skip the paths and groves still on offer); before that, decor is bought when it is
+                # the cheapest thing open, like any pad
+                if not any(needed(p) and p["id"] not in S["owned"] for p in C["PADS"]):
+                    choices = []
                 if not choices:
                     bt = C["BREAKTHROUGH_COST"] * cmult()
                     if S["qi"] >= bt:

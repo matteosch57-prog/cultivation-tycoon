@@ -21,3 +21,16 @@ Comparison script: `_local/cmp_islets.py` (3 runs, 14 days, median).
   player, against the 5-10 min hook (D39). Keep the pads on the line the player already walks (beside the
   bridge they follow) so the walk stays near x1.2 or under.
 - Harmony reaches its cap (+20%) with the 10 paths and groves; late lives are unchanged (income dwarfs it).
+
+## Paths and groves optional (branch islets-walk, `DECOR_OPTIONAL`)
+
+The sim follows `Config.neededForBreakthrough`: once every required pad is owned the player saves for
+the breakthrough. Realm 2, minutes (casual / regular):
+
+| islets-walk | walks x1 | walks x1.2 |
+|---|---|---|
+| buys every path and grove (cheap, so bought on the way) | 16.3 / 10.7 | 18.8 / 12.1 |
+| skips every path and grove | 14.0 / 10.1 | 15.9 / 11.1 |
+
+The numbers hold: skipping saves 1-3 min to realm 2, buying gives +20% income; either way the pace
+stays within a minute for a regular player, so it is a real choice without a trap.
