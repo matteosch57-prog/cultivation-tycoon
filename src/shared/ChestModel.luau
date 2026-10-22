@@ -1,7 +1,7 @@
 -- The idle chest as a 3D model (owner: "make the animation of the chest better, choose a good 3d
 -- model"). Shared so the peak (server) and the return screen's ViewportFrame (client) draw the same
 -- chest. A Chinese lacquer chest: dark red body on short gold feet, brass corner caps and bands, a
--- jade lock plate with a ring, and a barrel lid built from slats that swings open on its back hinge.
+-- jade lock plate with a ring, and a stepped flat lid (closed on every side) on its back hinge.
 -- ChestModel.build(parent, cf) -> model, lid (Model), hinge (CFrame in world space at build time)
 -- ChestModel.setLid(lid, hinge, degrees) opens the lid (0 = shut, about 110 = wide open).
 local ChestModel = {}
@@ -14,7 +14,6 @@ local JADE = Color3.fromHex("6FD6AE")
 local INSIDE = Color3.fromHex("2A0E0C")
 
 local W, D, H = 4.2, 2.9, 2.1 -- body width (X), depth (Z), height (Y) in studs
-local LID_R = D / 2 -- the lid is a half barrel over the full depth
 
 local function part(parent, size, cf, color, mat, shape)
 	local p = Instance.new("Part")
@@ -95,51 +94,73 @@ function ChestModel.build(parent, cf)
 	-- the dark inside, seen when the lid opens
 	part(m, Vector3.new(W - 0.3, 0.06, D - 0.3), cf * CFrame.new(0, base + H + 0.01, 0), INSIDE)
 
-	-- the lid: a half barrel of 7 slats around the hinge axis (X), hinge at the back top edge
+	-- the lid: a solid stepped lacquer lid like a Chinese document chest (closed on every side), a
+	-- gold rim moulding, brass corner caps, a raised gold cloud panel and a jade pearl on top. Hinge
+	-- at the back top edge.
 	local lid = Instance.new("Model")
 	lid.Name = "Lid"
 	local hingeLocal = CFrame.new(0, base + H, D / 2) -- back top edge
-	local center = cf * CFrame.new(0, base + H, 0) -- barrel axis runs along X through the top centre
-	local slats = 7
-	for i = 0, slats - 1 do
-		local a = (i + 0.5) / slats * math.pi -- 0 = front edge, pi = back edge
-		local y, z = math.sin(a) * LID_R, -math.cos(a) * LID_R
-		local slat = part(
+	local top = cf * CFrame.new(0, base + H, 0)
+	local LW, LD = W + 0.2, D + 0.2 -- the lid overhangs the body a little on every side
+	part(lid, Vector3.new(LW, 0.32, LD), top * CFrame.new(0, 0.16, 0), LACQUER_DARK) -- skirt
+	part(lid, Vector3.new(LW + 0.06, 0.1, LD + 0.06), top * CFrame.new(0, 0.37, 0), GOLD, Enum.Material.Metal) -- rim moulding
+	part(lid, Vector3.new(LW - 0.2, 0.3, LD - 0.2), top * CFrame.new(0, 0.57, 0), LACQUER) -- first step
+	part(lid, Vector3.new(LW - 0.7, 0.24, LD - 0.7), top * CFrame.new(0, 0.84, 0), LACQUER) -- second step
+	part(lid, Vector3.new(LW - 0.66, 0.05, LD - 0.66), top * CFrame.new(0, 0.73, 0), GOLD, Enum.Material.Metal) -- step line
+	-- the gold cloud panel on top: a long plate with two rounded ends
+	part(lid, Vector3.new(LW - 1.6, 0.06, LD - 1.5), top * CFrame.new(0, 0.98, 0), GOLD, Enum.Material.Metal)
+	for _, sx in { -1, 1 } do
+		local cap = part(
 			lid,
-			Vector3.new(W + 0.04, 0.22, LID_R * math.pi / slats + 0.06),
-			center * CFrame.new(0, y, z) * CFrame.Angles(a - math.pi / 2, 0, 0),
-			i % 2 == 0 and LACQUER or LACQUER_DARK
+			Vector3.new(0.06, LD - 1.5, LD - 1.5),
+			top * CFrame.new(sx * (LW - 1.6) / 2, 0.98, 0) * CFrame.Angles(0, 0, math.pi / 2),
+			GOLD,
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		slat.Name = "Slat"
+		cap.Name = "CloudEnd"
 	end
-	-- gold bands across the lid and the brass end caps
-	for _, x in { -W / 2 + 0.05, -W * 0.28, W * 0.28, W / 2 - 0.05 } do
-		for i = 0, slats - 1 do
-			local a = (i + 0.5) / slats * math.pi
-			local y, z = math.sin(a) * (LID_R + 0.05), -math.cos(a) * (LID_R + 0.05)
+	part(lid, Vector3.new(LW - 2.0, 0.07, LD - 1.9), top * CFrame.new(0, 0.99, 0), LACQUER_DARK) -- the panel's inset
+	-- brass corner caps folded over the lid edge
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
 			part(
 				lid,
-				Vector3.new(0.26, 0.08, LID_R * math.pi / slats + 0.08),
-				center * CFrame.new(x, y, z) * CFrame.Angles(a - math.pi / 2, 0, 0),
-				math.abs(x) > W / 2 - 0.2 and BRASS or GOLD,
+				Vector3.new(0.42, 0.44, 0.42),
+				top * CFrame.new(sx * (LW / 2 - 0.15), 0.2, sz * (LD / 2 - 0.15)),
+				BRASS,
+				Enum.Material.Metal
+			)
+			part(
+				lid,
+				Vector3.new(0.5, 0.08, 0.5),
+				top * CFrame.new(sx * (LW / 2 - 0.2), 0.44, sz * (LD / 2 - 0.2)),
+				BRASS,
 				Enum.Material.Metal
 			)
 		end
 	end
-	-- the lid's two ends: a half disc built from stacked strips under the arc (closes the barrel)
-	for _, x in { -W / 2 + 0.06, W / 2 - 0.06 } do
-		local rows = 6
-		for r = 0, rows - 1 do
-			local y0, y1 = r / rows * LID_R, (r + 1) / rows * LID_R
-			local half = math.sqrt(math.max(0, LID_R * LID_R - y1 * y1)) -- inside the arc at the strip's top
-			local mid = (y0 + y1) / 2
-			local w = 2 * math.sqrt(math.max(0, LID_R * LID_R - mid * mid))
-			w = math.max(w, 2 * half)
-			part(lid, Vector3.new(0.12, y1 - y0 + 0.02, w), center * CFrame.new(x, mid, 0), LACQUER_DARK)
-		end
-	end
-	-- a jade knob on top
-	part(lid, Vector3.new(0.5, 0.25, 0.5), center * CFrame.new(0, LID_R + 0.15, 0), JADE)
+	-- the hasp: a gold tongue hanging over the jade lock plate on the front
+	part(lid, Vector3.new(0.36, 0.5, 0.08), top * CFrame.new(0, -0.1, -LD / 2 - 0.02), GOLD, Enum.Material.Metal)
+	-- a jade pearl on top
+	part(
+		lid,
+		Vector3.new(0.42, 0.42, 0.42),
+		top * CFrame.new(0, 1.18, 0),
+		JADE,
+		Enum.Material.SmoothPlastic,
+		Enum.PartType.Ball
+	)
+	part(
+		lid,
+		Vector3.new(0.6, 0.1, 0.6),
+		top * CFrame.new(0, 1.03, 0),
+		GOLD,
+		Enum.Material.Metal,
+		Enum.PartType.Cylinder
+	).CFrame = top
+		* CFrame.new(0, 1.03, 0)
+		* CFrame.Angles(0, 0, math.pi / 2)
 	lid.Parent = m
 	m.Parent = parent
 	return m, lid, cf * hingeLocal
