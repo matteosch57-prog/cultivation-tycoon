@@ -231,7 +231,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
 
     def price_base():  # Main priceRate: base() without the paid 2x pass and the index boost
         rb = 1
-        if C.get("REBIRTH_OUT_OF_PRICE") and "REBIRTH_BONUS" in C:  # lever: the rebirth boost is left out of prices
+        if C.get("REBIRTH_OUT_OF_PRICE", True) and "REBIRTH_BONUS" in C:  # D63: the rebirth boost is left out of prices (Main priceRate)
             rb = C["REBIRTH_POW"] ** (S["life"] - 1) if C.get("REBIRTH_POW") else 1 + C["REBIRTH_BONUS"] * (S["life"] - 1)
         return base() / (x2 * idx_mult() * rb)
 
