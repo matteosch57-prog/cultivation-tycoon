@@ -637,19 +637,18 @@ function Config.recruitCost(realm, recruits)
 	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
 end
 
--- the qi price of one press of `n` recruits, paid all or nothing (Economy owns this formula; for now
--- the plain sum of the next n single prices)
+-- the qi price of one press of `n` recruits, paid all or nothing (D52 economy, sim 2026-10-22
+-- `_local/cmp_batch.py`): n x the current single price, like an egg game's x3 / x8 hatch; the
+-- plain sum of n rising prices made x50 cost ~280,000 singles. Any rule left the pace unchanged
+-- (only the best seats earn and rarities saturate), so this one gives the most rolls.
 function Config.recruitBatchCost(realm, recruits, n)
-	local total = 0
-	for i = 0, n - 1 do
-		total += Config.recruitCost(realm, recruits + i)
-	end
-	return total
+	return Config.recruitCost(realm, recruits) * n
 end
 
--- how far one press of `n` recruits moves data.realmRecruits (Economy owns this rule)
+-- how far one press of `n` recruits moves data.realmRecruits: ceil(sqrt(n)), so the next x10
+-- costs x1.25^4 ~ 2.4 and the next x50 x1.25^8 ~ 6 (spam still ends, a big press stays worth it)
 function Config.recruitStep(n)
-	return n
+	return math.ceil(math.sqrt(n))
 end
 
 -- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more

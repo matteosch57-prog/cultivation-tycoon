@@ -369,14 +369,27 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 hire = hires()
                 # RECRUIT_POW (proposal lever): each recruit in a realm costs x RECRUIT_POW the last (else +GROWTH, linear)
                 n_r = S["realm_recruits"]
-                rc = C["RECRUIT_BASE"] * cmult() * (C["RECRUIT_POW"] ** n_r if C.get("RECRUIT_POW") else 1 + n_r * C["RECRUIT_GROWTH"])
-                if "hall" in S["owned"] and rc <= st["recruit"] * tcost and S["qi"] >= rc:
+
+                def single(k):
+                    return C["RECRUIT_BASE"] * cmult() * (C["RECRUIT_POW"] ** k if C.get("RECRUIT_POW") else 1 + k * C["RECRUIT_GROWTH"])
+                # RECRUIT_BATCH (D52 lever): the player presses xN; BATCH_RULE prices it
+                #   "sum": the next N single prices (Config.recruitBatchCost today), step N
+                #   "flat": N x the current single price, step BATCH_STEP(N) (1, "sqrt" or N)
+                nb = int(C.get("RECRUIT_BATCH", 1))
+                if C.get("BATCH_RULE", "sum") == "sum":
+                    rc, step = sum(single(n_r + i) for i in range(nb)), nb
+                else:
+                    rc = nb * single(n_r)
+                    bs = C.get("BATCH_STEP", "sqrt")
+                    step = 1 if bs == "one" else (math.ceil(nb ** 0.5) if bs == "sqrt" else nb)
+                if "hall" in S["owned"] and rc <= st["recruit"] * tcost * nb and S["qi"] >= rc:
                     sink("recruits", rc)
-                    S["realm_recruits"] += 1
-                    bb = roll()
-                    S["disciples"].append(bb)
+                    S["realm_recruits"] += step
+                    for _ in range(nb):
+                        S["disciples"].append(roll())
                     S["disciples"].sort(reverse=True)
                     del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+                    out["rolls"] = out.get("rolls", 0) + nb
                     continue
                 if hire and min(hire)[0] < tcost:
                     wc, wid = min(hire)
