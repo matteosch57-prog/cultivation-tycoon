@@ -55,7 +55,11 @@ local function paint(plot, lit, total)
 	end
 	local label = m:FindFirstChild("Count", true)
 	if label then
-		label.Text = total and total > 0 and string.format("Blessed %d time%s", total, total == 1 and "" or "s") or "Incense Shrine"
+		-- the number in round digits and its own colour (owner: the Fantasy "1" read as "I")
+		label.RichText = true
+		label.Text = total and total > 0
+				and string.format('Blessed <font face="FredokaOne" color="#7CF5C8">%d</font> time%s', total, total == 1 and "" or "s")
+			or "Incense Shrine"
 	end
 end
 
