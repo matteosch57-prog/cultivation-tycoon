@@ -60,7 +60,7 @@ Config.NATURE_MESH = {
 -- Movement (Movement.client.luau, owner 2026-10-21: "walking a bit faster, redo moving and jumping,
 -- fit our style"): a cultivator's light step. Roblox defaults are walk 16, jump height 7.2.
 Config.MOVE = {
-	walk = 21, -- studs/s
+	walk = 28, -- studs/s (owner 2026-10-22: "way faster")
 	jumpHeight = 8.5, -- studs
 	floatFall = 0.45, -- share of gravity taken away while falling (a soft, floaty landing)
 	airSteps = 1, -- cloud steps: jump again in the air, once per jump
