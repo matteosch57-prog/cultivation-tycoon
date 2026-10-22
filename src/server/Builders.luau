@@ -32,6 +32,7 @@ local function part(ctx, size, cf, color, material, props)
 	p.CFrame = ctx.frame * cf
 	p.Color = color
 	p.Material = material or Enum.Material.SmoothPlastic
+	p.CanTouch = false -- nothing listens to Touched (pads are a position check); props may still set it
 	if props then
 		for k, v in props do
 			if k ~= "Shape" then -- Lowpoly.part already gave it its shape (a MeshPart has none)

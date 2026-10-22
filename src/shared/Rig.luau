@@ -40,6 +40,12 @@ function Rig.live(m)
 			d.Enabled = true
 		end
 	end
+	-- the figure never walks, falls or climbs: its Humanoid only carries the look, so its state machine
+	-- is off (no per-frame state work for every disciple and worker; research 2026-10-22 P2)
+	local hum = m:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.EvaluateStateMachine = false
+	end
 	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 end
 

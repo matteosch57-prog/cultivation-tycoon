@@ -33,6 +33,7 @@ local function P(parent, size, cf, color, mat, shape)
 	if size.X < 2 and size.Y < 2 or size.Z < 2 and size.Y < 2 then
 		p.CastShadow = false -- small detail: shadows cost more than they add
 	end
+	p.CanTouch = false -- nothing in the game listens to Touched (pads are a position check): no touch work
 	p.Parent = parent
 	return p
 end
@@ -1608,6 +1609,8 @@ function Style.softCloud(parent, cf, width, seed)
 		pe.SpreadAngle = Vector2.new(180, 180)
 		pe.Rotation = NumberRange.new(0, 360)
 		pe.RotSpeed = NumberRange.new(-2, 2)
+		pe.Drag = 0.05 -- a slow pull toward GlobalWind: the sea drifts with the gusts (Ambience.client)
+		pe.WindAffectsDrag = true
 		pe.Rate = rate
 		pe.Parent = box
 		return pe
