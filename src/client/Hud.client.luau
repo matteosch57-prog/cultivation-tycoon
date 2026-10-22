@@ -426,6 +426,7 @@ local function build()
 	ui.pCol = pCol
 	ui.pillHolder = pHolder
 	ui.pillBtn = pBtn
+	pBtn.Name = "PillButton" -- the first-pill tip points at it (Tips.client)
 	pBtn.Activated:Connect(function()
 		if player:GetAttribute("PillReady") then
 			local ok, used = pcall(function()

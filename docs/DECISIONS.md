@@ -258,3 +258,8 @@ the log as a D-number.
   `GIFT_SUMMONS` free summons (into the idle chest pool). The server publishes GiftIn, GiftNext,
   GiftQi, GiftSummons and GiftResetIn so the HUD always shows the next reward; ClaimGift returns
   `{ qi, summons }`. Simmed: no pace change, ~9% of a regular player's qi.
+- **D50** First-time tips = mock A (owner: "Missing small tutorial at: first qi ball to get, first
+  pill to use, first idle chest. Small and simple"; mocks `docs/art/mocks/tips_*.jpg`): a cream
+  bubble with one line over the orb / chest pad (gold arrow, the jade trail leads there) or beside
+  the HUD pill button; once per save (`data.tips`, a save from before them starts with all done).
+  The idle chest moves beside the x2 qi pad (owner: "too close to start").

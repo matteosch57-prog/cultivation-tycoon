@@ -182,6 +182,11 @@ local function keepClear(x, z)
 			return true
 		end
 	end
+	for _, at in { Config.IDLE_CHEST_AT, Config.IDLE_CHEST_PAD } do -- the idle chest and its green pad
+		if (Vector2.new(x, z) - Vector2.new(at.X, at.Z)).Magnitude < 7 then
+			return true
+		end
+	end
 	for _, e in Config.SHOP_PEAK_PADS do -- the shop pads (the entrance ones move with the rim)
 		local sx, sz = Config.shopPeakSpot(e, groundRadius)
 		if (Vector2.new(x, z) - Vector2.new(sx, sz)).Magnitude < 7 then
@@ -573,6 +578,11 @@ local function publish(player)
 	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
+	local tips = {}
+	for key in d.tips or {} do
+		table.insert(tips, key)
+	end
+	player:SetAttribute("Tips", table.concat(tips, ",")) -- first-time tips already done (Tips.client)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
 	player:SetAttribute("BoostUntil", d.boostUntil or 0)
 	-- playtime gifts (D49, daily): GiftIn = seconds to the next one (0 = ready), -1 = all claimed
@@ -972,6 +982,8 @@ refreshPads = function(player, s)
 		local at = Config.IDLE_CHEST_PAD
 		local p = makePad(player, s, { id = "chest", x = at.X, z = at.Z, feature = "Fills while you're away" }, 0, "Idle Chest", 0, function()
 			s.chestShown = true
+			s.data.tips = s.data.tips or {}
+			s.data.tips.chest = true
 			local gain = s.data.chestQi or 0
 			s.data.chestQi = 0
 			if gain > 0 then
@@ -1282,6 +1294,10 @@ local function onJoin(player)
 	if data.welcomed == nil then
 		data.welcomed = (data.sessions or 0) > 0
 	end
+	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
+	if data.tips == nil then
+		data.tips = data.welcomed and { orb = true, pill = true, chest = true } or {}
+	end
 	-- the starter idle chest: a new save finds it full, opened from its green pad (not a popup)
 	local starterChest = false
 	if data.welcomed == false and not data.chestStarter then
@@ -1550,6 +1566,8 @@ pillFn.OnServerInvoke = function(player)
 	end
 	s.data.pillReady = false
 	s.data.pillTimer = 0
+	s.data.tips = s.data.tips or {}
+	s.data.tips.pill = true
 	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
@@ -1848,6 +1866,8 @@ local function checkOrbs(player, s, hrp)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
+			s.data.tips = s.data.tips or {}
+			s.data.tips.orb = true
 			notify:FireClient(player, "orb", gain, orb.Position)
 			orb:Destroy()
 			table.remove(s.orbs, i)
