@@ -12,6 +12,15 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Server: `Players.CharacterAutoLoads = false`; onJoin calls `LoadCharacter` once the peak is built
   (`watchDeath` respawns after `RespawnTime`), so the avatar never stands on the hub first.
 
+## First-time tips (src/client/Tips.client.luau, D50)
+- One at a time, after the launch screen and the Heavenly Gift: the idle chest pad ("Step on the
+  green pad"), then the nearest qi orb ("Walk into it"), then a ready pill ("Tap: 2x qi").
+- World tips: a BillboardGui bubble with a bobbing gold arrow over the target, and the guide trail
+  points there (local attribute `TipTarget`, Guide.client). The pill tip sits right of the HUD's
+  `PillButton` and points at it.
+- The server marks each one done when the player does it (orb taken, pill used, chest opened):
+  `data.tips`, player attribute `Tips`.
+
 ## Buying (src/client/Build.client.luau)
 - Pads are concept C "Formation" (D27, playable mock `docs/art/mocks/pads_formation_mock.html`). The
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every

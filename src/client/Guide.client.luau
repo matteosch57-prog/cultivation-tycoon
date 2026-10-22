@@ -2,7 +2,8 @@
 -- from the player's feet to the next pad, the same pad the HUD "Next:" names (the cheapest open
 -- one). Shown while the sect has fewer than GUIDE_BUILT buildings, and later only after GUIDE_IDLE
 -- seconds standing still. The chevrons are plain jade objects, never a light (RULES R3); they
--- drift slowly toward the pad. Local to this player.
+-- drift slowly toward the pad. Local to this player. A first-time tip (Tips.client, D50) takes the
+-- trail over by setting the local attribute TipTarget (a Vector3) while it is shown.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -167,9 +168,11 @@ RunService.RenderStepped:Connect(function(dt)
 		lastPos = hrp.Position
 	end
 	local early = (player:GetAttribute("Built") or 0) < Config.GUIDE_BUILT and (player:GetAttribute("Realm") or 1) == 1
-	local want = hrp and target and target.Parent and (early or still >= Config.GUIDE_IDLE)
+	local tipAt = player:GetAttribute("TipTarget")
+	local want = hrp and (tipAt or (target and target.Parent and (early or still >= Config.GUIDE_IDLE)))
 	local from = hrp and Vector3.new(hrp.Position.X, 0, hrp.Position.Z)
-	local goal = target and hrp and waypoint(hrp.Position, target.Position)
+	local aim = tipAt or (target and target.Position)
+	local goal = aim and hrp and waypoint(hrp.Position, aim)
 	local to = goal and Vector3.new(goal.X, 0, goal.Z)
 	local length = want and (to - from).Magnitude - NEAR or 0
 	if length < 2 then
@@ -181,7 +184,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	local dir = (to - from).Unit
 	offset = (offset + SPEED * dt) % SPACING
-	local padY = target.Position.Y
+	local padY = aim.Y
 	for i, c in chevrons do
 		local d = 1.5 + (i - 1) * SPACING + offset
 		if d > length then

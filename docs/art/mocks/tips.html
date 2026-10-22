@@ -1,0 +1,69 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>First-time tips mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- First-time tips (first qi orb, first pill, first idle chest). Phone 844x390, over the Play
+     capture 18_peak_wide.jpg. ?A1..C3 = option, moment. Rendered by tools/mock_loading.py tips. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;overflow:hidden;background:url(../captures/18_peak_wide.jpg) center/cover}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:4px #1b1420;paint-order:stroke fill;line-height:1.05;white-space:nowrap}
+.abs{position:absolute}
+.toy{width:max-content;border:3px solid #1b1420;border-radius:14px;box-shadow:0 4px 0 #1b1420;position:relative}
+.lbl{position:absolute;left:8px;bottom:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:4px 10px;border-radius:6px;z-index:50}
+</style></head>
+<body><div class="scene" id="s"></div>
+<script>
+const q = location.search.slice(1) || "A1";
+const opt = q[0], fr = +q[1];
+const INK = "#1b1420", QI = "#6fd6ae", QIP = "#e8fff4";
+const qi = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="${QI}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="${QIP}"/></svg>`;
+const orb = (x, y, s) => `<svg class="abs" style="left:${x - s / 2}px;top:${y - s / 2}px" width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#ffd34d" opacity=".35"/><circle cx="50" cy="50" r="32" fill="#ffd34d" stroke="${INK}" stroke-width="5"/><path d="M50 32c7 6 10 10 10 16a10 10 0 0 1-20 0c0-6 3-10 10-16z" fill="${QI}" stroke="${INK}" stroke-width="4"/></svg>`;
+const pillIcon = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="8" y="22" width="48" height="20" rx="10" fill="#fff" stroke="${INK}" stroke-width="5"/><path d="M32 22h14a10 10 0 0 1 0 20H32z" fill="#ff6b5e" stroke="${INK}" stroke-width="5"/></g></svg>`;
+const chest = (x, y) => `<svg class="abs" style="left:${x - 34}px;top:${y - 30}px" width="68" height="60" viewBox="0 0 68 60"><rect x="6" y="22" width="56" height="34" rx="4" fill="#b8742e" stroke="${INK}" stroke-width="4"/><path d="M6 24c0-16 56-16 56 0z" fill="#d48a3a" stroke="${INK}" stroke-width="4"/><rect x="28" y="24" width="12" height="14" rx="2" fill="#ffd34d" stroke="${INK}" stroke-width="3"/></svg>
+  <svg class="abs" style="left:${x - 52}px;top:${y + 26}px" width="40" height="14"><ellipse cx="20" cy="7" rx="18" ry="6" fill="#59d39f" stroke="${INK}" stroke-width="3"/></svg>`;
+// the three moments: where the target is and what the tip says
+const M = {
+  1: { x: 560, y: 268, title: "Qi orb!", line: "Walk into it", icon: qi(26), draw: orb(560, 268, 46) },
+  2: { x: 97, y: 214, title: "Pill ready!", line: "Tap: 2x qi for 60 s", icon: pillIcon(26), ui: true, draw: "" },
+  3: { x: 380, y: 280, title: "Idle chest", line: "Step on the green pad", icon: `<svg width="28" height="26" viewBox="0 0 68 60"><rect x="6" y="22" width="56" height="34" rx="4" fill="#b8742e" stroke="${INK}" stroke-width="5"/><path d="M6 24c0-16 56-16 56 0z" fill="#d48a3a" stroke="${INK}" stroke-width="5"/></svg>`, draw: chest(380, 280) },
+}[fr];
+// the chevron trail from the avatar (centre bottom) to a world target
+const trail = (x, y) => {
+  const sx = 452, sy = 228; let out = "";
+  for (let i = 1; i < 8; i++) {
+    const t = i / 8, px = sx + (x - sx) * t, py = sy + (y - sy) * t, a = Math.atan2(y - sy, x - sx) * 57.3;
+    out += `<svg class="abs" style="left:${px - 9}px;top:${py - 6}px;transform:rotate(${a}deg)" width="18" height="12"><path d="M2 1l12 5-12 5" fill="none" stroke="#6fd6aa" stroke-width="4" stroke-linecap="round"/></svg>`;
+  }
+  return out;
+};
+const hand = (x, y, rot) => `<div class="abs" style="left:${x}px;top:${y}px;font-size:34px;transform:rotate(${rot || 0}deg)">👆</div>`;
+let h = M.draw, lbl = "";
+if (opt === "A") {
+  // A: a little bubble above the thing itself, a bouncing arrow, the jade trail to it
+  const bx = M.ui ? M.x + 60 : M.x, by = M.ui ? M.y - 30 : M.y - 92;
+  h += (M.ui ? "" : trail(M.x, M.y + 10)) + `
+  <div class="abs toy" style="left:${bx}px;top:${by}px;transform:translateX(${M.ui ? 0 : -50}%);background:#fff8e6;padding:6px 12px;display:flex;flex-direction:column;align-items:center">
+    <span class="t" style="font-size:19px;color:#ffd34d">${M.title}</span><span style="font:600 14px Fredoka;color:${INK}">${M.line}</span></div>
+  ${M.ui ? `<div class="abs" style="left:${M.x + 46}px;top:${M.y - 6}px;font-size:30px">👈</div>` :
+    `<svg class="abs" style="left:${M.x - 12}px;top:${M.y - 44}px" width="24" height="20"><path d="M2 2h20L12 18z" fill="#ffd34d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/></svg>`}`;
+  lbl = "A: a bubble above it, an arrow, the jade trail to it";
+} else if (opt === "B") {
+  // B: one small card under the qi counter, the target pulses; trail for world things
+  h += (M.ui ? `<div class="abs" style="left:${M.x - 48}px;top:${M.y - 48}px;width:96px;height:96px;border-radius:22px;border:5px solid #ffd34d;box-shadow:0 0 18px #ffd34d"></div>` : trail(M.x, M.y + 10) +
+    `<div class="abs" style="left:${M.x - 34}px;top:${M.y - 34}px;width:68px;height:68px;border-radius:50%;border:4px solid #ffd34d;box-shadow:0 0 16px #ffd34d"></div>`) + `
+  <div class="abs toy" style="left:50%;top:92px;transform:translateX(-50%);background:rgba(27,20,32,.82);padding:6px 14px;display:flex;align-items:center;gap:8px">
+    ${M.icon}
+    <span class="t" style="font-size:18px;color:#ffd34d">${M.title}</span><span class="t" style="font-size:16px">${M.line}</span></div>`;
+  lbl = "B: a small card under the qi counter, the thing glows, the trail";
+} else {
+  // C: the screen dims around it for a moment, one line beside it, tap anywhere
+  h += `<svg class="abs" style="inset:0" width="844" height="390"><defs><mask id="m"><rect width="844" height="390" fill="#fff"/><circle cx="${M.x}" cy="${M.y}" r="${M.ui ? 62 : 54}" fill="#000"/></mask></defs>
+  <rect width="844" height="390" fill="rgba(11,15,20,.62)" mask="url(#m)"/><circle cx="${M.x}" cy="${M.y}" r="${M.ui ? 62 : 54}" fill="none" stroke="#ffd34d" stroke-width="4"/></svg>
+  <div class="abs" style="left:${M.x + (M.ui ? 76 : 70)}px;top:${M.y - 30}px;display:flex;flex-direction:column">
+    <span class="t" style="font-size:26px;color:#ffd34d">${M.title}</span><span class="t" style="font-size:19px">${M.line}</span></div>
+  <span class="t abs" style="left:50%;bottom:44px;transform:translateX(-50%);font-size:15px;color:#cbbfd6">tap anywhere</span>`;
+  lbl = "C: a spotlight on it for a moment, tap to close";
+}
+document.getElementById("s").innerHTML = h + `<div class="lbl">${lbl} · ${["", "first qi orb", "first pill", "idle chest"][fr]}</div>`;
+</script></body></html>

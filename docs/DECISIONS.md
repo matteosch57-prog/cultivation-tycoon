@@ -245,3 +245,8 @@ the log as a D-number.
   the hips with a salute. A recruit rebuilds only the seat that changed (seats are kept, so the seat
   order is not the strength order). Why: the owner found the old motion stiff and the full rebuild
   on every recruit weird; joint Transforms are the documented no-upload way.
+- **D50** First-time tips = mock A (owner: "Missing small tutorial at: first qi ball to get, first
+  pill to use, first idle chest. Small and simple"; mocks `docs/art/mocks/tips_*.jpg`): a cream
+  bubble with one line over the orb / chest pad (gold arrow, the jade trail leads there) or beside
+  the HUD pill button; once per save (`data.tips`, a save from before them starts with all done).
+  The idle chest moves beside the x2 qi pad (owner: "too close to start").
