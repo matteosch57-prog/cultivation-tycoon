@@ -37,3 +37,16 @@ body from step 3, twinkling sparks round the body from step 5, every layer large
   disciple rarity colour of that life. Never lost, but nothing changes during a life.
 
 Budget: at most 3 particle emitters a player and ~60 live particles at the top step; neon beads only, no Light (R3).
+
+## Owner pick B, then "way better, a bit like Warcraft 3" (2026-10-22 21:48)
+
+Warcraft 3's hero auras (Devotion, Unholy, Brilliance, Endurance) are a glyph circle on the ground
+under the hero, turning slowly, with light rising from it; the hero's body itself stays clean. So
+the realm aura is now that circle in the realm colour, and the layers SPFS adds with the rank stack on it:
+glyph and rising motes (realm 2), a counter-turning outer ring (3), wisps up the body (4), pulses
+across the ground (6), flames (8), all larger and brighter up to realm 10.
+
+Beads (owner: "premium... 20 yellow then 20 red then 20 blue and with more aura each time... easily to
+100"): a gold-chain prayer-bead halo of 20 slots behind the head. Rebirths 1-20 fill it gold, 21-40
+re-fill it crimson over the gold, then azure, violet and white jade up to 100. Each band the beads
+grow and the halo sparkles more. Past 100 it stays full white jade.

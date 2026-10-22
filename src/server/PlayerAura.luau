@@ -1,13 +1,15 @@
--- The player's own aura (owner 2026-10-22: "give the user auras based on realms and or
--- reincarnation"; research docs/research/2026-10-22_player_auras.md). Super Power Fighting
--- Simulator's rank aura, copied: nobody buys it, it appears by itself from the second rank and
--- grows in steps (wisps, then flames, then sparks), in the rank's colour. Ours follows the realm in
--- the realm colour the status title already uses (Config.realmColor). Style "B" adds the lives: one
--- gold bead per rebirth on a halo behind the head, which a rebirth never takes back. Style "C"
--- grows the aura with the lives instead of the realm.
+-- The player's own aura (owner pick B 2026-10-22: realm aura + life beads, "make auras way better,
+-- a bit like Warcraft 3 style"; research docs/research/2026-10-22_player_auras.md).
+-- Realm aura: Super Power Fighting Simulator's rank aura (nobody buys it, none at the first rank,
+-- it grows at every rank after) drawn the Warcraft 3 way: a glyph circle turning slowly on the
+-- ground under the hero, light rising from it, in the realm colour the status title uses
+-- (Config.realmColor). Each realm adds a layer: glyph and rising motes from realm 2, a counter-turning
+-- rim ring from 3, rising wisps from 4, pulses spreading out from 6, flames up the body from 8.
+-- Life beads: one bead per rebirth on a gold prayer-bead halo behind the head, kept forever. Every
+-- Config.AURA_BEAD_BAND rebirths the beads change colour (Config.AURA_BEAD_COLORS: gold, crimson,
+-- azure, violet, white jade), the new colour filling over the old, and grow, and the halo shines more.
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
--- small neon beads only. Phone budget: at most 3 emitters a player, ~110 live particles at the top
--- step (2x the first mock, which read too faint past 30 studs: docs/art/mocks/2026-10-22_aura_row*).
+-- neon beads only. Phone budget at the top: 7 emitters a player, ~110 live particles, 40 small parts.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
@@ -15,31 +17,42 @@ local PlayerAura = {}
 
 local TEX = "rbxasset://textures/particles/"
 local WHITE = Color3.new(1, 1, 1)
-local GOLD = Color3.fromHex("FFD36A")
-local MAX_TIER = 10
-local MAX_BEADS = 9
+local CHAIN = Color3.fromHex("B8862E")
+local MAX_TIER = 9 -- realm 10 and up
 
 local function seq(a, b, c)
 	return NumberSequence.new({ NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(0.5, b), NumberSequenceKeypoint.new(1, c) })
 end
 
--- an invisible, weightless part welded to the root (emitter shapes need a part to take their size from)
-local function holder(folder, hrp, name, size, offset)
+-- fades in, holds, fades out: a flat glyph that is always there while two overlap
+local HOLD = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.1), NumberSequenceKeypoint.new(0.75, 0.1), NumberSequenceKeypoint.new(1, 1) })
+
+local function weld(a, b)
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = a
+	w.Part1 = b
+	w.Parent = b
+end
+
+local function part(folder, name, size, cf)
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Size = size
-	p.Transparency = 1
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
 	p.CastShadow = false
 	p.Massless = true
-	p.CFrame = hrp.CFrame * offset
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = hrp
-	w.Part1 = p
-	w.Parent = p
+	p.CFrame = cf
 	p.Parent = folder
+	return p
+end
+
+-- an invisible part welded to `to` (emitter shapes take their size from a part)
+local function holder(folder, to, name, size, cf)
+	local p = part(folder, name, size, cf)
+	p.Transparency = 1
+	weld(to, p)
 	return p
 end
 
@@ -47,9 +60,6 @@ local function emitter(parent, props)
 	local pe = Instance.new("ParticleEmitter")
 	pe.LightEmission = 1
 	pe.LightInfluence = 0
-	pe.Shape = Enum.ParticleEmitterShape.Cylinder
-	pe.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
-	pe.ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward
 	pe.EmissionDirection = Enum.NormalId.Top
 	for k, v in props do
 		pe[k] = v
@@ -58,14 +68,179 @@ local function emitter(parent, props)
 	return pe
 end
 
--- what style `style` shows for a player at `realm` in life `lives`: tier (0 = none), colour, beads
-function PlayerAura.look(style, realm, lives)
-	realm, lives = realm or 1, lives or 1
-	if style == "C" then
-		return math.min(lives, MAX_TIER) - 1, Config.RARITIES[math.min(lives, #Config.RARITIES)].color, 0
+-- a flat emitter lying on the ground (particles face up: VelocityPerpendicular with a tiny upward speed)
+local function flat(parent, props)
+	props.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	props.Speed = NumberRange.new(0.01)
+	return emitter(parent, props)
+end
+
+-- the realm aura: tier 0 (realm 1) none, up to MAX_TIER
+local function realmAura(folder, hrp, hum, tier, color)
+	local feet = hrp.CFrame * CFrame.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.15, 0)
+	local k = (tier - 1) / (MAX_TIER - 1) -- 0 at realm 2, 1 at realm 10
+	local pale = color:Lerp(WHITE, 0.55)
+	local R = 7 + 4 * k -- glyph diameter, studs
+	local ground = holder(folder, hrp, "AuraGround", Vector3.new(1, 0.1, 1), feet)
+	-- the glyph: two overlapping at any time, turning slowly
+	flat(ground, {
+		Name = "Glyph",
+		Texture = TEX .. "forcefield_vortex_main.dds",
+		Color = ColorSequence.new(color, pale),
+		Size = NumberSequence.new(R),
+		Transparency = HOLD,
+		Brightness = 1.5 + k,
+		Lifetime = NumberRange.new(4),
+		Rate = 0.6,
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(25),
+	})
+	-- motes rising from the circle's edge
+	local rim = holder(folder, hrp, "AuraRim", Vector3.new(R * 0.8, 0.1, R * 0.8), feet)
+	emitter(rim, {
+		Name = "Motes",
+		Texture = TEX .. "sparkles_main.dds",
+		Color = ColorSequence.new(pale, color),
+		Shape = Enum.ParticleEmitterShape.Cylinder,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		Size = seq(0, 0.6 + 0.4 * k, 0),
+		Transparency = NumberSequence.new(0.05),
+		Brightness = 2,
+		Lifetime = NumberRange.new(1.4, 2.2),
+		Speed = NumberRange.new(2, 3.5 + 2 * k),
+		Drag = 0.6,
+		Rate = 8 + 10 * k,
+	})
+	if tier >= 2 then
+		-- a wider ring turning the other way
+		flat(ground, {
+			Name = "Ring",
+			Texture = TEX .. "explosion01_shockwave_main.dds",
+			Color = ColorSequence.new(pale),
+			Size = NumberSequence.new(R * 1.25),
+			Transparency = HOLD,
+			Brightness = 1.5,
+			Lifetime = NumberRange.new(5),
+			Rate = 0.45,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-15),
+		})
 	end
-	local beads = style == "B" and math.min(lives - 1, MAX_BEADS) or 0
-	return math.min(realm, MAX_TIER) - 1, Config.realmColor(realm), beads
+	if tier >= 3 then
+		-- soft wisps rising round the body (Warcraft 3's Unholy Aura)
+		local body = holder(folder, hrp, "AuraWisps", Vector3.new(3.6, 0.1, 3.6), feet)
+		emitter(body, {
+			Name = "Wisps",
+			Texture = TEX .. "smoke_main.dds",
+			Color = ColorSequence.new(color, pale),
+			Shape = Enum.ParticleEmitterShape.Cylinder,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			Size = seq(1.2, 1.6 + 1 * k, 0.3),
+			Transparency = seq(0.5, 0.35, 1),
+			Brightness = 1.5,
+			Lifetime = NumberRange.new(1.2, 1.8),
+			Speed = NumberRange.new(0.5, 1),
+			Acceleration = Vector3.new(0, 5 + 4 * k, 0),
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-40, 40),
+			Rate = 10 + 10 * k,
+		})
+	end
+	if tier >= 5 then
+		-- a pulse spreading out over the ground
+		flat(ground, {
+			Name = "Pulse",
+			Texture = TEX .. "explosion01_shockwave_main.dds",
+			Color = ColorSequence.new(color),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, R * 1.6) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+			Brightness = 2,
+			Lifetime = NumberRange.new(1.4),
+			Rate = 0.7,
+		})
+	end
+	if tier >= 7 then
+		-- flames licking up the body
+		local base = holder(folder, hrp, "AuraFlames", Vector3.new(3.2, 0.1, 3.2), feet * CFrame.new(0, 0.3, 0))
+		emitter(base, {
+			Name = "Flames",
+			Texture = TEX .. "fire_main.dds",
+			Color = ColorSequence.new(pale, color),
+			Shape = Enum.ParticleEmitterShape.Cylinder,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward,
+			Size = seq(1.8, 1.4, 0),
+			Transparency = seq(0.2, 0.2, 1),
+			Brightness = 2,
+			Lifetime = NumberRange.new(0.6, 0.9),
+			Speed = NumberRange.new(1, 2),
+			Acceleration = Vector3.new(0, 10, 0),
+			Rate = 22 + 8 * (tier - 7),
+		})
+	end
+end
+
+-- what the beads show after `rebirths`: the band (1..#colors), how many beads already wear its colour
+function PlayerAura.beads(rebirths)
+	local n, B = math.max(0, rebirths or 0), Config.AURA_BEAD_BAND
+	local top = #Config.AURA_BEAD_COLORS
+	if n <= 0 then
+		return 0, 0
+	end
+	local band = math.min(math.ceil(n / B), top)
+	return band, math.min(n - (band - 1) * B, B)
+end
+
+-- the prayer-bead halo behind the head: AURA_BEAD_BAND slots on a gold chain, `lit` of them in the
+-- band's colour, the rest in the band before (empty sockets in the first band)
+local function halo(folder, head, rebirths)
+	local band, lit = PlayerAura.beads(rebirths)
+	if band == 0 then
+		return
+	end
+	local B = Config.AURA_BEAD_BAND
+	local colors = Config.AURA_BEAD_COLORS
+	local R = 1.55
+	local size = 0.3 + 0.04 * band
+	local centre = head.CFrame * CFrame.new(0, 0.25, 0.8) -- behind the head (+Z is the back)
+	local function at(i)
+		local a = math.rad(i * 360 / B) -- slot 0 on top, clockwise seen from the front
+		return centre * CFrame.new(-math.sin(a) * R, math.cos(a) * R, 0)
+	end
+	for i = 0, B - 1 do
+		-- the chain link to the next slot
+		local p0, p1 = at(i).Position, at(i + 1).Position
+		local link = part(folder, "Chain", Vector3.new(0.07, 0.07, (p1 - p0).Magnitude), CFrame.lookAt((p0 + p1) / 2, p1))
+		link.Color = CHAIN
+		link.Material = Enum.Material.Metal
+		weld(head, link)
+		-- the bead
+		local own = i < lit
+		if own or band > 1 then
+			local b = part(folder, "LifeBead", Vector3.one * size, at(i))
+			b.Shape = Enum.PartType.Ball
+			b.Material = Enum.Material.Neon
+			b.Color = own and colors[band] or colors[band - 1]
+			weld(head, b)
+		end
+	end
+	if band >= 2 then
+		-- the halo shines more each band
+		local box = holder(folder, head, "HaloShine", Vector3.new(R * 2, R * 2, 0.2), centre)
+		emitter(box, {
+			Name = "Shine",
+			Texture = TEX .. "sparkles_main.dds",
+			Color = ColorSequence.new(WHITE, colors[band]),
+			Shape = Enum.ParticleEmitterShape.Box,
+			Size = seq(0, 0.5 + 0.12 * band, 0),
+			Transparency = NumberSequence.new(0.05),
+			Brightness = 2,
+			Lifetime = NumberRange.new(0.6, 1),
+			Speed = NumberRange.new(0.2, 0.6),
+			Rotation = NumberRange.new(0, 360),
+			Rate = 3 * band,
+		})
+	end
 end
 
 function PlayerAura.clear(char)
@@ -75,113 +250,37 @@ function PlayerAura.clear(char)
 	end
 end
 
--- builds the aura on `char`: tier 0 none, 1 wisps, 3 + flames, 5 + sparks, growing to tier 9
-function PlayerAura.build(char, tier, color, beads)
+-- builds the aura on `char` for a player at `realm` with `rebirths` rebirths
+function PlayerAura.build(char, realm, rebirths)
 	PlayerAura.clear(char)
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	local hum = char:FindFirstChildOfClass("Humanoid")
-	if not hrp or not hum or (tier <= 0 and (beads or 0) <= 0) then
+	local head = char:FindFirstChild("Head")
+	if not hrp or not hum or not head then
 		return
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "PlayerAura"
-	local feet = -(hrp.Size.Y / 2 + hum.HipHeight) -- from the root's centre down to the ground
-	local k = (tier - 1) / (MAX_TIER - 2) -- 0 at tier 1, 1 at tier 9
-	local tint = ColorSequence.new(color, color:Lerp(WHITE, 0.6))
-
+	local tier = math.min(realm or 1, MAX_TIER + 1) - 1
 	if tier >= 1 then
-		-- wisps rising from a ring round the feet
-		local r = 4.2 + 1.4 * k
-		local ring = holder(folder, hrp, "AuraRing", Vector3.new(r, 0.2, r), CFrame.new(0, feet + 0.2, 0))
-		emitter(ring, {
-			Name = "Wisps",
-			Texture = TEX .. "smoke_main.dds",
-			Color = tint,
-			Size = seq(1.2, 1.8 + 1.2 * k, 0.4),
-			Transparency = seq(0.35, 0.2 - 0.1 * k, 1),
-			Brightness = 2,
-			Lifetime = NumberRange.new(0.9 + 0.5 * k, 1.3 + 0.6 * k),
-			Speed = NumberRange.new(0.4, 0.8),
-			Acceleration = Vector3.new(0, 4 + 4 * k, 0),
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-40, 40),
-			Rate = 16 + 14 * k,
-		})
+		realmAura(folder, hrp, hum, tier, Config.realmColor(realm))
 	end
-	if tier >= 3 then
-		-- flames licking up the body
-		local r = 3 + 1 * k
-		local base = holder(folder, hrp, "AuraFlames", Vector3.new(r, 0.2, r), CFrame.new(0, feet + 0.4, 0))
-		emitter(base, {
-			Name = "Flames",
-			Texture = TEX .. "fire_main.dds",
-			Color = ColorSequence.new(color:Lerp(WHITE, 0.35), color),
-			Size = seq(1.6 + 0.8 * k, 1.3 + 0.8 * k, 0),
-			Transparency = seq(0.15, 0.15, 1),
-			Brightness = 2,
-			Lifetime = NumberRange.new(0.5, 0.7 + 0.4 * k),
-			Speed = NumberRange.new(1, 2),
-			Acceleration = Vector3.new(0, 6 + 6 * k, 0),
-			ShapeInOut = Enum.ParticleEmitterShapeInOut.Inward,
-			Rate = 18 + 16 * k,
-		})
-	end
-	if tier >= 5 then
-		-- sparks twinkling round the whole body
-		local shell = holder(folder, hrp, "AuraSparks", Vector3.new(4.5, 6, 4.5), CFrame.new(0, feet + 3, 0))
-		emitter(shell, {
-			Name = "Sparks",
-			Texture = TEX .. "sparkles_main.dds",
-			Color = ColorSequence.new(WHITE, color),
-			Shape = Enum.ParticleEmitterShape.Box,
-			ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-			Size = seq(0, 0.7 + 0.5 * k, 0),
-			Transparency = NumberSequence.new(0.05),
-			Brightness = 2,
-			Lifetime = NumberRange.new(0.6, 1.1),
-			Speed = NumberRange.new(0.5, 1.5),
-			Drag = 2,
-			Rotation = NumberRange.new(0, 360),
-			Rate = 6 + 8 * k,
-		})
-	end
-
-	-- lives: one gold bead per rebirth on a halo behind the head, spreading from the top to the sides
-	local head = char:FindFirstChild("Head")
-	if head and (beads or 0) > 0 then
-		local R = 1.35
-		for i = 1, beads do
-			local a = math.rad((i - 1) * 30 - (beads - 1) * 15) -- 30 degrees apart, centred on the top
-			local b = Instance.new("Part")
-			b.Name = "LifeBead"
-			b.Shape = Enum.PartType.Ball
-			b.Size = Vector3.new(0.38, 0.38, 0.38)
-			b.Material = Enum.Material.Neon
-			b.Color = GOLD
-			b.CanCollide = false
-			b.CanQuery = false
-			b.CanTouch = false
-			b.CastShadow = false
-			b.Massless = true
-			b.CFrame = head.CFrame * CFrame.new(math.sin(a) * R, 0.15 + math.cos(a) * R, 0.75)
-			local w = Instance.new("WeldConstraint")
-			w.Part0 = head
-			w.Part1 = b
-			w.Parent = b
-			b.Parent = folder
-		end
+	halo(folder, head, rebirths)
+	if #folder:GetChildren() == 0 then
+		folder:Destroy()
+		return
 	end
 	folder.Parent = char
 end
 
--- the aura for `player` from its Realm and Lives attributes, in Config.PLAYER_AURA_STYLE
-function PlayerAura.refresh(player, style)
+-- the aura for `player` from its Realm and Lives attributes
+function PlayerAura.refresh(player)
 	local char = player.Character
-	if not char or not player:GetAttribute("Realm") then
+	local realm = player:GetAttribute("Realm")
+	if not char or not realm then
 		return
 	end
-	local tier, color, beads = PlayerAura.look(style or Config.PLAYER_AURA_STYLE, player:GetAttribute("Realm"), player:GetAttribute("Lives"))
-	PlayerAura.build(char, tier, color, beads)
+	PlayerAura.build(char, realm, (player:GetAttribute("Lives") or 1) - 1)
 end
 
 -- every player, now and later: built on each spawn (again once the avatar's look has loaded, which
