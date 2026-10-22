@@ -203,7 +203,7 @@ local function openBall(b)
 	b.state = "open"
 end
 
-local function build(gain, away, summons)
+local function build(away, summons)
 	for _, c in gui:GetChildren() do
 		c:Destroy()
 	end
@@ -340,7 +340,7 @@ end
 
 -- the show: chest in, shake, burst, qi explodes and flies to the counter, balls pop out
 local function play(gain, away, summons)
-	build(gain, away, summons)
+	build(away, summons)
 	gui.Enabled = true
 	tween(ui.veil, 0.3, { BackgroundTransparency = 0.45 })
 	tween(ui.scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
