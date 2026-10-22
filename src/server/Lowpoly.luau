@@ -122,7 +122,7 @@ end
 -- waits (up to `timeout` s) for every sky mesh: the isles are built once, with their meshes
 function Lowpoly.skyReady(timeout: number?): boolean
 	local t0 = os.clock()
-	while (not sky.islet or not sky.lantern) and os.clock() - t0 < (timeout or 6) do
+	while (not sky.islet or not sky.isletTop or not sky.lantern) and os.clock() - t0 < (timeout or 6) do
 		task.wait(0.1)
 	end
 	return sky.islet ~= nil

@@ -335,7 +335,7 @@ end
 -- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
 -- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
 local ISLES = { -- centre of the lawn's top, peak frame space (the platform is at 0, 0)
-	{ x = -17, y = 13, z = 3 },
+	{ x = -24, y = 14, z = 8 }, -- out past the platform: its stones start in the seat-free arc
 	{ x = 17, y = 17, z = -3 },
 	{ x = 0, y = 25, z = -14 },
 }
@@ -343,10 +343,10 @@ local ISLES = { -- centre of the lawn's top, peak frame space (the platform is a
 -- isles are small floating islands in the peaks' own look (Style.island: lawn, dirt band, a light
 -- shelf, faceted rock rings sandstone to slate, hanging spires and roots, grass drips) cut to a
 -- shallow depth, wider seats, and isle disciples drawn ISLE_SCALE larger, auras included
-local ISLE_R = 8.5 -- the lawn's radius
-local ISLE_SEAT_R = 5.6
+local ISLE_R = 10 -- the jade deck's radius
+local ISLE_SEAT_R = 3.6 -- seat + its 1.25x aura rings (r ~6.3) stay inside ISLE_R
 local ISLE_SCALE = 1.25
-local ISLE_STEP_RISE, ISLE_STEP_GAP = 4, 7
+local ISLE_STEP_RISE, ISLE_STEP_GAP = 4.5, 7
 local PLATFORM_TOP = 1.3 -- the platform deck's top: a seat's y is measured from it (Builders.disciple)
 local CLOUD_WHITE, CLOUD_LILAC = Color3.fromRGB(255, 252, 255), Color3.fromRGB(214, 206, 240)
 local SAND, SLATE, SHELF = Color3.fromHex("A08A74"), Color3.fromHex("5A5670"), Color3.fromHex("B8A48C")
@@ -390,76 +390,58 @@ local function deco(ctx, size, cf, color, material, shape)
 	return part(ctx, size, cf, color, material, { Shape = shape, CanCollide = false, CanQuery = false, CanTouch = false })
 end
 
--- a small floating island: lawn top at `at` (its y), radius `r`, a shallow rock underside
+-- owner pick A 2026-10-22 ("the islet I liked, done better"): the rock floating islet (Config.SKY_MESH,
+-- model 5565039117) in a carved rock material, its own grass rim, a lotus in bloom fanning out under a
+-- jade deck with a gold band; vines and crystals under it. Only the deck collides.
+local ROCK = Color3.fromHex("9A8672")
 local function isleBody(ctx, at, r, rng)
-	local top = CFrame.new(at)
-	cyl(ctx, 1.4, r * 2, top * CFrame.new(0, -0.7, 0), LAWN, Enum.Material.LeafyGrass)
-	cyl(ctx, 1.6, r * 2 + 0.3, top * CFrame.new(0, -1.9, 0), SP.dirt).CanCollide = false
-	cyl(ctx, 0.8, r * 1.95, top * CFrame.new(0, -3, 0), SHELF).CanCollide = false
-	-- rock rings, narrowing and darkening with depth (Style.island's underside, a third as deep)
-	local layers = 4
-	local depth = r * 0.95
-	local step = depth / layers
-	for k = 0, layers - 1 do
-		local f = 1 - k / layers
-		local ringR = r * 0.95 * f ^ 0.9
-		local h = step * 1.5
-		local y = -3.4 - k * step - h / 2
-		local col = SAND:Lerp(SLATE, (k / (layers - 1)) ^ 0.8)
-		local n = math.max(4, math.floor(ringR / 1.6))
-		for j = 1, n do
-			local a = j / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
-			local sz = math.min(ringR * rng:NextNumber(0.4, 0.55) + 1.2, 5)
-			local cr = ringR - sz * 0.5
-			local cf = top * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 6), rng:NextNumber(-0.15, 0.15))
-			deco(ctx, Vector3.new(sz, h, sz), cf, col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)), Enum.Material.Slate)
-		end
-		deco(ctx, Vector3.new(h, ringR * 1.8, ringR * 1.8), top * CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.pi / 2), col, Enum.Material.Slate, Enum.PartType.Cylinder)
+	local w = r * 2.15
+	local rock = skyPart(ctx, "islet", Vector3.new(w, w * 0.58, w), CFrame.new(at.X, at.Y - 1.6 - w * 0.29, at.Z) * CFrame.Angles(0, rng:NextNumber(0, 6), 0), false)
+	if rock then
+		rock.Material = Enum.Material.Rock
+		rock.Color = ROCK
 	end
-	-- hanging spires under the middle
-	for _ = 1, 2 do
-		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, r * 0.3)
-		local len = rng:NextNumber(3, 6)
-		for j = 0, 3 do
-			local sz = (1 - j / 4) * 2.2 + 0.4
-			local cf = top * CFrame.new(math.cos(a) * d, -3.4 - depth - j * len / 4, math.sin(a) * d) * CFrame.Angles(0, rng:NextNumber(0, 6), 0)
-			deco(ctx, Vector3.new(sz, len / 4 + 0.4, sz), cf, SLATE, Enum.Material.Slate)
-		end
+	local rim = skyPart(ctx, "isletTop", Vector3.new(w + 0.6, 0.6, w + 0.6), CFrame.new(at.X, at.Y - 1.4, at.Z), false)
+	if rim then
+		rim.Material = Enum.Material.LeafyGrass
+		rim.Color = LAWN
 	end
-	-- grass drips over the rim
-	local drips = math.floor(r * 1.1)
-	for j = 1, drips do
-		local a = j / drips * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
-		local len = rng:NextNumber(1.2, 2.6)
-		local cf = top * CFrame.new(math.cos(a) * (r + 0.1), -1.3 - len / 2, math.sin(a) * (r + 0.1)) * CFrame.Angles(0, -a + math.pi / 2, 0)
-		deco(ctx, Vector3.new(rng:NextNumber(1.2, 2.2), len, 0.6), cf, LAWN:Lerp(SP.grassDark, j % 3 == 0 and 0 or 0.35), Enum.Material.LeafyGrass)
-	end
-	-- two dangling roots with a leaf tuft (world-space points: the cylinders are placed directly)
-	for _ = 1, 2 do
+	local k = (w + 6) / LOTUS.native.X
+	local lotus = part(ctx, Vector3.new(w + 6, LOTUS.native.Y * k * 0.26, w + 6), CFrame.new(at.X, at.Y - 1.1, at.Z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
+	local sm = Instance.new("SpecialMesh")
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = LOTUS.mesh
+	sm.TextureId = LOTUS.tex
+	sm.Scale = Vector3.new(k, k * 0.26, k)
+	sm.Parent = lotus
+	cyl(ctx, 1.6, r * 2, CFrame.new(at.X, at.Y - 0.8, at.Z), SP.jade, Enum.Material.Marble) -- the deck (thick: a thin one reads as a ladder rung)
+	cyl(ctx, 0.3, r * 2 + 0.5, CFrame.new(at.X, at.Y - 0.6, at.Z), SP.gold, Enum.Material.Metal).CanCollide = false
+	-- vines hanging off the rim, spirit crystals under the rock
+	for _ = 1, 5 do
 		local a = rng:NextNumber(0, math.pi * 2)
-		local prev = Vector3.new(at.X + math.cos(a) * r * 0.8, at.Y - 3.6, at.Z + math.sin(a) * r * 0.8)
-		for j = 1, 3 do
-			local nxt = prev + Vector3.new(rng:NextNumber(-0.6, 0.6), -rng:NextNumber(1.6, 2.6), rng:NextNumber(-0.6, 0.6))
-			local mid, len = (prev + nxt) / 2, (nxt - prev).Magnitude
-			local w = 0.32 - j * 0.06
-			deco(ctx, Vector3.new(len, w, w), CFrame.lookAt(mid, nxt) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromHex("5E4636"), nil, Enum.PartType.Cylinder)
-			prev = nxt
-		end
-		deco(ctx, Vector3.new(1.1, 1.1, 1.1), CFrame.new(prev) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0), SP.grassDark, Enum.Material.LeafyGrass)
+		local len = rng:NextNumber(3, 6)
+		deco(ctx, Vector3.new(0.35, len, 0.35), CFrame.new(at.X + math.cos(a) * r * 0.95, at.Y - 2 - len / 2, at.Z + math.sin(a) * r * 0.95), SP.grassDark, Enum.Material.LeafyGrass)
+	end
+	for _ = 1, 3 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(1, r * 0.35)
+		local gem = deco(ctx, Vector3.new(0.7, rng:NextNumber(2, 3.4), 0.7), CFrame.new(at.X + math.cos(a) * d, at.Y - 1.6 - w * 0.46, at.Z + math.sin(a) * d) * CFrame.Angles(0, math.rad(45), rng:NextNumber(-0.3, 0.3)), SPIRIT, Enum.Material.Glass)
+		gem.CastShadow = false
 	end
 end
 
--- a stepping stone: the peaks' own small floating rock (a lawn cap on faceted rock narrowing to a
--- point, a spirit crystal under it, Style.island); only the lawn cap collides
+-- a stepping stone: the same islet, small, under a grass cap you land on
 local function stone(ctx, p, rng)
-	local s = 4.4
-	cyl(ctx, s * 0.3, s * 1.1, CFrame.new(p.X, p.Y - s * 0.15, p.Z), LAWN, Enum.Material.LeafyGrass)
-	for j = 0, 2 do
-		local w = s * (0.95 - j * 0.3)
-		local cf = CFrame.new(p.X, p.Y - s * (0.45 + j * 0.42), p.Z) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 3), rng:NextNumber(-0.15, 0.15))
-		deco(ctx, Vector3.new(w, s * 0.5, w), cf, Color3.fromHex("8E7C6C"):Lerp(SLATE, j / 2), Enum.Material.Slate)
+	local s = 4.6
+	-- a thick cap: a thin disc at chest height read as a ladder rung (the avatar went Climbing, Studio)
+	cyl(ctx, 1.4, s, CFrame.new(p.X, p.Y - 0.7, p.Z), LAWN, Enum.Material.LeafyGrass)
+	local rock = skyPart(ctx, "islet", Vector3.new(s, s * 0.8, s), CFrame.new(p.X, p.Y - 1.4 - s * 0.4, p.Z) * CFrame.Angles(0, rng:NextNumber(0, 6), 0), false)
+	if rock then
+		rock.Material = Enum.Material.Rock
+		rock.Color = ROCK
+	else
+		deco(ctx, Vector3.new(s * 0.8, s * 0.6, s * 0.8), CFrame.new(p.X, p.Y - 0.6 - s * 0.3, p.Z), ROCK, Enum.Material.Rock)
 	end
-	local gem = deco(ctx, Vector3.new(s * 0.18, s * 0.6, s * 0.18), CFrame.new(p.X, p.Y - s * 1.55, p.Z) * CFrame.Angles(0, math.rad(45), 0), SPIRIT, Enum.Material.Glass)
+	local gem = deco(ctx, Vector3.new(0.5, 1.6, 0.5), CFrame.new(p.X, p.Y - 0.6 - s * 0.85, p.Z) * CFrame.Angles(0, math.rad(45), 0), SPIRIT, Enum.Material.Glass)
 	gem.CastShadow = false
 end
 
@@ -490,17 +472,8 @@ function Builders.lotusIsle(ctx, i)
 	Lowpoly.skyReady(4)
 	local c = isleTop(i)
 	isleBody(ctx, c, ISLE_R, rng)
-	-- in the middle a jade lotus dais under a palace lantern (a real lamp, R3)
-	local k = 8 / LOTUS.native.X
-	local lotus = part(ctx, Vector3.new(8, LOTUS.native.Y * k * 0.3, 8), CFrame.new(c.X, c.Y + 0.1, c.Z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
-	local sm = Instance.new("SpecialMesh")
-	sm.MeshType = Enum.MeshType.FileMesh
-	sm.MeshId = LOTUS.mesh
-	sm.TextureId = LOTUS.tex
-	sm.Scale = Vector3.new(k, k * 0.3, k)
-	sm.Parent = lotus
-	cyl(ctx, 0.5, 3.2, CFrame.new(c.X, c.Y + 0.25, c.Z), SP.jade, Enum.Material.Marble)
-	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.X, c.Y + 0.5 + 1.6, c.Z), true)
+	-- a palace lantern in the middle (a real lamp, R3)
+	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.X, c.Y + 1.6, c.Z), true)
 	if lantern then
 		local l = Instance.new("PointLight")
 		l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 175, 95), 10, 1.2
@@ -508,19 +481,19 @@ function Builders.lotusIsle(ctx, i)
 	end
 	-- clouds hugging the rim and trailing under it
 	for _ = 1, 8 do
-		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(7.5, 10.5)
-		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(3, 5), c.Z + math.sin(a) * r), rng:NextNumber(7, 12), rng)
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(9, 12)
+		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(3, 6), c.Z + math.sin(a) * r), rng:NextNumber(8, 13), rng)
 	end
 	for _ = 1, 2 do
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(1, 4)
-		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(10, 12), c.Z + math.sin(a) * r), rng:NextNumber(8, 12), rng)
+		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(12, 16), c.Z + math.sin(a) * r), rng:NextNumber(9, 13), rng)
 	end
 	-- the stepping stones up from the platform's rim, or from the isle before
 	local from
 	if i == 1 then
-		-- from the platform's rim a quarter turn round from the isle: straight below it the stones
-		-- would stack (each one a ceiling over the last)
-		local a = math.atan2(c.Z, c.X) + math.rad(100)
+		-- from the platform's rim in the arc no seat uses (seats sit at -110..170 degrees, Builders.disciple
+		-- with up to 8 on the platform): a stone over a seated disciple was a wall in Studio
+		local a = math.rad(-140)
 		from = Vector3.new(math.cos(a) * 11, PLATFORM_TOP, math.sin(a) * 11)
 	else
 		local prev = isleTop(i - 1)
