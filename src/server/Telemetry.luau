@@ -37,8 +37,8 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands", "realm (realmBucket)" },
-		question = "Are the pill, the qi orbs, the playtime gifts and Heavenly Hands used, or ignored?",
+		fields = { "pill | orb | gift | hands | streak", "realm (realmBucket)" },
+		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
@@ -69,7 +69,7 @@ Telemetry.EVENTS = {
 		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",
 	},
 	Menu = {
-		fields = { "disciples | reinc | karma | group (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
+		fields = { "disciples | reinc | karma | group | index (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
 		question = "Which HUD menus do players open, and when in the climb (data audit 2026-10-22)?",
 	},
 	Shop = {

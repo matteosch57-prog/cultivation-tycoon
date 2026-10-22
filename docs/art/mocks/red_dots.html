@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Premium red dots (2026-10-22): ?opt=A|B|C, 844x390. Rendered by tools/mock_hud_menus.py red_dots -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif;background:#241a2c}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/review_bridges_islands.jpg') center/145% auto no-repeat}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.35)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;letter-spacing:.5px;white-space:nowrap}
+.toy{border:3px solid #1b1420;border-radius:16px;box-shadow:0 4px 0 #1b1420;position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:12%;right:12%;top:9%;height:20%;border-radius:999px;background:rgba(255,255,255,.28)}
+.col{display:flex;flex-direction:column;align-items:center}
+.row{display:flex;align-items:center}
+/* A: ruby gem */
+.dA{position:absolute;top:-9px;right:-9px;width:24px;height:24px;border-radius:50%;border:3px solid #1b1420;
+ background:radial-gradient(circle at 35% 30%,#ff9a8f 0 18%,#ff3b3b 45%,#b3121f 100%);box-shadow:0 0 0 4px rgba(255,70,70,.28),0 0 14px 4px rgba(255,60,60,.55)}
+.dA::after{content:"";position:absolute;left:4px;top:3px;width:7px;height:5px;border-radius:50%;background:#fff;opacity:.9;transform:rotate(-30deg)}
+/* B: gold-rimmed */
+.dB{position:absolute;top:-9px;right:-9px;width:24px;height:24px;border-radius:50%;border:3px solid #1b1420;
+ background:radial-gradient(circle,#ff4a4a 0 46%,#c4162a 58%,#ffe27a 60% 78%,#c99a2e 80%);box-shadow:0 0 12px 3px rgba(255,214,107,.6)}
+.dB::after{content:"";position:absolute;left:6px;top:5px;width:5px;height:4px;border-radius:50%;background:#fff;opacity:.85}
+/* C: count badge */
+.dC{position:absolute;top:-10px;right:-12px;min-width:24px;height:24px;padding:0 5px;border-radius:999px;border:3px solid #1b1420;
+ background:linear-gradient(#ff6a5e,#d61c2c);box-shadow:0 3px 0 #1b1420;display:flex;align-items:center;justify-content:center}
+.dC span{font-size:13px;--sw:3px}
+.dC::before{content:"";position:absolute;left:4px;right:4px;top:2px;height:6px;border-radius:999px;background:rgba(255,255,255,.45)}
+.lbl{font-size:13px;--sw:3px;color:#ffe9a8}
+</style></head>
+<body><div class="scene"><div class="veil"></div><div id="hud"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420', FACE='#3a2c44', GOLD='#ffd36b';
+const svg=(s,b)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${b}</svg>`;
+const karma=s=>svg(s,`<circle cx="32" cy="32" r="25" fill="#9a6bff" stroke="${INK}" stroke-width="5"/><circle cx="36" cy="35" r="13" fill="#d9b8ff"/><circle cx="39" cy="37" r="5.5" fill="#9a6bff"/><circle cx="22" cy="22" r="4.5" fill="#fff" opacity=".85"/>`);
+const disc=s=>svg(s,`<circle cx="32" cy="12" r="7" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#5096ff" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/>`);
+const bag=s=>svg(s,`<rect x="23" y="7" width="18" height="10" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="40" r="21" fill="#ffd34d" stroke="${INK}" stroke-width="5"/><rect x="21" y="18" width="22" height="6" rx="2" fill="#e65b4f" stroke="${INK}" stroke-width="4"/><path d="M32 29c5 5 8 8 8 12a8 8 0 0 1-16 0c0-4 3-7 8-12z" fill="#6fd6ae" stroke="${INK}" stroke-width="3.5"/>`);
+const gift=s=>svg(s,`<rect x="10" y="26" width="44" height="30" rx="4" fill="#e65b4f" stroke="${INK}" stroke-width="5"/><rect x="6" y="18" width="52" height="12" rx="3" fill="#ff7a6b" stroke="${INK}" stroke-width="5"/><path d="M32 20v34" stroke="#ffd34d" stroke-width="7"/>`);
+const friend=s=>svg(s,`<circle cx="26" cy="22" r="11" fill="#f2cfae" stroke="${INK}" stroke-width="4.5"/><path d="M6 56c2-13 10-19 20-19s18 6 20 19z" fill="#59d39f" stroke="${INK}" stroke-width="4.5" stroke-linejoin="round"/><path d="M50 16v20M40 26h20" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`);
+const dot=(n)=>opt==='C'?`<span class="dC big"><span class="big">${n||'!'}</span></span>`:`<span class="d${opt}"></span>`;
+const b=(icon,face,n,z=64,round)=>`<div class="toy" style="width:${z}px;height:${z}px;background:${face};${round?'border-radius:999px;':''}">${icon(Math.round(z*.72))}${dot(n)}</div>`;
+const tab=(t,on,n)=>`<div class="toy" style="height:34px;padding:0 16px;border-radius:12px;background:${on?GOLD:'#5a4a66'};box-shadow:0 3px 0 ${INK}"><span class="big" style="font-size:15px">${t}</span>${n?dot(n):''}</div>`;
+const tile=(icon,name,n)=>`<div class="col" style="gap:3px"><div class="toy" style="width:58px;height:58px;background:#efe3ff;border-radius:16px">${icon(40)}${n?dot(n):''}</div><span class="big" style="font-size:12px;--sw:3px">${name}</span></div>`;
+const names={A:'A: ruby gem (gloss + soft glow, breathes)',B:'B: gold-rimmed ruby (jewel, glints)',C:'C: count badge (how many are waiting)'};
+document.getElementById('hud').innerHTML=`
+ <div class="col" style="position:absolute;left:36px;top:26px;gap:10px;align-items:flex-start">
+  <span class="big lbl">On the HUD</span>
+  <div class="row" style="gap:26px;align-items:flex-end">
+   <div class="col" style="gap:4px">${b(bag,GOLD,1)}<span class="big" style="font-size:12px;--sw:3px">Shop</span></div>
+   <div class="col" style="gap:4px">${b(disc,FACE,3)}<span class="big" style="font-size:12px;--sw:3px">3 new</span></div>
+   <div class="col" style="gap:4px">${b(karma,FACE,2)}<span class="big" style="font-size:12px;--sw:3px">Karma</span></div>
+   <div class="col" style="gap:4px">${b(friend,FACE,1)}<span class="big" style="font-size:12px;--sw:3px">Friends</span></div>
+   <div class="col" style="gap:4px">${b(gift,GOLD,1,56,true)}<span class="big" style="font-size:12px;--sw:3px">Gift</span></div>
+  </div></div>
+ <div class="col" style="position:absolute;left:36px;top:190px;gap:10px;align-items:flex-start">
+  <span class="big lbl">Inside: the dot leads one level down, and clears once seen</span>
+  <div class="row" style="gap:44px;align-items:flex-start">
+   <div class="col" style="gap:10px;align-items:flex-start"><div class="row" style="gap:10px">${tab('Boosts',true,1)}${tab('Qi',false)}${tab('Disciples',false)}</div>
+     <div class="row" style="gap:14px">${tile(bag,'Welcome Pouch',1)}${tile(gift,'2x Qi')}</div></div>
+   <div class="col" style="gap:10px;align-items:flex-start"><span class="big" style="font-size:15px;color:#d9b8ff">Karma Shop</span>
+     <div class="row" style="gap:14px">${tile(disc,'Disciple Seat',1)}${tile(karma,'Soul Echo',1)}${tile(friend,'Hands')}</div></div>
+  </div></div>
+ <div class="big" style="position:absolute;right:20px;top:20px;font-size:18px;color:#fff">${names[opt]}</div>`;
+</script></body></html>

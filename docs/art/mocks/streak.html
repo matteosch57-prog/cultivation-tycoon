@@ -1,0 +1,70 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Login streak mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- 7-day login streak that pauses (owner 2026-10-22). Phone 844x390 over 18_peak_wide.jpg.
+     ?A1..C2 = option, frame. Rendered by tools/mock_loading.py streak. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;overflow:hidden;background:url(../captures/18_peak_wide.jpg) center/cover}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:4px #1b1420;paint-order:stroke fill;line-height:1.05;white-space:nowrap}
+.abs{position:absolute}
+.toy{width:max-content;border:3px solid #1b1420;border-radius:14px;box-shadow:0 4px 0 #1b1420;position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38)}
+.lbl{position:absolute;left:8px;bottom:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:4px 10px;border-radius:6px;z-index:50}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.62)}
+.tile{width:78px;height:96px;border:3px solid #1b1420;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:4px 0 5px;position:relative}
+</style></head>
+<body><div class="scene" id="s"></div>
+<script>
+const q = location.search.slice(1) || "A1";
+const opt = q[0], fr = +q[1];
+const INK = "#1b1420", QI = "#6fd6ae", QIP = "#e8fff4", GOLD = "#ffd34d";
+const qi = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="${QI}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="${QIP}"/></svg>`;
+const orb = s => `<svg width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#c59bff" stroke="${INK}" stroke-width="6"/><circle cx="50" cy="50" r="22" fill="#e9dcff"/><circle cx="38" cy="38" r="7" fill="#fff"/></svg>`;
+const pill = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="8" y="22" width="48" height="20" rx="10" fill="#fff" stroke="${INK}" stroke-width="5"/><path d="M32 22h14a10 10 0 0 1 0 20H32z" fill="#ff6b5e" stroke="${INK}" stroke-width="5"/></g></svg>`;
+const chest = s => `<svg width="${s}" height="${s * .9}" viewBox="0 0 68 60"><rect x="6" y="22" width="56" height="34" rx="4" fill="#ffd34d" stroke="${INK}" stroke-width="5"/><path d="M6 24c0-16 56-16 56 0z" fill="#ffe58a" stroke="${INK}" stroke-width="5"/><rect x="28" y="24" width="12" height="14" rx="2" fill="#ff6b5e" stroke="${INK}" stroke-width="3"/></svg>`;
+// the ladder: day, reward icon, reward text (numbers are placeholders until the economy check)
+const DAYS = [[qi(30), "Qi"], [orb(30), "1 summon"], [qi(30), "More qi"], [pill(30), "Pill"], [orb(30), "2 summons"], [qi(30), "Big qi"], [chest(36), "Elder!"]];
+const today = 3, claimed = fr === 2 ? 3 : 2; // frame 1: day 3 waiting; frame 2: just claimed
+const tile = (i, w) => {
+  const [ic, txt] = DAYS[i - 1];
+  const done = i <= claimed, now = i === today && !done, big = i === 7;
+  const bg = done ? "#59d39f" : now ? GOLD : big ? "#ffe9b0" : "#f3ecff";
+  return `<div class="tile" style="width:${w || 78}px;background:${bg};${now ? "box-shadow:0 0 0 4px #fff,0 0 22px #ffd34d;transform:translateY(-6px)" : ""}">
+    <span class="t" style="font-size:15px">Day ${i}</span>${ic}<span style="font:600 12px Fredoka;color:${INK}">${txt}</span>
+    ${done ? `<svg class="abs" style="right:-8px;top:-8px" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#fff" stroke="${INK}" stroke-width="3"/><path d="M7 12l3 3 7-7" fill="none" stroke="#2a9d6a" stroke-width="3"/></svg>` : ""}</div>`;
+};
+const row = (w) => `<div style="display:flex;gap:8px;align-items:flex-end">${[1, 2, 3, 4, 5, 6, 7].map(i => tile(i, w)).join("")}</div>`;
+const pauseNote = `<span style="font:600 14px Fredoka;color:#cbbfd6">Missed a day? Your streak waits for you.</span>`;
+let h = "", lbl = "";
+if (opt === "A") {
+  // A: a card on join, after the gift: the 7 tiles, today's glows, one Claim button
+  h = `<div class="veil"></div><div class="abs" style="left:50%;top:26px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px">
+    <span class="t" style="font-size:34px;color:${GOLD}">Daily Blessing</span>${row(78)}${pauseNote}
+    <div class="toy" style="background:${fr === 2 ? "#59d39f" : GOLD};padding:8px 40px"><span class="t" style="font-size:26px">${fr === 2 ? "See you tomorrow!" : "Claim"}</span></div></div>`;
+  lbl = fr === 1 ? "A1: a card when you join (after the gift), today's tile glows" : "A2: claimed, the tile turns jade";
+} else if (opt === "B") {
+  // B: no popup; a calendar button on the HUD with a red dot, opens a slim ladder
+  const btn = `<div class="abs toy" style="left:28px;top:226px;width:54px;height:54px;background:#ff9fb0;display:flex;align-items:center;justify-content:center"><span class="t" style="font-size:20px">3</span>
+    <div class="abs" style="right:-6px;top:-6px;width:16px;height:16px;border-radius:50%;background:#ff3b3b;border:3px solid ${INK}"></div></div>
+    <span class="t abs" style="left:24px;top:286px;font-size:13px">Day 3</span>`;
+  h = fr === 1 ? btn : btn + `<div class="veil" style="background:rgba(20,14,30,.45)"></div><div class="abs toy" style="left:100px;top:60px;background:rgba(27,20,32,.9);padding:12px;display:flex;flex-direction:column;gap:8px;align-items:center">
+    <span class="t" style="font-size:24px;color:${GOLD}">Daily Blessing</span>${row(62)}${pauseNote}
+    <div class="toy" style="background:${GOLD};padding:6px 30px"><span class="t" style="font-size:22px">Claim</span></div></div>`;
+  lbl = fr === 1 ? "B1: no popup, a Day 3 button with a red dot on the HUD" : "B2: tap it: the ladder card";
+} else {
+  // C: a shrine on your peak with 7 lanterns; step on its pad to claim, today's lantern lights
+  const lanterns = [1, 2, 3, 4, 5, 6, 7].map(i => {
+    const lit = i <= claimed || (fr === 2 && i === today);
+    return `<div style="display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:30px;border-radius:9px;border:3px solid ${INK};background:${lit ? GOLD : "#6a5a74"};${lit ? "box-shadow:0 0 16px #ffd34d" : ""}"></div><span class="t" style="font-size:11px">${i}</span></div>`;
+  }).join("");
+  h = `<div class="abs" style="left:250px;top:150px;display:flex;flex-direction:column;align-items:center">
+    <div class="toy" style="background:rgba(27,20,32,.85);padding:6px 10px;display:flex;gap:6px">${lanterns}</div>
+    <svg width="160" height="70" viewBox="0 0 160 70"><rect x="20" y="10" width="120" height="14" fill="#c0392b" stroke="${INK}" stroke-width="3"/><rect x="34" y="24" width="10" height="44" fill="#c0392b" stroke="${INK}" stroke-width="3"/><rect x="116" y="24" width="10" height="44" fill="#c0392b" stroke="${INK}" stroke-width="3"/></svg>
+    <svg width="60" height="18"><ellipse cx="30" cy="9" rx="28" ry="8" fill="${fr === 2 ? "#59d39f" : GOLD}" stroke="${INK}" stroke-width="3"/></svg></div>
+    ${fr === 2 ? `<div class="abs" style="left:50%;top:70px;transform:translateX(-50%);display:flex;align-items:center;gap:6px"><span class="t" style="font-size:30px;color:${GOLD}">Day 3!</span><span class="t" style="font-size:26px">+1 summon</span></div>` : ""}`;
+  lbl = fr === 1 ? "C1: a shrine with 7 lanterns on your peak, step on its pad" : "C2: the lantern lights, the reward pops";
+}
+document.getElementById("s").innerHTML = h + `<div class="lbl">${lbl}</div>`;
+</script></body></html>

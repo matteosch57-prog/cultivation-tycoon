@@ -113,7 +113,6 @@ end
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
-	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 8 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
@@ -408,6 +407,18 @@ Config.FRIEND_MAX = 3
 -- everywhere. 0 = no group yet: the Group button is hidden (the owner pastes the group id, R5)
 Config.GROUP_ID = 172156768 -- Cultivation Tycoon community (owner, 2026-10-22)
 Config.GROUP_BONUS = 0.1
+-- Incense Blessing (owner pick A 2026-10-22, src/server/Bless.luau): hold a neighbour's shrine
+-- prompt BLESS_HOLD s; both get BLESS_SECONDS of their own offline-rate income (PROPOSED, the
+-- economy check confirms). Once per visitor and sect a UTC day; at most BLESS_GIVE_MAX given and
+-- BLESS_GET_MAX received a day. The owner's share needs a real giver: Roblox account age and play
+-- time (alts feed nobody, research 2026-10-22_neighbour_visits).
+Config.BLESS_SHRINE_AT = Vector3.new(-13, 0, 47) -- home island, left of the avenue just inside the entrance (between the VIP pad and the lanterns)
+Config.BLESS_HOLD = 3
+Config.BLESS_SECONDS = 120
+Config.BLESS_GIVE_MAX = 5
+Config.BLESS_GET_MAX = 5
+Config.BLESS_MIN_ACCOUNT_DAYS = 7
+Config.BLESS_MIN_PLAY = 600
 -- Heavenly Gift (D36): a brand-new save's intro screen pays this once (the first four buildings,
 -- 10 + 25 + 60 + 90, with no wait; Economy check 2026-10-21: realms 2 to 5 move under a minute)
 Config.WELCOME_QI = 200
@@ -438,9 +449,45 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 -- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
 -- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
 Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
+-- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
+-- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
+-- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's (unclaimed
+-- group gift) lights at most once per DOT_GROUP_SECONDS.
+Config.DOT_SHOP_FIRST = 600
+Config.SHOP_FREE_SECONDS = 300
+Config.DOT_GROUP_SECONDS = 24 * 3600
 Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
 Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
 Config.GIFT_DAILY = true -- read by the sim
+-- Daily Blessing (login streak, D58, owner pick A: "elder d7 is super late, should be day 2 at
+-- least. I'd say even one tier more day 2"): one claim per UTC day (Config.giftDay); a missed day
+-- PAUSES the ladder (owner), it never resets. After day 7 it starts again at day 1. A day gives
+-- `qiSec` seconds of income (no tide, no pill), `summons` free summons (into the idle chest's pool)
+-- and/or a disciple of `rarity`; a disciple day pays once per save, a repeat pays `again` instead.
+-- Economy check 2026-10-22 (tools/sim_game.py STREAK): pace unchanged, the streak is 0.2-1.4% of all qi.
+Config.STREAK = {
+	{ qiSec = 300, summons = 1 },
+	{ rarity = "Immortal", again = { summons = 3 } },
+	{ qiSec = 600, summons = 2 },
+	{ qiSec = 900 },
+	{ summons = 3 },
+	{ qiSec = 1800 },
+	{ rarity = "Celestial", again = { summons = 3 } }, -- owner: "day 2 and 7 should show actual skins of immortal and celestial"
+}
+-- Roblox badges (D58, docs/design/BADGES.md): the owner creates each in Creator Hub and pastes its
+-- id here; 0 = not created yet, nothing is awarded. Checked on every publish (Badges.luau).
+Config.BADGES = {
+	founder = 0, -- Sect Founder: first building
+	disciple = 0, -- First Disciple
+	realm2 = 0, -- Foundation Laid
+	realm3 = 0, -- Golden Core
+	streak7 = 0, -- Loyal Cultivator: day 7 of the Daily Blessing
+	elder = 0, -- Elder's Favour: an Elder or rarer
+	realm4 = 0, -- Nascent Soul
+	friends = 0, -- Sect of Friends: a friend on the server
+	realm8 = 0, -- Mahayana
+	reborn = 0, -- Reborn: first reincarnation
+}
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end
@@ -492,6 +539,17 @@ Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- play, or after any building from `late` s (owner: "after a big building after 5-10 minutes")
 Config.WELCOME = { after = 300, late = 600 }
 Config.VIP_SLOTS = 1
+-- The four cultivator looks (Cultivators.luau): each disciple keeps the one it was rolled with (D60)
+Config.DISCIPLE_LOOKS = { "sword", "lotus", "monk", "elder" }
+Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "Sage" }
+-- The disciple index (D60, owner pick B + C 2026-10-22: "B better, with the C stars system. Max 5 stars
+-- each, giving a qi boost, low but good to get. Some summons at each step"): one entry per rarity and
+-- look; a star at each of INDEX_STARS pulls of it, INDEX_STAR_BONUS income per star (forever, every
+-- life), INDEX_STEP_SUMMONS free summons each INDEX_STEP_STARS stars. Numbers: the economy pass.
+Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
+Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
+Config.INDEX_STEP_STARS = 10
+Config.INDEX_STEP_SUMMONS = 3
 Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
@@ -841,6 +899,34 @@ function Config.rarityIndex(name)
 		end
 	end
 	return 1
+end
+
+-- the index key of a rarity and look: "Elder|lotus"
+function Config.indexKey(name, look)
+	return name .. "|" .. look
+end
+
+-- stars of one index entry pulled `count` times (0..#INDEX_STARS)
+function Config.indexStars(count)
+	local n = 0
+	for _, at in Config.INDEX_STARS do
+		if (count or 0) >= at then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- every star of an index ({ [key] = pulls }) and the income multiplier they give
+function Config.indexTotalStars(index)
+	local n = 0
+	for _, count in index or {} do
+		n += Config.indexStars(count)
+	end
+	return n
+end
+function Config.indexMult(index)
+	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
 end
 
 -- seconds from the Recruit press to the burst (Juice lights the platform then)

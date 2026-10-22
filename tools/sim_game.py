@@ -92,6 +92,7 @@ def load(path):
         if b and b != p["id"] and b not in p["req"]:
             p["req"].append(b)
     rar = [(float(w), float(b)) for w, b in re.findall(r"weight = ([\d.]+), bonus = ([\d.]+)", "\n".join(block("RARITIES")))]
+    env["RARITY_NAMES"] = re.findall(r'name = "([^"]+)", weight', "\n".join(block("RARITIES")))
     dao = {}
     for line in block("DAO"):
         m = re.search(r'key = "(\w+)".*?costs = \{([^}]*)\}', line)
@@ -193,17 +194,44 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         past = C["PAST_LIVES_MULT"] ** max(0, S["soul"] - (C["REINC_REALM"] - 1))
         # Harmony (Config.harmonyMult): every owned path or grove, capped
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
-        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm
+        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm * idx_mult()
 
-    def price_base():  # Main priceRate: base() without the paid 2x pass
-        return base() / x2
+    # INDEX_STARS (disciple index lever): pulls of one rarity x look give stars at these counts;
+    # each star adds INDEX_STAR_BONUS income (outside the price income); every INDEX_STEP_STARS stars
+    # pays INDEX_STEP_SUMMONS free summons
+    idx = {"pulls": {}, "stars": 0, "paid_steps": 0}
+    out["index"] = idx
+
+    def idx_mult():
+        return 1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]
+
+    def idx_record(i):
+        if not C.get("INDEX_STARS"):
+            return
+        key = (i, rng.randrange(int(C.get("INDEX_LOOKS", 4))))
+        n = idx["pulls"].get(key, 0) + 1
+        idx["pulls"][key] = n
+        if n in C["INDEX_STARS"]:
+            idx["stars"] += 1
+            steps = idx["stars"] // int(C.get("INDEX_STEP_STARS", 10))
+            while idx["paid_steps"] < steps:
+                idx["paid_steps"] += 1
+                for _ in range(int(C.get("INDEX_STEP_SUMMONS", 0))):
+                    S["disciples"].append(roll())
+                S["disciples"].sort(reverse=True)
+                del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+
+    def price_base():  # Main priceRate: base() without the paid 2x pass and the index boost
+        return base() / (x2 * idx_mult())
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
-        for w, b in C["RARITIES"]:
+        for i, (w, b) in enumerate(C["RARITIES"]):
             x -= w
             if x <= 0:
+                idx_record(i)
                 return b
+        idx_record(0)
         return C["RARITIES"][0][1]
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
@@ -257,7 +285,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         share = C.get("LAND_HALF") or C.get("REINC_LAND_SHARE")  # Config.REINC_LAND_SHARE (D40)
         land = max(1, int(S["soul"] * share)) if share else 1
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
-        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)} if lvl("foundation") or land > 1 else set()
+        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)} if C.get("LAND_BUILT", True) else set()  # D56: always built
         if "SWORN_BASE" in C:  # before D44 only the sworn ones followed; now every disciple does
             S["disciples"] = sorted(S["disciples"], reverse=True)[:int(C["SWORN_BASE"]) + lvl("sworn")]
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time
@@ -270,7 +298,28 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     if C["WELCOME_QI"]:
         src("welcome", C["WELCOME_QI"])
     session_gap = 24 * 3600 / K["per_day"] - K["session"] * 60
+    rar_bonus = {n: b for n, b in zip(C.get("RARITY_NAMES", []), [b for _, b in C["RARITIES"]])}
+    streak_once = set()
     for day in range(days):
+        # STREAK (login streak, proposal lever): day d's reward on the first join of the day; a list of
+        # dicts {qi_s, summons, disciple (rarity name, once per save; repeats give `else_summons`)}
+        if C.get("DAILY_QI_S"):  # DAILY_QI_S (lever): seconds of income paid once a day (free shop gift, blessings)
+            src("daily extras", base() * C["DAILY_QI_S"])
+        if C.get("STREAK"):
+            r = C["STREAK"][day % len(C["STREAK"])]
+            if r.get("qi_s"):
+                src("login streak", base() * r["qi_s"])
+            summons = r.get("summons", 0)
+            if r.get("disciple"):
+                if r["disciple"] not in streak_once:
+                    streak_once.add(r["disciple"])
+                    S["disciples"].append(rar_bonus[r["disciple"]])
+                else:
+                    summons += r.get("else_summons", 3)
+            for _ in range(summons):
+                S["disciples"].append(roll())
+            S["disciples"].sort(reverse=True)
+            del S["disciples"][C["DISCIPLE_CAP"] + vip:]
         for _ in range(K["per_day"]):
             if played:
                 away = min(session_gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))

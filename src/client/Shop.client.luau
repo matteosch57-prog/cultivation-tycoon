@@ -195,6 +195,34 @@ local function itemTile(parent, it, order)
 	return col
 end
 
+-- the free daily gift (owner: "give a small free daily gift"): the Shop's red dot leads here, and
+-- claiming it is what clears that dot. ShopFreeIn = 0 when ready, else the seconds to wait.
+local function freeTile(parent)
+	local col, btn = tile(parent, "gift", 0, "Daily Gift", "Free every day")
+	Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 4 })
+	local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(96), px(32)), BUY, px(10))
+	pHolder.LayoutOrder = 5
+	local label = text(pBtn, "Free", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local dot = Toy.dot(btn, px(22), { Visible = false })
+	local busy = false
+	local function claim()
+		if busy or (player:GetAttribute("ShopFreeIn") or 1) ~= 0 then
+			Sfx.play("deny")
+			return
+		end
+		busy = true
+		local ok, gain = pcall(function()
+			return remotes.ClaimShopFree:InvokeServer()
+		end)
+		busy = false
+		Sfx.play(ok and gain and "buyChime" or "deny")
+	end
+	btn.Activated:Connect(claim)
+	pBtn.Activated:Connect(claim)
+	ui.free = { label = label, button = pBtn, dot = dot }
+	return col
+end
+
 local function row(parent, order)
 	local r = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
 	Toy.list(r, true, px(16), { VerticalAlignment = Enum.VerticalAlignment.Top })
@@ -217,6 +245,13 @@ local function refresh()
 	for key, r in ui.rows or {} do
 		r.Visible = key == page
 		ui.tabs[key].BackgroundColor3 = key == page and Color3.fromHex("FFD36B") or GREY
+	end
+	if ui.free then
+		local wait = player:GetAttribute("ShopFreeIn") or 1
+		ui.free.dot.Visible = wait == 0
+		ui.tabDot.Visible = wait == 0 and page ~= "boosts"
+		ui.free.button.BackgroundColor3 = wait == 0 and BUY or GREY
+		ui.free.label.Text = wait == 0 and "Free" or (wait >= 3600 and string.format("%dh%02d", wait // 3600, wait % 3600 // 60) or string.format("%d:%02d", wait // 60, wait % 60))
 	end
 end
 
@@ -270,6 +305,9 @@ local function build()
 		local r = row(body, 2 + i)
 		ui.rows[pg.key] = r
 		local n = 0
+		if pg.key == "boosts" then
+			freeTile(r)
+		end
 		for _, it in pg.items() do
 			n += 1
 			itemTile(r, it, n)
@@ -281,6 +319,9 @@ local function build()
 		Toy.icon(tRow, pg.icon, px(26), { LayoutOrder = 1 })
 		text(tRow, pg.name, px(16), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
 		ui.tabs[pg.key] = tBtn
+		if pg.key == "boosts" then
+			ui.tabDot = Toy.dot(tBtn, px(18), { Visible = false }) -- the free gift is waiting on Boosts
+		end
 		tBtn.Activated:Connect(function()
 			if page ~= pg.key then
 				page = pg.key
@@ -316,7 +357,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local WATCH = { "AwayRate", "Realm", "Pass_x2", "Pass_auto", "Pass_vip" }
+local WATCH = { "AwayRate", "Realm", "Pass_x2", "Pass_auto", "Pass_vip", "ShopFreeIn" }
 for _, it in Config.SHOP_PRODUCTS do
 	if it.limit then
 		table.insert(WATCH, "Limit_" .. it.key)

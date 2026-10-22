@@ -21,6 +21,13 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - The server marks each one done when the player does it (orb taken, pill used, chest opened):
   `data.tips`, player attribute `Tips`.
 
+## Daily Blessing (src/client/Streak.client.luau, D58)
+- Once a day after the launch screen and the gift (a brand-new save's first session waits 90 s):
+  a veil, slow gold rays, "Daily Blessing", seven tiles (done = jade with a tick, today = gold,
+  lifted and breathing, disciple days pale gold with the disciple in its aura), a shining Claim.
+- Claim: today's tile turns jade, the reward line replaces the "streak waits for you" note, the
+  button reads "See you tomorrow!" and closes the card. Studio hooks `StreakOpen`, `StreakClaim`.
+
 ## Buying (src/client/Build.client.luau)
 - Pads are concept C "Formation" (D27, playable mock `docs/art/mocks/pads_formation_mock.html`). The
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every

@@ -327,14 +327,14 @@ function Builders.island(ctx, radius, bare)
 	end
 end
 
--- A seated cultivator on the meditation platform (slot 1..). The slot picks one of the four
--- looks; the rarity picks the robe colour and the aura (Cultivators.luau, mock
--- docs/art/mocks/cultivators_lineup.jpg).
-function Builders.disciple(ctx, slot, rarity, arrive)
+-- A seated cultivator on the meditation platform (slot 1..). `look` is the disciple's own look (D60;
+-- the slot picks one when missing); the rarity picks the robe colour and the aura (Cultivators.luau,
+-- mock docs/art/mocks/cultivators_lineup.jpg).
+function Builders.disciple(ctx, slot, rarity, arrive, look)
 	local a = math.rad(-90 + (slot - 3) * 40)
 	local x, z = math.cos(a) * 8.5, -math.sin(a) * 8.5 -- arc on the hub side of the platform
 	local face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
-	local m = Cultivators.build(ctx.folder, ctx.frame * face, slot, rarity, Config.RARITIES, { arrive = arrive })
+	local m = Cultivators.build(ctx.folder, ctx.frame * face, look or slot, rarity, Config.RARITIES, { arrive = arrive })
 	m.Name = "Disciple" .. slot
 	return m
 end

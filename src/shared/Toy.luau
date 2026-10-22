@@ -379,6 +379,54 @@ function Toy.atlasPiece(parent, name, w, h, color, transp, props)
 	return img
 end
 
+-- The red dot (owner 2026-10-22, mock docs/art/mocks/red_dots_A.jpg "ruby gem"): an outlined ruby with
+-- a light-to-deep fill, a white glint and a soft red glow, breathing slowly. Sits on the top-right
+-- corner of `parent` (a button face, a tab, a tile); Visible = false hides it. One look for every dot:
+-- change it here only. Server Dots.luau decides which are lit.
+function Toy.dot(parent, size, props)
+	size = size or Toy.px(18)
+	local holder = Toy.frame(parent, {
+		Name = "RedDot",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -math.floor(size * 0.15), 0, math.floor(size * 0.15)),
+		Size = UDim2.fromOffset(size, size),
+		ZIndex = 8,
+	})
+	for k, v in props or {} do
+		holder[k] = v
+	end
+	Toy.atlasPiece(holder, "glow", size * 2.4, size * 2.4, Color3.fromHex("FF3B3B"), 0.35, { ZIndex = 8 })
+	local gem = Toy.frame(holder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = WHITE, ZIndex = 9 })
+	Toy.corner(gem, UDim.new(0.5, 0))
+	local fill = Instance.new("UIGradient")
+	fill.Rotation = 55
+	fill.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromHex("FF9A8F")),
+		ColorSequenceKeypoint.new(0.35, Color3.fromHex("FF3B3B")),
+		ColorSequenceKeypoint.new(1, Color3.fromHex("A8101C")),
+	})
+	fill.Parent = gem
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = math.max(2, size * 0.13)
+	st.Parent = gem
+	local glint = Toy.frame(gem, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.34, 0.3),
+		Size = UDim2.fromScale(0.32, 0.22),
+		Rotation = -30,
+		BackgroundTransparency = 0.1,
+		BackgroundColor3 = WHITE,
+		ZIndex = 10,
+	})
+	Toy.corner(glint, UDim.new(0.5, 0))
+	-- breathing: one looping tween on its own UIScale
+	local sc = Instance.new("UIScale")
+	sc.Parent = holder
+	TweenService:Create(sc, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.14 }):Play()
+	return holder
+end
+
 -- the disciple picture from the atlas (the mock's drawing), centred in `parent`, `size` px
 local function figureImage(parent, size, idx, props)
 	local c = ATLAS.cells["fig" .. idx]

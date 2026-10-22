@@ -5,6 +5,7 @@
 -- own join prompt, GroupService:PromptJoinAsync, owner 2026-10-22), claim.
 -- The server checks and pays only the group (R9); nothing here grants anything.
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
 local GroupService = game:GetService("GroupService")
@@ -121,6 +122,7 @@ local function openCard()
 	end)
 	local claimHolder, claimBtn = Toy.button(col, UDim2.fromOffset(px(210), px(54)), GOLD, px(14))
 	claimHolder.LayoutOrder = 5
+	Toy.dot(claimBtn, px(18)) -- where the Friends button's dot leads
 	local cl = frame(claimBtn, { Size = UDim2.fromScale(1, 1) })
 	Toy.list(cl, true, px(6))
 	text(cl, "3", px(24), Color3.new(1, 1, 1), { LayoutOrder = 1 })
@@ -179,6 +181,13 @@ local function groupOpen()
 	return Config.GROUP_ID > 0 and player:GetAttribute("GroupBonus") ~= true
 end
 
+-- the server lights the Sect Gift's red dot at most once a day while it is unclaimed (Dots.luau);
+-- opening the card (MenuOpened "group") follows it
+local function groupDot()
+	local ok, t = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Dots") or "{}")
+	return ok and type(t) == "table" and t.group == true
+end
+
 local function draw()
 	local ids = {}
 	for id in string.gmatch(player:GetAttribute("FriendIds") or "", "%d+") do
@@ -187,7 +196,7 @@ local function draw()
 	local alone = #ids == 0
 	-- alone: shown once the intro is done (owner: the social card should be there from the start)
 	local show = not alone or (player:GetAttribute("WelcomeQi") or 0) == 0
-	local key = #ids .. "|" .. tostring(show) .. "|" .. tostring(groupOpen()) .. "|" .. Toy.S
+	local key = #ids .. "|" .. tostring(show) .. "|" .. tostring(groupDot()) .. "|" .. Toy.S
 	if key == shown then
 		return
 	end
@@ -206,13 +215,8 @@ local function draw()
 	holder.LayoutOrder = 1
 	btn.Name = "FriendsButton"
 	Toy.icon(btn, "invite", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	if groupOpen() then
-		local dot = frame(btn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(16), px(16)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
-		Toy.corner(dot, UDim.new(1, 0))
-		local st = Instance.new("UIStroke")
-		st.Color = Toy.INK
-		st.Thickness = px(3)
-		st.Parent = dot
+	if groupDot() then
+		Toy.dot(btn, px(16))
 	end
 	local pct = math.round(math.max(1, #ids) * Config.FRIEND_STEP * 100)
 	text(root, "+" .. pct .. "%", px(12), alone and Color3.fromHex("CBBFD6") or JADE, { LayoutOrder = 2 })
@@ -264,7 +268,7 @@ local function rescale()
 	draw()
 end
 
-for _, attr in { "FriendIds", "GroupBonus", "WelcomeQi" } do
+for _, attr in { "FriendIds", "GroupBonus", "WelcomeQi", "Dots" } do
 	player:GetAttributeChangedSignal(attr):Connect(draw)
 end
 player:GetAttributeChangedSignal("HudDevice"):Connect(rescale)

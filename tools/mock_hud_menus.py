@@ -18,6 +18,10 @@ PAGES = {
     "hud_phone": {"A": "A: two quiet rails (small buttons, round timers on the right edge)",
                   "B": "B: one dock at the bottom, realm bar up under the qi",
                   "C": "C: Shop + Sect menu on the left, one Rewards button on the right"},
+    # premium red dots (owner 2026-10-22)
+    "red_dots": {"A": "A: ruby gem, gloss and a soft glow; it breathes slowly",
+                 "B": "B: gold-rimmed ruby, a jewel that glints now and then",
+                 "C": "C: count badge, says how many things are waiting"},
 }
 
 

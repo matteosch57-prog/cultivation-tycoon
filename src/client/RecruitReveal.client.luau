@@ -118,7 +118,29 @@ local function sparkle(parent, size)
 	return s
 end
 
-local function start(rarityName, kept)
+-- the disciple index line under a reveal card (D60): its look and the entry's five stars, and a gold
+-- "New index star!" when this pull lit one. `one` = a recruit result { look, stars, newStar }.
+local function indexLine(card, one, order)
+	if not (one and one.look) then
+		return
+	end
+	local px = Toy.px
+	local row = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
+	Toy.list(row, true, px(4))
+	Toy.text(row, Config.LOOK_NAMES[one.look] or "", px(18), WHITE, { LayoutOrder = 1 })
+	local stars = one.stars or 0
+	if stars > 0 then
+		Toy.text(row, string.rep("★", stars), px(16), Color3.fromHex("FFD34D"), { LayoutOrder = 2 })
+	end
+	if stars < #Config.INDEX_STARS then
+		Toy.text(row, string.rep("★", #Config.INDEX_STARS - stars), px(16), Color3.fromHex("4A3F55"), { LayoutOrder = 3 })
+	end
+	if one.newStar then
+		Toy.text(card, "New index star!", px(18), Color3.fromHex("FFD34D"), { LayoutOrder = order + 1 })
+	end
+end
+
+local function start(rarityName, kept, one)
 	finish()
 	Toy.S = computeScale()
 	local px = Toy.px
@@ -213,6 +235,7 @@ local function start(rarityName, kept)
 	if not kept then
 		Toy.text(card, "Sect full", px(18), PINK, { LayoutOrder = 4 })
 	end
+	indexLine(card, one, 5)
 
 	local t0 = os.clock()
 	local state = { burst = false }
@@ -465,6 +488,9 @@ local function startMulti(results)
 		tst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		tst.Parent = it.tile
 		Toy.disciple(it.tile, size, r.rarity, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true)
+		if r.newStar then -- this pull lit an index star (D60): a gold star in the tile's corner
+			Toy.text(it.tile, "★", math.max(px(10), size * 0.34), Color3.fromHex("FFD34D"), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(1), 0, 0), ZIndex = 7 })
+		end
 		it.scale = Instance.new("UIScale")
 		it.scale.Parent = it.tile
 		-- a white flash over the tile as it opens, and sparks flying off in its colour
@@ -524,6 +550,7 @@ local function startMulti(results)
 	if not results[best].kept then
 		Toy.text(card, "Sect full", px(16), PINK, { LayoutOrder = 4 })
 	end
+	indexLine(card, results[best], 5)
 
 	local flash = Toy.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BackgroundColor3 = WHITE, ZIndex = 7 })
 
@@ -727,13 +754,13 @@ local function startMulti(results)
 	end)
 end
 
--- Hud fires PlayerGui.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit;
--- results (x10 / x50) open every orb, else the single reveal
+-- Hud fires PlayerGui.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit (the
+-- idle chest too, with one result); results (x10 / x50) open every orb, else the single reveal
 local fx = playerGui:WaitForChild("RecruitFx")
 fx.Event:Connect(function(rarityName, kept, results)
 	if results and #results > 1 then
 		startMulti(results)
 	else
-		start(rarityName, kept)
+		start(rarityName, kept, results and results[1])
 	end
 end)

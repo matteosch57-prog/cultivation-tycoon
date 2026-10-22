@@ -303,3 +303,34 @@ the log as a D-number.
 - **D55** Phone calm pass = mock A (owner pick): two quiet rails; left = Shop, Disciples, Karma,
   Friends (small, numbers only); right edge = round timers (gift with its reward, pill, altar); one
   Friends button replaces the friends card and the group chip; smaller Recruit seal.
+- **D56** Every new life starts with its landing realm built (owner pick 2026-10-22; sim: minutes 6
+  to 16 rebuilt the same 16 realm-1 buildings slower, first new land at minute 19). Life 2 now breaks
+  through in about a minute and buys new land at about minute 10. The Old Foundations Karma node did
+  exactly this, so it is gone.
+- **D57** Incense Blessing (owner pick A of three, mock `docs/art/mocks/neighbour_visits.html`; research
+  `2026-10-22_neighbour_visits.md`): the reason to visit a neighbour. Every peak has an incense shrine
+  by its entrance; a visitor holds its prompt 3 s and both get BLESS_SECONDS of their own offline-rate
+  income (the Adopt Me trick-or-treat shape: both sides gain, once a day per house). Once per visitor
+  and sect a UTC day, 5 given and 5 received a day at most, never your own; the owner's share needs a
+  giver with a 7-day-old account and 10 min played (alts feed nobody). Today's sticks stay lit; the
+  plaque counts every blessing ever (`blessTotal`, a status number for the coming sect board). Never
+  required, never prompted for (FarmVille's "spam your friends" backlash).
+- **D58** Daily Blessing + badges (owner list 2026-10-22 #3 and #4; streak mock A, "make it more
+  attractive", "elder d7 is super late, should be day 2 at least. I'd say even one tier more day
+  2"): a 7-day ladder claimed once per UTC day that pauses on a missed day and loops after day 7
+  (`Config.STREAK`, an Immortal on day 2 and a Celestial on day 7, each once per save, owner's
+  choice over the Celestial shop sale; numbers checked by the economy pass, pace unchanged). 10 badges (`docs/design/BADGES.md`, `Config.BADGES`, `Badges.luau`), awarded
+  from the save so a badge created later still reaches everyone who met it.
+- **D59** Red dots (owner 2026-10-22): one ruby-gem look (`Toy.dot`); every dot leads to a dot inside
+  and clears when followed; the server lights them where state changes (`Dots.luau`); the Shop's dot
+  leads to a free Daily Gift (300 s of income, once a UTC day).
+- **D60** Disciple index (owner list 2026-10-22 #2; picked B of `docs/art/mocks/disciple_index_{A,B,C}.png`
+  "with the C stars system. Max 5 stars each, giving a qi boost, low but good to get. Some summons at
+  each step"). One entry per rarity and look (9 x 4); a star at each of `INDEX_STARS` pulls of it,
+  `INDEX_STAR_BONUS` income per star (forever; kept out of the price income), `INDEX_STEP_SUMMONS` free
+  summons every `INDEX_STEP_STARS` stars (numbers from the economy pass: 0.005 a star sped the climb up
+  by 2-3 days). Every disciple counts, from any source. Each disciple now keeps the look it was rolled
+  with (`data.discLooks`, a list parallel to `data.disciples`, written only in `addDisciple`), so the
+  figure on its seat is its index entry; an old save fills looks from list order and starts its book
+  with the disciples it has. Why B over A: nine entries fill in a day; PS99-style variants multiply the
+  book without a new rarity. Captures `docs/art/captures/disciple_index_play.jpg`, `..._reveal_play.jpg`.

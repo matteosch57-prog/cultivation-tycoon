@@ -1,0 +1,99 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Disciple index mocks (2026-10-22, owner: "No disciple index. We track who you've pulled but never show
+     it as a book to fill, with a reward for each new rarity"). ?opt=A|B|C, phone 844x390, the Shop's look
+     (panel-less, veil, toy cards in the rarity's pastel, outlined Fredoka). Reward numbers are placeholders
+     for the economy pass. Rendered to disciple_index_<opt>.jpg (Edge headless).
+     A Book of nine: one card per rarity; a new one pays once (free summons).
+     B Rarity x look: 9 rarities x 4 looks (sword, lotus, monk, sage) = 36 entries; each recruit also rolls
+       its look, which the disciple keeps.
+     C Rarity x stars: one card per rarity with 3 stars (pull it 1, 10, 100 times) = 27 goals; each star pays. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;background:url('altar_bg.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.62)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap;line-height:1.05}
+.abs{position:absolute}
+.toy{border:3px solid #1b1420;border-radius:12px;box-shadow:0 3px 0 #1b1420;position:relative;overflow:hidden}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:7%;height:16%;border-radius:999px;background:rgba(255,255,255,.4)}
+.lbl{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:3px 10px;border-radius:6px;white-space:nowrap}
+.row{display:flex;gap:6px;justify-content:center;align-items:flex-start}
+.col{display:flex;flex-direction:column;align-items:center}
+</style></head>
+<body><div class="scene"><div class="veil"></div><div id="ui"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+// name, short, colour, pastel, odds, bonus
+const R=[['Outer Disciple','Outer','#c8c8c8','#ececf0','1 in 2',10],['Inner Disciple','Inner','#5ac878','#c9f2d4','1 in 4',25],['Core Disciple','Core','#5096ff','#cfe0ff','1 in 11',60],
+ ['Elder','Elder','#be64ff','#ead2ff','1 in 40',150],['Immortal','Immortal','#ffc83c','#fff0c2','1 in 200',400],['Celestial','Celestial','#6ee1eb','#cff6fa','1 in 830',900],
+ ['Dao Ancestor','Dao Ancestor','#e6323c','#f8c4c6','1 in 3.3K',2000],['Heavenly Emperor','Emperor','#ff8c28','#ffdcbc','1 in 12K',4500],['Primordial','Primordial','#ff6edc','#ffd0f3','1 in 50K',10000]];
+const disc=(s,robe,dark)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${dark?`<g fill="#2a2234" stroke="#2a2234"><circle cx="32" cy="14" r="7"/><circle cx="32" cy="28" r="13"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z"/></g>`:
+ `<circle cx="32" cy="14" r="7" fill="${INK}"/><circle cx="32" cy="28" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M19 26c2-9 24-9 26 0-6-4-20-4-26 0z" fill="${INK}"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="${robe}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M32 40l-6 20h12z" fill="#fff"/>`}</svg>`;
+const ball=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="#f2f2f6" stroke="${INK}" stroke-width="6"/><circle cx="24" cy="24" r="8" fill="#fff"/></svg>`;
+const star=(s,on)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 5l8 18 19 2-14 13 4 19-17-10-17 10 4-19L5 25l19-2z" fill="${on?'#ffd34d':'#3a2d40'}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/></svg>`;
+const found=new Set([0,1,2,3,4]); const NEW=4;
+const title=(t,sub)=>`<div class="abs col" style="left:0;right:0;top:12px"><span class="big" style="font-size:30px;color:#ffe36b;--sw:5px">${t}</span><span class="big" style="font-size:14px;--sw:3px;margin-top:2px">${sub}</span></div>`;
+const close=`<div class="toy" style="position:absolute;right:14px;top:12px;width:40px;height:40px;background:#ff6b6b;display:flex;align-items:center;justify-content:center"><span class="big" style="font-size:24px;--sw:4px">✕</span></div>`;
+const bar=(y,frac,txt,marks)=>`<div class="abs col" style="left:0;right:0;top:${y}px"><div style="position:relative;width:420px;height:20px;border:3px solid ${INK};border-radius:999px;background:#2b2033;overflow:hidden">
+  <div style="width:${frac*100}%;height:100%;background:linear-gradient(#7ff0c0,#3fbf8a)"></div>
+  ${(marks||[]).map(m=>`<div style="position:absolute;left:${m*100}%;top:0;bottom:0;width:3px;background:${INK}"></div>`).join('')}
+  <span class="big" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;--sw:3px">${txt}</span></div></div>`;
+const chip=(txt,bg,w)=>`<div class="toy" style="width:${w||74}px;height:24px;border-radius:999px;background:${bg};display:flex;align-items:center;justify-content:center;gap:3px">${txt}</div>`;
+let h='',lbl='';
+if(opt==='A'){
+  h+=title('Disciple Index','5 of 9 found · each new rarity pays once');
+  let cards='';
+  R.forEach((r,i)=>{const f=found.has(i);
+    cards+=`<div class="col" style="width:82px">
+      <div class="toy" style="width:78px;height:86px;background:${f?r[3]:'#3a3044'};display:flex;align-items:flex-end;justify-content:center">${disc(70,r[2],!f)}
+        ${i===NEW?`<div style="position:absolute;top:4px;right:-2px;background:#ff5a5a;border:2px solid ${INK};border-radius:6px;padding:0 4px"><span class="big" style="font-size:11px;--sw:2px">NEW</span></div>`:''}</div>
+      <span class="big" style="font-size:${r[1].length>9?11:13}px;color:${f?r[2]:'#9a8fa8'};--sw:3px;margin-top:3px">${f?r[1]:'???'}</span>
+      <span class="big" style="font-size:10px;--sw:2px;color:#e8e0f0">${r[4]}</span>
+      <div style="margin-top:3px">${i<NEW?chip(`<span class="big" style="font-size:11px;--sw:2px">✓ +${[1,1,2,3,5,8,12,20,30][i]}</span>${ball(13)}`,'#5a5262',70):
+        i===NEW?chip(`<span class="big" style="font-size:12px;--sw:2px">Claim +5</span>${ball(13)}`,'#ffd34d',76):
+        chip(`<span class="big" style="font-size:11px;--sw:2px">+${[1,1,2,3,5,8,12,20,30][i]}</span>${ball(13)}`,'#3a2c44',70)}</div></div>`;});
+  h+=`<div class="abs row" style="left:0;right:0;top:86px;gap:4px">${cards}</div>`;
+  h+=bar(282,5/9,'5 / 9',[]);
+  h+=`<div class="abs col" style="left:0;right:0;top:312px"><span class="big" style="font-size:13px;--sw:3px;color:#ffe36b">All nine: the "Sect of Legends" title over your head</span></div>`;
+  lbl='A: book of nine, one card per rarity; a new rarity pays free summons once (Claim), all nine = a title';
+}
+if(opt==='B'){
+  h+=title('Disciple Index','14 of 36 found · every rarity in 4 looks');
+  const looks=['Sword','Lotus','Monk','Sage']; const have=(i,l)=>(i<3)||(i===3&&l<2)||(i===4&&l===1);
+  let grid=`<div class="col" style="gap:4px"><div class="row" style="gap:4px;margin-left:56px">${R.map((r,i)=>`<div style="width:56px;text-align:center"><span class="big" style="font-size:${r[1].length>9?9:11}px;--sw:2px;color:${i<5?r[2]:'#9a8fa8'}">${i<5?r[1]:'???'}</span></div>`).join('')}</div>`;
+  looks.forEach((l,li)=>{grid+=`<div class="row" style="gap:4px;align-items:center"><div style="width:52px;text-align:right"><span class="big" style="font-size:12px;--sw:3px">${l}</span></div>`;
+    R.forEach((r,i)=>{const f=have(i,li); grid+=`<div class="toy" style="width:56px;height:46px;border-radius:9px;background:${f?r[3]:'#3a3044'};display:flex;align-items:flex-end;justify-content:center">${disc(42,r[2],!f)}
+      ${(i===4&&li===1)?`<div style="position:absolute;top:2px;right:1px;background:#ff5a5a;border:2px solid ${INK};border-radius:5px;padding:0 3px"><span class="big" style="font-size:9px;--sw:2px">NEW</span></div>`:''}</div>`;});
+    grid+=`</div>`;});
+  grid+=`</div>`;
+  h+=`<div class="abs" style="left:0;right:0;top:66px;display:flex;justify-content:center">${grid}</div>`;
+  h+=bar(296,14/36,'14 / 36 · next step at 18: +5 summons',[0.25,0.5,0.75]);
+  h+=`<div class="abs col" style="left:0;right:0;top:324px"><span class="big" style="font-size:12px;--sw:3px;color:#e8e0f0">A full column (one rarity in all 4 looks) pays its bonus again</span></div>`;
+  lbl='B: rarity x look, 36 entries; each recruit also rolls one of 4 looks; every 25% pays, a full column too';
+}
+if(opt==='C'){
+  h+=title('Disciple Index','11 of 27 stars · pull a rarity 1, 10 and 100 times');
+  const counts=[143,61,17,3,1,0,0,0,0];
+  let cards='';
+  R.forEach((r,i)=>{const f=counts[i]>0; const st=[counts[i]>=1,counts[i]>=10,counts[i]>=100];
+    cards+=`<div class="col" style="width:82px">
+      <div class="toy" style="width:78px;height:80px;background:${f?r[3]:'#3a3044'};display:flex;align-items:flex-end;justify-content:center">${disc(66,r[2],!f)}
+        ${f?`<div style="position:absolute;top:3px;left:4px;z-index:2"><span class="big" style="font-size:12px;--sw:3px">x${counts[i]}</span></div>`:''}</div>
+      <span class="big" style="font-size:${r[1].length>9?11:13}px;color:${f?r[2]:'#9a8fa8'};--sw:3px;margin-top:3px">${f?r[1]:'???'}</span>
+      <span class="big" style="font-size:10px;--sw:2px;color:#e8e0f0">${r[4]}</span>
+      <div class="row" style="gap:1px;margin-top:3px">${st.map(s=>star(22,s)).join('')}</div></div>`;});
+  h+=`<div class="abs row" style="left:0;right:0;top:86px;gap:4px">${cards}</div>`;
+  h+=bar(270,11/27,'11 / 27 stars',[]);
+  h+=`<div class="abs row" style="left:0;right:0;top:302px;gap:14px;align-items:center">
+    <span class="big" style="font-size:13px;--sw:3px">Each star pays:</span>
+    <span class="big" style="font-size:13px;--sw:3px;display:flex;align-items:center;gap:3px">${star(16,true)} 1st = summons ${ball(14)}</span>
+    <span class="big" style="font-size:13px;--sw:3px;display:flex;align-items:center;gap:3px">${star(16,true)}${star(16,true)} 10 = more</span>
+    <span class="big" style="font-size:13px;--sw:3px;display:flex;align-items:center;gap:3px">${star(16,true)}${star(16,true)}${star(16,true)} 100 = a gold frame</span></div>`;
+  lbl='C: rarity x stars, 27 goals; a star for 1, 10 and 100 pulls of a rarity, each star pays (count per rarity is new data)';
+}
+document.getElementById('ui').innerHTML=h+close;
+document.getElementById('lbl').textContent=lbl;
+</script></body></html>

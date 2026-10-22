@@ -23,7 +23,7 @@ deeper than every life before (D37): a reset at the same depth takes minutes, so
 ## Karma Shop (the Dao Tree, owner: "a karma shop")
 `Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
 `data.dao`, published as `Dao_<key>`. Disciple Seat
-(+1 slot), Old Foundations (a new life starts with every building of realm 1), Elixir Mastery
+(+1 slot), Elixir Mastery
 (a brewed pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline
 cap per level), Soul Echo (+`DAO_ECHO` karma per level), Heavenly Hands (a gold hand on the HUD "Next"
 card builds that pad from anywhere: remote `HandsBuild(padId)`, the server checks the node, the owner,

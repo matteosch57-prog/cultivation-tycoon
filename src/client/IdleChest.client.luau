@@ -242,7 +242,7 @@ local function openBall(b)
 	tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
 	local fx = playerGui:FindFirstChild("RecruitFx") -- Juice: the recruit sound and the column on the platform
 	if fx then
-		fx:Fire(res.rarity, res.kept)
+		fx:Fire(res.rarity, res.kept, { res }) -- the reveal shows its look and index star (D60)
 	else
 		Sfx.play("recruit")
 	end

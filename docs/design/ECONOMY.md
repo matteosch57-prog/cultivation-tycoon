@@ -96,6 +96,15 @@ apart), each with an `orb` ding climbing in pitch ("collect it slowly, sound fol
 (compare with its 200 qi row). Checked in Studio Play (mock save, 2026-10-21): qi 8 -> 209 on GO, a
 second claim refused, no errors (`docs/art/captures/intro_heavenly_gift_play.jpg`, `intro_burst_play.jpg`, `intro_after_go_play.jpg`).
 
+## Disciple index (D60)
+Every disciple, from any source, counts once in its entry (rarity x look, `data.index["<rarity>|<look>"]`,
+36 entries). An entry has a star at each of `INDEX_STARS` pulls; each star adds `INDEX_STAR_BONUS` to
+income forever (`Config.indexMult`, in `rate` but not in `priceRate`), and every `INDEX_STEP_STARS`
+stars pay `INDEX_STEP_SUMMONS` free summons (idle-chest summons, `data.indexSteps` remembers the paid
+steps). The page (`IndexBook.client`) opens from the gold Index button at the end of the disciples
+card; a new star lights the red dot on the Disciples button and the Index button (local `IndexNew`).
+The reveal card shows the look, its stars and "New index star!"; an x10 / x50 tile a gold star.
+
 ## Idle chest (D39)
 While away, income runs at `OFFLINE_RATE` of the rate (up to `OFFLINE_CAP` s) and the idle chest on the
 peak (`IDLE_CHEST_AT`) collects one free summon per `CHEST_SUMMON_EVERY` s away, at most
