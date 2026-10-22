@@ -33,7 +33,7 @@ Telemetry.EVENTS = {
 		question = "How long do players stay away, and do they come back to open the idle chest?",
 	},
 	Recruit = {
-		fields = { "rarity name", "realm (realmBucket)", "kept | benched" },
+		fields = { "rarity name", "realm (realmBucket)", "kept | benched" }, -- value = rolls (an x10 / x50 sums its outcomes)
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
@@ -272,7 +272,8 @@ end
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
 local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true }
 
-function Telemetry.custom(player, name, ...)
+-- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
+function Telemetry.customValue(player, name, value, ...)
 	assert(Telemetry.EVENTS[name], "uncatalogued event " .. tostring(name))
 	if not NOT_JOURNAL[name] then
 		local first, second = ...
@@ -280,11 +281,17 @@ function Telemetry.custom(player, name, ...)
 		if name == "Shop" then
 			code ..= ":" .. tostring(second) -- which item, or where it was opened
 		end
-		Journal.note(player, code)
+		for _ = 1, value do
+			Journal.note(player, code)
+		end
 	end
 	if spend(player) then
-		send(name, AnalyticsService.LogCustomEvent, AnalyticsService, player, name, 1, fields(...))
+		send(name, AnalyticsService.LogCustomEvent, AnalyticsService, player, name, value, fields(...))
 	end
+end
+
+function Telemetry.custom(player, name, ...)
+	Telemetry.customValue(player, name, 1, ...)
 end
 
 -- Log every funnel step that has become true, in order, and time it. `d.funnel` = steps logged
