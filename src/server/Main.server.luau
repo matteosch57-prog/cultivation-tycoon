@@ -549,9 +549,9 @@ local function rate(s, away)
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
--- realm, the disciples, Past Lives and Harmony. Not a pill, the tide, friends, the group or a paid
--- multiplier (2x Qi pass, Welcome Pouch), so those make every goal come sooner instead of raising
--- its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
+-- realm and the disciples. Not a pill, the tide, friends, the group, the rebirth boost, Harmony (D67:
+-- inside it the floor ate most of its +20%), the index or a paid multiplier (2x Qi pass, Welcome
+-- Pouch), so those make every goal come sooner instead of raising its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
 local function priceRate(s)
 	local data = s.data
 	local base = Config.BASE_RATE
@@ -561,7 +561,7 @@ local function priceRate(s)
 			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
 		end
 	end
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * Config.harmonyMult(data.owned)
+	return base * Config.incomeMult(data.realm) * discipleMult(s)
 end
 
 local function publish(player)

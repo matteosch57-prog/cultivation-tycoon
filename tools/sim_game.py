@@ -252,10 +252,13 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 S["disciples"].sort(reverse=True)
                 del S["disciples"][C["DISCIPLE_CAP"] + vip:]
 
-    def price_base():  # Main priceRate: base() without the paid 2x pass and the index boost
+    def price_base():  # Main priceRate: base() without the paid 2x pass, the index, rebirth and Harmony boosts
         rb = 1
         if C.get("REBIRTH_OUT_OF_PRICE", True) and "REBIRTH_BONUS" in C:  # D63: the rebirth boost is left out of prices (Main priceRate)
             rb = C["REBIRTH_POW"] ** (S["life"] - 1) if C.get("REBIRTH_POW") else 1 + C["REBIRTH_BONUS"] * (S["life"] - 1)
+        harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
+        if not C.get("HARMONY_IN_PRICE"):  # D67: Harmony is left out of prices (Main priceRate)
+            rb *= harm
         return base() / (x2 * idx_mult() * rb)
 
     def roll():

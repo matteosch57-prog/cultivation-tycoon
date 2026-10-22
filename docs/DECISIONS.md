@@ -388,3 +388,8 @@ the log as a D-number.
   with the qi price alone the chip went gold 20 to 90 s after every rebirth and a min-maxer skipped the
   gate table on day 1. Late realms cost x5 like the early ones (x10 stalled a regular player at realm
   14 from day 21), and the gates go on past realm 17 (`rebirthsFor` continues the table's steps).
+- **D67** Harmony is left out of the price income (`priceRate`), like the rebirth boost and the index
+  (owner 2026-10-22 "make the corrections", `docs/research/2026-10-22_economy_second_opinion.md`):
+  inside it the D44 floor and the D48 breakthrough rose with every path and grove, so decor's +20%
+  mostly paid for itself. `tools/sim_check.py` / `sim_game.py` (`HARMONY_IN_PRICE` = the old rule):
+  pace unchanged for a regular player over 30 days; decor now pays what its card says.

@@ -125,10 +125,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     cache = {}
 
     def recalc():
-        cache["price"] = base_income() * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * harmony()  # priceRate
+        price = base_income() * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult()  # priceRate (D67: no Harmony)
+        cache["price"] = price * (harmony() if C.get("HARMONY_IN_PRICE") else 1)
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)  # Config.rebirthMult
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
-        cache["away"] = cache["price"] * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
+        cache["away"] = price * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
 
     def pad_cost(p):  # Config.padCost
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
@@ -149,7 +150,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return C["REBIRTH_PRICE"] + C["REBIRTH_PRICE_STEP"] * (S["lives"] - 1)
 
     def gate(realm):  # Config.rebirthsFor
-        if C.get("GATE_EXTEND"):  # proposal: the table's own rule, endless (every odd realm, +ceil(i/2) each)
+        if C.get("GATE_EXTEND", True):  # D66: the table's own rule goes on past it (Config.rebirthsFor)
             i = (realm - 1) // 2
             return 0 if i < 1 else 1 + sum(math.ceil(j / 2) for j in range(2, i + 1))
         return max([n for r, n in gates.items() if realm >= r] or [0])
