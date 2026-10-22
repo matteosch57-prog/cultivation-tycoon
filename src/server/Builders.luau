@@ -523,7 +523,9 @@ local function grove(ctx, pad)
 			Style.sakura(ctx.folder, cf, seed)
 		end
 	end
-	Nature.bush(ctx.folder, ctx.frame * CFrame.new(pad.x, 0, pad.z), 90 + #pad.id, 1.6, kind ~= "pine")
+	-- flowers on the bush (a colour, not a flag: Nature.bush paints them) except under pines
+	local flower = kind ~= "pine" and Color3.fromHex("FFC2D4") or nil
+	Nature.bush(ctx.folder, ctx.frame * CFrame.new(pad.x, 0, pad.z), 90 + #pad.id, 1.6, flower)
 end
 for name in Config.ISLETS do
 	Builders["path_" .. name] = islandPath
