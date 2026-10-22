@@ -45,6 +45,8 @@ fetches each file and calls `ScriptEditorService:UpdateSourceAsync` (HTTP reques
   every `Dnn` it cites in code comments and docs (grep only that branch's lines).
 - After a merge that touches `Config.luau`, run `python tools/sim_pacing.py --runs 3` (it parses
   Config, so a broken pad line fails loudly) and, for economy keys, `tools/sim_economy.py`.
+- Before every merge into `integration` and before a publish: `python tools/check_playergui.py`
+  (R19, D68: nothing needed may live where the first spawn wipes it; exit 1 lists the lines).
 - A GitHub "remote unpack failed" on push is server-side: retry with backoff (2, 4, 8, 16 s).
 - Worktrees left after the first session (2026-10-21), all merged into `integration`, safe to remove
   with `git worktree remove <path>` once their threads are closed: `C:\Work\ct-cultivators`
