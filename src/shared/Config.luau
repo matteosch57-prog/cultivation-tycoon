@@ -409,7 +409,7 @@ Config.FRIEND_STEP = 0.1
 Config.FRIEND_MAX = 3
 -- Group gift (D35): a member of the game's Roblox group who claimed it earns GROUP_BONUS more qi
 -- everywhere. 0 = no group yet: the Group button is hidden (the owner pastes the group id, R5)
-Config.GROUP_ID = 0
+Config.GROUP_ID = 172156768 -- Cultivation Tycoon community (owner, 2026-10-22)
 Config.GROUP_BONUS = 0.1
 -- Heavenly Gift (D36): a brand-new save's intro screen pays this once (the first four buildings,
 -- 10 + 25 + 60 + 90, with no wait; Economy check 2026-10-21: realms 2 to 5 move under a minute)
