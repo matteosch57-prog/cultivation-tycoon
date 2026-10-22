@@ -78,7 +78,7 @@ function Dots.compute(s)
 		lit.karma = knew
 	end
 	-- a rebirth is affordable and this rebirth's screen was not opened yet
-	if (d.qi or 0) >= Config.rebirthPrice((d.lives or 1) - 1) and seen.reinc ~= (d.lives or 1) then
+	if (d.qi or 0) >= Config.rebirthPrice((d.lives or 1) - 1) and Config.rebirthOpen(d.realm, (d.lives or 1) - 1, d.owned) and seen.reinc ~= (d.lives or 1) then
 		lit.reinc = true
 	end
 	-- the Sect Gift (group): unclaimed, at most once a day

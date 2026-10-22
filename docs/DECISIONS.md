@@ -382,3 +382,9 @@ the log as a D-number.
   Economy sim (`sim_game.py` b18f691): the realm table binds (first rebirth ~11 to 15 min), +50% a
   rebirth instead of their literal +5% (+5% made every life longer: 46 to 99 min), the boost stays out
   of the price income (the price floor and breakthrough scale with income, so it would do nothing there).
+- **D66** Economy second opinion (2026-10-22, `docs/research/2026-10-22_economy_second_opinion.md`,
+  checked with `tools/sim_game.py`): a rebirth opens only when the next breakthrough waits for one
+  (`Config.rebirthOpen`: every required pad built and fewer rebirths than `rebirthsFor(realm + 1)`);
+  with the qi price alone the chip went gold 20 to 90 s after every rebirth and a min-maxer skipped the
+  gate table on day 1. Late realms cost x5 like the early ones (x10 stalled a regular player at realm
+  14 from day 21), and the gates go on past realm 17 (`rebirthsFor` continues the table's steps).

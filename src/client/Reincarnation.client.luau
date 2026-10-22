@@ -137,7 +137,7 @@ local function refresh()
 	end
 	local qi = player:GetAttribute("Qi") or 0
 	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
-	local ready = qi >= price
+	local ready = qi >= price and player:GetAttribute("RebirthOpen") == true
 	ui.title.Text = "Rebirth " .. ((player:GetAttribute("Rebirths") or 0) + 1)
 	ui.now.Text = mult(player:GetAttribute("RebirthMult") or 1)
 	ui.after.Text = mult(player:GetAttribute("NextRebirthMult") or 1)
@@ -157,7 +157,8 @@ local function refresh()
 	local armed = os.clock() < armedUntil
 	if not ready then
 		ui.btn.BackgroundColor3 = LOCKED
-		ui.btnLabel.Text = "Rebirth!"
+		-- closed until the next realm waits for a rebirth (Config.rebirthOpen): say what opens it
+		ui.btnLabel.Text = player:GetAttribute("RebirthOpen") and "Rebirth!" or "Not needed yet"
 	elseif armed then
 		ui.btn.BackgroundColor3 = CONFIRM
 		ui.btnLabel.Text = "Sure? Tap again"
@@ -316,7 +317,7 @@ build = function()
 	end
 	ui.btnLabel = text(bBtn, "", px(22), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	bBtn.Activated:Connect(function()
-		if busy or (player:GetAttribute("Qi") or 0) < (player:GetAttribute("RebirthPrice") or math.huge) then
+		if busy or not player:GetAttribute("RebirthOpen") or (player:GetAttribute("Qi") or 0) < (player:GetAttribute("RebirthPrice") or math.huge) then
 			Sfx.play("deny")
 			return
 		end
@@ -375,7 +376,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths" }
+local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)
 end

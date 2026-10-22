@@ -647,6 +647,7 @@ local function publish(player)
 	player:SetAttribute("Karma", d.karma or 0)
 	player:SetAttribute("Rebirths", rebirths(d))
 	player:SetAttribute("RebirthPrice", Config.rebirthPrice(rebirths(d)))
+	player:SetAttribute("RebirthOpen", Config.rebirthOpen(d.realm, rebirths(d), d.owned)) -- the next realm waits for a rebirth
 	player:SetAttribute("RebirthMult", Config.rebirthMult(rebirths(d)))
 	player:SetAttribute("NextRebirthMult", Config.rebirthMult(rebirths(d) + 1))
 	player:SetAttribute("RebirthKarma", karmaGain(d))
@@ -1893,7 +1894,7 @@ end)
 local function reincarnate(player, s)
 	local d = s.data
 	local price = Config.rebirthPrice(rebirths(d))
-	if (d.qi or 0) < price then
+	if (d.qi or 0) < price or not Config.rebirthOpen(d.realm, rebirths(d), d.owned) then
 		return nil
 	end
 	local gained = karmaGain(d)

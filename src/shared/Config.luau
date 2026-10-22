@@ -110,11 +110,37 @@ end
 function Config.rebirthKarma(rebirths)
 	return Config.REBIRTH_KARMA + Config.REBIRTH_KARMA_STEP * (rebirths or 0)
 end
+-- is a rebirth open? Only when the next breakthrough waits for rebirths: every required pad of the
+-- realm built and fewer rebirths than the next realm needs (economy second opinion 2026-10-22: with
+-- the qi price alone the chip went gold 20 to 90 s after every rebirth and a min-maxer skipped the
+-- whole gate table on day 1). `owned` = data.owned.
+function Config.rebirthOpen(realm, rebirths, owned)
+	if (rebirths or 0) >= Config.rebirthsFor(realm + 1) then
+		return false
+	end
+	for _, pad in Config.PADS do
+		if Config.neededForBreakthrough(pad) and Config.padOpen(pad, realm) and not owned[pad.id] then
+			return false
+		end
+	end
+	return true
+end
 -- rebirths needed to enter `realm` (the highest table entry at or below it, so the gates stack)
 function Config.rebirthsFor(realm)
-	local need = 0
+	local need, last = 0, 0
 	for r, n in Config.REBIRTH_REALMS do
 		if realm >= r and n > need then
+			need = n
+		end
+		last = math.max(last, r)
+	end
+	-- past the table the gates go on (every odd realm, +ceil(i/2) rebirths: 19 = 25, 21 = 30, 23 = 36,
+	-- 25 = 42 ...) so a rebirth always has a reason (economy second opinion 2026-10-22)
+	local n, i = Config.REBIRTH_REALMS[last] or 0, 9
+	for r = last + 2, realm, 2 do
+		n += math.ceil(i / 2)
+		i += 1
+		if realm >= r then
 			need = n
 		end
 	end
@@ -148,7 +174,7 @@ Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 -- ~5 to 10 min each), then x10 per realm (realm 10 lands ~day 21 for 2 x 30 min a day;
 -- tools/sim_economy.py, research 2026-10-21_economy_math)
 Config.REALM_COST_MULT = 5
-Config.REALM_COST_LATE = 10
+Config.REALM_COST_LATE = 5 -- economy second opinion 2026-10-22: x10 stalled a regular player at realm 14 from day 21
 Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only by the older sims
 -- D48: the breakthrough costs BREAKTHROUGH_SECONDS of the price income (Main priceRate: buildings x

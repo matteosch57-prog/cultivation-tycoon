@@ -1035,6 +1035,10 @@ local function rebirthChip()
 	end
 	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
 	local held = player:GetAttribute("Qi") or 0
+	if not player:GetAttribute("RebirthOpen") then
+		ui.rebirth.Text = "Rebirth" -- opens when the next realm waits for a rebirth
+		return
+	end
 	ui.rebirth.Text = held >= price and "Rebirth!" or string.format("%d%%", math.floor(100 * held / math.max(price, 1)))
 end
 
@@ -1161,7 +1165,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1284,7 +1288,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	-- the Rebirth chip wobbles gold once the rebirth price is held
-	if (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge) then
+	if player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge) then
 		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
 		ui.rebirthBtn.BackgroundColor3 = GOLD
 	else
