@@ -100,6 +100,10 @@ def load(path):
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
+    # D63 rebirth (Muscle Legends): Config.REBIRTH_REALMS = { [realm] = rebirths needed, ... }
+    m = re.search(r"^Config\.REBIRTH_REALMS = \{([^}]*)\}", src, re.M)
+    if m:
+        env["REBIRTH_REALMS"] = {int(a): int(b) for a, b in re.findall(r"\[(\d+)\]\s*=\s*(\d+)", m.group(1))}
     # D48: Config.REALM_PADS (pads that first open in realm r) -> REALM_OF; BREAKTHROUGH_SECONDS -> BT_S
     rp = [re.findall(r'"(\w+)"', line) for line in block("REALM_PADS") if "{" in line]
     if rp:
@@ -192,6 +196,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def base():  # rate(s, away) without the live-only multipliers
         b = C["BASE_RATE"] + sum(pads[i]["income"] * (1 + C["WORKER_BONUS"] * S["workers"].get(i, 0)) * dist(i) for i in S["owned"])
         past = C["PAST_LIVES_MULT"] ** max(0, S["soul"] - (C["REINC_REALM"] - 1))
+        if "REBIRTH_BONUS" in C:  # D63: +REBIRTH_BONUS a rebirth, adding up (rebirths = life - 1)
+            past = 1 + C["REBIRTH_BONUS"] * (S["life"] - 1)
+            if C.get("REBIRTH_POW"):  # lever: multiplicative instead (x REBIRTH_POW a rebirth)
+                past = C["REBIRTH_POW"] ** (S["life"] - 1)
         # Harmony (Config.harmonyMult): every owned path or grove, capped
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
         return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm * idx_mult()
@@ -222,7 +230,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 del S["disciples"][C["DISCIPLE_CAP"] + vip:]
 
     def price_base():  # Main priceRate: base() without the paid 2x pass and the index boost
-        return base() / (x2 * idx_mult())
+        rb = 1
+        if C.get("REBIRTH_OUT_OF_PRICE") and "REBIRTH_BONUS" in C:  # lever: the rebirth boost is left out of prices
+            rb = C["REBIRTH_POW"] ** (S["life"] - 1) if C.get("REBIRTH_POW") else 1 + C["REBIRTH_BONUS"] * (S["life"] - 1)
+        return base() / (x2 * idx_mult() * rb)
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
@@ -289,6 +300,30 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         if "SWORN_BASE" in C:  # before D44 only the sworn ones followed; now every disciple does
             S["disciples"] = sorted(S["disciples"], reverse=True)[:int(C["SWORN_BASE"]) + lvl("sworn")]
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time
+            costs = C["DAO"].get(k)
+            while costs and lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
+                S["karma"] -= costs[lvl(k)]
+                S["dao"][k] = lvl(k) + 1
+        life_start_play, life_start_day = played, day
+
+    def rebirth(day):  # D63: back to realm 1 built, keep disciples, karma = KARMA + STEP x rebirths
+        nonlocal life_start_play, life_start_day
+        n = S["life"] - 1
+        gain = int((C["REBIRTH_KARMA"] + C["REBIRTH_KARMA_STEP"] * n) * (1 + C["DAO_ECHO"] * lvl("echo")))
+        out["lives"].append(dict(life=S["life"], realm=S["realm"], play_s=played - life_start_play, day=day,
+                                 karma=gain, past=1 + C["REBIRTH_BONUS"] * (n + 1)))
+        led_sink["reset loss"] = led_sink.get("reset loss", 0) + S["qi"]
+        out["lives"][-1]["src"], out["lives"][-1]["sink"] = dict(life_src), dict(life_sink)
+        life_src.clear()
+        life_sink.clear()
+        S["karma"] += gain
+        S["soul"] = max(S["soul"], S["realm"])
+        S["life"] += 1
+        land = max(1, int(S["soul"] * C["REBIRTH_LAND_SHARE"])) if C.get("REBIRTH_LAND_SHARE") else 1  # lever
+        S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
+        S.pop("bt_frozen", None)
+        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)}
+        for k in DAO_ORDER:
             costs = C["DAO"].get(k)
             while costs and lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
                 S["karma"] -= costs[lvl(k)]
@@ -386,6 +421,18 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 # the cheapest thing open, like any pad
                 if not any(needed(p) and in_realm(p) and p["id"] not in S["owned"] for p in C["PADS"]):
                     choices = []
+                if not choices and "REBIRTH_PRICE" in C:
+                    # D63: the next realm needs rebirths (REBIRTH_REALMS); blocked -> rebirth once the qi price is held
+                    need = max([n for r, n in C.get("REBIRTH_REALMS", {}).items() if S["realm"] + 1 >= r] or [0])
+                    if S["life"] - 1 < need:
+                        price = C["REBIRTH_PRICE"] + C["REBIRTH_PRICE_STEP"] * (S["life"] - 1)
+                        if S["qi"] >= price:
+                            sink("rebirth", price)
+                            rebirth(day + 1)
+                            out["milestones"].setdefault("life %d" % S["life"], played)
+                            if len(out["lives"]) >= lives:
+                                return out, led_src, led_sink
+                        continue
                 if not choices:
                     bt = C["BREAKTHROUGH_COST"] * cmult()
                     if C.get("BT_S"):  # BT_S = Config.BREAKTHROUGH_SECONDS (D48): BT_S s of the price income the realm ends on
@@ -404,7 +451,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         S.update(qi=carry, owned=keep, workers=kw, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
                         realm_start = played
                         out["milestones"].setdefault("realm %d" % S["realm"], played)
-                        if S["realm"] >= max(C["REINC_REALM"], S["soul"] + 1) and S["life"] <= lives:
+                        if "REBIRTH_PRICE" not in C and S["realm"] >= max(C["REINC_REALM"], S["soul"] + 1) and S["life"] <= lives:
                             reincarnate(day + 1)
                             out["milestones"].setdefault("life %d" % S["life"], played)
                             if len(out["lives"]) >= lives:
