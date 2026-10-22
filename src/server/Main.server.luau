@@ -20,6 +20,7 @@ local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
+local RankBoard = require(script.Parent:WaitForChild("RankBoard"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -126,7 +127,11 @@ local function buildHub()
 		local a = bridgeAngle(i)
 		local mid = a + math.pi / Config.PLOT_COUNT
 		local r = Config.HUB_RADIUS * 0.72
-		if i % 2 == 0 then
+		if i == Config.RANK_WALL_GAP then
+			-- the ranking wall stands here instead of a tree (RankBoard)
+			local at = Vector3.new(math.cos(mid) * Config.RANK_WALL_R, BASE_Y, math.sin(mid) * Config.RANK_WALL_R)
+			RankBoard.build(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)))
+		elseif i % 2 == 0 then
 			Style.sakura(folder, CFrame.new(math.cos(mid) * r, BASE_Y, math.sin(mid) * r), i)
 		else
 			Style.pine(folder, CFrame.new(math.cos(mid) * r, BASE_Y, math.sin(mid) * r), i, 12)
@@ -424,7 +429,7 @@ end
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
 	-- workers = { [building id] = workers hired there } (Config.WORKERS)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, climbed = 0, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, climbed = 0, peakRate = 0, week = 0, weekSec = 0, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
@@ -2100,6 +2105,18 @@ while true do
 			d.giftDay, d.giftPlay, d.giftIdx = today, 0, 1
 		end
 		d.giftPlay = (d.giftPlay or 0) + dt
+		-- hub rankings: this week's play time and the best rate ever, reported every RANK_TICK s
+		local week = Config.rankWeek()
+		if d.week ~= week then
+			d.week, d.weekSec = week, 0
+		end
+		d.weekSec = (d.weekSec or 0) + dt
+		d.peakRate = math.max(d.peakRate or 0, gain / math.max(dt, 1e-3))
+		s.rankIn = (s.rankIn or 0) - dt
+		if s.rankIn <= 0 then
+			s.rankIn = Config.RANK_TICK
+			Ranks.submit(player, d)
+		end
 		Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then

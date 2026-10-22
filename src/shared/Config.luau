@@ -576,11 +576,28 @@ Config.PALETTES = {
 	{ stone = Color3.fromRGB(235, 225, 200), wood = Color3.fromRGB(110, 30, 30), roof = Color3.fromRGB(200, 150, 40), trim = Color3.fromRGB(255, 220, 120), glow = Color3.fromRGB(255, 210, 110) },
 }
 
--- Best sects (src/server/Ranks.luau): one OrderedDataStore, score = realms climbed * 1000 + lives
-Config.RANK_STORE = "Ranks1"
+-- Hub rankings (src/server/Ranks.luau): one OrderedDataStore per board (+ one per country)
+Config.RANKS = {
+	sects = { store = "Ranks1", title = "Greatest Sects", order = 2 }, -- realms climbed * 1000 + lives
+	qi = { store = "RanksQi1", title = "Richest Qi", order = 1 }, -- best qi/s ever
+	week = { store = "RanksWeek1", title = "This Week", order = 3, weekly = true }, -- seconds played this week
+}
+-- the week number (weeks start Monday 00:00 UTC; day 0 = 1970-01-01, a Thursday)
+function Config.rankWeek(t)
+	return math.floor((math.floor((t or os.time()) / 86400) + 3) / 7)
+end
 Config.RANK_TOP = 10 -- rows read and shown
+Config.RANK_WALL_GAP = 5 -- the hub gap (between bridges 5 and 6) where the wall stands
+Config.RANK_WALL_R = 25 -- studs from the hub centre
+Config.RANK_SEE = 140 -- studs: the boards' text draws within this
+-- Free Creator Store models on the ranking wall (owner: "search free assets"), rebuilt from their
+-- meshes by RankBoard (no inserted scripts): "Chinese Gate Door" and "Chinese Lion Stone Statue" by
+-- funshine_4321 (assets 131931560252959, 78030834541623).
+Config.RANK_GATE = { name = "Gate", height = 22, size = Vector3.new(1, 1, 1), parts = {} }
+Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(1, 1, 1), parts = {} }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
-Config.RANK_WRITE_EVERY = 60 -- s between write rounds (one SetAsync per changed player)
+Config.RANK_WRITE_EVERY = 60 -- s between write rounds (one SetAsync per changed score)
+Config.RANK_TICK = 30 -- s between a session's score reports (play time, rate)
 Config.RANK_MIN_BUDGET = 10 -- requests of that type left before the board may spend one
 
 -- Building skins (research docs/research/2026-10-22_visible_progression.md, mocks

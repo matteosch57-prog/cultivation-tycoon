@@ -1,13 +1,16 @@
--- The best sects (owner 2026-10-22: "we need this for people to see easily whose better", "we can add
--- a country ranking filter too"; research docs/research/2026-10-22_progression_pushes.md gap 1,
--- DevForum global-board threads). Score = realms climbed in every life (`data.climbed`, one per
--- breakthrough, monotonic: a reset can never raise it, R-lesson "index on the monotonic peak"), lives
--- as the tie-break: climbed * 1000 + lives, one key per player in a global OrderedDataStore and in
--- the store of the player's country (LocalizationService).
+-- Hub rankings (owner 2026-10-22: "we need this for people to see easily whose better", "a country
+-- ranking filter too", "3 different rankings: biggest qi/s too and maybe weekly ... playtime";
+-- research docs/research/2026-10-22_progression_pushes.md gap 1, DevForum global-board threads).
+-- Config.RANKS lists the boards; each has a global OrderedDataStore and one per country
+-- (LocalizationService), one key per player:
+--   sects: realms climbed in every life * 1000 + lives (`data.climbed`, one per breakthrough,
+--          monotonic: a reset can never raise it, lesson "index on the monotonic peak")
+--   qi:    the best qi per second ever reached (`data.peakRate`, monotonic)
+--   week:  seconds played this week (`data.weekSec` for `data.week`); a new week is a new store
 -- Writes are batched (one round every RANK_WRITE_EVERY s, and on leave) and reads come once per
--- RANK_REFRESH s per board (the global one and each country with a player here), only with request
--- budget to spare (ServerHealth watches GetSorted / SetSorted). Boards reach clients as Workspace
--- attributes (`Ranks` = global, `Ranks_<CC>` = a country): JSON rows, no remote.
+-- RANK_REFRESH s per board (global + each country with a player here), only with request budget to
+-- spare (ServerHealth watches GetSorted / SetSorted). Boards reach clients as Workspace attributes
+-- `Rank_<key>` and `Rank_<key>_<CC>`: JSON rows { userId, name, value, extra, country }, no remote.
 -- Studio with the mock save (Config.MOCK_DATASTORE) ranks only the players on this server.
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
@@ -18,42 +21,53 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Ranks = {}
-Ranks.top = {} -- the global board: { { userId, name, climbed, lives, country } } best first
+Ranks.top = {} -- [key] = global rows, best first
 local changed = Instance.new("BindableEvent")
-Ranks.changed = changed.Event -- fires with the global board when it changes
+Ranks.changed = changed.Event -- (key, rows) when a global board changes
 
 local mock = Config.MOCK_DATASTORE and RunService:IsStudio()
 local suffix = RunService:IsStudio() and "_studio" or ""
+local MAX_SCORE = 2 ^ 53 -- OrderedDataStore values are integers
 
--- boards[scope] = { store, rows = last page read { { userId, score } } }; scope "" = global
-local boards = {}
-local function board(scope)
-	if not boards[scope] then
-		local b = { rows = {} }
+-- the score a board ranks `d` by (an integer, higher is better)
+local function score(key, d)
+	if key == "sects" then
+		return (d.climbed or 0) * 1000 + math.clamp(d.lives or 1, 1, 999)
+	elseif key == "qi" then
+		return math.floor(math.clamp(d.peakRate or 0, 0, MAX_SCORE))
+	elseif key == "week" then
+		return d.week == Config.rankWeek() and math.floor(d.weekSec or 0) or 0
+	end
+	return 0
+end
+Ranks.score = score
+
+-- stores[key .. "/" .. scope] = { store, name, rows = last page read { { userId, score } } }
+local stores = {}
+local function board(key, scope)
+	local def = Config.RANKS[key]
+	local name = def.store .. (def.weekly and ("_w" .. Config.rankWeek()) or "") .. (scope == "" and "" or "_" .. scope) .. suffix
+	local id = key .. "/" .. scope
+	local b = stores[id]
+	if not b or b.name ~= name then -- a new week opens a new store
+		b = { name = name, rows = {} }
 		if not mock then
-			local ok, result = pcall(function()
-				return DataStoreService:GetOrderedDataStore(Config.RANK_STORE .. (scope == "" and "" or "_" .. scope) .. suffix)
-			end)
+			local ok, result = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, name)
 			b.store = ok and result or nil
 			if not ok then
 				warn("[Tycoon][ranks] store unavailable")
 			end
 		end
-		boards[scope] = b
+		stores[id] = b
 	end
-	return boards[scope]
+	return b
 end
-board("")
 
-local pending = {} -- [userId] = score not yet written
-local written = {} -- [userId] = last score written
+local pending = {} -- [userId] = { [key] = score not yet written }
+local written = {} -- [userId] = { [key] = last score written }
 local names = {} -- [userId] = name (cache: GetNameFromUserIdAsync is a web call)
-local countries = {} -- [userId] = "FR" (players met on this server)
-local here = {} -- [userId] = live score of players on this server
-
-function Ranks.score(d)
-	return (d.climbed or 0) * 1000 + math.clamp(d.lives or 1, 1, 999)
-end
+local countries = {} -- [userId] = "FR" or false (players met on this server)
+local here = {} -- [userId] = { [key] = live score } of players on this server
 
 local function budget(rt)
 	return DataStoreService:GetRequestBudgetForRequestType(rt) >= Config.RANK_MIN_BUDGET
@@ -81,40 +95,53 @@ local function countryOf(player)
 	return countries[player.UserId] or nil
 end
 
--- a session reports its score (join, breakthrough, reincarnation, leave)
+-- a session reports its scores (join, breakthrough, reincarnation, the play tick, leave)
 function Ranks.submit(player, d)
-	local s = Ranks.score(d)
-	here[player.UserId] = s
+	local id = player.UserId
+	here[id] = here[id] or {}
+	written[id] = written[id] or {}
 	task.spawn(countryOf, player)
-	if written[player.UserId] ~= s then
-		pending[player.UserId] = s
+	for key in Config.RANKS do
+		local s = score(key, d)
+		here[id][key] = s
+		if written[id][key] ~= s and s > 0 then
+			pending[id] = pending[id] or {}
+			pending[id][key] = s
+		end
 	end
 end
 
 local function write(userId)
-	local s = pending[userId]
-	if not s or mock or not budget(Enum.DataStoreRequestType.SetIncrementSortedAsync) then
+	local p = pending[userId]
+	if not p or mock then
 		return
 	end
-	pending[userId] = nil
-	local ok = true
-	for _, scope in { "", countries[userId] or nil } do
-		local b = board(scope)
-		if b.store then
-			ok = pcall(b.store.SetAsync, b.store, tostring(userId), s) and ok
+	for key, s in p do
+		if not budget(Enum.DataStoreRequestType.SetIncrementSortedAsync) then
+			return -- the rest waits for the next round
+		end
+		local ok = true
+		for _, scope in { "", countries[userId] or nil } do
+			local b = board(key, scope)
+			if b.store then
+				ok = pcall(b.store.SetAsync, b.store, tostring(userId), s) and ok
+			end
+		end
+		if ok then
+			p[key] = nil
+			written[userId][key] = s
+		else
+			warn("[Tycoon][ranks] write failed")
 		end
 	end
-	if ok then
-		written[userId] = s
-	else
-		pending[userId] = pending[userId] or s -- retry next round
-		warn("[Tycoon][ranks] write failed")
+	if next(p) == nil then
+		pending[userId] = nil
 	end
 end
 
 -- keep a leaver's latest score in the cached pages until the next read brings the stored row
-local function keep(scope, userId, s)
-	local rows = board(scope).rows
+local function keep(key, scope, userId, s)
+	local rows = board(key, scope).rows
 	for _, r in rows do
 		if r.userId == userId then
 			r.score = math.max(r.score, s)
@@ -126,24 +153,39 @@ end
 
 function Ranks.leave(player, d)
 	Ranks.submit(player, d)
-	local s = Ranks.score(d)
-	here[player.UserId] = nil
-	keep("", player.UserId, s)
-	if countries[player.UserId] then
-		keep(countries[player.UserId], player.UserId, s)
+	local id = player.UserId
+	for key, s in here[id] or {} do
+		if s > 0 then
+			keep(key, "", id, s)
+			if countries[id] then
+				keep(key, countries[id], id, s)
+			end
+		end
 	end
-	task.spawn(write, player.UserId)
+	here[id] = nil
+	task.spawn(write, id)
+end
+
+local function row(key, userId, s)
+	local r = { userId = userId, name = nameOf(userId), country = countries[userId] or nil }
+	if key == "sects" then
+		r.value, r.extra = s // 1000, s % 1000 -- realms climbed, lives
+	else
+		r.value = s
+	end
+	return r
 end
 
 -- cached page + the live scores of players here (of that country), best first, cut to RANK_TOP
-local function merge(scope)
+local function merge(key, scope)
 	local rows, at = {}, {}
-	for _, r in board(scope).rows do
+	for _, r in board(key, scope).rows do
 		table.insert(rows, { userId = r.userId, score = r.score })
 		at[r.userId] = rows[#rows]
 	end
-	for id, s in here do
-		if scope == "" or countries[id] == scope then
+	for id, scores in here do
+		local s = scores[key] or 0
+		if s > 0 and (scope == "" or countries[id] == scope) then
 			if at[id] then
 				at[id].score = math.max(at[id].score, s)
 			else
@@ -156,22 +198,21 @@ local function merge(scope)
 	end)
 	local list = {}
 	for i = 1, math.min(#rows, Config.RANK_TOP) do
-		local r = rows[i]
-		table.insert(list, { userId = r.userId, name = nameOf(r.userId), climbed = r.score // 1000, lives = r.score % 1000, country = countries[r.userId] or nil })
+		table.insert(list, row(key, rows[i].userId, rows[i].score))
 	end
-	local attr = scope == "" and "Ranks" or "Ranks_" .. scope
+	local attr = "Rank_" .. key .. (scope == "" and "" or "_" .. scope)
 	local json = HttpService:JSONEncode(list)
 	if json ~= workspace:GetAttribute(attr) then
 		workspace:SetAttribute(attr, json)
 		if scope == "" then
-			Ranks.top = list
-			changed:Fire(list)
+			Ranks.top[key] = list
+			changed:Fire(key, list)
 		end
 	end
 end
 
-local function read(scope)
-	local b = board(scope)
+local function read(key, scope)
+	local b = board(key, scope)
 	if not b.store or not budget(Enum.DataStoreRequestType.GetSortedAsync) then
 		return
 	end
@@ -191,7 +232,7 @@ local function read(scope)
 	end
 end
 
--- the boards this server shows: the global one and the countries of the players here
+-- the scopes this server shows: global and the countries of the players here
 local function scopes()
 	local list, seen = { "" }, {}
 	for id in here do
@@ -202,6 +243,17 @@ local function scopes()
 		end
 	end
 	return list
+end
+
+local function redraw(due)
+	for _, scope in scopes() do
+		for key in Config.RANKS do
+			if due then
+				read(key, scope)
+			end
+			merge(key, scope)
+		end
+	end
 end
 
 function Ranks.start()
@@ -215,12 +267,7 @@ function Ranks.start()
 			if due then
 				sinceRead = 0
 			end
-			for _, scope in scopes() do
-				if due then
-					read(scope)
-				end
-				merge(scope)
-			end
+			redraw(due)
 			task.wait(Config.RANK_WRITE_EVERY)
 			sinceRead += Config.RANK_WRITE_EVERY
 		end
@@ -229,11 +276,7 @@ end
 
 -- a player here changed score: redraw from the cached pages, no new read
 function Ranks.touch()
-	task.defer(function()
-		for _, scope in scopes() do
-			merge(scope)
-		end
-	end)
+	task.defer(redraw, false)
 end
 
 return Ranks
