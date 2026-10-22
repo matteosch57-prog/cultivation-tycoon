@@ -175,7 +175,7 @@ local function refresh()
 	-- the realm a new life pays from: the gate, or one deeper than the best life so far (D37)
 	local gate = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
 	local built = player:GetAttribute("Built") or 0
-	local total = Config.REQUIRED_PADS -- paths and groves are optional (DECOR_OPTIONAL)
+	local total = Config.requiredPads(realm) -- this realm's island (D48); paths and groves optional
 	local gain = (realm >= gate and player:GetAttribute("ReincKarma")) or Config.karmaFor(gate, 0)
 	local now = player:GetAttribute("PastLives") or 1
 	local nextMult = player:GetAttribute("NextPastLives") or now

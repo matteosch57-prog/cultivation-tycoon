@@ -498,15 +498,31 @@ local function rate(s, away)
 	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony
 end
 
+-- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
+-- realm, Past Lives and Harmony. Not the disciples, a pill, the tide, friends, the group or anything
+-- paid (2x Qi pass, Welcome Pouch), so recruits and passes make every goal come sooner instead of
+-- raising its price with the income.
+local function priceRate(s)
+	local data = s.data
+	local base = Config.BASE_RATE
+	for id in data.owned do
+		local pad = Config.padById(id)
+		if pad then
+			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
+		end
+	end
+	return base * Config.incomeMult(data.realm) * Config.pastLivesMult(data.soulPeak) * Config.harmonyMult(data.owned)
+end
+
 -- share of this realm's pads owned (0..1)
 local function builtShare(d)
 	local n = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
 			n += 1
 		end
 	end
-	return n / Config.REQUIRED_PADS
+	return n / Config.requiredPads(d.realm)
 end
 
 local function publish(player)
@@ -519,7 +535,7 @@ local function publish(player)
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
 	-- D44: the realm's open pads cost at least PRICE_FLOOR_S s of income; reprice them as it grows
-	local away = rate(s, true)
+	local away = priceRate(s)
 	for id, part in s.pads or {} do
 		local pad = Config.padById(id)
 		local info = s.padData and s.padData[part]
@@ -565,7 +581,7 @@ local function publish(player)
 	player:SetAttribute("GiftIn", at and math.max(0, math.ceil(at - (s.playTime or 0))) or -1)
 	local built = 0
 	for _, pad in Config.PADS do
-		if d.owned[pad.id] and Config.neededForBreakthrough(pad) then
+		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
 			built += 1
 		end
 	end
@@ -576,7 +592,7 @@ local function publish(player)
 	player:SetAttribute("SoulPeak", d.soulPeak or 0)
 	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
 	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
-	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.REQUIRED_PADS or 0))
+	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.requiredPads(d.realm) or 0))
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
 	end
@@ -851,7 +867,6 @@ end
 
 refreshPads = function(player, s)
 	-- only add and remove what changed (rebuilding every pad made all cards and beacons flicker)
-	local mult = Config.costMult(s.data.realm)
 	local wanted = {}
 	local all = true
 	local ownedCount = 0
@@ -859,7 +874,7 @@ refreshPads = function(player, s)
 		ownedCount += 1
 	end
 	for _, pad in Config.PADS do
-		if not s.data.owned[pad.id] then
+		if not s.data.owned[pad.id] and Config.padOpen(pad, s.data.realm) then -- D48: the island opens with the realms
 			if Config.neededForBreakthrough(pad) then -- paths and groves are optional (DECOR_OPTIONAL)
 				all = false
 			end
@@ -895,7 +910,7 @@ refreshPads = function(player, s)
 		if not s.data.owned[pad.id] then
 			local ready = wanted[pad.id]
 			if ready and not s.pads[pad.id] then
-				local cost = Config.padCost(pad, s.data.realm, rate(s, true), s.data.lives)
+				local cost = Config.padCost(pad, s.data.realm, priceRate(s), s.data.lives)
 				local income = pad.income * Config.incomeMult(s.data.realm)
 				local part
 				part = makePad(player, s, pad, cost, pad.name, income, function()
@@ -1002,7 +1017,7 @@ refreshPads = function(player, s)
 		end
 	end
 	if all and not s.pads.breakthrough then
-		local cost = math.floor(Config.BREAKTHROUGH_COST * mult)
+		local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48
 		local nextName = Config.realmName(s.data.realm + 1)
 		local bt = { id = "breakthrough", x = 0, z = 14 }
 		s.pads.breakthrough = makePad(player, s, bt, cost, "Breakthrough: " .. nextName, 0, function()
@@ -1650,7 +1665,9 @@ local function reincarnate(player, s)
 	if d.realm > 1 or dao(d, "foundation") > 0 then
 		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
 		for _, pad in Config.PADS do
-			d.owned[pad.id] = true
+			if Config.padOpen(pad, d.realm) then
+				d.owned[pad.id] = true
+			end
 		end
 	end
 	d.qi = 0

@@ -245,3 +245,10 @@ the log as a D-number.
   the hips with a salute. A recruit rebuilds only the seat that changed (seats are kept, so the seat
   order is not the strength order). Why: the owner found the old motion stiff and the full rebuild
   on every recruit weird; joint Transforms are the documented no-upload way.
+- **D48** The island opens over the realms (owner pick A of three, research
+  `2026-10-22_island_by_realm.md`, mock `docs/art/mocks/realm_land.png`; owner: "tycoons are
+  interesting because you get a bigger, more beautiful island slowly"): `Config.REALM_PADS` lists the
+  pads that first open in realms 1 to 4 (16, +14, +11, +14), each realm rebuilds everything opened so
+  far, a new life lands with its landing realm's pads. The breakthrough costs `BREAKTHROUGH_SECONDS`
+  of the price income (buildings x realm x Past Lives x Harmony; disciples and paid passes are left
+  out, so they make goals come sooner instead of raising them; the D44 floor uses it too).

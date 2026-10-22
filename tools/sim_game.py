@@ -99,6 +99,15 @@ def load(path):
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
+    # D48: Config.REALM_PADS (pads that first open in realm r) -> REALM_OF; BREAKTHROUGH_SECONDS -> BT_S
+    rp = [re.findall(r'"(\w+)"', line) for line in block("REALM_PADS") if "{" in line]
+    if rp:
+        env["REALM_OF"] = {p["id"]: len(rp) for p in pads}
+        for r, ids in enumerate(rp, 1):
+            for i in ids:
+                env["REALM_OF"][i] = r
+    if "BREAKTHROUGH_SECONDS" in env:
+        env["BT_S"] = env["BREAKTHROUGH_SECONDS"]
     for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
                      VIP_SLOTS=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1,
                      REINC_REALM=10, PAST_LIVES_MULT=3, WORKER_MAX=0, WORKER_BONUS=0, WORKER_COST=[0.5, 1, 2],
@@ -186,6 +195,9 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
         return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm
 
+    def price_base():  # Main priceRate: buildings x realm x Past Lives x Harmony (no disciples, no pass)
+        return base() / (dmult() * x2)
+
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
         for w, b in C["RARITIES"]:
@@ -194,9 +206,24 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 return b
         return C["RARITIES"][0][1]
 
+    # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
+    # the first REALM_PADS[r] pads of the ladder (sorted by unlock, then list order); the rest wait
+    order = sorted(range(len(C["PADS"])), key=lambda i: (C["PADS"][i]["unlock"], i))
+    rank = {C["PADS"][i]["id"]: k for k, i in enumerate(order)}
+
+    def in_realm(p, r=None):
+        r = S["realm"] if r is None else r
+        if C.get("REALM_OF"):  # REALM_OF = {pad id: first realm it is offered} (explicit map)
+            return C["REALM_OF"].get(p["id"], 1) <= r
+        rp = C.get("REALM_PADS")
+        if not rp:
+            return True
+        return rank[p["id"]] < rp[min(r, len(rp)) - 1]
+
     def open_pads():
         n = len(S["owned"])
-        return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and all(r in S["owned"] for r in p["req"])]
+        return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and in_realm(p)
+                and all(r in S["owned"] for r in p["req"])]
 
     def needed(p):  # Config.neededForBreakthrough: paths and groves are optional when DECOR_OPTIONAL
         return not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
@@ -230,7 +257,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         share = C.get("LAND_HALF") or C.get("REINC_LAND_SHARE")  # Config.REINC_LAND_SHARE (D40)
         land = max(1, int(S["soul"] * share)) if share else 1
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
-        S["owned"] = {p["id"] for p in C["PADS"]} if lvl("foundation") or land > 1 else set()
+        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)} if lvl("foundation") or land > 1 else set()
         if "SWORN_BASE" in C:  # before D44 only the sworn ones followed; now every disciple does
             S["disciples"] = sorted(S["disciples"], reverse=True)[:int(C["SWORN_BASE"]) + lvl("sworn")]
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time
@@ -298,10 +325,13 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 # DECOR_OPTIONAL: once every required pad is owned the player saves for the breakthrough
                 # (they skip the paths and groves still on offer); before that, decor is bought when it is
                 # the cheapest thing open, like any pad
-                if not any(needed(p) and p["id"] not in S["owned"] for p in C["PADS"]):
+                if not any(needed(p) and in_realm(p) and p["id"] not in S["owned"] for p in C["PADS"]):
                     choices = []
                 if not choices:
                     bt = C["BREAKTHROUGH_COST"] * cmult()
+                    if C.get("BT_S"):  # BT_S = Config.BREAKTHROUGH_SECONDS (D48): BT_S s of the price income the realm ends on
+                        S.setdefault("bt_frozen", price_base() * C["BT_S"])
+                        bt = S["bt_frozen"]
                     if S["qi"] >= bt:
                         sink("breakthrough", bt)
                         realm_done(day + 1)
@@ -309,7 +339,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         led_sink["reset loss"] = led_sink.get("reset loss", 0) + S["qi"] - carry
                         life_sink["reset loss"] = life_sink.get("reset loss", 0) + S["qi"] - carry
                         S["realm"] += 1
-                        S.update(qi=carry, owned=set(), workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
+                        S.pop("bt_frozen", None)
+                        keep = S["owned"] if C.get("KEEP_ON_BT") else set()  # KEEP_ON_BT: buildings stay (only a new life resets)
+                        kw = S["workers"] if C.get("KEEP_ON_BT") else {}
+                        S.update(qi=carry, owned=keep, workers=kw, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
                         realm_start = played
                         out["milestones"].setdefault("realm %d" % S["realm"], played)
                         if S["realm"] >= max(C["REINC_REALM"], S["soul"] + 1) and S["life"] <= lives:
@@ -321,7 +354,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 target = min(choices, key=lambda p: p["cost"])
                 # PRICE_FLOOR_S (proposal lever): a building costs at least this many seconds of income
                 # PRICE_FLOOR_FROM_LIFE: the first life(s) stay fast (D25 "first realms fast"), the floor starts later
-                floor = base() * C.get("PRICE_FLOOR_S", 0) if S["life"] >= C.get("PRICE_FLOOR_FROM_LIFE", 1) else 0
+                floor = price_base() * C.get("PRICE_FLOOR_S", 0) if S["life"] >= C.get("PRICE_FLOOR_FROM_LIFE", 1) else 0
                 tcost = max(target["cost"] * cmult(), floor)
                 hire = hires()
                 # RECRUIT_POW (proposal lever): each recruit in a realm costs x RECRUIT_POW the last (else +GROWTH, linear)

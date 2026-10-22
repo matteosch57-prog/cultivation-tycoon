@@ -144,7 +144,11 @@ Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 Config.REALM_COST_MULT = 5
 Config.REALM_COST_LATE = 10
 Config.REALM_COST_LATE_FROM = 5
-Config.BREAKTHROUGH_COST = 300000 -- realm 1 end income is ~2k/s with no disciples: a 2 to 3 min goal (tools/sim_pacing.py)
+Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only by the older sims
+-- D48: the breakthrough costs BREAKTHROUGH_SECONDS of the price income (Main priceRate: buildings x
+-- realm x Past Lives x Harmony, no disciples or passes) the realm ends on, so the save-up after the
+-- last building is the same short goal whatever the realm holds (research 2026-10-22_island_by_realm)
+Config.BREAKTHROUGH_SECONDS = 90
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.
@@ -702,6 +706,45 @@ for _, pad in Config.PADS do
 	if Config.neededForBreakthrough(pad) then
 		Config.REQUIRED_PADS += 1
 	end
+end
+
+-- D48 (owner pick A 2026-10-22: "unlock more with the realms"; research 2026-10-22_island_by_realm,
+-- mock docs/art/mocks/realm_land.png): the island opens over the realms. REALM_PADS[r] = the pads
+-- that first open in realm r; every realm offers its own and all earlier ones (rebuilt each realm).
+-- Realm 1 keeps the Main Hall, the pill furnace, the Disciple Hall and the qi orbs (first tutorials).
+-- The building looks thread reads Config.padRealm for its skin steps.
+Config.REALM_PADS = {
+	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
+	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training" },
+	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2" },
+	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3" },
+}
+local padRealm = {}
+for r, ids in Config.REALM_PADS do
+	for _, id in ids do
+		padRealm[id] = r
+	end
+end
+for _, pad in Config.PADS do -- a pad left out of REALM_PADS opens with the last step, never silently in realm 1
+	padRealm[pad.id] = padRealm[pad.id] or #Config.REALM_PADS
+end
+-- the realm a pad first opens in
+function Config.padRealm(pad)
+	return padRealm[pad.id]
+end
+-- is the pad offered in this realm?
+function Config.padOpen(pad, realm)
+	return padRealm[pad.id] <= realm
+end
+-- how many pads a breakthrough needs in this realm (the HUD's "built" total)
+function Config.requiredPads(realm)
+	local n = 0
+	for _, pad in Config.PADS do
+		if Config.neededForBreakthrough(pad) and Config.padOpen(pad, realm) then
+			n += 1
+		end
+	end
+	return n
 end
 
 return Config
