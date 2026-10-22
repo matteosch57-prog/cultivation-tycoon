@@ -89,6 +89,9 @@ welcomeFn.Parent = remotes
 local teleportEv = Instance.new("RemoteEvent")
 teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons: "home" or "ranks"
 teleportEv.Parent = remotes
+local breakthroughFn = Instance.new("RemoteFunction")
+breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
+breakthroughFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -846,6 +849,14 @@ local function buyPad(s, part, info)
 	info.onBuy()
 end
 
+-- The breakthrough pad (and Heavenly Hands on it) only opens the confirm screen: the reset happens
+-- on its Confirm (breakthroughFn), which the server takes only within BREAKTHROUGH_ASK_SECONDS of
+-- this offer.
+local function offerBreakthrough(player, s, info)
+	s.btAskUntil = os.clock() + Config.BREAKTHROUGH_ASK_SECONDS
+	notify:FireClient(player, "breakthroughAsk", info.cost)
+end
+
 -- Every 0.1 s: is an owner standing on one of their pads? (horizontal distance + height band)
 local PAD_REACH = 2.6 -- the pad top is 4 studs wide
 local function checkPads()
@@ -867,7 +878,10 @@ local function checkPads()
 						if s.padHold then
 							break
 						end
-						if s.data.qi >= info.cost then
+						if info.confirm then
+							s.padHold = true -- once per step on: closing the screen on the pad does not reopen it
+							offerBreakthrough(player, s, info)
+						elseif s.data.qi >= info.cost then
 							s.padHold = true
 							buyPad(s, part, info)
 						end
@@ -1131,6 +1145,7 @@ refreshPads = function(player, s)
 			end
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
+		s.padData[s.pads.breakthrough].confirm = true
 	end
 	Shop.refreshPeak(s) -- the shop items that stand where they act (passes at the entrance, pill, orbs)
 end
@@ -1980,8 +1995,32 @@ handsFn.OnServerInvoke = function(player, padId)
 	if not info or info.busy or s.data.qi < info.cost then
 		return false
 	end
+	if info.confirm then
+		offerBreakthrough(player, s, info) -- the breakthrough still waits for its Confirm
+		return true
+	end
 	buyPad(s, part, info)
 	Telemetry.custom(player, "Feature", "hands", Telemetry.realmBucket(s.data.realm))
+	return true
+end
+
+-- The breakthrough screen's Confirm. The client only asks (R9): the server took an offer from the pad
+-- or Heavenly Hands, and checks the pad, the price and the rebirth gate again.
+breakthroughFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "Breakthrough") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	local part = s and s.pads and s.pads.breakthrough
+	local info = part and s.padData and s.padData[part]
+	if not info or info.busy or not info.confirm or os.clock() > (s.btAskUntil or 0) then
+		return false
+	end
+	if s.data.qi < info.cost or rebirths(s.data) < Config.rebirthsFor(s.data.realm + 1) then
+		return false
+	end
+	s.btAskUntil = nil
+	buyPad(s, part, info)
 	return true
 end
 

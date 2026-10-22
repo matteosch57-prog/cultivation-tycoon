@@ -403,3 +403,15 @@ the log as a D-number.
   PlayerGui lookup by a name no script makes as a kept gui; `--selftest` is its positive control, and
   it reports all 17 bug sites on the pre-fix tree de60f19, 0 after). Run it before every merge into
   `integration` and before a publish. In Studio, reset the character once in Play to see this class of bug.
+- **D69** Breakthrough confirm screen (owner 2026-10-22: "Breakthrough should make a small screen
+  appear with what it does + a confirm button"; picked B of `docs/art/mocks/2026-10-22_breakthrough_confirm.html`,
+  "Before and after", the Anime Defenders / Bee Swarm upgrade screen). Stepping on the gold
+  Breakthrough pad (or Heavenly Hands on it) no longer pays: the server offers the screen (Notify
+  `breakthroughAsk`, the price), once per step on. It shows this realm and the next as seals, the
+  income boost (`incomeMult` ratio), the new buildings of the next realm, the rebirth gate when the
+  next realm is one (`REBIRTH_REALMS`), "qi + buildings reset" and "disciples, karma, rebirths kept",
+  and one Break through button with its qi price (`Breakthrough.client.luau`). Only its Confirm
+  (`Breakthrough` remote, Guard budget) breaks through, within `BREAKTHROUGH_ASK_SECONDS` of the
+  offer; the server checks the pad, the price and the rebirth gate again. Why: a step on the pad reset
+  qi and every building with no warning. Checked in Studio Play (mock save, realm 4 to 5, one pad step):
+  `docs/art/captures/2026-10-22_breakthrough_confirm_play.jpg`.

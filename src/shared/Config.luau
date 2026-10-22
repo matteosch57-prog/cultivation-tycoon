@@ -181,6 +181,8 @@ Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only
 -- realm x disciples; no pill, tide, rebirth boost, Harmony or paid pass) the realm ends on, so the save-up after the
 -- last building is the same short goal whatever the realm holds (research 2026-10-22_island_by_realm)
 Config.BREAKTHROUGH_SECONDS = 90
+-- the breakthrough pad opens a confirm screen; its Confirm counts this long after the offer (s)
+Config.BREAKTHROUGH_ASK_SECONDS = 120
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.
