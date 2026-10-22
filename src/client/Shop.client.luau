@@ -215,7 +215,11 @@ local function freeTile(parent)
 			return remotes.ClaimShopFree:InvokeServer()
 		end)
 		busy = false
-		Sfx.play(ok and gain and "buyChime" or "deny")
+		if ok and gain then
+			Toy.reward(pBtn)
+		else
+			Sfx.play("deny")
+		end
 	end
 	btn.Activated:Connect(claim)
 	pBtn.Activated:Connect(claim)
