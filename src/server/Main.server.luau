@@ -24,6 +24,7 @@ local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Journal = require(script.Parent:WaitForChild("Journal"))
 local Bless = require(script.Parent:WaitForChild("Bless"))
+local Badges = require(script.Parent:WaitForChild("Badges"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -61,6 +62,9 @@ pillFn.Parent = remotes
 local giftFn = Instance.new("RemoteFunction")
 giftFn.Name = "ClaimGift"
 giftFn.Parent = remotes
+local streakFn = Instance.new("RemoteFunction")
+streakFn.Name = "ClaimStreak" -- the Daily Blessing card's Claim (D58)
+streakFn.Parent = remotes
 local reincFn = Instance.new("RemoteFunction")
 reincFn.Name = "Reincarnate"
 reincFn.Parent = remotes
@@ -618,6 +622,19 @@ local function publish(player)
 	if ls then
 		ls.Realm.Value = d.realm
 	end
+	-- Daily Blessing (D58): StreakDay = the ladder day shown (the next to claim, or today's once
+	-- claimed), StreakReady = today's claim is open, StreakGot = disciple days already paid
+	local st = d.streak or {}
+	local ready = st.last ~= Config.giftDay()
+	local day = st.day or 1
+	player:SetAttribute("StreakReady", ready)
+	player:SetAttribute("StreakDay", ready and day or ((day - 2) % #Config.STREAK) + 1)
+	local got = {}
+	for k in st.got or {} do
+		table.insert(got, tostring(k))
+	end
+	player:SetAttribute("StreakGot", table.concat(got, ","))
+	Badges.check(player, s)
 end
 
 local function ctxFor(s, folder)
@@ -1375,6 +1392,7 @@ local function onJoin(player)
 end
 
 local function onLeave(player)
+	Badges.leave(player)
 	local s = sessions[player]
 	local friends = friendsOf[player] or {}
 	friendsOf[player] = nil
@@ -1608,6 +1626,51 @@ giftFn.OnServerInvoke = function(player)
 	publish(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
 	return { qi = gain, summons = summons }
+end
+
+-- Daily Blessing (D58): one claim per UTC day; the ladder only moves on a claim, so a missed day
+-- pauses it. A disciple day pays its disciple once per save, then `again`.
+streakFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ClaimStreak") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	if not s then
+		return nil
+	end
+	local d = s.data
+	d.streak = d.streak or { day = 1, total = 0, got = {} }
+	local st = d.streak
+	local today = Config.giftDay()
+	if st.last == today then
+		return nil
+	end
+	local day = st.day or 1
+	local step = Config.STREAK[day] or Config.STREAK[1]
+	st.got = st.got or {}
+	local pay = (step.rarity and st.got[day]) and step.again or step
+	local gain = math.floor(rate(s, true) * (pay.qiSec or 0))
+	local summons = pay.summons or 0
+	local rarity = pay.rarity
+	st.last, st.total = today, (st.total or 0) + 1
+	st.day = day % #Config.STREAK + 1
+	if step.rarity then
+		st.got[day] = true
+	end
+	d.qi += gain
+	if gain > 0 then
+		Telemetry.source(player, d, gain, "streak", true)
+	end
+	if summons > 0 then -- free summons wait in the idle chest's pool, as the gifts' do
+		d.chestSummons = (d.chestSummons or 0) + summons
+		player:SetAttribute("ChestSummons", d.chestSummons)
+	end
+	if rarity then
+		addDisciple(s, rarity, true) -- a gift: never turned away
+	end
+	Telemetry.custom(player, "Feature", "streak", Telemetry.realmBucket(d.realm))
+	publish(player)
+	return { day = day, qi = gain, summons = summons, rarity = rarity }
 end
 
 -- Group gift (D35): the card asks for a like, then the group join, then Claim. Only the group is

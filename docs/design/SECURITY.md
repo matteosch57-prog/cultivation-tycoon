@@ -17,6 +17,7 @@ fling other players. They cannot change server values, other players' data or th
 | Recruit / ChestSummon | nothing | hall owned, price, busy flag / summons left | Safe |
 | UsePill | nothing | furnace owned, pill brewed | Safe |
 | ClaimGift | nothing | server play time, gift index | Safe |
+| ClaimStreak | nothing | server UTC day, `data.streak` (one claim a day) | Safe |
 | ClaimWelcome | nothing | `welcomed == false`, once | Safe |
 | ClaimGroup | nothing | fresh `GetGroupsAsync`, 3 s cooldown | Safe |
 | DaoBuy | node key | string, node exists, price, cap | Safe |

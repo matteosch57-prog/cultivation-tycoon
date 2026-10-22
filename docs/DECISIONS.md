@@ -315,3 +315,9 @@ the log as a D-number.
   giver with a 7-day-old account and 10 min played (alts feed nobody). Today's sticks stay lit; the
   plaque counts every blessing ever (`blessTotal`, a status number for the coming sect board). Never
   required, never prompted for (FarmVille's "spam your friends" backlash).
+- **D58** Daily Blessing + badges (owner list 2026-10-22 #3 and #4; streak mock A, "make it more
+  attractive", "elder d7 is super late, should be day 2 at least. I'd say even one tier more day
+  2"): a 7-day ladder claimed once per UTC day that pauses on a missed day and loops after day 7
+  (`Config.STREAK`, an Immortal on day 2 and a Celestial on day 7, each once per save, owner's
+  choice over the Celestial shop sale; numbers checked by the economy pass, pace unchanged). 10 badges (`docs/design/BADGES.md`, `Config.BADGES`, `Badges.luau`), awarded
+  from the save so a badge created later still reaches everyone who met it.
