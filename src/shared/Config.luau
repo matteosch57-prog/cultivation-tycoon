@@ -87,28 +87,39 @@ Config.REALMS = {
 	"True Immortal",
 }
 
--- Reincarnation (docs/research/2026-10-21_reincarnation_design.md): from REINC_REALM a player may
--- start a new life at realm 1. Past Lives: every realm above REINC_REALM - 1 reached in a FINISHED
--- life (`soulPeak`, monotonic) multiplies all qi by PAST_LIVES_MULT in later lives. Karma is paid
--- per reincarnation from how deep that life went. Every disciple follows into the next life (D44).
--- D37 (owner: "40m is long to hook, 5-10m is good"): the gate is realm 2, so the first new life
--- comes ~10 min in; x1.5 per realm deeper keeps each life a little longer than the last (10, 14,
--- 20 ... ~75 min by life 9, ~4 h by life 14 for 2 x 30 min a day; research 2026-10-21_economy_math).
-Config.REINC_REALM = 2
--- D40 (owner: "resets: whatever research says, of similar games"): a reset must make the climb back
--- clearly faster (idle games: the multiplier; Roblox rebirth games: keep part of the progress; both
--- automate the rebuild). A new life lands at REINC_LAND_SHARE of the deepest realm, fully built, and
--- Past Lives pays x2.5 per realm deeper: lives stay 10 to 40 min for ~2 weeks, ~1 h by life 30, ~4 h
--- by life 40, with no hard wall (tools/sim_game.py LAND_HALF; research 2026-10-22_full_game_sim)
-Config.PAST_LIVES_MULT = 2.5
-Config.REINC_LAND_SHARE = 0.5
-function Config.pastLivesMult(soulPeak)
-	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))
+-- Rebirth = Muscle Legends' rebirth, copied as it is (owner 2026-10-22: "copy the successful games,
+-- don't reinvent the wheel"; research docs/research/2026-10-22_rebirth_standard.md). The price is qi
+-- and rises by the same step every rebirth (theirs: 10k strength, +5k each); a rebirth resets qi,
+-- buildings and realm (back to realm 1, built: D56) and keeps every disciple (their pets); each
+-- rebirth adds REBIRTH_BONUS qi forever (theirs: +5%, adding up) and pays karma (their gems, +step
+-- each rebirth); rebirth counts open the deeper realms (their gyms). `rebirths` = lives - 1.
+-- Economy sim (tools/sim_game.py b18f691): the realm table binds, the qi price barely matters.
+Config.REBIRTH_PRICE = 100000
+Config.REBIRTH_PRICE_STEP = 50000
+Config.REBIRTH_BONUS = 0.5 -- Economy: +50% a rebirth (Muscle Legends' literal +5% made every life longer)
+Config.REBIRTH_KARMA = 2
+Config.REBIRTH_KARMA_STEP = 1
+-- realm -> rebirths needed to break through into it (realms not listed are always open)
+Config.REBIRTH_REALMS = { [3] = 1, [5] = 2, [7] = 4, [9] = 6, [11] = 9, [13] = 12, [15] = 16, [17] = 20 } -- Economy sim (first rebirth ~11 to 15 min)
+function Config.rebirthPrice(rebirths)
+	return Config.REBIRTH_PRICE + Config.REBIRTH_PRICE_STEP * (rebirths or 0)
 end
--- Karma: KARMA_GROWTH ^ (realms past the gate), 1 at the gate, ~25 eight realms deeper, so the whole
--- Karma Shop takes about two weeks of lives. Paid only for a NEW record depth (D37): with the gate at
--- realm 2 and Old Foundations a reset is minutes, so repeating it must pay nothing.
--- `built` = share of this realm's pads owned (0..1) so progress inside a realm counts too
+function Config.rebirthMult(rebirths)
+	return 1 + Config.REBIRTH_BONUS * (rebirths or 0)
+end
+function Config.rebirthKarma(rebirths)
+	return Config.REBIRTH_KARMA + Config.REBIRTH_KARMA_STEP * (rebirths or 0)
+end
+-- rebirths needed to enter `realm` (the highest table entry at or below it, so the gates stack)
+function Config.rebirthsFor(realm)
+	local need = 0
+	for r, n in Config.REBIRTH_REALMS do
+		if realm >= r and n > need then
+			need = n
+		end
+	end
+	return need
+end
 -- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
@@ -131,10 +142,6 @@ function Config.daoNode(key)
 	return nil
 end
 
-Config.KARMA_GROWTH = 1.5
-function Config.karmaFor(realm, built)
-	return math.floor(Config.KARMA_GROWTH ^ (realm - Config.REINC_REALM + (built or 0)))
-end
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 -- Owner direction (D25): the first realms are fast laps, then it gets hard; realm 10 is the long goal
 -- (reincarnation comes after it). Costs x5 per realm up to REALM_COST_LATE_FROM (realms 2 to 5 take

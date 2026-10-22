@@ -1,5 +1,5 @@
--- Reincarnation screen (docs/research/2026-10-21_reincarnation_design.md): the road to realm 10,
--- the NEXT step, and what a new life keeps and gains. Opened by the HUD's Rebirth button
+-- Rebirth screen (Muscle Legends' rebirth, docs/research/2026-10-22_rebirth_standard.md): the price in
+-- qi, the boost now and after, the karma it pays, one button. Opened by the HUD's Rebirth button
 -- (PlayerGui.ReincOpen, a BindableEvent). Same language as the Shop: no board, toy pieces over a
 -- dark veil. The server decides (R9): the button only asks; a second tap confirms.
 -- A second page, the Karma Shop (Config.DAO), spends karma on permanent nodes.
@@ -20,8 +20,6 @@ local Sfx = require(Shared:WaitForChild("Sfx"))
 local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local JADE = Color3.fromHex("59D39F")
-local GREY = Color3.fromHex("8C8296")
-local GO = Color3.fromHex("B06BFF")
 local CONFIRM = Color3.fromHex("FF8A5C")
 local LOCKED = Color3.fromHex("C9C2D3")
 local KARMA = Color3.fromHex("D9B8FF")
@@ -73,40 +71,26 @@ local function commas(n)
 	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
 end
 
--- x3, x27, x2.2K ...
-local function mult(m)
-	if m < 1000 then
-		return "x" .. commas(m)
-	end
-	local units, i = { "K", "M", "B", "T" }, 0
-	while m >= 1000 and i < #units do
-		m /= 1000
+-- 12.3K, 4.5M ... (the qi counter's style)
+local function compact(n)
+	local units, i = { "K", "M", "B", "T", "Qa", "Qn" }, 0
+	while n >= 1000 and i < #units do
+		n /= 1000
 		i += 1
 	end
-	return string.format("x%.1f%s", m, units[i])
+	if i == 0 then
+		return commas(n)
+	end
+	return string.format(n < 10 and "%.1f%s" or "%d%s", n, units[i])
+end
+
+-- x1.05, x1.5, x12 (a boost that adds 5% a rebirth needs its decimals)
+local function mult(m)
+	local t = string.format("%.2f", m):gsub("0+$", ""):gsub("%.$", "")
+	return "x" .. t
 end
 
 local close -- forward
-
--- one step of the road: a dot with the realm number
-local function dot(parent, order, realm, state)
-	local big = state == "now"
-	local size = big and px(30) or px(22)
-	local color = state == "done" and JADE or (big and GOLD or GREY)
-	local d = Toy.frame(parent, { Size = UDim2.fromOffset(size, size), BackgroundTransparency = 0, BackgroundColor3 = color, LayoutOrder = order })
-	Toy.corner(d, UDim.new(1, 0))
-	local st = Instance.new("UIStroke")
-	st.Color = Toy.INK
-	st.Thickness = px(3)
-	st.Parent = d
-	text(d, tostring(realm), big and px(15) or px(11), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	return d
-end
-
-local function link(parent, order, done)
-	local l = Toy.frame(parent, { Size = UDim2.fromOffset(px(10), px(5)), BackgroundTransparency = 0, BackgroundColor3 = done and JADE or Toy.INK, LayoutOrder = order })
-	return l
-end
 
 -- an amount of a currency: its icon, then the number (owner: every currency always shows its icon)
 local function amount(parent, key, size, color, props)
@@ -151,61 +135,35 @@ local function refresh()
 		refreshKarma()
 		return
 	end
+	local qi = player:GetAttribute("Qi") or 0
+	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
+	local ready = qi >= price
+	ui.title.Text = "Rebirth " .. ((player:GetAttribute("Rebirths") or 0) + 1)
+	ui.now.Text = mult(player:GetAttribute("RebirthMult") or 1)
+	ui.after.Text = mult(player:GetAttribute("NextRebirthMult") or 1)
+	ui.price.Text = compact(math.min(qi, price)) .. " / " .. compact(price)
+	ui.fill.Size = UDim2.fromScale(math.clamp(qi / math.max(price, 1), 0, 1), 1)
+	ui.fill.BackgroundColor3 = ready and JADE or GOLD
+	ui.gain.Text = "+" .. commas(player:GetAttribute("RebirthKarma") or 0)
+
+	-- the next realm waits for rebirths (Config.REBIRTH_REALMS): say which one this opens
+	local need = player:GetAttribute("RealmNeedsRebirths") or 0
+	local done = player:GetAttribute("Rebirths") or 0
 	local realm = player:GetAttribute("Realm") or 1
-	-- the realm a new life pays from: the gate, or one deeper than the best life so far (D37)
-	local gate = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
-	local built = player:GetAttribute("Built") or 0
-	local total = Config.requiredPads(realm) -- this realm's island (D48); paths and groves optional
-	local gain = (realm >= gate and player:GetAttribute("ReincKarma")) or Config.karmaFor(gate, 0)
-	local now = player:GetAttribute("PastLives") or 1
-	local nextMult = player:GetAttribute("NextPastLives") or now
-	local ready = realm >= gate
-
-	-- the road: realms 1..gate (a deeper realm shows as the gate dot plus "+N")
-	for _, c in ui.road:GetChildren() do
-		if c:IsA("Frame") then
-			c:Destroy()
-		end
-	end
-	local order = 0
-	for r = 1, gate do
-		if r > 1 then
-			order += 1
-			link(ui.road, order, r <= realm)
-		end
-		order += 1
-		local state = (r < realm or (r == gate and realm > gate)) and "done" or (r == realm and "now" or "todo")
-		dot(ui.road, order, r, state)
-	end
-	ui.deeper.Visible = realm > gate
-	ui.deeper.Text = "+" .. (realm - gate)
-
-	-- NEXT step: one short line (owner: "too much text")
-	if ready then
-		ui.next.Text = "NEXT: Reincarnate"
-	elseif built >= total then
-		ui.next.Text = "NEXT: Break through"
-	else
-		ui.next.Text = string.format("NEXT: Build %d more", total - built)
-	end
-
-	-- what a new life gives: two numbers
-	local shownNext = ready and nextMult or math.max(nextMult, Config.pastLivesMult(gate))
-	ui.g1row.Visible = shownNext > now
-	ui.g1.Text = mult(shownNext)
-	ui.g2.Text = "+" .. commas(gain)
+	ui.opens.Visible = need > done and need == done + 1
+	ui.opens.Text = "Opens " .. Config.realmName(realm + 1)
 
 	-- the button
 	local armed = os.clock() < armedUntil
 	if not ready then
 		ui.btn.BackgroundColor3 = LOCKED
-		ui.btnLabel.Text = string.format("Reach realm %d", gate)
+		ui.btnLabel.Text = "Rebirth!"
 	elseif armed then
 		ui.btn.BackgroundColor3 = CONFIRM
 		ui.btnLabel.Text = "Sure? Tap again"
 	else
-		ui.btn.BackgroundColor3 = GO
-		ui.btnLabel.Text = "Reincarnate"
+		ui.btn.BackgroundColor3 = JADE
+		ui.btnLabel.Text = "Rebirth!"
 	end
 end
 
@@ -231,13 +189,14 @@ local function head(body, title)
 			goTo("road")
 		end)
 	end
-	text(h, title, px(32), page == "karma" and KARMA or GOLD, { LayoutOrder = 1 })
+	local titleLabel = text(h, title, px(32), page == "karma" and KARMA or GOLD, { LayoutOrder = 1 })
 	local xHolder, xBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), Color3.fromHex("FF6B5E"), px(10))
 	xHolder.LayoutOrder = 2
 	text(xBtn, "X", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	xBtn.Activated:Connect(function()
 		close()
 	end)
+	return titleLabel
 end
 
 -- the Karma Shop page: one tile per node (icon, name, a short line, level pips, price)
@@ -323,31 +282,42 @@ build = function()
 		refresh()
 		return
 	end
-	head(body, "Reincarnation")
+	ui.title = head(body, "Rebirth")
 
-	local roadRow = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
-	Toy.list(roadRow, true, px(6))
-	ui.road = Toy.frame(roadRow, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
-	Toy.list(ui.road, true, 0)
-	ui.deeper = text(roadRow, "", px(18), GOLD, { LayoutOrder = 2 })
+	-- the boost: x now -> x after
+	local boost = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	Toy.list(boost, true, px(12))
+	ui.now = amount(boost, "qi", px(26), Color3.fromHex("C9FFE4"), { LayoutOrder = 1 })
+	text(boost, "->", px(24), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.after = text(boost, "", px(36), GOLD, { LayoutOrder = 3 })
 
-	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 5 })
-	ui.next = text(body, "", px(24), Color3.new(1, 1, 1), { LayoutOrder = 6 })
+	-- the price: a bar that fills with the qi you hold
+	local bar = Toy.frame(body, { Size = UDim2.fromOffset(px(300), px(30)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("3A2D40"), LayoutOrder = 5, ClipsDescendants = true })
+	Toy.corner(bar, UDim.new(1, 0))
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = px(3)
+	st.Parent = bar
+	ui.fill = Toy.frame(bar, { Size = UDim2.fromScale(0, 1), BackgroundTransparency = 0, BackgroundColor3 = GOLD })
+	Toy.corner(ui.fill, UDim.new(1, 0))
+	ui.price = amount(bar, "qi", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+
 	local gains = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 9, Rotation = 1.5 })
-	Toy.list(gains, true, px(26))
-	ui.g1, ui.g1row = amount(gains, "qi", px(24), GOLD, { LayoutOrder = 1 })
-	ui.g2 = amount(gains, "karma", px(24), KARMA, { LayoutOrder = 2 })
+	Toy.list(gains, true, px(22))
+	ui.gain = amount(gains, "karma", px(22), KARMA, { LayoutOrder = 1 })
+	ui.opens = text(gains, "", px(18), GOLD, { LayoutOrder = 2 })
 
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
-	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(46)), GO, px(14))
+	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(48)), JADE, px(14))
 	bHolder.LayoutOrder = 15
 	ui.btn = bBtn
 	if snap.reinc then
 		Toy.dot(bBtn, px(20))
 	end
-	ui.btnLabel = text(bBtn, "", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	ui.btnLabel = text(bBtn, "", px(22), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	bBtn.Activated:Connect(function()
-		if busy or (player:GetAttribute("Realm") or 1) < math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1) then
+		if busy or (player:GetAttribute("Qi") or 0) < (player:GetAttribute("RebirthPrice") or math.huge) then
+			Sfx.play("deny")
 			return
 		end
 		if os.clock() >= armedUntil then
@@ -405,7 +375,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local watched = { "Realm", "Built", "Karma", "Lives", "ReincKarma", "PastLives", "NextPastLives" }
+local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)
 end

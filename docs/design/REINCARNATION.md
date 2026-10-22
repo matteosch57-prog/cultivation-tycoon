@@ -1,24 +1,22 @@
-# Reincarnation
+# Rebirth (Reincarnation)
 
-A new life after realm 10 (D29). Numbers live in `Config.luau`; research and pacing in
-`docs/research/2026-10-21_reincarnation_design.md`.
+Muscle Legends' rebirth, copied as it is (D63, owner: "copy the successful games, don't reinvent the
+wheel"). Numbers live in `Config.luau` (`REBIRTH_*`); research `docs/research/2026-10-22_rebirth_standard.md`.
 
-## The reset
-- **Gate:** realm `REINC_REALM` or deeper in this life, checked in the one server function
-  `reincarnate` (`Main.server.luau`, remote `Reincarnate`). Lands at `REINC_LAND_SHARE` of the
-  deepest realm, fully built (D40, at least realm 1): always below the next paying depth.
-- **Resets:** qi, buildings, realm, pill and boost, the recruit price.
-- **Keeps:** every disciple (D44, owner: "let people accumulate them"; the sim shows no pace cost), `soulPeak` (deepest realm of any finished life), `karma`, `lives`, passes, `best`.
-
-## Past Lives (power)
-`Config.pastLivesMult(soulPeak)` = `PAST_LIVES_MULT` ^ (soulPeak - (`REINC_REALM` - 1)), on every qi
-source that goes through `rate` (live and offline). The gate is realm 2 (D37): the first new life
-comes ~10 min in and each later life runs a little longer than the last. It changes only when a life ends deeper than any before.
-
-## Karma (choices)
-`Config.karmaFor(realm, builtShare)` = `KARMA_GROWTH` ^ (realms past the gate + builtShare): 1 at the
-gate, ~25 eight realms deeper (x(1 + `DAO_ECHO` x Soul Echo level)). Paid only when the life ends
-deeper than every life before (D37): a reset at the same depth takes minutes, so it pays nothing.
+## The rebirth
+- **Price:** qi, `Config.rebirthPrice(rebirths)` = `REBIRTH_PRICE` + `REBIRTH_PRICE_STEP` x rebirths
+  (theirs: 10k strength, +5k each). Checked in the one server function `reincarnate`
+  (`Main.server.luau`, remote `Reincarnate`). Qi goes to 0, so a repeat needs the whole price again.
+- **Resets:** qi, buildings, realm (back to realm 1 with its pads built, D56), pill and boost, the
+  recruit price.
+- **Keeps:** every disciple (their pets, D44), `karma`, `lives`, passes, `best`. `soulPeak` is kept as
+  a record only.
+- **Boost:** `Config.rebirthMult(rebirths)` = 1 + `REBIRTH_BONUS` x rebirths (theirs: +5% each,
+  adding up; Economy set +50%) on every qi source that goes through `rate`, never in the price income. `rebirths` = `lives` - 1.
+- **Karma** (their gems): `Config.rebirthKarma(rebirths)` = `REBIRTH_KARMA` + `REBIRTH_KARMA_STEP` x
+  rebirths each rebirth (x Soul Echo), spent in the Karma Shop.
+- **Areas** (their gyms): `Config.REBIRTH_REALMS` names the rebirths a realm needs; the breakthrough
+  pad into it does not appear before that.
 
 ## Karma Shop (the Dao Tree, owner: "a karma shop")
 `Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
@@ -61,18 +59,23 @@ name in `Config.realmColor` and "Nth Life · grade" over every head from the Rea
 Studio: `DebugSet:Invoke(player, "lives", 3)` rebuilds with that life's look.
 
 ## Screen and HUD
-- HUD: a "Rebirth 3/10" chip beside the realm name above the progress bar; gold and wobbling from
-  realm 10 ("Rebirth!"). It opens `Reincarnation.client.luau`.
-- Screen (Shop language, no board, as little text as possible: owner "too much text"): the road of
-  realms 1 to 10 as dots (done jade, now gold), one NEXT line (build N more, break through, or
-  reincarnate), two numbers (the Past Lives multiplier a new life would give, the karma), and a
-  Reincarnate button that needs a second tap within 4 s.
-- Player attributes: `Lives`, `Karma`, `SoulPeak`, `PastLives`, `NextPastLives`, `ReincKarma`.
+- HUD: the Rebirth chip shows how much of the price you hold ("42%"), gold and wobbling at "Rebirth!".
+  It opens `Reincarnation.client.luau`.
+- Screen: "Rebirth N", the boost now -> after (x1.05 -> x1.1), a bar filling with your qi up to the
+  price, the karma it pays, "Opens <realm>" when this rebirth opens the next realm, and a Rebirth!
+  button that needs a second tap within 4 s. The Karma Shop button stays under it.
+- Player attributes: `Lives`, `Karma`, `Rebirths`, `RebirthPrice`, `RebirthMult`, `NextRebirthMult`,
+  `RebirthKarma`, `RealmNeedsRebirths`.
 
 ## Telemetry
 `Reincarnate` event: life that ended, realm reached, hours in that life.
 
 ## Checked
+- 2026-10-22 rebirth (D63): Studio Play with the branch scripts pushed over integration (mock save).
+  Fresh player: price 100K, x1 -> x1.5, +2 karma; at realm 2 fully built no breakthrough pad (realm 3
+  needs 1 rebirth). A call with too little qi refused; with 180K qi a rebirth gave life 2, realm 1 built
+  (14 pads), qi 0, +2 karma, x1.5; a second call refused. After it, realm 2 fully built shows the
+  breakthrough pad. HUD chip "74%". No script errors. Capture `docs/art/captures/rebirth_screen_play.jpg`.
 - 2026-10-22 skins (D53): Studio Play on integration, DebugSet realm 1 / 3, then realm 4 life 3: every building Timber / Jade / Void Amethyst, Main Hall lanterns and motes, title over the head; no script errors (captures `docs/art/captures/2026-10-22_skin_play_*.jpg`). Known: the Celestial Palace roof (Kit GOLD_TILE) stays gold below Imperial Gold; a few Kit paints (PAINT_GREEN / BLUE) are not remapped.
 Studio Play on integration (mock save), 2026-10-21: the chip reads "Rebirth 1/10", gold "Rebirth!" at
 realm 10; a reincarnation from realm 10 gave life 2, +10 karma, Past Lives x3 (rate x3), kept the

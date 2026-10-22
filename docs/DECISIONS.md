@@ -357,3 +357,14 @@ the log as a D-number.
   Store meshes rebuilt from ids, no inserted scripts). Each board has a global and a per-country
   OrderedDataStore (Ranks.luau, batched writes, reads every RANK_REFRESH s); Lives joins Realm in
   the player list. Why: rankings are the cheapest status push and give the skins (D53) an audience.
+- **D63** Rebirth = Muscle Legends' rebirth, copied as it is (owner 2026-10-22: "let's just do like
+  other games, don't reinvent the wheel"; "I asked you to copy the successful games"). Replaces D29,
+  D37, D40's gate, landing and Past Lives: a rebirth costs qi (a price that rises the same step each
+  rebirth), resets qi, buildings and realm (realm 1 built, D56), keeps every disciple, adds +5% qi per
+  rebirth and pays a growing karma amount; rebirth counts open the deeper realms. Why: the custom
+  record-depth rule made every life exactly one realm deeper and lives longer each time, the half
+  landing caused the free-repeat exploit, and Past Lives reached x372K by life 14
+  (`sim_game.py`); research of 11 Roblox games `docs/research/2026-10-22_rebirth_standard.md`.
+  Economy sim (`sim_game.py` b18f691): the realm table binds (first rebirth ~11 to 15 min), +50% a
+  rebirth instead of their literal +5% (+5% made every life longer: 46 to 99 min), the boost stays out
+  of the price income (the price floor and breakthrough scale with income, so it would do nothing there).

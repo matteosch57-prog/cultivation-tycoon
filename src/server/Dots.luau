@@ -77,9 +77,8 @@ function Dots.compute(s)
 	if #knew > 0 then
 		lit.karma = knew
 	end
-	-- a new life is open and this one's road was not opened yet
-	local target = math.max(Config.REINC_REALM, (d.soulPeak or 0) + 1)
-	if (d.realm or 1) >= target and seen.reinc ~= (d.lives or 1) then
+	-- a rebirth is affordable and this rebirth's screen was not opened yet
+	if (d.qi or 0) >= Config.rebirthPrice((d.lives or 1) - 1) and seen.reinc ~= (d.lives or 1) then
 		lit.reinc = true
 	end
 	-- the Sect Gift (group): unclaimed, at most once a day

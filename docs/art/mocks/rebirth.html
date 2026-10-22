@@ -1,0 +1,76 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Rebirth options mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Rebirth redesign (owner 2026-10-22: "just do like other games"), research
+     docs/research/2026-10-22_rebirth_standard.md. ?opt=A|B|C, phone 844x390. Numbers are placeholders:
+     the Economy sim sets them. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420;--sw:4px;--bw:3px;--br:14px;--sh:4px}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.6)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) var(--ink);paint-order:stroke fill;letter-spacing:.3px;line-height:1.05;white-space:nowrap}
+.toy{border:var(--bw) solid var(--ink);border-radius:var(--br);box-shadow:0 var(--sh) 0 var(--ink);position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.stick{position:absolute;left:4%;bottom:8%;width:84px;height:84px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:4%;bottom:8%;width:76px;height:76px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px}
+.row{display:flex;gap:10px;align-items:center;justify-content:center}
+.chip{display:flex;align-items:center;gap:4px}
+.dot{width:30px;height:30px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.line{width:12px;height:4px;background:var(--ink)}
+</style></head>
+<body><div class="scene"><div class="veil"></div><div class="stick"></div><div class="jump"></div><div id="ui"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+const svg=(s,b)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${b}</svg>`;
+const qi=s=>svg(s,`<path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/>`);
+const karma=s=>svg(s,`<circle cx="32" cy="32" r="24" fill="#b48cff" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="32" r="11" fill="#efe4ff" stroke="${INK}" stroke-width="4"/>`);
+const hall=s=>svg(s,`<rect x="14" y="30" width="36" height="24" rx="2" fill="#fff4dc" stroke="${INK}" stroke-width="4"/><path d="M6 32L32 12l26 20z" fill="#e65b4f" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><rect x="27" y="40" width="10" height="14" fill="#8a5a3c"/>`);
+const disc=s=>svg(s,`<rect x="12" y="44" width="40" height="12" rx="6" fill="#9ff5c8" stroke="${INK}" stroke-width="4"/><rect x="24" y="26" width="16" height="20" rx="7" fill="#5096ff" stroke="${INK}" stroke-width="4"/><circle cx="32" cy="18" r="9" fill="#f2cfae" stroke="${INK}" stroke-width="4"/>`);
+const check=s=>svg(s,`<circle cx="32" cy="32" r="26" fill="#47d16c" stroke="${INK}" stroke-width="5"/><path d="M19 33l9 9 17-19" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`);
+const lock=s=>svg(s,`<rect x="14" y="28" width="36" height="28" rx="6" fill="#c9c2d3" stroke="${INK}" stroke-width="5"/><path d="M22 28v-8a10 10 0 0 1 20 0v8" fill="none" stroke="${INK}" stroke-width="5"/>`);
+const islet=s=>svg(s,`<path d="M8 30h48l-10 12-8 14-6-8-8 6-6-12z" fill="#a08068" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><ellipse cx="32" cy="28" rx="25" ry="8" fill="#6fd06f" stroke="${INK}" stroke-width="4"/><path d="M30 26V12l10 5-10 5" fill="#ffd34d" stroke="${INK}" stroke-width="3"/>`);
+const hand=s=>svg(s,`<path d="M14 40c0-5 6-6 8-2l3 5V18a4 4 0 0 1 8 0v14-18a4 4 0 0 1 8 0v18-14a4 4 0 0 1 8 0v22c0 10-6 18-16 18h-4c-8 0-11-6-15-11z" fill="#ffd34d" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>`);
+const seal=s=>svg(s,`<circle cx="32" cy="32" r="25" fill="#b48cff" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="32" r="14" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="6 5"/><circle cx="32" cy="32" r="6" fill="#9ff5c8" stroke="${INK}" stroke-width="3"/>`);
+const aura=s=>svg(s,`<circle cx="32" cy="32" r="26" fill="#ffe36b" stroke="${INK}" stroke-width="4"/><circle cx="32" cy="32" r="17" fill="#fff8d0"/><circle cx="32" cy="28" r="7" fill="#f2cfae" stroke="${INK}" stroke-width="3"/><rect x="25" y="35" width="14" height="12" rx="5" fill="#5096ff" stroke="${INK}" stroke-width="3"/>`);
+const pagoda=s=>svg(s,`<rect x="22" y="40" width="20" height="16" fill="#9ff5c8" stroke="${INK}" stroke-width="3"/><path d="M8 42h48l-8-8H16z" fill="#2e9e74" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><rect x="24" y="24" width="16" height="10" fill="#9ff5c8" stroke="${INK}" stroke-width="3"/><path d="M12 26h40l-7-7H19z" fill="#2e9e74" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M20 12h24l-12-9z" fill="#2e9e74" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`);
+const T=(t,size,col='#fff',sw=4)=>`<span class="big" style="font-size:${size}px;--sw:${sw}px;color:${col}">${t}</span>`;
+const btn=(t,w,h,bg,size=22)=>`<div class="toy" style="width:${w}px;height:${h}px;background:${bg}">${T(t,size)}</div>`;
+const header=(t)=>`<div class="row" style="gap:12px">${T(t,32,'#ffe36b',6)}<div class="toy" style="width:34px;height:34px;--br:10px;background:#ff6b5e">${T('X',20)}</div></div>`;
+let h='';
+if(opt==='A'){
+ // Sim rebirth (Survive LAVA, Tank vs Train, Muscle Legends): a rising realm need, +x per rebirth, count gates unlocks
+ const ms=[[1,0],[2,0],[3,0],[4,1],[5,'islet'],[6,2],[7,2],[8,2],[9,2],[10,'aura']];
+ const road=ms.map(([n,k],i)=>{const done=n<4,now=n===4;const bg=done?'#59d39f':now?'#ffe36b':'#3a2d40';
+  const inner=typeof k==='string'?(k==='islet'?islet(34):aura(34)):T(n,14,done||now?'#fff':'#9a8fa6',3);
+  return (i?`<div class="line"></div>`:'')+`<div class="dot" style="background:${bg};${typeof k==='string'?'width:46px;height:46px':''}">${inner}</div>`}).join('');
+ h=`<div class="mid">${header('Rebirth 4')}
+ <div class="row" style="gap:14px">${qi(40)}${T('x2.5',30,'#c9ffe4')}${T('&#10140;',26)}${T('x3',40,'#ffe36b',6)}${T('Qi',26,'#ffe36b')}</div>
+ <div class="row" style="gap:18px"><div class="chip">${hall(30)}${T('Nascent Soul',18)}${check(26)}</div><div class="chip">${karma(26)}${T('+3',20,'#e6d4ff')}</div></div>
+ <div class="row" style="gap:0">${road}</div>
+ <div class="row" style="gap:12px">${btn('Rebirth!',200,52,'#47d16c',26)}<div class="toy" style="width:78px;height:40px;--br:12px;background:#c9c2d3;gap:4px;flex-direction:row">${lock(18)}${T('Auto',14)}</div></div>
+ <div class="row" style="gap:14px;opacity:.95"><div class="chip">${disc(22)}${T('kept',14,'#9ff5c8',3)}</div><div class="chip">${karma(20)}${T('kept',14,'#9ff5c8',3)}</div><div class="chip">${qi(20)}${hall(22)}${T('reset',14,'#ffb3a8',3)}</div></div></div>`;
+}else if(opt==='B'){
+ // Tycoon new life (Sell Lemons investors, Miner's Haven reborn items): finish the island, karma from all qi spent, a reborn building per life
+ h=`<div class="mid">${header('New Life')}
+ <div class="row" style="gap:10px"><div style="width:330px;height:30px;border-radius:15px;background:#47d16c;border:3px solid ${INK};display:flex;align-items:center;justify-content:center;gap:6px">${hall(20)}${T('55 / 55 built',16,'#fff',3)}</div>${check(30)}</div>
+ <div class="row" style="gap:26px;align-items:flex-end">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="chip">${karma(36)}${T('+128',34,'#e6d4ff',6)}</div>${T('+1% Qi each, forever',14,'#c9ffe4',3)}</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="toy" style="width:74px;height:74px;--br:18px;background:#c9ffe4">${pagoda(58)}</div>${T('Jade Pagoda',14,'#9ff5c8',3)}</div></div>
+ ${btn('Start a new life',260,52,'#a77bff',22)}
+ <div class="row" style="gap:14px"><div class="chip">${disc(22)}${T('kept',14,'#9ff5c8',3)}</div><div class="chip">${pagoda(22)}${T('kept',14,'#9ff5c8',3)}</div><div class="chip">${qi(20)}${hall(22)}${T('reset',14,'#ffb3a8',3)}</div></div></div>`;
+}else{
+ // Shrine milestones (Pet Simulator 99): a short named list, each rebirth a bundle: +qi and one new feature
+ const R=[['Hands',hand,1],['Islet',islet,1],['Auto',seal,1],['Seat',disc,0],['Aura',aura,-1],['Pagoda',pagoda,-1]];
+ const tiles=R.map(([n,ic,st],i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;transform:rotate(${[-2,1.5,-1,2,1,-1.5][i]}deg)"><div class="toy" style="width:${st===0?72:58}px;height:${st===0?72:58}px;--br:16px;background:${st>0?'#59d39f':st===0?'#ffe36b':'#3a2d40'};${st<0?'opacity:.75':''}">${st<0?lock(30):ic(st===0?52:40)}</div>${T((i+1)+' '+n,13,st===0?'#ffe36b':'#fff',3)}</div>`).join('');
+ h=`<div class="mid">${header('Rebirth Shrine')}
+ <div class="row" style="gap:14px;align-items:flex-end">${tiles}</div>
+ <div class="row" style="gap:18px"><div class="chip">${hall(28)}${T('Soul Transformation',17)}${check(24)}</div><div class="chip">${qi(28)}${T('+75%',22,'#ffe36b')}</div><div class="chip">${disc(26)}${T('+1 seat',18,'#c9ffe4')}</div></div>
+ ${btn('Rebirth!',210,52,'#47d16c',26)}</div>`;
+}
+document.getElementById('ui').innerHTML=h;
+</script></body></html>

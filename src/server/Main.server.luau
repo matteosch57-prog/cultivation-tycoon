@@ -471,13 +471,14 @@ local function maxDisciples(s)
 	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip) + dao(s.data, "seat")
 end
 
--- karma a reincarnation would pay now (Soul Echo included); only a life deeper than every one
--- before pays (D37: a reset at the same depth takes minutes, so it must not be a karma faucet)
-local function karmaGain(d, share)
-	if d.realm <= (d.soulPeak or 0) then
-		return 0
-	end
-	return math.floor(Config.karmaFor(math.max(d.realm, Config.REINC_REALM), share) * (1 + Config.DAO_ECHO * dao(d, "echo")))
+-- rebirths done so far (a save counts lives; life 1 = no rebirth yet)
+local function rebirths(d)
+	return (d.lives or 1) - 1
+end
+
+-- karma the next rebirth pays (Muscle Legends' gems: a step more each rebirth; Soul Echo included)
+local function karmaGain(d)
+	return math.floor(Config.rebirthKarma(rebirths(d)) * (1 + Config.DAO_ECHO * dao(d, "echo")))
 end
 
 local function discipleMult(s)
@@ -530,7 +531,7 @@ local function rate(s, away)
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
 	local pill = (not away and boosted(data)) and 2 or 1
 	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
-	local past = Config.pastLivesMult(data.soulPeak)
+	local past = Config.rebirthMult(rebirths(data))
 	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
 	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
@@ -552,18 +553,7 @@ local function priceRate(s)
 			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
 		end
 	end
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * Config.pastLivesMult(data.soulPeak) * Config.harmonyMult(data.owned)
-end
-
--- share of this realm's pads owned (0..1)
-local function builtShare(d)
-	local n = 0
-	for _, pad in Config.PADS do
-		if d.owned[pad.id] and Config.neededForBreakthrough(pad) and Config.padOpen(pad, d.realm) then
-			n += 1
-		end
-	end
-	return n / Config.requiredPads(d.realm)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * Config.harmonyMult(data.owned)
 end
 
 local function publish(player)
@@ -644,14 +634,17 @@ local function publish(player)
 		end
 	end
 	player:SetAttribute("Built", built)
-	-- reincarnation: what a new life would keep and gain (the screen previews it)
+	-- rebirth: the price, the boost now and after, the karma it pays (the screen previews it)
 	player:SetAttribute("Lives", d.lives or 1)
 	player:SetAttribute("Karma", d.karma or 0)
-	player:SetAttribute("SoulPeak", d.soulPeak or 0)
+	player:SetAttribute("Rebirths", rebirths(d))
+	player:SetAttribute("RebirthPrice", Config.rebirthPrice(rebirths(d)))
+	player:SetAttribute("RebirthMult", Config.rebirthMult(rebirths(d)))
+	player:SetAttribute("NextRebirthMult", Config.rebirthMult(rebirths(d) + 1))
+	player:SetAttribute("RebirthKarma", karmaGain(d))
+	-- the next realm waits for more rebirths (their gyms): the HUD and the screen say so
+	player:SetAttribute("RealmNeedsRebirths", Config.rebirthsFor(d.realm + 1))
 	Dots.publish(player, s) -- which red dots are lit (Dots.luau)
-	player:SetAttribute("PastLives", Config.pastLivesMult(d.soulPeak))
-	player:SetAttribute("NextPastLives", Config.pastLivesMult(math.max(d.soulPeak or 0, d.realm)))
-	player:SetAttribute("ReincKarma", karmaGain(d, d.realm >= Config.REINC_REALM and built / Config.requiredPads(d.realm) or 0))
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
 	end
@@ -1098,7 +1091,8 @@ refreshPads = function(player, s)
 			s.pads[key] = p
 		end
 	end
-	if all and not s.pads.breakthrough then
+	-- the next realm opens only with enough rebirths (Config.REBIRTH_REALMS, Muscle Legends' gyms)
+	if all and not s.pads.breakthrough and rebirths(s.data) >= Config.rebirthsFor(s.data.realm + 1) then
 		local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48
 		local nextName = Config.realmName(s.data.realm + 1)
 		local bt = { id = "breakthrough", x = 0, z = 14 }
@@ -1865,34 +1859,31 @@ inviteEv.OnServerEvent:Connect(function(player)
 	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
 end)
 
--- Reincarnation: the ONE function every caller goes through, so the gate lives here. A new life
--- lands at half the soul peak, never above it, so the record-depth gate below stops a free repeat.
+-- Rebirth (Muscle Legends' rebirth): the ONE function every caller goes through, so the price lives
+-- here. It costs qi, the price rises a step every rebirth, and qi goes to 0, so a repeat needs the
+-- whole price earned again.
 local function reincarnate(player, s)
 	local d = s.data
-	-- the same gate as the Reincarnation page: the gate realm AND a new record depth. A life lands at
-	-- half the soul peak, so from soulPeak 4 it lands ON realm 2: a realm-only gate let a fired remote
-	-- repeat it at once for free lives (Lives board, life skins, the Reborn badge, a server-wide toast).
-	if d.realm < math.max(Config.REINC_REALM, (d.soulPeak or 0) + 1) then
+	local price = Config.rebirthPrice(rebirths(d))
+	if (d.qi or 0) < price then
 		return nil
 	end
-	local gained = karmaGain(d, builtShare(d))
+	local gained = karmaGain(d)
 	local lifeSec = (d.playSec or 0) - (d.lifeStart or 0)
+	d.qi -= price
+	Telemetry.sink(player, d, price, "rebirth")
 	Telemetry.custom(player, "Reincarnate", Telemetry.lifeBucket(d.lives or 1), Telemetry.deepBucket(d.realm), Telemetry.hourBucket(lifeSec))
-	print(string.format("[Tycoon] %d reincarnated: life %d ended at realm %d, +%d karma", player.UserId, d.lives or 1, d.realm, gained))
+	print(string.format("[Tycoon] %d rebirth: life %d ended at realm %d, +%d karma", player.UserId, d.lives or 1, d.realm, gained))
 	d.karma = (d.karma or 0) + gained
-	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
+	d.soulPeak = math.max(d.soulPeak or 0, d.realm) -- kept for the record only (nothing reads it for power)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
 	Ranks.submit(player, d)
 	Ranks.touch()
-	-- D40: the new life lands at half the deepest realm, built (the climb back is the fast part).
-	-- Always below the next paying depth (soulPeak + 1) and karma pays only a new record (D37), so
-	-- a reset can never be repeated for profit.
-	d.realm = math.max(1, math.floor(d.soulPeak * Config.REINC_LAND_SHARE))
+	-- back to realm 1 with its pads built (D56: no 10-min rebuild of the first realm)
+	d.realm = 1
 	d.owned = {}
 	d.workers = {}
-	-- D56 (owner pick 2026-10-22): every new life starts with its landing realm built (it replaces
-	-- the Old Foundations node). Life 2 rebuilt the same 16 pads for ~10 min before any new land.
 	for _, pad in Config.PADS do
 		if Config.padOpen(pad, d.realm) then
 			d.owned[pad.id] = true
@@ -1903,14 +1894,14 @@ local function reincarnate(player, s)
 	d.pillTimer = 0
 	d.boostUntil = 0
 	d.realmRecruits = 0
-	-- every disciple follows into the new life (D44, owner: "let people accumulate them")
+	-- every disciple is kept (their pets, D44)
 	lightning(s)
 	rebuild(s)
 	refreshPads(player, s)
 	publish(player)
 	task.spawn(save, s, false, true)
 	notify:FireAllClients("reincarnate", player.DisplayName, d.lives)
-	return { karma = gained, lives = d.lives, pastLives = Config.pastLivesMult(d.soulPeak) }
+	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)) }
 end
 
 -- Karma Shop: buy the next level of one node (server checks the price and the cap, R9)
