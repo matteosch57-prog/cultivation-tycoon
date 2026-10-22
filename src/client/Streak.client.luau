@@ -12,6 +12,7 @@ local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -247,7 +248,7 @@ local function show()
 		local h = px(15) + px(pay.rarity and 64 or 40) + #linesOf(pay) * px(14) + px(22)
 		H = math.max(H, h)
 	end
-	local todayTile, todayCheck
+	local todayTile, todayCheck, todayScale, todayBreath
 	for i = 1, #Config.STREAK do
 		local done = i < day or (i == day and not player:GetAttribute("StreakReady"))
 		local now = i == day and not done
@@ -310,21 +311,25 @@ local function show()
 			})
 			Toy.corner(glow, UDim.new(0, px(18)))
 			tween(glow, 0.8, { BackgroundTransparency = 0.85, Size = UDim2.fromOffset(W + px(26), H + px(26)) }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-			local breathe = Instance.new("UIScale")
-			breathe.Parent = tile
-			tween(breathe, 0.8, { Scale = 1.05 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+			todayScale = Instance.new("UIScale")
+			todayScale.Parent = tile
+			todayBreath = tween(todayScale, 0.8, { Scale = 1.05 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 		end
 	end
 
-	local note = text(col, "Missed a day? Your streak waits for you.", px(15), Color3.fromHex("CBBFD6"), { LayoutOrder = 3 })
-	note.UIStroke.Thickness = px(2)
+	-- the reward line: empty until the claim (owner: the old "your streak waits" line read as filler)
+	local note = text(col, "", px(20), GOLD, { LayoutOrder = 3, Visible = false })
+	note.UIStroke.Thickness = px(3)
+	local noteScale = Instance.new("UIScale")
+	noteScale.Parent = note
 
 	local claimHolder, claimBtn = Toy.button(col, UDim2.fromOffset(px(230), px(58)), GOLD, px(16))
 	claimHolder.LayoutOrder = 4
-	claimBtn.ClipsDescendants = true
 	local claimText = text(claimBtn, "Claim", px(30), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	local sweep = frame(claimBtn, { Size = UDim2.new(0, px(24), 0.6, 0), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(-0.2, 0.5), BackgroundTransparency = 0.45, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 2 })
-	tween(sweep, 1.3, { Position = UDim2.fromScale(1.2, 0.5) }, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, false, 0.6)
+	-- the Claim breathes (no shine bar: owner, "there's a weird square")
+	local breathe = Instance.new("UIScale")
+	breathe.Parent = claimHolder
+	local breathing = tween(breathe, 0.75, { Scale = 1.05 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 	Sfx.play("buyChime")
 
 	local function close()
@@ -355,14 +360,33 @@ local function show()
 			return
 		end
 		claimed = true
-		Sfx.play("powerUp")
+		breathing:Cancel()
+		breathe.Scale = 1
+		-- the juice (owner: "make the claim action juicy"): the shared reward burst on the button
+		-- (Toy.reward, D61: squeeze, pop, gold motes, chime, buzz), today's tile punches up, flashes
+		-- white and turns jade, the tick pops in, then the reward line bounces up under the row
+		local hud = playerGui:FindFirstChild("Hud")
+		if Toy.reward then
+			Toy.reward(claimBtn, { flyTo = (res.qi or 0) > 0 and hud and hud:FindFirstChild("Counter", true) or nil })
+		else
+			Sfx.play("powerUp")
+		end
 		if todayTile then
-			tween(todayTile, 0.3, { BackgroundColor3 = JADE })
+			todayBreath:Cancel()
+			local punch = todayScale
+			local flash = frame(todayTile, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 4 })
+			Toy.corner(flash, UDim.new(0, px(12)))
+			tween(flash, 0.45, { BackgroundTransparency = 1 })
+			Debris:AddItem(flash, 0.5)
+			tween(punch, 0.12, { Scale = 1.28 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out).Completed:Connect(function()
+				tween(punch, 0.4, { Scale = 1 }, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out)
+			end)
+			tween(todayTile, 0.25, { BackgroundColor3 = JADE })
 			todayCheck.Visible = true
 			local s = Instance.new("UIScale")
 			s.Scale = 0.2
 			s.Parent = todayCheck
-			tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			tween(s, 0.35, { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, 0.15)
 		end
 		local parts = {}
 		if (res.qi or 0) > 0 then
@@ -375,7 +399,9 @@ local function show()
 			table.insert(parts, res.rarity .. " joins your sect!")
 		end
 		note.Text = table.concat(parts, "  ")
-		note.TextColor3 = GOLD
+		note.Visible = true
+		noteScale.Scale = 0.3
+		tween(noteScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, 0.2)
 		claimText.Text = "See you tomorrow!"
 		claimText.TextSize = px(22)
 		claimBtn.BackgroundColor3 = JADE
