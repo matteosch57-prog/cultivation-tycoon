@@ -5,6 +5,8 @@ and wobbles (and the red dot lights) the moment qi >= the rebirth price (Hud.cli
 Dots.luau). This sim plays the rebirth the way the HUD asks for it, adds the sources sim_game.py skips
 (Daily Blessing streak with its Immortal / Celestial days, the Shop free gift, Incense Blessing, the
 starter chest, Welcome Pouch, Robux disciples) and prices recruits with the x10 button.
+Since D66 the server opens a rebirth only when the next realm waits for one, so every policy now obeys
+that gate (default `gated`); `--pre-d66` replays the old qi-price-only rule.
 
     python tools/sim_check.py                          # the standard table
     python tools/sim_check.py --kind regular --policy eager --days 30 --trace
@@ -26,7 +28,7 @@ from sim_game import load, DEFAULT_CONFIG  # noqa: E402  (the Config.luau parser
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
           dict(summons=3), dict(qi=1800), dict(rarity="Celestial", again=3)]
-SLOT_PADS = ("quarters1", "quarters2")
+SLOT_PADS = ("quarters1", "quarters2")  # fallback when Config has no SLOT_PADS
 
 KINDS = {
     "casual": dict(session=20, per_day=1, walk=15, orb_every=120),
@@ -35,7 +37,11 @@ KINDS = {
 }
 
 
+PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
+
+
 def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10):
+    slot_seats = {p["id"]: int(p.get("seats", 1)) for p in C["PADS"]}  # a slot pad's seats (Config.maxDisciples)
     """policy: gated = rebirth only when the next realm's gate blocks (sim_game.py's rule);
     eager = rebirth `react` s after qi first holds the price (the gold wobbling chip);
     hybrid = eager until every REBIRTH_REALMS gate is open, then climb (the min-max route)."""
@@ -52,7 +58,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     gates = C.get("REBIRTH_REALMS", {})
 
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
-             boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=C.get("CHEST_STARTER_SUMMONS", 0),
+             boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[])
     src, sink = {}, {}
     log = dict(realms=[], lives=[], days=[])
@@ -75,7 +81,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return C["REALM_COST_MULT"] ** (min(r, lf) - 1) * C["REALM_COST_LATE"] ** max(0, r - lf)
 
     def seats():  # Config.maxDisciples + Disciple Seat
-        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(1 for i in SLOT_PADS if i in S["owned"])
+        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(slot_seats.get(i, 1) for i in C.get("SLOT_PADS", SLOT_PADS) if i in S["owned"])
 
     def dmult():
         return 1 + sum(sorted(S["disc"], reverse=True)[:seats()])
@@ -189,7 +195,6 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     S["owned"] = set()
     recalc()
     add("welcome gift", C["WELCOME_QI"])
-    add("starter chest", C.get("CHEST_STARTER_QI", 0))
     streak_day, streak_got = 0, set()
     gap = 24 * 3600 / K["per_day"] - K["session"] * 60
     eager_at = None
@@ -198,7 +203,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             if clock["play"]:
                 away = min(gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
                 add("offline", cache["away"] * away * C["OFFLINE_RATE"])
-                S["chest"] = max(S["chest"], min(S["chest"] + int(away // C["CHEST_SUMMON_EVERY"]), int(C["CHEST_SUMMON_MAX"])))
+                if "platform" in S["owned"]:  # the idle chest stands with the Meditation Platform
+                    S["chest"] = max(S["chest"], min(S["chest"] + int(away // C["CHEST_SUMMON_EVERY"]), int(C["CHEST_SUMMON_MAX"])))
             if sess == 0:  # the playtime gift ladder restarts each UTC day (D49)
                 gift_i, gift_play = 0, 0
             if sess == 0:  # Daily Blessing (claimed on the first join of the day), Shop free gift, a blessing
@@ -253,6 +259,10 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 # --- rebirth (the HUD chip): eager presses it once the price is held
                 built = all_built()
                 eager = policy == "eager" or (policy == "hybrid" and S["lives"] - 1 < gate(S["realm"] + 2))
+                # D66: the server opens a rebirth only when the next realm waits for one (Config.rebirthOpen),
+                # so a press is refused otherwise: eager / hybrid only model the pre-D66 build (--pre-d66)
+                if not PRE_D66 and not (built and S["lives"] - 1 < gate(S["realm"] + 1)):
+                    eager = False
                 if eager and S["qi"] >= rebirth_price():
                     eager_at = s if eager_at is None else eager_at
                     if s - eager_at >= react:
@@ -303,6 +313,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         walk_until = None
                         pay("buildings", tcost)
                         S["owned"].add(target["id"])
+                        if target["id"] == "platform" and not S.get("starter_chest"):  # the starter chest comes with it
+                            S["starter_chest"] = True
+                            add("starter chest", C.get("CHEST_STARTER_QI", 0))
+                            for _ in range(int(C.get("CHEST_STARTER_SUMMONS", 0))):
+                                seat(roll())
                         recalc()
         log["days"].append(dict(day=day + 1, realm=S["realm"], lives=S["lives"], mult=1 + C["REBIRTH_BONUS"] * (S["lives"] - 1),
                                 dmult=dmult(), stars=stars(), deepest=max([S["realm"]] + [x["realm"] for x in log["lives"]])))
@@ -322,7 +337,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--kind", default="regular")
-    ap.add_argument("--policy", default="eager")
+    ap.add_argument("--policy", default="gated")
+    ap.add_argument("--pre-d66", action="store_true", help="the build before D66 (a rebirth needed only the qi price)")
     ap.add_argument("--days", type=int, default=30)
     ap.add_argument("--buy", default="", help="comma list: x2,vip,auto,welcome,Primordial,...")
     ap.add_argument("--seeds", type=int, default=3)
@@ -335,6 +351,8 @@ def main():
         k, v = kv.split("=", 1)
         C[k] = eval(v)
     buy = tuple(x for x in a.buy.split(",") if x)
+    global PRE_D66
+    PRE_D66 = a.pre_d66
     runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
     log, src, sink = runs[0]
     print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))

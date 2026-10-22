@@ -77,9 +77,11 @@ def load(path):
             d = re.search(r'district = "(\w+)"', line)
             isl = re.search(r'islet = "(\w+)"', line)
             kd = re.search(r'kind = "(\w+)"', line)
+            st = re.search(r'seats = (\d+)', line)  # a slot pad's seats (Config.maxDisciples)
             pads.append(dict(id=m.group(1), cost=int(m.group(2)), income=int(m.group(3)), unlock=int(m.group(4)),
                              req=re.findall(r'"(\w+)"', m.group(5)), district=d.group(1) if d else None,
-                             islet=isl.group(1) if isl else None, kind=kd.group(1) if kd else None))
+                             islet=isl.group(1) if isl else None, kind=kd.group(1) if kd else None,
+                             seats=int(st.group(1)) if st else 1))
     # Sky Islets (D42): a pad on an islet needs that islet's bridge (Config.isletOf / isletOpen)
     islets = {}
     for line in block("ISLETS"):
@@ -170,6 +172,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     pads = {p["id"]: p for p in C["PADS"]}
     x2 = C["PASS_QI_MULT"] if "2x" in passes else 1
     vip = C["VIP_SLOTS"] if "vip" in passes else 0
+    pad_seats = {p["id"]: p.get("seats", 1) for p in C["PADS"]}  # a slot pad's seats (Config.maxDisciples)
     auto_orbs = "orbs" in passes
 
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disciples=[], realm_recruits=0, soul=0, karma=0,
@@ -205,7 +208,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         return m
 
     def max_disc():
-        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(1 for p in C["SLOT_PADS"] if p in S["owned"])
+        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(int(pad_seats.get(p, 1)) for p in C["SLOT_PADS"] if p in S["owned"])
 
     def dmult():
         return 1 + sum(sorted(S["disciples"], reverse=True)[:max_disc()])
@@ -370,11 +373,13 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
 
     if C["WELCOME_QI"]:
         src("welcome", C["WELCOME_QI"])
-    if C.get("CHEST_STARTER_QI"):  # the starter idle chest: qi + free summons on a new save
-        src("starter chest", C["CHEST_STARTER_QI"])
-        for _ in range(int(C.get("CHEST_STARTER_SUMMONS", 0))):
-            S["disciples"].append(roll())
-        S["disciples"].sort(reverse=True)
+    def starter_chest():  # the starter idle chest: qi + free summons, filled when the platform is built
+        if C.get("CHEST_STARTER_QI") and not S.get("starter_chest"):
+            S["starter_chest"] = True
+            src("starter chest", C["CHEST_STARTER_QI"])
+            for _ in range(int(C.get("CHEST_STARTER_SUMMONS", 0))):
+                S["disciples"].append(roll())
+            S["disciples"].sort(reverse=True)
     session_gap = 24 * 3600 / K["per_day"] - K["session"] * 60
     rar_bonus = {n: b for n, b in zip(C.get("RARITY_NAMES", []), [b for _, b in C["RARITIES"]])}
     streak_once = set()
@@ -402,7 +407,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
             if played:
                 away = min(session_gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
                 src("offline", base() * away * C.get("OFFLINE_RATE", 1))  # Main onJoin: x OFFLINE_RATE
-                if C.get("CHEST_SUMMON_EVERY"):  # idle chest: a free summon per CHEST_SUMMON_EVERY s away
+                if C.get("CHEST_SUMMON_EVERY") and "platform" in S["owned"]:  # idle chest (stands with the platform): a free summon per CHEST_SUMMON_EVERY s away
                     for _ in range(min(int(away // C["CHEST_SUMMON_EVERY"]), int(C.get("CHEST_SUMMON_MAX", 99)))):
                         S["disciples"].append(roll())
                         S["disciples"].sort(reverse=True)
@@ -548,6 +553,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         out["last_buy"] = played
                         sink("buildings", tcost)
                         S["owned"].add(target["id"])
+                        if target["id"] == "platform":
+                            starter_chest()
                         if len(choices) == 1:  # that was the realm's last building: how many recruits does a minute buy now?
                             budget, n, k = base() * 60, S["realm_recruits"], 0
                             while k < 500:

@@ -85,6 +85,49 @@ function Lowpoly.koi(): MeshPart?
 	return koi and koi:Clone()
 end
 
+-- Floating Lotus Isles (Config.SKY_MESH): free Creator Store meshes rebuilt by id, Box collision.
+local sky: { [string]: MeshPart } = {}
+task.spawn(function() -- off the require: four fetches must not hold up the server's boot
+	for name, id in Config.SKY_MESH or {} do
+		if name ~= "lanternTex" and name ~= "cloud" and id ~= "" then -- (the cloud draws as a SpecialMesh)
+			local ok, mp
+			for try = 1, 3 do -- a fetch can time out once (seen in Studio 2026-10-22): try again
+				ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
+					CollisionFidelity = Enum.CollisionFidelity.Box,
+					RenderFidelity = Enum.RenderFidelity.Automatic,
+				})
+				if ok and mp then
+					break
+				end
+				task.wait(try)
+			end
+			if ok and mp then
+				mp.Anchored = true
+				if name == "lantern" then
+					mp.TextureID = Config.SKY_MESH.lanternTex
+				end
+				sky[name] = mp
+			else
+				warn("[Tycoon][perf] event=sky_mesh_load_failed")
+				print("[Tycoon][perf] sky mesh", name, id, mp)
+			end
+		end
+	end
+end)
+-- a fresh MeshPart of sky mesh `name` (cloud, islet, ding, lantern), or nil while it is not loaded
+function Lowpoly.sky(name: string): MeshPart?
+	local t = sky[name]
+	return t and t:Clone()
+end
+-- waits (up to `timeout` s) for every sky mesh: the isles are built once, with their meshes
+function Lowpoly.skyReady(timeout: number?): boolean
+	local t0 = os.clock()
+	while (not sky.islet or not sky.lantern) and os.clock() - t0 < (timeout or 6) do
+		task.wait(0.1)
+	end
+	return sky.islet ~= nil
+end
+
 -- Studio test hook: preview the boulders before the upload (EditableMesh templates, art/preview/rocks.json).
 function Lowpoly.setRock(i: number, mp: MeshPart?)
 	rocks[i] = mp :: MeshPart
