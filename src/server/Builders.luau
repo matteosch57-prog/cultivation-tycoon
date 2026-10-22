@@ -228,8 +228,11 @@ function Builders.quarters2(ctx, pad)
 	Kit.hall(ctx.folder, facingCentre(ctx, pad.x, pad.z, -3), { bays = 3, bay = 5, depth = 1, colH = 6.5, plinth = 1.4, name = "GrandQuarters", plaque = pad.name })
 end
 
-function Builders.gate(ctx, pad)
-	Kit.gate(ctx.folder, ctx.frame * CFrame.new(0, 0, 46), 16, 12, ctx.sect or pad.name)
+-- The Sect Gate replaces the entrance archway on the same spot, grander (Main skips the archway
+-- once it stands and puts the owner's name board on this one's "Sign")
+function Builders.gate(ctx)
+	local sign = Kit.gate(ctx.folder, ctx.frame * CFrame.new(0, 0, Config.ISLAND_RADIUS - 1), 16, 19)
+	sign.Name = "Sign"
 end
 
 -- the pagoda is bought in two halves that stack exactly (same baseW / tier count)

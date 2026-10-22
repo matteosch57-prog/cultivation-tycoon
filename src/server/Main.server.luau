@@ -193,13 +193,40 @@ end
 
 local WATERFALL_ANGLE = 0.55 -- front-right rim, between the shop bridge and the east lobe (layout A keeps it clear of every lobe)
 
+-- the owner's name on an entrance sign (the archway's board, or the Sect Gate's once built)
+local function nameBoard(plot, sign)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Back -- the board's +Z side (Front faced the frame: the name never showed)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.Parent = sign
+	local label = Instance.new("TextLabel")
+	label.Name = "Owner"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.Fantasy
+	label.TextColor3 = Color3.fromRGB(255, 225, 150)
+	label.Text = plot.labelText or "Unclaimed Peak"
+	label.Parent = gui
+	if plot.vip then
+		-- VIP Sect pass: the owner's name in bright gold with a dark edge
+		label.TextColor3 = Color3.fromRGB(255, 205, 50)
+		local st = Instance.new("UIStroke")
+		st.Color = Color3.fromHex("3A2410")
+		st.Thickness = 3
+		st.Parent = label
+	end
+	return label
+end
+
 -- the land's state (expansion level + which islets are open): the grounds redraw when it changes
 local function landKey(owned)
 	local key = tostring(Config.expansionLevel(owned))
 	for _, name in Config.ISLET_ORDER do
 		key ..= Config.isletOpen(owned, name) and "1" or "0"
 	end
-	return key
+	return key .. (owned.gate and "g" or "") -- the Sect Gate replaces the entrance archway
 end
 
 -- The peak's ground (Sky Islets, owner pick B 2026-10-22): the home island and every district
@@ -249,34 +276,16 @@ local function buildGrounds(plot, owned)
 	-- and one from the peak rim to its shop island (Shop.buildIsland)
 	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
 	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
-	-- entrance archway carrying the owner's name
-	local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 13, 16) -- taller (owner 2026-10-21)
-	sign.Name = "Sign"
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Back -- the board's +Z side (Front faced the frame: the name never showed)
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.Parent = sign
-	local label = Instance.new("TextLabel")
-	label.Name = "Owner"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.Font = Enum.Font.Fantasy
-	label.TextColor3 = Color3.fromRGB(255, 225, 150)
-	label.Text = plot.labelText or "Unclaimed Peak"
-	label.Parent = gui
-	if plot.vip then
-		-- VIP Sect pass: the owner's name in bright gold with a dark edge
-		label.TextColor3 = Color3.fromRGB(255, 205, 50)
-		local st = Instance.new("UIStroke")
-		st.Color = Color3.fromHex("3A2410")
-		st.Thickness = 3
-		st.Parent = label
+	-- entrance archway carrying the owner's name, until the Sect Gate pad replaces it with the grand
+	-- gate on the same spot (owner 2026-10-22: "there's already a gate, when we build it it's twice
+	-- the same"; Builders.gate, attachName)
+	if not owned.gate then
+		local sign = Kit.gate(g, plot.frame * CFrame.new(0, 0, radius - 1), 13, 16) -- taller (owner 2026-10-21)
+		sign.Name = "Sign"
+		plot.label = nameBoard(plot, sign)
 	end
 	g.Parent = plot.folder
 	plot.grounds = g
-	plot.label = label
 	plot.radius = radius
 	plot.lookKey = nil -- the realm look follows the island's size
 	RealmLook.apply(plot)
@@ -583,6 +592,14 @@ end
 
 -- Build one pad's structure into its own Model (so clients can animate or preview it whole).
 -- The model is filled while unparented and parented once at the end (one replication).
+-- the Sect Gate carries the owner's name (it replaced the entrance archway): put the name board on it
+local function attachName(s, m)
+	local sign = m.Name == "gate" and m:FindFirstChild("Sign", true)
+	if sign then
+		s.plot.label = nameBoard(s.plot, sign)
+	end
+end
+
 local function buildModel(s, pad, attrs)
 	local m = Instance.new("Model")
 	m.Name = pad.id
@@ -825,6 +842,7 @@ local function rebuild(s)
 			local m = buildModel(s, pad)
 			m.Parent = s.plot.built
 			paintGround(m)
+			attachName(s, m)
 		end
 	end
 	buildDisciples(s)
@@ -906,6 +924,7 @@ refreshPads = function(player, s)
 					local m = buildModel(s, pad, { BuiltAt = workspace:GetServerTimeNow() })
 					m.Parent = s.plot.built
 					paintGround(m)
+					attachName(s, m)
 					-- never leave the buyer standing inside what they just built: step them out front
 					local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 					if hrp and m:FindFirstChildWhichIsA("BasePart", true) then -- (expansions build nothing)
