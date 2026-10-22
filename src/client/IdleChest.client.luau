@@ -1,7 +1,7 @@
 -- Idle chest return screen (D39, owner pick A, docs/art/mocks/idle_A_phone.jpg): "Welcome back!",
 -- the chest shakes and bursts open, the offline qi explodes out of it and flies into the qi
 -- counter, then one summon ball per free summon pops out; tap a ball to open it (the server rolls,
--- RecruitFx plays the rarity's column and sounds). Collect opens whatever is left, then closes.
+-- RecruitFx plays the rarity's column and sounds). Collect opens whatever is left in one call, then closes.
 -- The server sends Notify("idleChest", qi, secondsAway, summonsWaiting) a few seconds after a join.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -197,19 +197,49 @@ local function close()
 	end)
 end
 
--- tap a ball: the server rolls; the ball shakes, bursts in the rarity's colour, the disciple shows
-local function openBall(b)
-	if b.state ~= "closed" then
+-- one server call at a time (a tapped ball, or Collect): two calls racing each other used to drop
+-- the second one (the server's busy flag), and two reveals racing cut the first one off
+local inflight = false
+
+-- `count` summons rolled by the server: the results list, or nil when it failed. A nil from the
+-- server means busy (a Hud recruit in flight) or over its call budget: wait and try again.
+local function summon(count)
+	for _ = 1, 5 do
+		local ok, res = pcall(function()
+			return chestFn:InvokeServer(count)
+		end)
+		if ok and res and res.results then
+			return res.results
+		end
+		task.wait(0.5)
+	end
+	return nil
+end
+
+-- the reveal (Juice: the recruit sound and the column on the platform): ONE fire for everything a
+-- call rolled (a fire cancels the reveal before it), so every disciple shows (D60 look and star)
+local function reveal(results)
+	if #results == 0 then
 		return
 	end
-	b.state = "opening"
-	local ok, res = pcall(function()
-		return chestFn:InvokeServer()
-	end)
-	if not ok or not res then
-		b.state = "closed"
+	local fx = player:FindFirstChild("RecruitFx")
+	if not fx then
+		Sfx.play("recruit")
 		return
 	end
+	local best, kept = results[1], false
+	for _, r in results do
+		if Config.rarity(r.rarity).bonus > Config.rarity(best.rarity).bonus then
+			best = r
+		end
+		kept = kept or r.kept
+	end
+	fx:Fire(best.rarity, if #results > 1 then kept else best.kept, results)
+end
+
+-- the ball shakes, bursts in the rarity's colour, and becomes the disciple
+local function showBall(b, res)
+	b.state = "open"
 	local r = Config.rarity(res.rarity)
 	for i = 1, 6 do
 		b.holder.Rotation = (i % 2 == 0 and 1 or -1) * (14 - i * 2)
@@ -240,13 +270,26 @@ local function openBall(b)
 	local sc = b.holder:FindFirstChildOfClass("UIScale")
 	sc.Scale = 1.35
 	tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
-	local fx = player:FindFirstChild("RecruitFx") -- Juice: the recruit sound and the column on the platform
-	if fx then
-		fx:Fire(res.rarity, res.kept, { res }) -- the reveal shows its look and index star (D60)
-	else
-		Sfx.play("recruit")
+end
+
+-- tap a ball: the server rolls one, the ball opens, the reveal plays
+local function openBall(b)
+	if b.state ~= "closed" or inflight then
+		return
 	end
-	b.state = "open"
+	inflight = true
+	b.state = "opening"
+	local results = summon(1)
+	if not results then
+		b.state = "closed"
+	elseif #results == 0 then
+		b.state = "open" -- nothing left (opened elsewhere): the ball just goes
+		b.holder.Visible = false
+	else
+		showBall(b, results[1])
+		reveal(results)
+	end
+	inflight = false
 end
 
 local function build(away, summons, mode)
@@ -382,13 +425,30 @@ local function build(away, summons, mode)
 		end
 		busy = true
 		Toy.reward(btn, { sound = "land" })
-		for _, b in balls do -- whatever is still closed opens now, quickly
-			if b.state == "closed" then
-				openBall(b)
-				task.wait(0.25)
+		while inflight do -- a tapped ball still opening finishes first
+			task.wait()
+		end
+		-- every summon still waiting opens now in ONE call, also balls that have not popped out yet
+		-- (a fast Collect used to skip them) and any beyond the balls shown (gift summons): all of
+		-- them land, and one reveal shows all of them
+		local waiting = {}
+		for _, b in balls do
+			if b.state ~= "open" then
+				table.insert(waiting, b)
 			end
 		end
-		task.wait(#balls > 0 and 0.8 or 0)
+		local results = #waiting > 0 and summon(Config.CHEST_SUMMON_MAX * 10) or nil
+		if results and #results > 0 then
+			inflight = true
+			for i, b in waiting do
+				if results[i] then
+					task.spawn(showBall, b, results[i])
+				end
+			end
+			reveal(results)
+			inflight = false
+		end
+		task.wait(results and #results > 0 and 0.8 or 0)
 		close()
 		busy = false
 	end)
@@ -469,11 +529,13 @@ local function play(gain, away, summons, mode)
 	task.wait(0.9)
 	-- the summon balls pop out of the chest one by one
 	for _, b in balls do
-		b.state = "closed"
-		local sc = b.holder:FindFirstChildOfClass("UIScale")
-		tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
-		Sfx.play("padWake", { volume = 1.5 })
-		task.wait(0.22)
+		if b.state == "hidden" then -- (a fast Collect may have opened it already)
+			b.state = "closed"
+			local sc = b.holder:FindFirstChildOfClass("UIScale")
+			tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+			Sfx.play("padWake", { volume = 1.5 })
+			task.wait(0.22)
+		end
 	end
 end
 

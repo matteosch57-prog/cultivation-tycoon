@@ -26,7 +26,7 @@ from sim_game import load, DEFAULT_CONFIG  # noqa: E402  (the Config.luau parser
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
           dict(summons=3), dict(qi=1800), dict(rarity="Celestial", again=3)]
-SLOT_PADS = ("quarters1", "quarters2")
+SLOT_PADS = ("quarters1", "quarters2")  # fallback when Config has no SLOT_PADS
 
 KINDS = {
     "casual": dict(session=20, per_day=1, walk=15, orb_every=120),
@@ -36,6 +36,7 @@ KINDS = {
 
 
 def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10):
+    slot_seats = {p["id"]: int(p.get("seats", 1)) for p in C["PADS"]}  # a slot pad's seats (Config.maxDisciples)
     """policy: gated = rebirth only when the next realm's gate blocks (sim_game.py's rule);
     eager = rebirth `react` s after qi first holds the price (the gold wobbling chip);
     hybrid = eager until every REBIRTH_REALMS gate is open, then climb (the min-max route)."""
@@ -52,7 +53,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     gates = C.get("REBIRTH_REALMS", {})
 
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
-             boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=C.get("CHEST_STARTER_SUMMONS", 0),
+             boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[])
     src, sink = {}, {}
     log = dict(realms=[], lives=[], days=[])
@@ -75,7 +76,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return C["REALM_COST_MULT"] ** (min(r, lf) - 1) * C["REALM_COST_LATE"] ** max(0, r - lf)
 
     def seats():  # Config.maxDisciples + Disciple Seat
-        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(1 for i in SLOT_PADS if i in S["owned"])
+        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(slot_seats.get(i, 1) for i in C.get("SLOT_PADS", SLOT_PADS) if i in S["owned"])
 
     def dmult():
         return 1 + sum(sorted(S["disc"], reverse=True)[:seats()])
@@ -189,7 +190,6 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     S["owned"] = set()
     recalc()
     add("welcome gift", C["WELCOME_QI"])
-    add("starter chest", C.get("CHEST_STARTER_QI", 0))
     streak_day, streak_got = 0, set()
     gap = 24 * 3600 / K["per_day"] - K["session"] * 60
     eager_at = None
@@ -198,7 +198,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             if clock["play"]:
                 away = min(gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
                 add("offline", cache["away"] * away * C["OFFLINE_RATE"])
-                S["chest"] = max(S["chest"], min(S["chest"] + int(away // C["CHEST_SUMMON_EVERY"]), int(C["CHEST_SUMMON_MAX"])))
+                if "platform" in S["owned"]:  # the idle chest stands with the Meditation Platform
+                    S["chest"] = max(S["chest"], min(S["chest"] + int(away // C["CHEST_SUMMON_EVERY"]), int(C["CHEST_SUMMON_MAX"])))
             if sess == 0:  # the playtime gift ladder restarts each UTC day (D49)
                 gift_i, gift_play = 0, 0
             if sess == 0:  # Daily Blessing (claimed on the first join of the day), Shop free gift, a blessing
@@ -303,6 +304,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         walk_until = None
                         pay("buildings", tcost)
                         S["owned"].add(target["id"])
+                        if target["id"] == "platform" and not S.get("starter_chest"):  # the starter chest comes with it
+                            S["starter_chest"] = True
+                            add("starter chest", C.get("CHEST_STARTER_QI", 0))
+                            for _ in range(int(C.get("CHEST_STARTER_SUMMONS", 0))):
+                                seat(roll())
                         recalc()
         log["days"].append(dict(day=day + 1, realm=S["realm"], lives=S["lives"], mult=1 + C["REBIRTH_BONUS"] * (S["lives"] - 1),
                                 dmult=dmult(), stars=stars(), deepest=max([S["realm"]] + [x["realm"] for x in log["lives"]])))

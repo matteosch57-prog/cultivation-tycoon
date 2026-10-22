@@ -416,7 +416,15 @@ local function buildIdleChest(plot)
 	line("Idle Chest", 18, Color3.fromHex("FFE36B"), 0)
 	line(string.format("Fills while you're away (up to %d h)", Config.OFFLINE_CAP / 3600), 12, Color3.new(1, 1, 1), 22)
 	bb.Parent = m
-	m.Parent = plot.folder
+	plot.chest = m -- shown by showIdleChest once the owner's disciples can meditate
+end
+
+-- The idle chest stands only once the Meditation Platform does (owner 2026-10-22: the chest comes
+-- with the disciples who pray there; before it there is nobody to work while you are away)
+local function showIdleChest(plot, on)
+	if plot.chest then
+		plot.chest.Parent = if on then plot.folder else nil
+	end
 end
 
 local function buildPlots()
@@ -808,6 +816,21 @@ local function buildDisciples(s, newcomer)
 			m:Destroy()
 		end
 	end
+	-- the last seats are the Floating Lotus Isles' (4 each, lotus1..3 in order): slot > onPlatform sits
+	-- on isle ceil((slot - onPlatform) / 4)
+	local onPlatform = max
+	for i = 1, 3 do
+		if s.data.owned["lotus" .. i] then
+			onPlatform -= (Config.padById("lotus" .. i).seats or 4)
+		end
+	end
+	local function seatAt(slot, rarity, arrive, look)
+		if slot > onPlatform then
+			local n = slot - onPlatform - 1
+			return Builders.disciple(ctx, slot, rarity, arrive, look, n // 4 + 1, n % 4 + 1)
+		end
+		return Builders.disciple(ctx, slot, rarity, arrive, look)
+	end
 	-- the others take the free seats, strongest first; `newcomer` is a rarity|look key
 	local slot = 1
 	for i, name in s.data.disciples do
@@ -822,7 +845,7 @@ local function buildDisciples(s, newcomer)
 			if arrive then
 				newcomer = nil -- only one seat walks in, the first with that key
 			end
-			Builders.disciple(ctx, slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
+			seatAt(slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
 		end
 	end
 	if fresh then
@@ -995,6 +1018,7 @@ local function rebuild(s)
 	end
 	buildDisciples(s)
 	buildWorkers(s)
+	showIdleChest(s.plot, s.data.owned.platform == true)
 end
 
 refreshPads = function(player, s)
@@ -1022,8 +1046,9 @@ refreshPads = function(player, s)
 	if all then
 		wanted.breakthrough = true
 	end
-	-- the idle chest's green pad: while it holds something the player has not been shown yet
-	if ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
+	-- the idle chest's green pad: while it holds something the player has not been shown yet (and
+	-- only once the chest stands, with the Meditation Platform)
+	if s.data.owned.platform and ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
 		wanted.chest = true
 	end
 	-- a hire pad beside every owned building that takes workers, until it has WORKER_MAX
@@ -1075,8 +1100,21 @@ refreshPads = function(player, s)
 					attachName(s, m)
 					-- the buyer is never moved (owner 2026-10-22): pieces that land on them let them
 					-- through on their client until they step out (Build.client passThrough, BuyerId)
+					if pad.id:match("^lotus%d$") then
+						buildDisciples(s) -- benched disciples take the isle's new seats
+					end
 					if pad.id == "platform" then
 						buildDisciples(s)
+						showIdleChest(s.plot, true)
+						-- the starter chest comes with it: full, opened from its green pad (a new save
+						-- only: a save from before the tips, or one that had it, knows the chest)
+						if not s.data.chestStarter and not (s.data.tips and s.data.tips.chest) then
+							s.data.chestStarter = true
+							s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI
+							s.data.chestSummons = math.max(s.data.chestSummons or 0, Config.CHEST_STARTER_SUMMONS)
+							player:SetAttribute("ChestSummons", s.data.chestSummons)
+							s.chestShown = false
+						end
 					end
 					refreshPads(player, s)
 					publish(player)
@@ -1433,14 +1471,9 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = data.welcomed and { orb = true, pill = true, chest = true } or {}
 	end
-	-- the starter idle chest: a new save finds it full, opened from its green pad (not a popup)
-	local starterChest = false
-	if data.welcomed == false and not data.chestStarter then
-		data.chestStarter = true
-		data.chestQi = Config.CHEST_STARTER_QI
-		data.chestSummons = math.max(data.chestSummons or 0, Config.CHEST_STARTER_SUMMONS)
-		starterChest = true
-	end
+	-- the starter idle chest is filled when the Meditation Platform is built (its buy, refreshPads):
+	-- the chest stands only from then
+	local hasChest = data.owned.platform == true
 
 	-- offline qi
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
@@ -1450,16 +1483,18 @@ local function onJoin(player)
 		data.qi += offlineGain
 		Telemetry.source(player, data, offlineGain, "offline", true)
 	end
-	-- idle chest: a free summon per CHEST_SUMMON_EVERY s away; unopened ones wait (capped)
-	local newSummons = math.floor(away / Config.CHEST_SUMMON_EVERY)
+	-- idle chest: a free summon per CHEST_SUMMON_EVERY s away; unopened ones wait (capped). No chest
+	-- yet (no Meditation Platform): no summons fill it
+	local newSummons = if hasChest then math.floor(away / Config.CHEST_SUMMON_EVERY) else 0
 	data.chestSummons = math.min((data.chestSummons or 0) + newSummons, Config.CHEST_SUMMON_MAX)
 	player:SetAttribute("ChestSummons", data.chestSummons)
 	if away > 60 then
 		Telemetry.custom(player, "IdleChest", Telemetry.hourBucket(away), tostring(data.chestSummons), Telemetry.realmBucket(data.realm))
 	end
 	-- a returning player sees the return screen (before the pads are drawn: no chest pad then);
-	-- starter qi still waiting in the chest is paid with it
-	local showChest = not starterChest and (offlineGain > 0 or data.chestSummons > 0 or (data.chestQi or 0) > 0)
+	-- starter qi still waiting in the chest is paid with it. Without the chest the offline qi is
+	-- still paid, just with no screen
+	local showChest = hasChest and (offlineGain > 0 or data.chestSummons > 0 or (data.chestQi or 0) > 0)
 	if showChest then
 		s.chestShown = true
 		if (data.chestQi or 0) > 0 then
@@ -1550,6 +1585,7 @@ local function onLeave(player)
 	save(s, true)
 	s.plot.built:ClearAllChildren()
 	Shop.clearPeak(s.plot)
+	showIdleChest(s.plot, false)
 	s.plot.owner = nil
 	s.plot.vip = nil
 	setPlotLabel(s.plot, "Unclaimed Peak")
@@ -1669,27 +1705,49 @@ local function clearsBusy(what, fn)
 	end
 end
 
--- one free summon from the idle chest: the same roll and seating as a recruit, no qi
-chestFn.OnServerInvoke = clearsBusy("chest summon", function(player)
+-- free summons from the idle chest: the same roll and seating as a recruit, no qi. `count` of them
+-- at once (1 when missing, at most CHEST_BATCH): a tapped ball opens one, Collect opens all that are
+-- left in ONE call, so a fast Collect can never outrun the Guard budget or the busy flag and drop
+-- some (owner 2026-10-22: "claiming fast gives no disciples"). nil = busy or over budget (the
+-- client retries); an empty `results` = nothing left.
+local CHEST_BATCH = 50
+chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	if not Guard.allow(player, "ChestSummon") then
 		return nil -- over its call budget (Guard)
 	end
 	local s = sessions[player]
-	if not s or s.recruiting or (s.data.chestSummons or 0) <= 0 then
+	if not s or s.recruiting then
 		return nil
 	end
+	local want = math.min(if type(count) == "number" and count == count then math.floor(count) else 1, CHEST_BATCH, s.data.chestSummons or 0)
+	if want <= 0 then
+		return { results = {}, left = s.data.chestSummons or 0 }
+	end
 	s.recruiting = true
-	s.data.chestSummons -= 1
+	s.data.chestSummons -= want
 	player:SetAttribute("ChestSummons", s.data.chestSummons)
-	local r = roll()
-	local kept, look, stars, newStar = addDisciple(s, r.name)
-	-- a rolled rarity keeps its "first pulled" mark, as with a recruit
 	s.data.pulled = s.data.pulled or {}
-	s.data.pulled[r.name] = true
+	local results, rolled, bestKey, bestBonus = {}, {}, nil, -1
+	for _ = 1, want do
+		local r = roll()
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
+		-- a rolled rarity keeps its "first pulled" mark, as with a recruit
+		s.data.pulled[r.name] = true
+		if kept and r.bonus > bestBonus then
+			bestKey, bestBonus = Config.indexKey(r.name, look), r.bonus
+		end
+		local key = r.name .. "|" .. (kept and "kept" or "benched")
+		rolled[key] = (rolled[key] or 0) + 1
+	end
+	for key, n in rolled do
+		local rarity, fate = string.match(key, "^(.-)|(%a+)$")
+		Telemetry.customValue(player, "Recruit", n, rarity, Telemetry.realmBucket(s.data.realm), fate)
+	end
+	buildDisciples(s, bestKey) -- once: the best newcomer walks to its seat
 	publish(player)
-	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
 	s.recruiting = false
-	return { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, left = s.data.chestSummons }
+	return { results = results, left = s.data.chestSummons }
 end)
 
 -- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
