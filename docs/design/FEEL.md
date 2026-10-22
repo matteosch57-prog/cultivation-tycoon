@@ -3,6 +3,15 @@
 The juice layer (D16). Reference: research on top Roblox clicker/tycoon games (2026-10-21): constant
 small rewards, rewards fly to the counter, the most frequent sound is the quietest.
 
+## Launch (src/first/Launch.client.luau, D42)
+- From the first frame: jade veil, title, a qi drop that fills with the real progress (game loaded,
+  HUD drawn, server `PeakReady`, avatar on the peak; a slow creep while one is pending; offered
+  anyway after 30 s). Full: rays, the drop swells, "TAP TO ENTER" (tap, click, Space, Enter, A).
+- The tap fades the veil while the camera dives from 150 studs above onto the follow view (1.6 s),
+  then the local attribute `LaunchDone` opens the Heavenly Gift (Intro) or the return screen.
+- Server: `Players.CharacterAutoLoads = false`; onJoin calls `LoadCharacter` once the peak is built
+  (`watchDeath` respawns after `RespawnTime`), so the avatar never stands on the hub first.
+
 ## Buying (src/client/Build.client.luau)
 - Pads are concept C "Formation" (D27, playable mock `docs/art/mocks/pads_formation_mock.html`). The
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every

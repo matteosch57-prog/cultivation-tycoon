@@ -204,3 +204,9 @@ the log as a D-number.
   Qi boost", "after a big building after 5-10 minutes"): 5 Robux once, an Elder + 10% Qi forever,
   offered once by a card after a big building between 5 and 10 min of play (MONETIZATION "Welcome
   Pouch"); cheap repeatable qi left out (research `2026-10-22_cheap_buys.md`).
+- **D42** Launch = mock A with C's camera dive (owner: "Go A, but the C idea of movement is great
+  too"; mocks `docs/art/mocks/loading_*.jpg`, research `docs/research/2026-10-22_launch_flow.md`): a
+  ReplicatedFirst screen where the qi drop fills with the real progress, TAP TO ENTER, a camera dive
+  onto your peak, then the Heavenly Gift as the reward. The first avatar is made on the peak once it
+  is built (`CharacterAutoLoads` off), so no hub stop and no teleport. The group card's Join step
+  now opens Roblox's own join prompt (replaces D35's "find the group on the game page").

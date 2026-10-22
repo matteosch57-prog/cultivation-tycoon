@@ -509,6 +509,9 @@ end)
 
 remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, gain, away, summons, mode)
 	if kind == "idleChest" and not gui.Enabled then
+		while not player:GetAttribute("LaunchDone") do -- after the launch screen's tap (src/first/Launch)
+			player:GetAttributeChangedSignal("LaunchDone"):Wait()
+		end
 		task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX), mode)
 	end
 end)
