@@ -46,7 +46,7 @@ interesting because you get a bigger, more beautiful island slowly".
 ## How it is built
 A recolour pass after each build (`src/server/Skin.luau`): each part is matched to its nearest
 `Style.PAL` colour and moved by the same offset, so the shading the builders baked in survives;
-Neon is left alone. One switch, `Config.SKIN_MODE`, picks A, B or C. The title is drawn by each
+Neon is left alone. The title is drawn by each
 client from the Realm and Lives attributes the server already sets (nothing new on the wire).
 
 ## Outcome
