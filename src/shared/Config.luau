@@ -11,6 +11,12 @@ Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
 -- offline qi pays this share of the rate (owner 2026-10-22, "idle should pay half"): an hour played
 -- is worth twice an hour away (research 2026-10-22_full_game_sim: offline was 81% of late qi)
 Config.OFFLINE_RATE = 0.5
+-- Idle chest (D39, owner pick A): the offline qi plus one free summon per CHEST_SUMMON_EVERY s away
+-- (at most CHEST_SUMMON_MAX waiting), opened on the return screen. Free summons don't move the pace
+-- (tools/sim_game.py CHEST_SUMMON_EVERY): they are the fun of coming back.
+Config.CHEST_SUMMON_EVERY = 3600
+Config.CHEST_SUMMON_MAX = 4
+Config.IDLE_CHEST_AT = Vector3.new(10, 0, 44) -- on the peak (frame space): beside the avenue, past the gate
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
 Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)

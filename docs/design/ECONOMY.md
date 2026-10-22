@@ -54,6 +54,15 @@ starts, then every `TIDE_INTERVAL` s; a toast warns `TIDE_WARN` s before. Worksp
 and `TideUntil` (server time) carry the schedule. Offline qi ignores it. Why: a shared moment worth
 staying for (research 2026-10-21_tycoon_study, Grow a Garden weather).
 
+## Idle chest (D39)
+While away, income runs at `OFFLINE_RATE` of the rate (up to `OFFLINE_CAP` s) and the idle chest on the
+peak (`IDLE_CHEST_AT`) collects one free summon per `CHEST_SUMMON_EVERY` s away, at most
+`CHEST_SUMMON_MAX` waiting (`data.chestSummons`). On return the server sends `Notify("idleChest", qi,
+away, summons)`; `IdleChest.client` plays screen A (the chest bursts, the qi flies into the counter,
+summon balls pop out; a tap opens one through `ChestSummon`, the same roll and seating as a recruit,
+no qi). Collect opens any left. Event `IdleChest` (hours away, summons waiting, realm). Free summons
+don't move the pace (tools/sim_game.py).
+
 ## Playtime gifts
 After `GIFT_TIMES[i]` seconds of play in one session a gift button on the HUD's left column can be
 claimed (server `ClaimGift`) for `GIFT_VALUE[i]` seconds of income, counted without tide or pill. The

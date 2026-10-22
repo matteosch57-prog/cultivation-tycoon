@@ -27,6 +27,10 @@ Telemetry.EVENTS = {
 		fields = { "buildings owned this realm (builtBucket)", "session minutes (minuteBucket)", "first | return" },
 		question = "Where do players stop, and does a first session end earlier than a return visit?",
 	},
+	IdleChest = {
+		fields = { "hours away (hourBucket)", "free summons waiting", "realm (realmBucket)" },
+		question = "How long do players stay away, and do they come back to open the idle chest?",
+	},
 	Recruit = {
 		fields = { "rarity name", "realm (realmBucket)", "kept | benched" },
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
