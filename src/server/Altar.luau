@@ -268,17 +268,17 @@ local function giveCrown(player)
 	pe.Name = "Sparkles"
 	pe.Texture = TEX .. "sparkles_main.dds"
 	pe.Color = ColorSequence.new(AURA_PALE)
-	pe.LightEmission = 0.6
+	pe.LightEmission = 1
 	pe.LightInfluence = 0
-	pe.Brightness = 2.5
+	pe.Brightness = 3
 	pe.SpreadAngle = Vector2.new(180, 180)
-	pe.Speed = NumberRange.new(3, 5)
-	pe.Drag = 6
-	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.45), NumberSequenceKeypoint.new(1, 0) })
+	pe.Speed = NumberRange.new(5, 7) -- out past the body (they start inside it), then drag stops them
+	pe.Drag = 2.5
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.35, 0.9), NumberSequenceKeypoint.new(1, 0) })
 	pe.Transparency = NumberSequence.new(0.05)
 	pe.Lifetime = NumberRange.new(0.9, 1.3)
 	pe.Rotation = NumberRange.new(0, 360)
-	pe.Rate = 5
+	pe.Rate = 6
 	pe.Parent = att
 	-- the attachment sits on the root, outside the folder: destroying the folder clears it too
 	m.Destroying:Connect(function()

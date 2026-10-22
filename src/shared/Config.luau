@@ -671,7 +671,8 @@ Config.ICON_ATLAS = {
 	image = "rbxassetid://83850133060052",
 	cell = 128,
 	keys = {
-		qi = 0, karma = 1, shop = 3, pill = 5, -- 4 (disciple): Toy draws the disciple atlas figure gift = 6, tide = 7,
+		-- cell 4 (disciple) is unused: Toy draws the disciple atlas figure
+		qi = 0, karma = 1, shop = 3, pill = 5, gift = 6, tide = 7,
 		hall = 8, goal = 9, x2 = 10, auto = 11, vip = 12, hands = 13, rebirth = 14, like = 15,
 		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
 		sworn = 24, seat = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29,
