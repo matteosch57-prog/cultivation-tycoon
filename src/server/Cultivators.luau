@@ -349,11 +349,25 @@ local function attach(core, f, offset, name)
 end
 
 -- Free Creator Store meshes (inserted once 2026-10-21, no scripts in them; R12), drawn through
--- SpecialMesh so nothing is uploaded: a slim jian (121743230), a magic circle (115275786272862) and a
--- stylized lotus (14340580562). Scale = studs wanted / the mesh's native size.
-local SWORD = { mesh = "rbxassetid://108120294", scale = Vector3.new(2.2, 1.75, 2.8), size = Vector3.new(0.4, 4.6, 1) }
+-- SpecialMesh so nothing is uploaded: a magic circle (115275786272862) and a stylized lotus
+-- (14340580562). Scale = studs wanted / the mesh's native size.
 local CIRCLE = { mesh = "rbxassetid://131419958270785", native = 3.97 }
 local LOTUS = { mesh = "rbxassetid://14340526628", tex = "rbxassetid://14340559072", native = Vector3.new(22.23, 28.65, 22.23) }
+
+-- The spirit sword (owner pick D, 2026-10-22: real steel, black and gold hilt, "an aura around it as
+-- for the characters, and light orbs"): a free Creator Store jian (11269915624, no scripts; R12) drawn
+-- piece by piece through SpecialMesh with its own colour maps, so nothing is uploaded. Pieces in the
+-- sword's frame: tip along +X, `pos` / `size` in studs at scale 1, every piece turned (pi, 0, pi/2).
+-- The steel stays steel: the rarity shows as a rim glow (Highlight) and orbs of light along the blade.
+local JIAN = {
+	{ mesh = 10956379807, tex = 10956397068, pos = Vector3.new(-2.1933, 0, 0), size = Vector3.new(0.3277, 1.1534, 0.2003), native = Vector3.new(2.9453, 10.3657, 1.8003) },
+	{ mesh = 10956379653, tex = 10956397925, pos = Vector3.new(-2.1361, 0, 0), size = Vector3.new(0.3022, 1.2911, 0.1848), native = Vector3.new(2.7163, 11.6033, 1.6604) },
+	{ mesh = 10956379960, tex = 10956521963, pos = Vector3.new(-1.4156, 0.0043, 0), size = Vector3.new(0.3997, 0.2257, 0.1245), native = Vector3.new(3.5918, 2.0289, 1.1193) },
+	{ mesh = 10956379463, tex = 10956395160, pos = Vector3.new(-1.4274, 0.0035, 0), size = Vector3.new(0.3306, 0.1380, 0.1142), native = Vector3.new(2.9708, 1.2403, 1.0261) },
+	{ mesh = 10956379290, tex = 10956398849, pos = Vector3.new(0.5989, -0.0006, 0.0018), size = Vector3.new(0.2460, 3.8839, 0.0492), native = Vector3.new(2.2110, 34.9053, 0.4419), blade = true },
+}
+local JIAN_MID = -0.12 -- the sword's middle along X (pommel -2.8 .. tip 2.55)
+local JIAN_TURN = CFrame.Angles(math.pi, 0, math.pi / 2)
 
 local function meshPart(m, name, size, cf, color, meshId, texId, scale)
 	local p = P(m, size, cf, color, texId and Enum.Material.SmoothPlastic or Enum.Material.Neon)
@@ -365,6 +379,49 @@ local function meshPart(m, name, size, cf, color, meshId, texId, scale)
 	sm.Scale = scale
 	sm.Parent = p
 	return p
+end
+
+-- One jian as a Model `name`: `cf` is its middle, tip along +Y; `k` scales it (1 = 5.35 studs).
+local function jian(m, name, cf, color, k)
+	local g = Instance.new("Model")
+	g.Name = name
+	local frame = cf * CFrame.Angles(0, 0, math.pi / 2) * CFrame.new(-JIAN_MID * k, 0, 0) -- +X (tip) to +Y
+	for _, piece in JIAN do
+		local size = piece.size * k
+		local part = P(g, Vector3.new(math.max(size.X, 0.05), math.max(size.Y, 0.05), math.max(size.Z, 0.05)), frame * CFrame.new(piece.pos * k) * JIAN_TURN, WHITE)
+		local sm = Instance.new("SpecialMesh")
+		sm.MeshType = Enum.MeshType.FileMesh
+		sm.MeshId = "rbxassetid://" .. piece.mesh
+		sm.TextureId = "rbxassetid://" .. piece.tex
+		sm.Scale = size / piece.native
+		sm.Parent = part
+		if piece.blade then
+			-- light orbs drifting off the blade, in the rarity colour
+			part.Name = "Blade"
+			emitter(part, "BladeOrbs", {
+				Texture = GLOW,
+				Color = seq(color),
+				LightEmission = 1,
+				Brightness = 3,
+				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.3 * k), NumberSequenceKeypoint.new(1, 0) }),
+				Lifetime = NumberRange.new(0.8, 1.4),
+				Speed = NumberRange.new(0.2, 0.5),
+				SpreadAngle = Vector2.new(180, 180),
+				Rate = 5,
+			})
+		end
+	end
+	-- the aura: a rim glow in the rarity colour around the steel (as on the disciples)
+	local h = Instance.new("Highlight")
+	h.Name = "Aura"
+	h.FillColor = vivid(color)
+	h.FillTransparency = 0.82
+	h.OutlineColor = vivid(color):Lerp(WHITE, 0.3)
+	h.OutlineTransparency = 0
+	h.DepthMode = Enum.HighlightDepthMode.Occluded
+	h.Parent = g
+	g.Parent = m
+	return g
 end
 
 -- a glowing magic circle of diameter d, lying flat (or standing, rotated by the caller)
@@ -453,8 +510,9 @@ local function aura(m, f, color, tier, flying)
 		local spread = math.rad(n >= 7 and 65 or (n >= 5 and 55 or 40))
 		for i = 1, n do
 			local ang = -spread + 2 * spread * (i - 1) / (n - 1)
-			local cf = f * CFrame.new(0, 3.3, 1.7) * CFrame.Angles(0, 0, ang) * CFrame.new(0, 0.6 + SWORD.size.Y / 2, 0)
-			meshPart(m, "Sword", SWORD.size, cf, vivid(color), SWORD.mesh, nil, SWORD.scale)
+			local k = 0.86
+			local cf = f * CFrame.new(0, 3.3, 1.7) * CFrame.Angles(0, 0, ang) * CFrame.new(0, 0.6 + 2.68 * k, 0)
+			jian(m, "Sword", cf, color, k)
 		end
 	end
 	if tier >= 6 and not flying then
@@ -497,6 +555,50 @@ end
 -- Build one cultivator. look: one of LOOKS (or an index), rarity: a Config.RARITIES entry.
 -- Returns the model at once (cushion + aura); the avatar arrives a moment later, once its
 -- catalog assets load, unless the model was destroyed meanwhile.
+-- A standing, unposed copy for the arrival walk: joints live (the client's Animator plays Roblox's own
+-- R15 walk on it), only the root anchored so the client can carry it along the path.
+local walkers, walkerPending = {}, {}
+local function walkerTemplate(look, tier)
+	local key = look .. tier
+	if walkers[key] then
+		return walkers[key]
+	end
+	if walkerPending[key] then
+		table.insert(walkerPending[key], coroutine.running())
+		return coroutine.yield()
+	end
+	walkerPending[key] = {}
+	local ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, describe(look, tier), Enum.HumanoidRigType.R15)
+	if ok then
+		local hum = m:FindFirstChildOfClass("Humanoid")
+		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		if not hum:FindFirstChildOfClass("Animator") then
+			Instance.new("Animator").Parent = hum
+		end
+		for _, p in m:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored = p.Name == "HumanoidRootPart"
+				p.CanCollide = false
+				p.CanQuery = false
+				p.CanTouch = false
+				p.Massless = true
+			end
+		end
+		walkers[key] = m
+	else
+		warn("[Cultivators] walker build failed", look, tier, m)
+		m = nil
+	end
+	local waiting = walkerPending[key]
+	walkerPending[key] = nil
+	for _, co in waiting do
+		task.spawn(co, m)
+	end
+	return m
+end
+
+Cultivators.WALK_FROM = 14 -- studs behind the cushion where an arriving recruit appears
+
 function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 	local poseName = opts and opts.pose or "seated"
 	local flying = poseName == "fly"
@@ -513,12 +615,11 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 	-- lotus in bloom (its stem sinks under the floor). A flyer stands on a big spirit sword lying
 	-- point forward (-Z), its blade glowing in the rarity colour, wind streaming off it.
 	if flying then
-		local k = 2.1
-		-- lying flat, its broad side up under the feet (turned about its own length; edge-up read wrong)
-		local mount = meshPart(m, "MountSword", SWORD.size * k, cf * CFrame.new(0, 0.05, 0) * CFrame.Angles(math.rad(-90), 0, 0) * CFrame.Angles(0, math.rad(90), 0), vivid(rarity.color), SWORD.mesh, nil, SWORD.scale * k)
+		-- lying flat, tip forward (-Z), its broad side up under the feet
+		local mount = jian(m, "MountSword", cf * CFrame.new(0, 0.1, 0) * CFrame.Angles(math.rad(-90), 0, 0), rarity.color, 1.85)
 		local wake = Instance.new("Attachment")
-		wake.Position = Vector3.new(0, -SWORD.size.Y * k / 2, 0) -- the hilt end, behind the rider
-		wake.Parent = mount
+		wake.Position = Vector3.new(0, -0.05, 0)
+		wake.Parent = mount:FindFirstChild("Blade")
 		emitter(wake, "Wind", {
 			Texture = SPARKLE,
 			Color = seq(rarity.color),
@@ -527,7 +628,6 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 			Speed = NumberRange.new(6, 9),
 			Lifetime = NumberRange.new(0.4, 0.7),
 			SpreadAngle = Vector2.new(12, 12),
-			EmissionDirection = Enum.NormalId.Bottom,
 			Rate = 22,
 		})
 	elseif tier >= 7 then
@@ -549,6 +649,27 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 		avatar:PivotTo(cf * avatar:GetPivot())
 		rim(avatar, rarity.color, tier)
 		avatar.Parent = m
+		-- a new recruit walks in (owner 2026-10-22: "arrival is ok"): a standing copy waits behind
+		-- the cushion; the client walks it in, bows, then swaps it for the seated figure
+		if opts and opts.arrive then
+			local w = walkerTemplate(look, tier)
+			if w and m.Parent then
+				local walker = w:Clone()
+				walker.Name = "Walker"
+				-- front is -Z: behind the cushion is +Z; feet on the ground (root at hip height)
+				local root = walker:FindFirstChild("HumanoidRootPart")
+				local hum = walker:FindFirstChildOfClass("Humanoid")
+				local up = (hum and hum.HipHeight or 2) + (root and root.Size.Y / 2 or 1)
+				walker:PivotTo(cf * CFrame.new(0, up, Cultivators.WALK_FROM))
+				walker.Parent = m
+				m:SetAttribute("ArrivedAt", workspace:GetServerTimeNow())
+				task.delay(20, function()
+					if walker.Parent then
+						walker:Destroy() -- late joiners only ever see the seated figure
+					end
+				end)
+			end
+		end
 		CollectionService:AddTag(m, Cultivators.TAG)
 	end)
 	return m

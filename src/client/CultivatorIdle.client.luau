@@ -92,10 +92,23 @@ local function add(m)
 		elseif p.Name == "SigilCircle" or p.Name == "SigilCircle2" then
 			table.insert(f.circles, { part = p, base = p.CFrame, dir = p.Name == "SigilCircle" and 1 or -1 })
 		elseif p.Name == "Sword" then
+			-- a spirit sword is a Model of mesh pieces: every piece bobs with the same phase
 			table.insert(f.swords, p)
-			table.insert(f.swordBase, p.CFrame)
+			local pieces = {}
+			for _, q in p:GetDescendants() do
+				if q:IsA("BasePart") then
+					table.insert(pieces, { part = q, base = q.CFrame })
+				end
+			end
+			table.insert(f.swordBase, pieces)
 		elseif p.Name == "MountSword" then
-			f.mount, f.mountBase = p, p.CFrame -- a flyer's sword rides the float with its rider
+			-- a flyer's sword rides the float with its rider
+			f.mount = {}
+			for _, q in p:GetDescendants() do
+				if q:IsA("BasePart") then
+					table.insert(f.mount, { part = q, base = q.CFrame })
+				end
+			end
 		elseif p.Name == "HaloCircle" then
 			-- the halo circle stands just behind the head, wherever the template put the head
 			f.haloCircle = p
@@ -128,8 +141,120 @@ local function add(m)
 	figures[m] = f
 end
 
+-- Arrival (owner 2026-10-22): a new recruit walks in from behind its cushion with Roblox's own R15
+-- walk (a Roblox animation plays in any experience, nothing to upload), bows to the sect, then
+-- its seated figure fades in where it stood. Research: a keyframed walk reads natural where a
+-- procedural one reads stiff, and the default walk is what players know from their own avatar.
+local WALK_ANIM = "rbxassetid://507777826"
+local WALK_SPEED = 5 -- studs per second
+local function arrive(m)
+	local at = m:GetAttribute("ArrivedAt")
+	if not at then
+		return
+	end
+	-- the walker streams in after the tag sometimes: wait for it (the first try missed it)
+	local walker = m:WaitForChild("Walker", 4)
+	local avatar = m:WaitForChild("Avatar", 4)
+	local cushion = m:WaitForChild("Cushion", 4)
+	if not walker or not avatar or not cushion then
+		return
+	end
+	local hrp = walker:WaitForChild("HumanoidRootPart", 4)
+	local hum = walker:WaitForChild("Humanoid", 4)
+	if not hrp or not hum or workspace:GetServerTimeNow() - at > 8 then
+		walker:Destroy() -- joined late: only the seated figure
+		return
+	end
+	local seated = {}
+	for _, p in avatar:GetDescendants() do
+		if p:IsA("BasePart") then
+			table.insert(seated, p)
+			p.LocalTransparencyModifier = 1
+		end
+	end
+	local animator = hum:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = hum
+	end
+	local anim = Instance.new("Animation")
+	anim.AnimationId = WALK_ANIM
+	local ok, track = pcall(animator.LoadAnimation, animator, anim)
+	if ok then
+		track.Looped = true
+		track:Play(0.2)
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { m }
+	local lift = hum.HipHeight + hrp.Size.Y / 2
+	local function groundY(x, z, fallback)
+		local hit = workspace:Raycast(Vector3.new(x, fallback + 8, z), Vector3.new(0, -20, 0), params)
+		return hit and hit.Position.Y or fallback
+	end
+	local from = hrp.Position
+	local goal = Vector3.new(cushion.Position.X, 0, cushion.Position.Z)
+	local flat = Vector3.new(goal.X - from.X, 0, goal.Z - from.Z)
+	local dir = flat.Unit
+	local baseY = cushion.Position.Y
+	local dist = flat.Magnitude - 0.5
+	local t0 = os.clock()
+	while walker.Parent and m.Parent do
+		local d = math.min(dist, (os.clock() - t0) * WALK_SPEED)
+		local x, z = from.X + dir.X * d, from.Z + dir.Z * d
+		local pos = Vector3.new(x, groundY(x, z, baseY) + lift, z)
+		hrp.CFrame = CFrame.lookAt(pos, pos + dir)
+		if d >= dist then
+			break
+		end
+		RunService.RenderStepped:Wait()
+	end
+	if ok then
+		track:Stop(0.25)
+	end
+	-- a bow to the sect: the whole figure tips forward from the feet and rises again
+	local stand = hrp.CFrame
+	local feet = stand * CFrame.new(0, -lift, 0)
+	local b0 = os.clock()
+	while walker.Parent and m.Parent and os.clock() - b0 < 1.3 do
+		local k = math.sin(math.pi * math.clamp((os.clock() - b0 - 0.2) / 1.1, 0, 1))
+		hrp.CFrame = feet * CFrame.Angles(-math.rad(28) * k, 0, 0) * feet:ToObjectSpace(stand)
+		RunService.RenderStepped:Wait()
+	end
+	-- the walker fades out as the seated figure fades in on its cushion, with a puff of qi
+	local aura = m:FindFirstChild("Aura")
+	local motes = aura and aura:FindFirstChild("Motes", true)
+	if motes then
+		motes:Emit(16)
+	end
+	local walkerParts = {}
+	for _, p in walker:GetDescendants() do
+		if p:IsA("BasePart") then
+			table.insert(walkerParts, p)
+		end
+	end
+	local f0 = os.clock()
+	while m.Parent and os.clock() - f0 < 0.5 do
+		local k = (os.clock() - f0) / 0.5
+		for _, p in walkerParts do
+			p.LocalTransparencyModifier = k
+		end
+		for _, p in seated do
+			p.LocalTransparencyModifier = 1 - k
+		end
+		RunService.RenderStepped:Wait()
+	end
+	for _, p in seated do
+		p.LocalTransparencyModifier = 0
+	end
+	if walker.Parent then
+		walker:Destroy()
+	end
+end
+
 CollectionService:GetInstanceAddedSignal(TAG):Connect(function(m)
 	task.spawn(add, m)
+	task.spawn(arrive, m)
 end)
 CollectionService:GetInstanceRemovedSignal(TAG):Connect(function(m)
 	figures[m] = nil
@@ -270,14 +395,17 @@ RunService.RenderStepped:Connect(function(dt)
 				table.insert(parts, f.haloCircle)
 				table.insert(cfs, CFrame.new(f.haloPos + Vector3.new(0, up, 0)) * f.haloTurn * CFrame.Angles(0, now * 0.4, 0))
 			end
-			if f.mount then
-				table.insert(parts, f.mount)
-				table.insert(cfs, f.mountBase + Vector3.new(0, up, 0))
+			for _, piece in f.mount or {} do
+				table.insert(parts, piece.part)
+				table.insert(cfs, piece.base + Vector3.new(0, up, 0))
 			end
 			-- the spirit swords hover with the figure, each on its own small rhythm
-			for i, sword in f.swords do
-				table.insert(parts, sword)
-				table.insert(cfs, f.swordBase[i] + Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0))
+			for i, pieces in f.swordBase do
+				local hover = Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0)
+				for _, piece in pieces do
+					table.insert(parts, piece.part)
+					table.insert(cfs, piece.base + hover)
+				end
 			end
 			-- the orbs circle (alternate directions from 4 orbs); in a surge they race and rise
 			local spin = CFrame.Angles(0, f.orbAngle, 0)
@@ -308,7 +436,11 @@ RunService.RenderStepped:Connect(function(dt)
 						c2.part.Color = c
 					end
 					for _, sword in f.swords do
-						sword.Color = c
+						local h = sword:FindFirstChild("Aura")
+						if h then
+							h.FillColor = c
+							h.OutlineColor = c:Lerp(Color3.new(1, 1, 1), 0.3)
+						end
 					end
 					if f.haloCircle then
 						f.haloCircle.Color = c
