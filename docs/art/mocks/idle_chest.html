@@ -1,0 +1,85 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Idle chest mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Idle chest + return screen (owner 2026-10-22: "a small idle chest to show that it exists with a
+     return screen ... a few free summons and Qi"). ?opt=A|B|C|W. Phone 844x390. W = the chest in the
+     world while you play. Rendered to idle_<opt>_phone.jpg with Edge headless. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420}
+.scene{position:relative;width:100vw;height:100vh;background:url('altar_bg.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.55)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:4px var(--ink);paint-order:stroke fill;letter-spacing:.4px;line-height:1.05}
+.toy{border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.abs{position:absolute}
+.lbl{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);font:600 11px sans-serif;color:#fff;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:6px;z-index:50;white-space:nowrap}
+.row{display:flex;align-items:center;justify-content:center}
+</style></head>
+<body><div class="scene" id="s"><div id="hud"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+const qi=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="#6fd6ae" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="#e8fff4"/></svg>`;
+// the chest: lacquered red wood, gold bands, jade clasp; open = lid up and qi spilling
+const chest=(s,open)=>`<svg width="${s}" height="${s}" viewBox="0 0 100 100">
+ ${open?`<path d="M14 44 L20 16 Q50 2 80 16 L86 44Z" fill="#b8352b" stroke="${INK}" stroke-width="5" stroke-linejoin="round" transform="rotate(-14 14 44)"/>
+ <path d="M20 46 Q50 22 80 46" fill="#6fd6ae" stroke="${INK}" stroke-width="4"/>
+ ${[[34,34],[50,28],[64,34],[42,22],[58,22]].map(([x,y])=>`<path d="M${x} ${y-9}C${x+6} ${y-3} ${x+8} ${y+1} ${x+8} ${y+4}a8 8 0 0 1-16 0c0-3 2-7 8-13z" fill="#9ff5c8" stroke="${INK}" stroke-width="3"/>`).join('')}`
+ :`<path d="M12 46 L16 24 Q50 10 84 24 L88 46Z" fill="#b8352b" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M16 30 Q50 18 84 30" fill="none" stroke="#d4a445" stroke-width="5"/>`}
+ <rect x="12" y="44" width="76" height="44" rx="6" fill="#b8352b" stroke="${INK}" stroke-width="5"/>
+ <rect x="12" y="56" width="76" height="7" fill="#d4a445" stroke="${INK}" stroke-width="3"/>
+ <rect x="22" y="44" width="8" height="44" fill="#d4a445" stroke="${INK}" stroke-width="3"/><rect x="70" y="44" width="8" height="44" fill="#d4a445" stroke="${INK}" stroke-width="3"/>
+ <rect x="42" y="50" width="16" height="18" rx="4" fill="#6fd6ae" stroke="${INK}" stroke-width="4"/></svg>`;
+// a face-down summon card (tap to reveal) and a revealed one in its rarity colour
+const card=(w,h,txt,col)=>`<div class="toy" style="width:${w}px;height:${h}px;background:${col||'#3a2c44'};display:flex;align-items:center;justify-content:center;flex-direction:column">
+ ${col?`<svg width="${w*.62}" height="${w*.62}" viewBox="0 0 64 64"><circle cx="32" cy="14" r="7" fill="${INK}"/><circle cx="32" cy="29" r="13" fill="#f2cfae" stroke="${INK}" stroke-width="4"/><path d="M12 60c2-14 10-20 20-20s18 6 20 20z" fill="#fff" stroke="${INK}" stroke-width="4"/></svg>`:`<span class="big" style="font-size:${w*.5}px;color:#ffe36b">?</span>`}
+ <span class="big" style="font-size:12px;-webkit-text-stroke:3px ${INK};margin-top:2px">${txt}</span></div>`;
+const btn=(t,w,col)=>`<div class="toy row" style="width:${w}px;height:46px;background:${col||'#47d16c'}"><span class="big" style="font-size:20px">${t}</span></div>`;
+let hud='',lbl='';
+if(opt==='A'){
+ hud=`<div class="veil"></div>
+ <div class="abs" style="left:50%;top:18px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px">
+  <span class="big" style="font-size:26px;color:#ffe36b">Welcome back!</span>
+  <span class="big" style="font-size:14px;-webkit-text-stroke:3px ${INK}">Your sect worked for 3 h 12 min</span>
+  <div class="row" style="gap:18px;margin-top:2px">
+   ${chest(120,true)}
+   <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+    <div class="row" style="gap:6px">${qi(34)}<span class="big" style="font-size:34px">+12.4K</span></div>
+    <span class="big" style="font-size:14px;color:#9ff5c8;-webkit-text-stroke:3px ${INK}">3 free summons</span>
+    <div class="row" style="gap:8px">${card(54,70,'Tap')}${card(54,70,'Tap')}${card(54,70,'Tap')}</div>
+   </div></div>
+  ${btn('Collect',200)}
+ </div>`;
+ lbl='A: one card: chest, qi, three face-down summons to tap, Collect';
+}else if(opt==='B'){
+ hud=`<div class="veil"></div>
+ <div class="abs" style="left:50%;top:10px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+  ${chest(150,true)}
+  <div class="row" style="gap:8px;margin-top:-6px">${qi(40)}<span class="big" style="font-size:44px">+12.4K</span></div>
+  <div class="row" style="gap:12px;margin-top:10px">${card(62,80,'Elder','#b46bff')}${card(62,80,'Outer','#c8c8c8')}${card(62,80,'Tap')}</div>
+  <span class="big" style="font-size:13px;margin-top:8px;-webkit-text-stroke:3px ${INK}">Away 3 h 12 min: Qi at half speed, 1 summon per hour</span>
+ </div>
+ <div class="abs" style="right:22px;bottom:22px">${btn('Collect',150)}</div>`;
+ lbl='B: big chest moment, no panel; summons flip one by one (2 revealed here)';
+}else if(opt==='C'){
+ hud=`<div class="abs" style="left:14px;top:10px;display:flex;align-items:center;gap:6px">${qi(34)}<span class="big" style="font-size:34px">48.2K</span></div>
+ <div class="abs toy" style="left:50%;top:12px;transform:translateX(-50%);background:#fff4dc;padding:6px 14px;display:flex;align-items:center;gap:10px">
+  ${chest(44,false)}<span style="font:700 16px Fredoka;color:${INK}">Your idle chest is full: +12.4K Qi, 3 summons</span>
+  <div class="toy row" style="height:32px;padding:0 12px;background:#47d16c"><span class="big" style="font-size:15px;-webkit-text-stroke:3px ${INK}">Open</span></div></div>`;
+ lbl='C: a banner on return; Open shows the summons (the screen stays in the world)';
+}else{
+ // W: the chest on the peak while you play: small, beside the entrance, a fill bar and a line
+ hud=`<div class="abs" style="left:14px;top:10px;display:flex;align-items:center;gap:6px">${qi(34)}<span class="big" style="font-size:34px">48.2K</span></div>
+ <div class="abs" style="left:52%;top:150px;display:flex;flex-direction:column;align-items:center">
+  <span class="big" style="font-size:15px;color:#ffe36b">Idle Chest</span>
+  <span class="big" style="font-size:12px;-webkit-text-stroke:3px ${INK}">Fills while you're away (up to 4 h)</span>
+  <div style="width:110px;height:10px;border:3px solid ${INK};border-radius:999px;background:#3a2c44;margin:3px 0"></div>
+  ${chest(86,false)}</div>`;
+ lbl='W: the chest on the peak while you play (a price-card style label over a real model)';
+}
+document.getElementById('hud').innerHTML=hud;document.getElementById('lbl').textContent=lbl;
+</script></body></html>

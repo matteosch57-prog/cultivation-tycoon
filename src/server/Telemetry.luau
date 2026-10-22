@@ -27,6 +27,10 @@ Telemetry.EVENTS = {
 		fields = { "buildings owned this realm (builtBucket)", "session minutes (minuteBucket)", "first | return" },
 		question = "Where do players stop, and does a first session end earlier than a return visit?",
 	},
+	IdleChest = {
+		fields = { "hours away (hourBucket)", "free summons waiting", "realm (realmBucket)" },
+		question = "How long do players stay away, and do they come back to open the idle chest?",
+	},
 	Recruit = {
 		fields = { "rarity name", "realm (realmBucket)", "kept | benched" },
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
@@ -50,6 +54,10 @@ Telemetry.EVENTS = {
 	DiscipleBought = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",
+	},
+	AltarRound = {
+		fields = { "claimed | faded", "players who stood on it (9 = 9+)", "winner's realm (realmBucket) or none" },
+		question = "Do players fight for the Heavenly Altar, how many per round, and who wins it?",
 	},
 	KarmaShop = {
 		fields = { "node key (Config.DAO)", "level bought", "life (lifeBucket)" },

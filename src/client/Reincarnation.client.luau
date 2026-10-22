@@ -172,10 +172,11 @@ local function refresh()
 		return
 	end
 	local realm = player:GetAttribute("Realm") or 1
-	local gate = Config.REINC_REALM
+	-- the realm a new life pays from: the gate, or one deeper than the best life so far (D37)
+	local gate = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
 	local built = player:GetAttribute("Built") or 0
 	local total = #Config.PADS
-	local gain = player:GetAttribute("ReincKarma") or Config.karmaFor(gate, 0)
+	local gain = (realm >= gate and player:GetAttribute("ReincKarma")) or Config.karmaFor(gate, 0)
 	local now = player:GetAttribute("PastLives") or 1
 	local nextMult = player:GetAttribute("NextPastLives") or now
 	local ready = realm >= gate
@@ -359,7 +360,7 @@ build = function()
 	ui.btn = bBtn
 	ui.btnLabel = text(bBtn, "", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	bBtn.Activated:Connect(function()
-		if busy or (player:GetAttribute("Realm") or 1) < Config.REINC_REALM then
+		if busy or (player:GetAttribute("Realm") or 1) < math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1) then
 			return
 		end
 		if os.clock() >= armedUntil then

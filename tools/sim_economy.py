@@ -44,6 +44,8 @@ def extra_keys(cfg):
     for k in ["REALM_COST_LATE", "REALM_COST_LATE_FROM", "OFFLINE_CAP", "TIDE_FIRST", "TIDE_INTERVAL", "TIDE_DURATION", "TIDE_MULT"]:
         cfg[k] = num(k)
     cfg["GIFT_TIMES"], cfg["GIFT_VALUE"] = arr("GIFT_TIMES"), arr("GIFT_VALUE")
+    m = re.search(r"^Config\.OFFLINE_RATE = ([\d.]+)", SRC, re.M)
+    cfg["OFFLINE_RATE"] = float(m.group(1)) if m else 1
     return cfg
 
 
@@ -133,7 +135,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
     for day in range(days):
         for _ in range(k["per_day"]):
             if played:  # offline since the last session
-                earn(base_rate() * x2 * min(session_gap, cfg["OFFLINE_CAP"]))
+                earn(base_rate() * x2 * min(session_gap, cfg["OFFLINE_CAP"]) * cfg.get("OFFLINE_RATE", 1))
             tide_phase = rng.uniform(0, cfg["TIDE_INTERVAL"])  # joins a server mid-cycle
             gift_i, walking = 0, None
             for s in range(int(k["session"] * 60)):

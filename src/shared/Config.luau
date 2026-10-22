@@ -8,6 +8,15 @@ Config.HUB_RADIUS = 36
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
+-- offline qi pays this share of the rate (owner 2026-10-22, "idle should pay half"): an hour played
+-- is worth twice an hour away (research 2026-10-22_full_game_sim: offline was 81% of late qi)
+Config.OFFLINE_RATE = 0.5
+-- Idle chest (D39, owner pick A): the offline qi plus one free summon per CHEST_SUMMON_EVERY s away
+-- (at most CHEST_SUMMON_MAX waiting), opened on the return screen. Free summons don't move the pace
+-- (tools/sim_game.py CHEST_SUMMON_EVERY): they are the fun of coming back.
+Config.CHEST_SUMMON_EVERY = 3600
+Config.CHEST_SUMMON_MAX = 4
+Config.IDLE_CHEST_AT = Vector3.new(10, 0, 44) -- on the peak (frame space): beside the avenue, past the gate
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
 Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)
@@ -60,31 +69,30 @@ Config.REALMS = {
 -- start a new life at realm 1. Past Lives: every realm above REINC_REALM - 1 reached in a FINISHED
 -- life (`soulPeak`, monotonic) multiplies all qi by PAST_LIVES_MULT in later lives. Karma is paid
 -- per reincarnation from how deep that life went; SWORN_BASE best disciples follow into the next life.
-Config.REINC_REALM = 10
-Config.PAST_LIVES_MULT = 3
+-- D37 (owner: "40m is long to hook, 5-10m is good"): the gate is realm 2, so the first new life
+-- comes ~10 min in; x1.5 per realm deeper keeps each life a little longer than the last (10, 14,
+-- 20 ... ~75 min by life 9, ~4 h by life 14 for 2 x 30 min a day; research 2026-10-21_economy_math).
+Config.REINC_REALM = 2
+Config.PAST_LIVES_MULT = 1.5
 Config.SWORN_BASE = 1
 function Config.pastLivesMult(soulPeak)
 	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))
 end
--- ~10 at realm 10, x2.15 per realm deeper (a realm costs x10: the cube root of the qi it took);
+-- Karma: KARMA_GROWTH ^ (realms past the gate), 1 at the gate, ~25 eight realms deeper, so the whole
+-- Karma Shop takes about two weeks of lives. Paid only for a NEW record depth (D37): with the gate at
+-- realm 2 and Old Foundations a reset is minutes, so repeating it must pay nothing.
 -- `built` = share of this realm's pads owned (0..1) so progress inside a realm counts too
 -- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
 	{ key = "sworn", name = "Sworn Bond", line = "+1 disciple follows you", costs = { 10, 30 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
-	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 20 } },
-	-- `lines` = the line shown for the NEXT level (the last one once maxed)
-	{ key = "rebirth", name = "Rebirth Gate", line = "Lives start at realm 3", lines = { "Lives start at realm 3", "Lives start at realm 5" }, costs = { 40, 100 } },
+	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 8 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
-	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 20 } },
+	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
 }
--- Rebirth Gate: the realm a new life lands at, per level. Always below REINC_REALM (the landing
--- must never pass its own gate, or reincarnating becomes free to repeat); economy check 2026-10-21:
--- a resetter at the gate earns ~4 karma/h whatever the landing, going deeper wins from life 3.
-Config.DAO_REBIRTH_REALMS = { 3, 5 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
 Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
@@ -98,8 +106,9 @@ function Config.daoNode(key)
 	return nil
 end
 
+Config.KARMA_GROWTH = 1.5
 function Config.karmaFor(realm, built)
-	return math.floor(10 * 10 ^ ((realm - Config.REINC_REALM + (built or 0)) / 3))
+	return math.floor(Config.KARMA_GROWTH ^ (realm - Config.REINC_REALM + (built or 0)))
 end
 Config.REALM_INCOME_MULT = 3 -- income x3 per realm
 -- Owner direction (D25): the first realms are fast laps, then it gets hard; realm 10 is the long goal
@@ -286,6 +295,27 @@ Config.GROUP_BONUS = 0.1
 -- Heavenly Gift (D36): a brand-new save's intro screen pays this once (the first four buildings,
 -- 10 + 25 + 60 + 90, with no wait; Economy check 2026-10-21: realms 2 to 5 move under a minute)
 Config.WELCOME_QI = 200
+-- Heavenly Altar (owner idea 2026-10-21, mock A docs/art/mocks/altar_A_phone.jpg): king of the hill
+-- over the hub. It opens half a tide cycle after each tide (never with one); stand on it ALONE for
+-- ALTAR_HOLD s to claim it (two or more on it pause the timer); Palm Strike pushes, a fall locks
+-- you out until the round ends. Rewards are seconds of the player's own income (fair at any
+-- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a crown until the next round (only
+-- ALTAR_SOLO_SECONDS if nobody else came to fight), everyone else who stood on it
+-- ALTAR_JOIN_SECONDS. That is ~+20% live income per round on average (research 2026-10-21_economy_math).
+Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
+Config.ALTAR_INTERVAL = Config.TIDE_INTERVAL
+Config.ALTAR_WARN = 30 -- s of heads-up (walking from a peak to the hub takes ~20 s)
+Config.ALTAR_WINDOW = 60 -- s the altar stays open without a claim
+Config.ALTAR_HOLD = 20
+Config.ALTAR_WIN_SECONDS = 300
+Config.ALTAR_JOIN_SECONDS = 60
+Config.ALTAR_SOLO_SECONDS = 120
+Config.ALTAR_HEIGHT = 15 -- studs above the hub plaza
+Config.ALTAR_RADIUS = 9
+Config.ALTAR_PUSH_COOLDOWN = 2
+Config.ALTAR_PUSH_REACH = 9 -- studs in front of the striker
+Config.ALTAR_PUSH_SPEED = 62 -- knockback, studs/s (sideways), plus a hop
+Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's timer runs
 -- Playtime gifts: claimable after this many seconds of play in one session (research
 -- 2026-10-21_tycoon_study); each pays GIFT_VALUE[i] seconds of income (no tide, no pill)
 Config.GIFT_TIMES = { 300, 900, 1800 }
@@ -405,7 +435,14 @@ Config.PALETTES = {
 -- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
-Config.REALM_STORM = Color3.fromRGB(70, 82, 112) -- realm 9+ storm cloud puffs: slate blue (owner pick A: solid puffs, not a particle haze)
+-- Realm 9+ lightning (RealmLook.client; owner pick B, research in REINCARNATION "What each realm
+-- shows"): a strike every STORM_EVERY s per peak on screen, 2 to 4 flickers (real flashes have 2 to 4
+-- return strokes ~40 to 80 ms apart), thunder delayed by distance
+Config.STORM_EVERY = { 8, 18 }
+Config.STORM_FLICKERS = { 2, 4 }
+Config.STORM_SEE = 700 -- studs: farther peaks never strike
+Config.STORM_HEAR = 320 -- studs: thunder plays within this
+Config.STORM_SOUND_SPEED = 400 -- studs per second (thunder rolls in after the flash)
 Config.REALM_FALL_ANGLE = 0.95 -- the realm 8 waterfall, front right beside the first one (twin falls clear of every lobe)
 Config.REALM_TINT = {
 	[6] = Color3.fromRGB(185, 166, 255), -- Void Refinement: violet

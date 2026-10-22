@@ -5,7 +5,7 @@ Every number lives in `src/shared/Config.luau`; this file names the keys and exp
 ## Qi
 - Income per second = (`BASE_RATE` + sum of owned pads' `income`) x `incomeMult(realm)` x disciple bonus
   x 2 while a pill is active. Ticked on the server every second.
-- Offline: income keeps flowing while away, capped at `OFFLINE_CAP` seconds.
+- Offline: income keeps flowing while away at `OFFLINE_RATE` of the rate (no tide, pill or friends), capped at `OFFLINE_CAP` seconds (+ Deep Meditation).
 
 ## Pads (`Config.PADS`)
 - A pad opens once `unlock` buildings are owned (any of them) and its `req` pads are owned. This keeps
@@ -93,6 +93,28 @@ drops explode across the screen and float, then fly one by one into the counter 
 apart), each with an `orb` ding climbing in pitch ("collect it slowly, sound following it"). Live funnel times read about 0.5 min earlier than the onboarding table
 (compare with its 200 qi row). Checked in Studio Play (mock save, 2026-10-21): qi 8 -> 209 on GO, a
 second claim refused, no errors (`docs/art/captures/intro_heavenly_gift_play.jpg`, `intro_burst_play.jpg`, `intro_after_go_play.jpg`).
+
+## Idle chest (D39)
+While away, income runs at `OFFLINE_RATE` of the rate (up to `OFFLINE_CAP` s) and the idle chest on the
+peak (`IDLE_CHEST_AT`) collects one free summon per `CHEST_SUMMON_EVERY` s away, at most
+`CHEST_SUMMON_MAX` waiting (`data.chestSummons`). On return the server sends `Notify("idleChest", qi,
+away, summons)`; `IdleChest.client` plays screen A (the chest bursts, the qi flies into the counter,
+summon balls pop out; a tap opens one through `ChestSummon`, the same roll and seating as a recruit,
+no qi). Collect opens any left. Event `IdleChest` (hours away, summons waiting, realm). Free summons
+don't move the pace (tools/sim_game.py).
+
+## Heavenly Altar (server-wide, king of the hill)
+A floating jade altar above the hub cauldron (`src/server/Altar.luau`) opens `ALTAR_FIRST` s after the
+server starts, then every `ALTAR_INTERVAL` s, half a tide cycle after each tide; a toast warns
+`ALTAR_WARN` s before. Two Spirit Springs on the plaza throw players up while it is open. Stand on it
+alone for `ALTAR_HOLD` s to claim it (two or more pause the timer; eight rim braziers light as it
+runs). Palm Strike (button above Jump, F) knocks rivals back; a fall locks you out until the round
+ends. Winner: `ALTAR_WIN_SECONDS` of their own income (`ALTAR_SOLO_SECONDS` if nobody else came) and
+a crown until the next round; everyone else who stood on it: `ALTAR_JOIN_SECONDS`. If nobody holds it
+within `ALTAR_WINDOW` s it fades (joiners are still paid). HUD: Workspace attributes `AltarNext`,
+`AltarUntil`, `AltarHolder`, `AltarHold`, `AltarCrowd`; player attribute `AltarOut`. Why: the owner's
+"something to oppose other players" without stealing (2026-10-21); about +20% live income per round
+on average, which moves a regular player's realm 10 by about a day (research 2026-10-21_economy_math).
 
 ## Playtime gifts
 After `GIFT_TIMES[i]` seconds of play in one session a gift button on the HUD's left column can be

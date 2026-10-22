@@ -172,3 +172,27 @@ life, days to re-reach the old peak):
   724 (-30%); Heavenly Emperor 569 (-45%); Primordial 362 (-65%); the three top ones 270 (-74%). Owned
   from the start, Dao Ancestor and above flatten realms 1 to 6 to the walking floor, hence the realm
   gates and once-per-player limits built on branch shop (853aeff).
+
+## 11. The first reincarnation at realm 2 (D37)
+Owner: the loop must start fast ("40m is long to hook. 5-10m is good"). `simulate(..., reinc=dict(gate,
+pl_base))`, Config of 2026-10-21 night (layout A, 41 pads, DISTRICT_BONUS 0.05), median of 3 runs,
+play minutes of each life / the day it ends:
+
+| gate, Past Lives | regular (2 x 30 min) | casual (1 x 20 min) |
+|---|---|---|
+| 10, x3 (before) | life 1 ~6 h (day 7), then 4 to 7 h | life 1 day 16 |
+| 6, x2 | 43, 45, 52, 63, 80 min ... 4.5 h by life 12 | life 1 day 4 |
+| 2, x2 | 10, 14, 20, 27 ... 83 min by life 12, never hard | |
+| **2, x1.5 (shipped)** | 10, 14, 20, 27, 34 ... 74 min (life 9, day 6), 4 h (life 14, day 16) | 13, 24, 36 ... 110 min (life 9, day 28) |
+
+Karma per hour (gate 6, x2, regular): resetting at the gate earns a flat 18 to 29 karma an hour (any
+landing) while going deeper earns 28, 53, 95, 161 ... so depth wins from life 3. With the gate at
+realm 2 a reset with Old Foundations is minutes, hence the shipped rule: karma only for a new record.
+
+## 10. Heavenly Altar rewards (added the same day)
+Per 10 minute round a player earns on average ~120 s of income: the winner 300 s (120 s when alone),
+each other fighter 60 s, so with four fighters (300 + 3 x 60) / 4 = 120, and a solo claimer 120. That
+is about +20% LIVE income (offline is untouched). Simulated as a live multiplier, regular player
+(2 x 30 min a day): realm 10 finished on day 17 instead of 18 (x1.2); even x1.5 only gives day 16.
+The altar is a fun bonus, not a pacing lever; a solo claim pays less so an empty server can't farm it.
+

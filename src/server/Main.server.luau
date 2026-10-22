@@ -16,6 +16,7 @@ local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
+local Altar = require(script.Parent:WaitForChild("Altar"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -38,6 +39,9 @@ end
 -- Remotes ----------------------------------------------------------------------------
 local remotes = Instance.new("Folder")
 remotes.Name = "Remotes"
+local chestFn = Instance.new("RemoteFunction")
+chestFn.Name = "ChestSummon" -- the idle chest's free summons (D39)
+chestFn.Parent = remotes
 local recruitFn = Instance.new("RemoteFunction")
 recruitFn.Name = "Recruit"
 recruitFn.Parent = remotes
@@ -330,6 +334,59 @@ local function setPlotLabel(plot, text)
 	end
 end
 
+-- The idle chest on every peak (D39): lacquered wood, gold bands, a jade clasp, and a label that
+-- says it fills while you are away. The return screen (IdleChest.client) plays it opening.
+local function buildIdleChest(plot)
+	local P, PAL = Style.P, Style.PAL
+	local m = Instance.new("Model")
+	m.Name = "IdleChest"
+	local at = Config.IDLE_CHEST_AT
+	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, math.rad(-90), 0) -- faces the avenue
+	local red, dark = PAL.vermilion, Color3.fromHex("7A2019")
+	P(m, Vector3.new(4.4, 0.4, 3.2), cf * CFrame.new(0, 0.2, 0), PAL.stone) -- plinth
+	local box = P(m, Vector3.new(4, 2.2, 2.8), cf * CFrame.new(0, 1.5, 0), red, Enum.Material.Wood)
+	P(m, Vector3.new(4.1, 0.35, 2.9), cf * CFrame.new(0, 1.9, 0), PAL.gold, Enum.Material.Metal)
+	for _, x in { -1.45, 1.45 } do
+		P(m, Vector3.new(0.4, 2.3, 2.9), cf * CFrame.new(x, 1.5, 0), PAL.gold, Enum.Material.Metal)
+	end
+	-- the lid: a low barrel vault (a cylinder half sunk into the box)
+	P(m, Vector3.new(3.4, 2.6, 2.6), cf * CFrame.new(0, 2.6, 0), red, Enum.Material.Wood, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.3, 2.7, 2.7), cf * CFrame.new(-1.7, 2.6, 0), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.3, 2.7, 2.7), cf * CFrame.new(1.7, 2.6, 0), dark, Enum.Material.Wood, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.9, 1, 0.3), cf * CFrame.new(0, 1.9, -1.5), PAL.jade) -- clasp
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CanTouch = false
+			d.CanQuery = false
+		end
+	end
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromOffset(220, 46)
+	bb.StudsOffset = Vector3.new(0, 4.6, 0)
+	bb.MaxDistance = 70
+	bb.LightInfluence = 0
+	bb.Adornee = box
+	local function line(text, size, color, y)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.new(1, 0, 0, size + 4)
+		t.Position = UDim2.fromOffset(0, y)
+		t.FontFace = Font.fromEnum(Enum.Font.FredokaOne)
+		t.Text = text
+		t.TextSize = size
+		t.TextColor3 = color
+		local st = Instance.new("UIStroke")
+		st.Color = Color3.fromHex("1B1420")
+		st.Thickness = math.max(1.5, size * 0.11)
+		st.Parent = t
+		t.Parent = bb
+	end
+	line("Idle Chest", 18, Color3.fromHex("FFE36B"), 0)
+	line(string.format("Fills while you're away (up to %d h)", Config.OFFLINE_CAP / 3600), 12, Color3.new(1, 1, 1), 22)
+	bb.Parent = m
+	m.Parent = plot.folder
+end
+
 local function buildPlots()
 	for i = 1, Config.PLOT_COUNT do
 		local a = (i - 1) / Config.PLOT_COUNT * math.pi * 2
@@ -344,6 +401,7 @@ local function buildPlots()
 		local plot = { index = i, frame = frame, center = center, folder = folder, built = built, owner = nil }
 		buildGrounds(plot, Config.ISLAND_RADIUS)
 		Shop.buildIsland(plot)
+		buildIdleChest(plot)
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()
@@ -398,8 +456,12 @@ local function maxDisciples(s)
 	return Config.maxDisciples(s.data.owned, s.passes and s.passes.vip) + dao(s.data, "seat")
 end
 
--- karma a reincarnation would pay now (Soul Echo included)
+-- karma a reincarnation would pay now (Soul Echo included); only a life deeper than every one
+-- before pays (D37: a reset at the same depth takes minutes, so it must not be a karma faucet)
 local function karmaGain(d, share)
+	if d.realm <= (d.soulPeak or 0) then
+		return 0
+	end
 	return math.floor(Config.karmaFor(math.max(d.realm, Config.REINC_REALM), share) * (1 + Config.DAO_ECHO * dao(d, "echo")))
 end
 
@@ -1094,9 +1156,16 @@ local function onJoin(player)
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
 	local offlineGain = 0
 	if away > 60 then
-		offlineGain = math.floor(rate(s, true) * away)
+		offlineGain = math.floor(rate(s, true) * away * Config.OFFLINE_RATE)
 		data.qi += offlineGain
 		Telemetry.source(player, data, offlineGain, "offline", true)
+	end
+	-- idle chest: a free summon per CHEST_SUMMON_EVERY s away; unopened ones wait (capped)
+	local newSummons = math.floor(away / Config.CHEST_SUMMON_EVERY)
+	data.chestSummons = math.min((data.chestSummons or 0) + newSummons, Config.CHEST_SUMMON_MAX)
+	player:SetAttribute("ChestSummons", data.chestSummons)
+	if away > 60 then
+		Telemetry.custom(player, "IdleChest", Telemetry.hourBucket(away), tostring(data.chestSummons), Telemetry.realmBucket(data.realm))
 	end
 	data.sessions = (data.sessions or 0) + 1
 	s.joinedAt = os.clock()
@@ -1107,9 +1176,10 @@ local function onJoin(player)
 	refreshPads(player, s)
 	publish(player)
 	publishFriends(player)
-	if offlineGain > 0 then
+	if offlineGain > 0 or data.chestSummons > 0 then
 		task.delay(3, function()
-			notify:FireClient(player, "offline", offlineGain, away)
+			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
+			notify:FireClient(player, "idleChest", offlineGain, away, data.chestSummons)
 		end)
 	end
 	player.CharacterAdded:Connect(function()
@@ -1215,6 +1285,26 @@ local function addDisciple(s, name, force)
 	end
 	buildDisciples(s)
 	return kept
+end
+
+-- one free summon from the idle chest: the same roll and seating as a recruit, no qi
+chestFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or s.recruiting or (s.data.chestSummons or 0) <= 0 then
+		return nil
+	end
+	s.recruiting = true
+	s.data.chestSummons -= 1
+	player:SetAttribute("ChestSummons", s.data.chestSummons)
+	local r = roll()
+	local kept = addDisciple(s, r.name)
+	-- a rolled rarity keeps its "first pulled" mark, as with a recruit
+	s.data.pulled = s.data.pulled or {}
+	s.data.pulled[r.name] = true
+	publish(player)
+	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
+	s.recruiting = false
+	return { rarity = r.name, kept = kept, left = s.data.chestSummons }
 end
 
 recruitFn.OnServerInvoke = function(player)
@@ -1355,9 +1445,7 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
-	-- Rebirth Gate lands deeper, always below the REINC_REALM gate (never free to repeat)
-	local landing = Config.DAO_REBIRTH_REALMS[dao(d, "rebirth")] or 1
-	d.realm = math.clamp(landing, 1, Config.REINC_REALM - 1)
+	d.realm = 1 -- always below the REINC_REALM gate (D37 removed the Rebirth Gate node)
 	d.owned = {}
 	d.workers = {}
 	if dao(d, "foundation") > 0 then
@@ -1594,6 +1682,10 @@ if game:GetService("RunService"):IsStudio() then
 				end
 				return true
 			end
+			if key == "altar" then
+				Altar.debugOpen() -- DebugSet:Invoke(player, "altar") opens a Heavenly Altar round now
+				return true
+			end
 			s.data[key] = value
 			if key == "orbNow" then
 				spawnOrb(s)
@@ -1625,6 +1717,16 @@ end
 
 -- Boot -------------------------------------------------------------------------------
 buildHub()
+Altar.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	notify = notify,
+	remotes = remotes,
+	telemetry = Telemetry,
+	style = Style,
+	baseY = BASE_Y,
+}, world)
 Shop.init({
 	sessions = sessions,
 	rate = rate,

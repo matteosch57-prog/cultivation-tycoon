@@ -148,3 +148,17 @@ the log as a D-number.
   four buildings. Economy check (sim_pacing START_QI sweep 100 / 200 / 400): Main Hall ~0.5 min instead
   of 1.1, realms 2 to 5 move under a minute, more than 200 just waits in the counter. One tap and no
   cutscene, after Gladiator RNG's lesson that players leave during non-play.
+- **D37** First reincarnation at realm 2 (owner: "40m is long to hook. 5-10m is good"; he asked to
+  "get to the loop FAST"). `REINC_REALM` 2, `PAST_LIVES_MULT` 1.5 (x2 or x3 kept every life under ~1 h
+  forever, so it never got hard), karma `KARMA_GROWTH` ^ depth and paid only for a new record depth
+  (with the gate at realm 2 and Old Foundations a reset takes minutes, so a repeat must pay nothing).
+  The Rebirth Gate node is gone (a landing below realm 2 is realm 1); Old Foundations costs 8 and
+  Heavenly Hands 5, because every life replays the early realms. Rhythm (2 x 30 min a day): first new
+  life ~10 min, lives 10, 14, 20, 27 ... ~75 min by life 9 (day 6), ~4 h by life 14 (day 16).
+  Evidence: `docs/research/2026-10-21_economy_math.md` section 11.
+- **D39** Idle pays half (owner, 2026-10-22: "Idle should pay half indeed ... breakthrough,
+  reincarnation etc. should always reset Qi"). `OFFLINE_RATE` 0.5: offline was 81% of late qi
+  (research 2026-10-22_full_game_sim), now an hour played is worth twice an hour away; regular player
+  life 14 moves from day 12 to day 13. Leftover qi stays reset at every breakthrough and reincarnation
+  (the carry-over proposal is dropped). An idle chest with free summons and a return screen comes next
+  (mock first).
