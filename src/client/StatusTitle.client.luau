@@ -2,7 +2,7 @@
 -- can't see any change, like social status"; research docs/research/2026-10-22_visible_progression.md):
 -- the realm name in the realm colour (Config.realmColor) and, from the 2nd life, "3rd Life" and the
 -- sect's skin grade under it. Drawn here from the player attributes Realm and Lives the server
--- already sets, so the server sends nothing new. Hidden past Config.TITLE_SEE.
+-- already sets, so the server sends nothing new. Hidden past Config.TITLE_SEE and over your own head.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -61,6 +61,9 @@ local function attach(plr, char)
 end
 
 local function watch(plr)
+	if plr == Players.LocalPlayer then
+		return -- only others see your title (like Roblox's own name tag): yours drew through the menus and +qi floats
+	end
 	plr.CharacterAdded:Connect(function(char)
 		attach(plr, char)
 	end)
