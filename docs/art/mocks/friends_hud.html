@@ -1,0 +1,84 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Friends HUD mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+<!-- Friends here (D35) on the right + Invite, and the group gift. Painted over the real Play capture
+     docs/art/captures/friends_here_play.jpg (1808 x 833). Render one option per file:
+     msedge --headless --window-size=1808,833 --screenshot=out.png "friends_hud.html?A" -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1808px;height:833px;overflow:hidden}
+body{font-family:Fredoka,sans-serif;background:url(../captures/friends_here_play.jpg) 0 0/1808px 833px no-repeat;position:relative}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:5px #1b1420;paint-order:stroke fill;line-height:1}
+.toy{border:3px solid #1b1420;border-radius:16px;box-shadow:0 5px 0 #1b1420;position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:12%;right:12%;top:10%;height:22%;border-radius:999px;background:rgba(255,255,255,.35)}
+.abs{position:absolute}
+.head{width:52px;height:52px;border-radius:50%;border:3px solid #1b1420;overflow:hidden;position:relative;background:#f2c9a0}
+.head::before{content:"";position:absolute;left:8px;right:8px;top:-6px;height:26px;border-radius:0 0 50% 50%;background:var(--hair,#2a1d17)}
+.head::after{content:"";position:absolute;left:14px;top:26px;width:24px;height:6px;border-radius:0 0 12px 12px;border-bottom:3px solid #1b1420}
+.ring{box-shadow:0 0 0 3px #9ff5c8}
+.mask{position:absolute;background:transparent}
+.cover{position:absolute;left:860px;top:112px;width:200px;height:22px;backdrop-filter:blur(6px)}
+.lbl{font-size:24px}
+.note{position:absolute;left:20px;bottom:16px;max-width:680px;font:600 20px Fredoka;color:#fff;-webkit-text-stroke:4px #1b1420;paint-order:stroke fill}
+</style></head><body>
+<div class="cover"></div>
+<div id="root"></div>
+<div class="note" id="note"></div>
+<script>
+const person = (s, c="#1b1420") => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="26" cy="22" r="11" fill="#fff" stroke="${c}" stroke-width="5"/><path d="M6 56c2-14 10-20 20-20s18 6 20 20z" fill="#fff" stroke="${c}" stroke-width="5" stroke-linejoin="round"/><path d="M50 18v20M40 28h20" stroke="${c}" stroke-width="7" stroke-linecap="round"/><path d="M50 18v20M40 28h20" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`;
+const banner = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M14 6v54" stroke="#1b1420" stroke-width="6" stroke-linecap="round"/><path d="M16 9h36l-8 12 8 12H16z" fill="#b06bff" stroke="#1b1420" stroke-width="5" stroke-linejoin="round"/><circle cx="31" cy="21" r="5" fill="#ffd34d" stroke="#1b1420" stroke-width="3"/></svg>`;
+const heads = (n) => ["#2a1d17","#c94f3d","#e8d6a0"].slice(0,n).map((h,i)=>`<div class="head ring" style="--hair:${h};margin-left:${i?-14:0}px;z-index:${5-i}"></div>`).join("");
+const opt = location.search.slice(1) || "A";
+const R = document.getElementById("root"), N = document.getElementById("note");
+// the old line under the counter is gone in every option (blurred strip)
+if (opt === "A") {
+  // A: a friends card on the right edge, under the Next goal: heads, +20% Qi, a small Invite button
+  R.innerHTML = `
+  <div class="abs" style="right:28px;top:196px;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="t" style="font-size:30px;color:#9ff5c8">+20% Qi</div>
+      <div style="display:flex">${heads(2)}</div>
+    </div>
+    <div class="t" style="font-size:20px">2 friends here</div>
+    <div class="toy" style="width:150px;height:52px;background:#59d39f;gap:6px">${person(34)}<span class="t lbl" style="font-size:24px">Invite</span></div>
+  </div>`;
+  N.textContent = "A: heads + bonus on the right edge, small Invite under it (2 friends here)";
+} else if (opt === "B") {
+  // B: a right-hand column that mirrors Shop / Gift: one Friends toy button with the count and the bonus
+  R.innerHTML = `
+  <div class="abs" style="right:24px;top:262px;display:flex;flex-direction:column;align-items:center;gap:4px">
+    <div class="toy" style="width:88px;height:88px;background:#59d39f">${person(56)}
+      <div class="t" style="position:absolute;right:-12px;top:-14px;width:40px;height:40px;border-radius:50%;background:#ffd34d;border:3px solid #1b1420;display:flex;align-items:center;justify-content:center;font-size:24px;-webkit-text-stroke:4px #1b1420">2</div>
+    </div>
+    <div class="t" style="font-size:24px;color:#9ff5c8">+20% Qi</div>
+    <div class="t" style="font-size:18px">Invite</div>
+  </div>`;
+  N.textContent = "B: a Friends button on the right, like Shop and Gift on the left; tap = invite";
+} else if (opt === "C") {
+  // C: alone in the server: the same right card as A, asking to invite
+  R.innerHTML = `
+  <div class="abs" style="right:28px;top:196px;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <div class="t" style="font-size:24px">Play with friends</div>
+    <div class="t" style="font-size:30px;color:#9ff5c8">+10% Qi each</div>
+    <div class="toy" style="width:150px;height:52px;background:#59d39f;gap:6px">${person(34)}<span class="t lbl" style="font-size:24px">Invite</span></div>
+  </div>`;
+  N.textContent = "A, alone in the server: the card asks to invite instead";
+} else if (opt === "G") {
+  // G: the group gift as a third left button under Gift (gone once you are in the group)
+  R.innerHTML = `
+  <div class="abs" style="left:14px;top:500px;display:flex;flex-direction:column;align-items:center;gap:4px;width:88px">
+    <div class="toy" style="width:88px;height:88px;background:#c59bff">${banner(58)}</div>
+    <div class="t" style="font-size:20px;white-space:nowrap">Join group</div>
+    <div class="t" style="font-size:20px;color:#9ff5c8;white-space:nowrap">+10% Qi</div>
+  </div>
+  <div class="abs" style="right:28px;top:196px;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="t" style="font-size:30px;color:#9ff5c8">+20% Qi</div>
+      <div style="display:flex">${heads(2)}</div>
+    </div>
+    <div class="t" style="font-size:20px">2 friends here</div>
+    <div class="toy" style="width:150px;height:52px;background:#59d39f;gap:6px">${person(34)}<span class="t lbl" style="font-size:24px">Invite</span></div>
+  </div>`;
+  N.textContent = "Group: a Join group button under Gift; Roblox's own join prompt opens in game";
+}
+</script></body></html>

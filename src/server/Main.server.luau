@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local GroupService = game:GetService("GroupService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
@@ -58,6 +59,15 @@ daoFn.Parent = remotes
 local handsFn = Instance.new("RemoteFunction")
 handsFn.Name = "HandsBuild"
 handsFn.Parent = remotes
+local groupFn = Instance.new("RemoteFunction")
+groupFn.Name = "ClaimGroup"
+groupFn.Parent = remotes
+local inviteEv = Instance.new("RemoteEvent")
+inviteEv.Name = "SocialInvite" -- the client opened Roblox's invite prompt (telemetry only)
+inviteEv.Parent = remotes
+local welcomeFn = Instance.new("RemoteFunction")
+welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
+welcomeFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -415,8 +425,22 @@ local function tideOn()
 	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
 end
 
--- `away` = offline qi (and gifts), which never count the live tide or a pill; the 2x Qi pass counts
--- everywhere
+-- Friends here (D35): [player] = { [other player] = true } for Roblox friends on this server, checked
+-- once at join, in memory only; a friend counts while their session exists
+local friendsOf = {}
+
+local function friendCount(s)
+	local n = 0
+	for other in friendsOf[s.player] or {} do
+		if sessions[other] then
+			n += 1
+		end
+	end
+	return math.min(n, Config.FRIEND_MAX)
+end
+
+-- `away` = offline qi (and gifts), which never count the live tide, a pill or friends; the 2x Qi
+-- pass counts everywhere
 local function rate(s, away)
 	local data = s.data
 	local base = Config.BASE_RATE
@@ -430,7 +454,9 @@ local function rate(s, away)
 	local pill = (not away and boosted(data)) and 2 or 1
 	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
 	local past = Config.pastLivesMult(data.soulPeak)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past
+	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
+	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group
 end
 
 -- share of this realm's pads owned (0..1)
@@ -453,6 +479,18 @@ local function publish(player)
 	player:SetAttribute("Qi", math.floor(d.qi))
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
+	local friends = friendCount(s)
+	player:SetAttribute("FriendsHere", friends)
+	local ids = {}
+	for other in friendsOf[player] or {} do
+		if sessions[other] and #ids < Config.FRIEND_MAX then
+			table.insert(ids, other.UserId)
+		end
+	end
+	player:SetAttribute("FriendIds", table.concat(ids, ",")) -- head shots on the HUD card
+	player:SetAttribute("GroupBonus", (s.inGroup and d.groupClaimed) == true)
+	player:SetAttribute("WelcomeQi", d.welcomed == false and Config.WELCOME_QI or 0) -- > 0: show the intro
+	s.friendsPeak = math.max(s.friendsPeak or 0, friends)
 	player:SetAttribute("Realm", d.realm)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
 	player:SetAttribute("HasHall", d.owned.hall == true)
@@ -925,13 +963,62 @@ local KICK_TEXT = {
 }
 
 -- Join / leave -----------------------------------------------------------------------
-local function freePlot()
+-- a free peak beside a friend's when there is one (D35), else the first free peak; second value =
+-- placed next to a friend
+local function freePlot(friends)
 	for _, plot in plots do
-		if not plot.owner then
-			return plot
+		if plot.owner and friends[plot.owner] then
+			for _, step in { 1, -1 } do
+				local side = plots[(plot.index - 1 + step) % Config.PLOT_COUNT + 1]
+				if not side.owner then
+					return side, true
+				end
+			end
 		end
 	end
-	return nil
+	for _, plot in plots do
+		if not plot.owner then
+			return plot, false
+		end
+	end
+	return nil, false
+end
+
+-- the Roblox friends of `player` on this server, both ways; yields (one web call per other player)
+local function findFriends(player)
+	local mine = {}
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
+			if ok and yes then
+				mine[other] = true
+			end
+		end
+	end
+	if not player.Parent then
+		return mine
+	end
+	for other, theirs in friendsOf do
+		if theirs[player] then
+			mine[other] = true -- found us while our own check was still running
+		end
+	end
+	friendsOf[player] = mine
+	for other in mine do
+		if friendsOf[other] then
+			friendsOf[other][player] = true
+		end
+	end
+	return mine
+end
+
+-- after a friend's session starts or ends, their friends' rates change
+local function publishFriends(player)
+	for other in friendsOf[player] or {} do
+		if sessions[other] then
+			publish(other)
+		end
+	end
 end
 
 local function placeOnPeak(player)
@@ -950,10 +1037,17 @@ local function onJoin(player)
 	realm.Parent = ls
 	ls.Parent = player
 
-	local plot = freePlot()
+	local friends = findFriends(player)
+	if not player.Parent then
+		return
+	end
+	local plot, nextDoor = freePlot(friends)
 	if not plot then
 		warn("[Tycoon] no free peak for", player.Name)
 		return
+	end
+	if nextDoor then
+		Telemetry.custom(player, "Social", "next_door")
 	end
 	plot.owner = player
 	player:SetAttribute("PlotIndex", plot.index) -- clients place their effects with it
@@ -979,11 +1073,21 @@ local function onJoin(player)
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Shop.onJoin(player, s) -- yields for the pass checks
+	if Config.GROUP_ID > 0 then
+		local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID) -- yields; before the offline qi
+		s.inGroup = okG and member == true
+	end
 	if not player.Parent then
 		return -- onLeave already ran (it found the session) and saved
 	end
 	if plot.vip then
 		plot.radius = nil -- rebuild() below redraws the grounds with the gold arch
+	end
+
+	-- Heavenly Gift (D36): only a save that never joined before gets it; a save from before the gift
+	-- existed counts as already welcomed. Stamped once, so it can never be paid twice.
+	if data.welcomed == nil then
+		data.welcomed = (data.sessions or 0) > 0
 	end
 
 	-- offline qi
@@ -1002,6 +1106,7 @@ local function onJoin(player)
 	rebuild(s)
 	refreshPads(player, s)
 	publish(player)
+	publishFriends(player)
 	if offlineGain > 0 then
 		task.delay(3, function()
 			notify:FireClient(player, "offline", offlineGain, away)
@@ -1018,10 +1123,25 @@ end
 
 local function onLeave(player)
 	local s = sessions[player]
+	local friends = friendsOf[player] or {}
+	friendsOf[player] = nil
+	for other in friends do
+		if friendsOf[other] then
+			friendsOf[other][player] = nil
+		end
+	end
 	if not s then
 		return
 	end
 	sessions[player] = nil
+	for other in friends do
+		if sessions[other] then
+			publish(other)
+		end
+	end
+	if (s.friendsPeak or 0) > 0 then
+		Telemetry.custom(player, "Social", "friends_here", tostring(s.friendsPeak), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())))
+	end
 	local built = 0
 	for id in s.data.owned do
 		if Config.padById(id) then
@@ -1160,6 +1280,65 @@ giftFn.OnServerInvoke = function(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
 	return gain
 end
+
+-- Group gift (D35): the card asks for a like, then the group join, then Claim. Only the group is
+-- checked or paid (a like has no API and rewarding one breaks Roblox rules). A fresh check, since
+-- IsInGroup is cached for the whole session.
+groupFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or Config.GROUP_ID <= 0 then
+		return nil
+	end
+	if s.data.groupClaimed and s.inGroup then
+		return "claimed"
+	end
+	local now = os.clock()
+	if now - (s.groupAskAt or 0) < 3 then
+		return nil
+	end
+	s.groupAskAt = now
+	local ok, groups = pcall(GroupService.GetGroupsAsync, GroupService, player.UserId)
+	if not ok then
+		warn("[Tycoon] group check failed")
+		return "error"
+	end
+	for _, g in groups do
+		if g.Id == Config.GROUP_ID then
+			s.inGroup = true
+			local first = not s.data.groupClaimed
+			s.data.groupClaimed = true
+			publish(player)
+			if first then
+				Telemetry.custom(player, "Social", "group_claim", "", Telemetry.minuteBucket(s.data.playSec or 0))
+			end
+			return "claimed"
+		end
+	end
+	return "notMember"
+end
+
+-- Heavenly Gift (D36): paid once per save, on the intro's GO
+welcomeFn.OnServerInvoke = function(player)
+	local s = sessions[player]
+	if not s or s.data.welcomed ~= false then
+		return nil
+	end
+	s.data.welcomed = true
+	local gain = Config.WELCOME_QI
+	s.data.qi += gain
+	Telemetry.source(player, s.data, gain, "welcome")
+	publish(player)
+	return gain
+end
+
+inviteEv.OnServerEvent:Connect(function(player)
+	local s = sessions[player]
+	if not s or os.clock() - (s.inviteAt or 0) < 10 then
+		return
+	end
+	s.inviteAt = os.clock()
+	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
+end)
 
 -- Reincarnation: the ONE function every caller goes through, so the gate lives here. A new life
 -- lands at realm 1, below the REINC_REALM gate, so it can never be repeated for free.
@@ -1400,6 +1579,19 @@ if game:GetService("RunService"):IsStudio() then
 		if s then
 			if key == "pass" then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
+				return true
+			end
+			if key == "friend" then
+				-- DebugSet:Invoke(player, "friend", other) counts `other` as a friend here (Studio test
+				-- players are never Roblox friends; `other` may be `player` itself in a solo Play)
+				friendsOf[player] = friendsOf[player] or {}
+				friendsOf[player][value] = true
+				friendsOf[value] = friendsOf[value] or {}
+				friendsOf[value][player] = true
+				publish(player)
+				if sessions[value] then
+					publish(value)
+				end
 				return true
 			end
 			s.data[key] = value

@@ -140,7 +140,7 @@ def simulate(cfg, kind, seed, realms=10, days=60, passes=(), reinc=None, bought=
                 played += 1
                 tp = (s + tide_phase) % cfg["TIDE_INTERVAL"]
                 tide = cfg["TIDE_MULT"] if tp < cfg["TIDE_DURATION"] else 1
-                r = base_rate() * x2 * (2 if boost > 0 else 1) * tide
+                r = base_rate() * x2 * (2 if boost > 0 else 1) * tide * cfg.get("FRIENDS_LIVE_MULT", 1)  # --set FRIENDS_LIVE_MULT=1.3: friends here
                 earn(r)
                 boost = max(0, boost - 1)
                 if "furnace" in owned and not pill_ready:

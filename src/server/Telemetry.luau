@@ -67,6 +67,14 @@ Telemetry.EVENTS = {
 		},
 		question = "Where do players open the shop, which items get a prompt, and how many prompts end in a buy?",
 	},
+	Social = {
+		fields = {
+			"friends_here (at leave, a friend was here) | next_door (a peak beside a friend's) | invite (prompt opened) | group_claim (first group gift)",
+			"friends_here: most friends here at once (1 | 2 | 3); invite: friends here now (0 to 3)",
+			"friends_here: session minutes; group_claim: minutes played over all sessions (minuteBucket)",
+		},
+		question = "Do sessions with a friend last longer than SessionEnd's (all sessions), do players invite, and does the group gift get claimed (D35)?",
+	},
 }
 
 -- The onboarding funnel: one-time per player, steps in order. A step counts once it is true now or
