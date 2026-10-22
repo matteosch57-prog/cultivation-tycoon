@@ -441,6 +441,35 @@ Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
 Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
 Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
 Config.GIFT_DAILY = true -- read by the sim
+-- Daily Blessing (login streak, D58, owner pick A: "elder d7 is super late, should be day 2 at
+-- least. I'd say even one tier more day 2"): one claim per UTC day (Config.giftDay); a missed day
+-- PAUSES the ladder (owner), it never resets. After day 7 it starts again at day 1. A day gives
+-- `qiSec` seconds of income (no tide, no pill), `summons` free summons (into the idle chest's pool)
+-- and/or a disciple of `rarity`; a disciple day pays once per save, a repeat pays `again` instead.
+-- Economy check 2026-10-22 (tools/sim_game.py STREAK): pace unchanged, the streak is 0.2-1.4% of all qi.
+Config.STREAK = {
+	{ qiSec = 300, summons = 1 },
+	{ rarity = "Immortal", again = { summons = 3 } },
+	{ qiSec = 600, summons = 2 },
+	{ qiSec = 900 },
+	{ summons = 3 },
+	{ qiSec = 1800 },
+	{ rarity = "Celestial", again = { summons = 3 } }, -- owner: "day 2 and 7 should show actual skins of immortal and celestial"
+}
+-- Roblox badges (D58, docs/design/BADGES.md): the owner creates each in Creator Hub and pastes its
+-- id here; 0 = not created yet, nothing is awarded. Checked on every publish (Badges.luau).
+Config.BADGES = {
+	founder = 0, -- Sect Founder: first building
+	disciple = 0, -- First Disciple
+	realm2 = 0, -- Foundation Laid
+	realm3 = 0, -- Golden Core
+	streak7 = 0, -- Loyal Cultivator: day 7 of the Daily Blessing
+	elder = 0, -- Elder's Favour: an Elder or rarer
+	realm4 = 0, -- Nascent Soul
+	friends = 0, -- Sect of Friends: a friend on the server
+	realm8 = 0, -- Mahayana
+	reborn = 0, -- Reborn: first reincarnation
+}
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end

@@ -37,8 +37,8 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands", "realm (realmBucket)" },
-		question = "Are the pill, the qi orbs, the playtime gifts and Heavenly Hands used, or ignored?",
+		fields = { "pill | orb | gift | hands | streak", "realm (realmBucket)" },
+		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },

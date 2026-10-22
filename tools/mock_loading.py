@@ -22,13 +22,15 @@ def shot(query, out):
 def main():
     global PAGE
     args = sys.argv[1:]
-    if args and args[0] == "tips":  # docs/art/mocks/tips.html -> tips_<opt>.jpg
-        PAGE, args = "tips.html", args[1:]
+    frames = 3
+    if args and args[0] in ("tips", "streak"):  # docs/art/mocks/<page>.html -> <page>_<opt>.jpg
+        PAGE, args = args[0] + ".html", args[1:]
+        frames = 2 if PAGE == "streak.html" else 3
     opts = args or ["A", "B", "C"]
     tmp = pathlib.Path(tempfile.mkdtemp())
     for opt in opts:
-        sheet = Image.new("RGB", (W * 3 + GAP * 2, H), (20, 16, 26))
-        for f in (1, 2, 3):
+        sheet = Image.new("RGB", (W * frames + GAP * (frames - 1), H), (20, 16, 26))
+        for f in range(1, frames + 1):
             p = tmp / f"{opt}{f}.png"
             shot(f"{opt}{f}", p)
             sheet.paste(Image.open(p).convert("RGB").crop((0, 0, W, H)), ((W + GAP) * (f - 1), 0))
