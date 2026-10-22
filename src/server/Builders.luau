@@ -334,17 +334,23 @@ end
 -- the platform (isle 1) or the isle before (owner: "make sure we can jump on them one per one"):
 -- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
 -- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
-local ISLES = { -- centre of the deck's underside, peak frame space (the platform is at 0, 0)
-	{ x = -17, y = 12, z = 3 },
-	{ x = 17, y = 16, z = -3 },
-	{ x = 0, y = 24, z = -14 },
+local ISLES = { -- centre of the lawn's top, peak frame space (the platform is at 0, 0)
+	{ x = -17, y = 13, z = 3 },
+	{ x = 17, y = 17, z = -3 },
+	{ x = 0, y = 25, z = -14 },
 }
-local ISLE_DECK = 1.7 -- the deck's top above the isle's y
-local ISLE_R = 7 -- the jade deck's radius
-local ISLE_SEAT_R = 4.4
+-- owner 2026-10-22 ("the stone looks a bit cheap; more space for each disciple, bigger aura"): the
+-- isles are small floating islands in the peaks' own look (Style.island: lawn, dirt band, a light
+-- shelf, faceted rock rings sandstone to slate, hanging spires and roots, grass drips) cut to a
+-- shallow depth, wider seats, and isle disciples drawn ISLE_SCALE larger, auras included
+local ISLE_R = 8.5 -- the lawn's radius
+local ISLE_SEAT_R = 5.6
+local ISLE_SCALE = 1.25
 local ISLE_STEP_RISE, ISLE_STEP_GAP = 4, 7
 local PLATFORM_TOP = 1.3 -- the platform deck's top: a seat's y is measured from it (Builders.disciple)
 local CLOUD_WHITE, CLOUD_LILAC = Color3.fromRGB(255, 252, 255), Color3.fromRGB(214, 206, 240)
+local SAND, SLATE, SHELF = Color3.fromHex("A08A74"), Color3.fromHex("5A5670"), Color3.fromHex("B8A48C")
+local LAWN, SPIRIT = Color3.fromHex("7DAA5C"), Color3.fromHex("6FF2C8")
 local LOTUS = { mesh = "rbxassetid://14340526628", tex = "rbxassetid://14340559072", native = Vector3.new(22.23, 28.65, 22.23) }
 
 local function skyPart(ctx, name, size, cf, collide)
@@ -379,28 +385,92 @@ local function cloud(ctx, cf, w, rng)
 	sm.Parent = p
 end
 
--- a rock islet of width `w` whose flat top is at `top` (the mesh's top face is its box top). It never
--- collides: its Box collision was a wall in front of the step below; the jade on top carries you.
-local function islet(ctx, at, top, w, h)
-	local p = skyPart(ctx, "islet", Vector3.new(w, h, w), CFrame.new(at.X, top - h / 2, at.Z), false)
-	if p then
-		p.Material = Enum.Material.Slate
-		p.Color = SP.rock
-	else -- stand-in until the mesh loads: tapering rock drums
-		for k = 0, 2 do
-			local d = cyl(ctx, h / 3, w * (1 - k * 0.3), CFrame.new(at.X, top - h / 6 - k * h / 3, at.Z), SP.rock, Enum.Material.Slate)
-			d.CanCollide = false
+-- decoration that never collides (only lawn tops carry the player)
+local function deco(ctx, size, cf, color, material, shape)
+	return part(ctx, size, cf, color, material, { Shape = shape, CanCollide = false, CanQuery = false, CanTouch = false })
+end
+
+-- a small floating island: lawn top at `at` (its y), radius `r`, a shallow rock underside
+local function isleBody(ctx, at, r, rng)
+	local top = CFrame.new(at)
+	cyl(ctx, 1.4, r * 2, top * CFrame.new(0, -0.7, 0), LAWN, Enum.Material.LeafyGrass)
+	cyl(ctx, 1.6, r * 2 + 0.3, top * CFrame.new(0, -1.9, 0), SP.dirt).CanCollide = false
+	cyl(ctx, 0.8, r * 1.95, top * CFrame.new(0, -3, 0), SHELF).CanCollide = false
+	-- rock rings, narrowing and darkening with depth (Style.island's underside, a third as deep)
+	local layers = 4
+	local depth = r * 0.95
+	local step = depth / layers
+	for k = 0, layers - 1 do
+		local f = 1 - k / layers
+		local ringR = r * 0.95 * f ^ 0.9
+		local h = step * 1.5
+		local y = -3.4 - k * step - h / 2
+		local col = SAND:Lerp(SLATE, (k / (layers - 1)) ^ 0.8)
+		local n = math.max(4, math.floor(ringR / 1.6))
+		for j = 1, n do
+			local a = j / n * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+			local sz = math.min(ringR * rng:NextNumber(0.4, 0.55) + 1.2, 5)
+			local cr = ringR - sz * 0.5
+			local cf = top * CFrame.new(math.cos(a) * cr, y, math.sin(a) * cr) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 6), rng:NextNumber(-0.15, 0.15))
+			deco(ctx, Vector3.new(sz, h, sz), cf, col:Lerp(Color3.new(1, 1, 1), rng:NextNumber(0, 0.06)), Enum.Material.Slate)
 		end
+		deco(ctx, Vector3.new(h, ringR * 1.8, ringR * 1.8), top * CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.pi / 2), col, Enum.Material.Slate, Enum.PartType.Cylinder)
+	end
+	-- hanging spires under the middle
+	for _ = 1, 2 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, r * 0.3)
+		local len = rng:NextNumber(3, 6)
+		for j = 0, 3 do
+			local sz = (1 - j / 4) * 2.2 + 0.4
+			local cf = top * CFrame.new(math.cos(a) * d, -3.4 - depth - j * len / 4, math.sin(a) * d) * CFrame.Angles(0, rng:NextNumber(0, 6), 0)
+			deco(ctx, Vector3.new(sz, len / 4 + 0.4, sz), cf, SLATE, Enum.Material.Slate)
+		end
+	end
+	-- grass drips over the rim
+	local drips = math.floor(r * 1.1)
+	for j = 1, drips do
+		local a = j / drips * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
+		local len = rng:NextNumber(1.2, 2.6)
+		local cf = top * CFrame.new(math.cos(a) * (r + 0.1), -1.3 - len / 2, math.sin(a) * (r + 0.1)) * CFrame.Angles(0, -a + math.pi / 2, 0)
+		deco(ctx, Vector3.new(rng:NextNumber(1.2, 2.2), len, 0.6), cf, LAWN:Lerp(SP.grassDark, j % 3 == 0 and 0 or 0.35), Enum.Material.LeafyGrass)
+	end
+	-- two dangling roots with a leaf tuft (world-space points: the cylinders are placed directly)
+	for _ = 1, 2 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local prev = Vector3.new(at.X + math.cos(a) * r * 0.8, at.Y - 3.6, at.Z + math.sin(a) * r * 0.8)
+		for j = 1, 3 do
+			local nxt = prev + Vector3.new(rng:NextNumber(-0.6, 0.6), -rng:NextNumber(1.6, 2.6), rng:NextNumber(-0.6, 0.6))
+			local mid, len = (prev + nxt) / 2, (nxt - prev).Magnitude
+			local w = 0.32 - j * 0.06
+			deco(ctx, Vector3.new(len, w, w), CFrame.lookAt(mid, nxt) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromHex("5E4636"), nil, Enum.PartType.Cylinder)
+			prev = nxt
+		end
+		deco(ctx, Vector3.new(1.1, 1.1, 1.1), CFrame.new(prev) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0), SP.grassDark, Enum.Material.LeafyGrass)
 	end
 end
 
-local function isleDeck(i)
-	local c = ISLES[i]
-	return Vector3.new(c.x, c.y + ISLE_DECK, c.z)
+-- a stepping stone: the peaks' own small floating rock (a lawn cap on faceted rock narrowing to a
+-- point, a spirit crystal under it, Style.island); only the lawn cap collides
+local function stone(ctx, p, rng)
+	local s = 4.4
+	cyl(ctx, s * 0.3, s * 1.1, CFrame.new(p.X, p.Y - s * 0.15, p.Z), LAWN, Enum.Material.LeafyGrass)
+	for j = 0, 2 do
+		local w = s * (0.95 - j * 0.3)
+		local cf = CFrame.new(p.X, p.Y - s * (0.45 + j * 0.42), p.Z) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(0, 3), rng:NextNumber(-0.15, 0.15))
+		deco(ctx, Vector3.new(w, s * 0.5, w), cf, Color3.fromHex("8E7C6C"):Lerp(SLATE, j / 2), Enum.Material.Slate)
+	end
+	local gem = deco(ctx, Vector3.new(s * 0.18, s * 0.6, s * 0.18), CFrame.new(p.X, p.Y - s * 1.55, p.Z) * CFrame.Angles(0, math.rad(45), 0), SPIRIT, Enum.Material.Glass)
+	gem.CastShadow = false
 end
 
--- floating stepping stones from `a` to `b` (both deck tops), bowed sideways a little so the climb
--- reads as a path; neither end gets a stone
+local function isleTop(i)
+	local c = ISLES[i]
+	return Vector3.new(c.x, c.y, c.z)
+end
+
+-- stepping stones from `a` to `b` (both walking surfaces), bowed sideways a little so the climb
+-- reads as a path; neither end gets a stone. Each step rises at most ISLE_STEP_RISE and lies at most
+-- ISLE_STEP_GAP from the last (jump 8.5 studs, walk 28, Config.MOVE): every step is a plain jump.
 local function steps(ctx, a, b, rng)
 	local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
 	local n = math.max(math.ceil(math.abs(b.Y - a.Y) / ISLE_STEP_RISE), math.ceil(flat.Magnitude / ISLE_STEP_GAP))
@@ -408,10 +478,9 @@ local function steps(ctx, a, b, rng)
 	for i = 1, n - 1 do
 		local t = i / n
 		local p = a:Lerp(b, t) + side * math.sin(t * math.pi) * 3
-		islet(ctx, p, p.Y, 5.2, 4.5)
-		cyl(ctx, 0.3, 4.6, CFrame.new(p.X, p.Y + 0.15, p.Z), SP.jade, Enum.Material.Marble) -- a jade cap to land on
+		stone(ctx, p, rng)
 		if i % 2 == 1 then
-			cloud(ctx, CFrame.new(p.X, p.Y - 3, p.Z), rng:NextNumber(6, 8), rng)
+			cloud(ctx, CFrame.new(p.X, p.Y - 4.5, p.Z), rng:NextNumber(6, 8), rng)
 		end
 	end
 end
@@ -419,51 +488,47 @@ end
 function Builders.lotusIsle(ctx, i)
 	local rng = Random.new(i * 17)
 	Lowpoly.skyReady(4)
-	local c = ISLES[i]
-	local at = Vector3.new(c.x, c.y, c.z)
-	-- the islet under a lotus in bloom, the jade deck in its heart
-	islet(ctx, at, c.y, 16, 13)
-	local k = 21 / LOTUS.native.X
-	local lotus = part(ctx, Vector3.new(21, LOTUS.native.Y * k * 0.28, 21), CFrame.new(c.x, c.y + 0.6, c.z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
+	local c = isleTop(i)
+	isleBody(ctx, c, ISLE_R, rng)
+	-- in the middle a jade lotus dais under a palace lantern (a real lamp, R3)
+	local k = 8 / LOTUS.native.X
+	local lotus = part(ctx, Vector3.new(8, LOTUS.native.Y * k * 0.3, 8), CFrame.new(c.X, c.Y + 0.1, c.Z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
 	local sm = Instance.new("SpecialMesh")
 	sm.MeshType = Enum.MeshType.FileMesh
 	sm.MeshId = LOTUS.mesh
 	sm.TextureId = LOTUS.tex
-	sm.Scale = Vector3.new(k, k * 0.28, k)
+	sm.Scale = Vector3.new(k, k * 0.3, k)
 	sm.Parent = lotus
-	cyl(ctx, 0.6, ISLE_R * 2, CFrame.new(c.x, c.y + 1.4, c.z), SP.jade, Enum.Material.Marble)
-	cyl(ctx, 0.25, ISLE_R * 2 + 0.5, CFrame.new(c.x, c.y + 1.2, c.z), SP.gold, Enum.Material.Metal)
-	-- a palace lantern in the middle (a real lamp: light only from a visible lamp, R3)
-	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.x, c.y + ISLE_DECK + 1.6, c.z), true)
+	cyl(ctx, 0.5, 3.2, CFrame.new(c.X, c.Y + 0.25, c.Z), SP.jade, Enum.Material.Marble)
+	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.X, c.Y + 0.5 + 1.6, c.Z), true)
 	if lantern then
 		local l = Instance.new("PointLight")
-		l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 175, 95), 9, 1.2
+		l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 175, 95), 10, 1.2
 		l.Parent = lantern
 	end
-	-- clouds hugging the islet's rim and trailing under it
-	for _ = 1, 7 do
-		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(6.5, 9.5)
-		cloud(ctx, CFrame.new(c.x + math.cos(a) * r, c.y + rng:NextNumber(-2, 0.2), c.z + math.sin(a) * r), rng:NextNumber(7, 12), rng)
+	-- clouds hugging the rim and trailing under it
+	for _ = 1, 8 do
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(7.5, 10.5)
+		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(3, 5), c.Z + math.sin(a) * r), rng:NextNumber(7, 12), rng)
 	end
-	for _ = 1, 3 do
-		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(2, 5)
-		cloud(ctx, CFrame.new(c.x + math.cos(a) * r, c.y - rng:NextNumber(6, 9), c.z + math.sin(a) * r), rng:NextNumber(8, 12), rng)
+	for _ = 1, 2 do
+		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(1, 4)
+		cloud(ctx, CFrame.new(c.X + math.cos(a) * r, c.Y - rng:NextNumber(10, 12), c.Z + math.sin(a) * r), rng:NextNumber(8, 12), rng)
 	end
 	-- the stepping stones up from the platform's rim, or from the isle before
-	local deck = isleDeck(i)
 	local from
 	if i == 1 then
 		-- from the platform's rim a quarter turn round from the isle: straight below it the stones
 		-- would stack (each one a ceiling over the last)
-		local a = math.atan2(deck.Z, deck.X) + math.rad(100)
+		local a = math.atan2(c.Z, c.X) + math.rad(100)
 		from = Vector3.new(math.cos(a) * 11, PLATFORM_TOP, math.sin(a) * 11)
 	else
-		local prev = isleDeck(i - 1)
-		local dir = Vector3.new(deck.X - prev.X, 0, deck.Z - prev.Z).Unit
+		local prev = isleTop(i - 1)
+		local dir = Vector3.new(c.X - prev.X, 0, c.Z - prev.Z).Unit
 		from = prev + dir * (ISLE_R - 1)
 	end
-	local back = Vector3.new(from.X - deck.X, 0, from.Z - deck.Z).Unit
-	steps(ctx, from, deck + back * (ISLE_R - 1), rng)
+	local back = Vector3.new(from.X - c.X, 0, from.Z - c.Z).Unit
+	steps(ctx, from, c + back * (ISLE_R - 1), rng)
 end
 Builders.lotus1 = function(ctx)
 	Builders.lotusIsle(ctx, 1)
@@ -482,7 +547,7 @@ end
 function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
 	local face
 	if isle then
-		local d = isleDeck(isle)
+		local d = isleTop(isle)
 		local a = math.rad(45 + (k - 1) * 90)
 		local x, z = math.cos(a) * ISLE_SEAT_R, math.sin(a) * ISLE_SEAT_R
 		face = CFrame.new(d.X + x, d.Y - PLATFORM_TOP, d.Z + z) * CFrame.Angles(0, math.atan2(x, z) + math.pi, 0)
@@ -492,6 +557,10 @@ function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
 		face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
 	end
 	local m = Cultivators.build(ctx.folder, ctx.frame * face, look or slot, rarity, Config.RARITIES, { arrive = arrive })
+	if isle then -- drawn larger, aura included, standing on the same spot
+		m.WorldPivot = ctx.frame * face -- scale about the floor point
+		m:ScaleTo(ISLE_SCALE)
+	end
 	m.Name = "Disciple" .. slot
 	return m
 end
