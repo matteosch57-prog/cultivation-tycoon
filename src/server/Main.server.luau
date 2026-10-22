@@ -5,6 +5,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local GroupService = game:GetService("GroupService")
 
+Players.CharacterAutoLoads = false -- first thing: onJoin spawns each avatar on its peak (watchDeath)
+
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
 local Style = require(script.Parent:WaitForChild("Style"))
@@ -1093,6 +1095,21 @@ local function placeOnPeak(player)
 	end
 end
 
+-- CharacterAutoLoads is off (set before any join) so nobody appears on the hub first: onJoin makes
+-- the first avatar once the peak is built; a death respawns after RespawnTime as Roblox would.
+local function watchDeath(player, char)
+	local hum = char:WaitForChild("Humanoid", 10)
+	if not hum then
+		return
+	end
+	hum.Died:Connect(function()
+		task.wait(Players.RespawnTime)
+		if player.Parent and player.Character == char then
+			player:LoadCharacter()
+		end
+	end)
+end
+
 local function onJoin(player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
@@ -1108,6 +1125,11 @@ local function onJoin(player)
 	local plot, nextDoor = freePlot(friends)
 	if not plot then
 		warn("[Tycoon] no free peak for", player.Name)
+		player.CharacterAdded:Connect(function(char)
+			watchDeath(player, char)
+		end)
+		player:LoadCharacter() -- on the hub: still a body to walk with
+		player:SetAttribute("PeakReady", true)
 		return
 	end
 	if nextDoor then
@@ -1219,13 +1241,20 @@ local function onJoin(player)
 			notify:FireClient(player, "idleChest", offlineGain, away, data.chestSummons)
 		end)
 	end
-	player.CharacterAdded:Connect(function()
+	-- the first avatar is made only now, straight on the peak (no hub stop, no teleport); the
+	-- client's loading screen (src/first/Launch.client) covers the wait and reads PeakReady
+	player.CharacterAdded:Connect(function(char)
 		task.wait(0.2)
 		placeOnPeak(player)
+		watchDeath(player, char)
 	end)
-	if player.Character then
+	pcall(player.RequestStreamAroundAsync, player, (s.plot.frame * CFrame.new(0, 4, (s.plot.radius or Config.ISLAND_RADIUS) - 8)).Position, 5)
+	if player.Parent and not player.Character then
+		player:LoadCharacter()
+	elseif player.Character then
 		placeOnPeak(player)
 	end
+	player:SetAttribute("PeakReady", true)
 end
 
 local function onLeave(player)

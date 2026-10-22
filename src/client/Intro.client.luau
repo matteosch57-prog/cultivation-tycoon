@@ -274,13 +274,16 @@ local function show(amount)
 end
 
 local function check()
+	while not player:GetAttribute("LaunchDone") do -- the gift is the launch screen's reward (src/first/Launch)
+		player:GetAttributeChangedSignal("LaunchDone"):Wait()
+	end
 	local amount = player:GetAttribute("WelcomeQi") or 0
 	if amount > 0 then
 		show(amount)
 	end
 end
 player:GetAttributeChangedSignal("WelcomeQi"):Connect(check)
-check()
+task.spawn(check)
 -- Studio test hook: player attribute IntroGo = true presses GO (no mouse input in tests)
 if game:GetService("RunService"):IsStudio() then
 	player:GetAttributeChangedSignal("IntroGo"):Connect(function()

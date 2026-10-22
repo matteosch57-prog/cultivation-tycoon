@@ -212,3 +212,9 @@ the log as a D-number.
   (decor pays through a rating, like Retail and Restaurant Tycoon 2). Two workers per building, and
   every farm takes them (owner: "2 farmers on every farming spot"). PLOT_RADIUS 215 -> 280 so the
   islets keep 15 studs from the neighbours. Prices of the new pads: the economy check owns them.
+- **D43** Launch = mock A with C's camera dive (owner: "Go A, but the C idea of movement is great
+  too"; mocks `docs/art/mocks/loading_*.jpg`, research `docs/research/2026-10-22_launch_flow.md`): a
+  ReplicatedFirst screen where the qi drop fills with the real progress, TAP TO ENTER, a camera dive
+  onto your peak, then the Heavenly Gift as the reward. The first avatar is made on the peak once it
+  is built (`CharacterAutoLoads` off), so no hub stop and no teleport. The group card's Join step
+  now opens Roblox's own join prompt (replaces D35's "find the group on the game page").

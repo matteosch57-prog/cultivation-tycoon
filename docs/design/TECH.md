@@ -131,7 +131,7 @@ printed once a minute.
 
 ## Studio test hooks (Studio only, ServerStorage)
 `DebugGrant(player, qi)` · `DebugReset(player)` · `DebugSet(player, key, value)` (`orbNow` spawns an
-orb; `friend`, another player or the same one, counts them as a friend here, D35). Client: player attribute `FriendsCard` = true opens the group card; `IntroGo` = true presses the intro's GO. Client: player attribute `HudDevice` = `pc` / `phone` forces a HUD layout.
+orb; `friend`, another player or the same one, counts them as a friend here, D35). Client: player attribute `FriendsCard` = true opens the group card; `IntroGo` = true presses the intro's GO; `LaunchTap` = true taps the launch screen. Client: player attribute `HudDevice` = `pc` / `phone` forces a HUD layout.
 
 ## Performance
 Budget: ~500k triangles / ~500 draw calls per scene; small parts CastShadow off; few shadowed lights

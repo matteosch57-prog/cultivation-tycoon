@@ -1,0 +1,122 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Loading mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Launch flow options (loading screen, tap to enter, the welcome as the reward). Phone 844x390.
+     ?A1 ... ?C3 = option, frame. Rendered with Edge headless, stitched by tools/mock_loading.py. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;overflow:hidden;background:#0b1f1a}
+.bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:5px #1b1420;paint-order:stroke fill;line-height:1.05}
+.abs{position:absolute}
+.ctr{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+.toy{border:3px solid #1b1420;border-radius:16px;box-shadow:0 4px 0 #1b1420;position:relative}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38)}
+.lbl{position:absolute;left:8px;bottom:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:4px 10px;border-radius:6px;z-index:50}
+.stick{position:absolute;left:5%;bottom:8%;width:96px;height:96px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+.jump{position:absolute;right:5%;bottom:8%;width:74px;height:74px;border-radius:50%;border:3px solid rgba(255,255,255,.3)}
+</style></head>
+<body><div class="scene" id="s"></div>
+<script>
+const q = location.search.slice(1) || "A1";
+const opt = q[0], fr = +q[1];
+const S = document.getElementById("s");
+const INK = "#1b1420";
+const QI = "#6fd6ae", QIL = "#9ff5c8", QIP = "#e8fff4";
+const PEAK = "../captures/18_peak_wide.jpg", SKY = "../captures/3_sky_clouds_showcase.jpg";
+// the qi drop, filled to `f` (0..1) from the bottom, with a wavy surface
+const DROP = "M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z";
+const qi = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="${DROP}" fill="${QI}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="${QIP}"/></svg>`;
+const fillDrop = (s, f, glow) => {
+  const y = 60 - 56 * f;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" style="overflow:visible">
+  <defs><clipPath id="c"><path d="${DROP}"/></clipPath>
+  <radialGradient id="g"><stop offset="0" stop-color="${QIP}" stop-opacity=".9"/><stop offset="1" stop-color="${QI}" stop-opacity="0"/></radialGradient></defs>
+  ${glow ? `<circle cx="32" cy="36" r="44" fill="url(#g)"/>` : ""}
+  <path d="${DROP}" fill="rgba(11,31,26,.85)"/>
+  <g clip-path="url(#c)"><path d="M0 ${y} q8 -4 16 0 t16 0 t16 0 t16 0 V64 H0z" fill="${QI}"/>
+  <path d="M0 ${y} q8 -4 16 0 t16 0 t16 0 t16 0" fill="none" stroke="${QIP}" stroke-width="2.5"/>
+  ${f > 0.5 ? `<path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="${QIP}" opacity="${(f - .5) * 2}"/>` : ""}</g>
+  <path d="${DROP}" fill="none" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/></svg>`;
+};
+const rays = (cx, cy, r, n, col, op) => `<svg class="abs" style="left:${cx - r}px;top:${cy - r}px" width="${2 * r}" height="${2 * r}" viewBox="-1 -1 2 2">${Array.from({ length: n }, (_, i) => {
+  const a = i / n * 6.283, b = a + 0.12;
+  return `<path d="M0 0L${Math.cos(a)} ${Math.sin(a)}L${Math.cos(b)} ${Math.sin(b)}z" fill="${col}" opacity="${op}"/>`;
+}).join("")}</svg>`;
+const title = (top, size) => `<div class="ctr" style="top:${top}px"><span class="t" style="font-size:${size}px;color:${QIP}">Cultivation</span><span class="t" style="font-size:${size * .62}px;color:#ffd34d;margin-top:-2px">TYCOON</span></div>`;
+const tap = (top, txt) => `<div class="ctr" style="top:${top}px"><span class="t" style="font-size:30px">${txt}</span><span class="abs" style="top:-6px;right:-34px;font-size:26px">👆</span></div>`;
+const tip = (top, txt, col) => `<div class="ctr" style="top:${top}px"><span style="font:600 15px Fredoka;color:${col || "#cbbfd6"}">${txt}</span></div>`;
+const hud = () => `<div class="stick"></div><div class="jump"></div>
+  <div class="abs" style="left:14px;top:10px;display:flex;align-items:center;gap:6px">${qi(30)}<span class="t" style="font-size:30px">0</span></div>`;
+// the existing Heavenly Gift card (Intro.client), shown the moment the screen opens
+const gift = top => `<div class="abs" style="inset:0;background:rgba(11,31,26,.55)"></div>
+  ${rays(422, top + 70, 230, 14, QIP, .18)}
+  <div class="ctr" style="top:${top}px">${qi(110)}
+  <span class="t" style="font-size:44px;color:${QIP};margin-top:4px">HEAVENLY GIFT</span>
+  <span class="t" style="font-size:30px;color:${QIL};display:flex;align-items:center;gap:6px">+200 ${qi(30)}</span>
+  <div class="toy" style="margin-top:8px;width:170px;height:60px;background:${QI};display:flex;align-items:center;justify-content:center"><span class="t" style="font-size:38px">GO!</span></div></div>`;
+const groupBtn = `<div class="abs" style="left:150px;top:8px;display:flex;align-items:center;gap:4px"><div class="toy" style="width:44px;height:40px;border-radius:12px;background:#ff6b5e;display:flex;align-items:center;justify-content:center;font-size:22px">🎁</div><span class="t" style="font-size:18px">+10%</span>${qi(20)}</div>`;
+
+let html = "", lbl = "";
+if (opt === "A") {
+  // A: the qi drop fills as the game loads; full = it glows, TAP; the veil lifts at your peak
+  if (fr < 3) {
+    const f = fr === 1 ? 0.45 : 1;
+    html = `<div class="bg" style="background-image:url(${PEAK});filter:blur(14px) saturate(.8)"></div>
+    <div class="abs" style="inset:0;background:rgba(11,31,26,.82)"></div>
+    ${fr === 2 ? rays(422, 205, 260, 16, QIP, .14) : ""}
+    ${title(26, 44)}
+    <div class="ctr" style="top:${fr === 2 ? 120 : 126}px">${fillDrop(fr === 2 ? 150 : 138, f, fr === 2)}</div>
+    ${fr === 1 ? tip(286, "Gathering qi... 45%", QIL) + tip(318, "Tip: walk onto a glowing pad to build") : tap(298, "TAP TO ENTER")}`;
+    lbl = fr === 1 ? "A1 loading: the qi drop fills with the real progress" : "A2 loaded: the drop glows, tap to enter";
+  } else {
+    html = `<div class="bg" style="background-image:url(${PEAK})"></div>${hud()}${gift(18)}`;
+    lbl = "A3 tap: the veil lifts, you stand on your peak, the gift opens at once";
+  }
+} else if (opt === "B") {
+  // B: a wall of clouds; a qi bar at the bottom; tap = the clouds part on your peak
+  const cloud = (x, y, s, o) => `<div class="abs" style="left:${x}px;top:${y}px;width:${s}px;height:${s * .62}px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#e9e4f4 60%,#cfc6e6);opacity:${o || 1}"></div>`;
+  const wall = (dx) => [[-120, 160, 420], [180, 220, 380], [460, 170, 420], [640, 230, 380], [-60, -60, 360], [250, -90, 400], [560, -70, 420], [60, 60, 300], [380, 40, 320], [690, 50, 300]]
+    .map(([x, y, s]) => cloud(x + (x < 330 ? -dx : dx), y, s)).join("");
+  if (fr < 3) {
+    const f = fr === 1 ? 0.45 : 1;
+    html = `<div class="bg" style="background:linear-gradient(#8fd3ff,#d8ecff)"></div>${wall(0)}
+    ${title(70, 50)}
+    <div class="abs toy" style="left:222px;top:250px;width:400px;height:34px;border-radius:999px;background:#3a2c44;overflow:hidden">
+      <div style="width:${f * 100}%;height:100%;background:linear-gradient(${QIL},${QI})"></div></div>
+    <div class="abs" style="left:${222 + f * 400 - 22}px;top:242px">${qi(48)}</div>
+    ${fr === 1 ? tip(300, "Raising your sect... 45%", "#3a2c44") : tap(298, "TAP TO ENTER")}`;
+    lbl = fr === 1 ? "B1 loading: a cloud sea, the qi bar fills" : "B2 loaded: tap to enter";
+  } else {
+    html = `<div class="bg" style="background-image:url(${PEAK})"></div>${wall(260)}
+    <div class="ctr" style="top:120px"><span class="t" style="font-size:40px;color:#ffd34d">Matteo's Sect</span>
+    <span class="t" style="font-size:18px;color:${QIP};margin-top:6px">the clouds part, the camera glides down to you</span></div>`;
+    lbl = "B3 tap: clouds slide apart on your peak, then the gift";
+  }
+} else {
+  // C: a jade seal ring fills around the drop; tap = a short sky-to-peak swoop
+  if (fr < 3) {
+    const f = fr === 1 ? 0.45 : 1, R = 70, C = 2 * Math.PI * R;
+    html = `<div class="bg" style="background-image:url(${SKY});filter:blur(3px) brightness(.45) saturate(.7)"></div>
+    ${fr === 2 ? rays(422, 175, 250, 12, "#ffe58a", .16) : ""}
+    <div class="abs" style="left:${422 - 90}px;top:${175 - 90}px">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+      <circle cx="90" cy="90" r="${R}" fill="rgba(11,31,26,.75)" stroke="${INK}" stroke-width="16"/>
+      <circle cx="90" cy="90" r="${R}" fill="none" stroke="${fr === 2 ? "#ffd34d" : QI}" stroke-width="10" stroke-dasharray="${C * f} 999" transform="rotate(-90 90 90)" stroke-linecap="round"/>
+      </svg></div>
+    <div class="abs" style="left:${422 - 48}px;top:${175 - 52}px">${qi(96)}</div>
+    ${title(6, 34)}
+    <div class="ctr" style="top:268px"><span class="t" style="font-size:26px;color:#ffd34d">Matteo's Sect</span></div>
+    ${fr === 1 ? tip(310, "Gathering qi... 45%", QIL) : tap(310, "TAP TO ENTER")}`;
+    lbl = fr === 1 ? "C1 loading: a jade seal ring fills around the drop, your sect's name" : "C2 loaded: the ring turns gold, tap";
+  } else {
+    html = `<div class="bg" style="background-image:url(${SKY});background-position:center 30%;transform:scale(1.25)"></div>
+    <svg class="abs" style="inset:0" width="844" height="390"><path d="M420 40 C 440 120, 430 200, 422 300" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="10 10" opacity=".8"/>
+    <path d="M410 290 l12 16 l12 -16" fill="none" stroke="#fff" stroke-width="4"/></svg>
+    <div class="ctr" style="top:330px"><span class="t" style="font-size:22px;color:${QIP}">1.5 s swoop from the sky down to your peak, then the gift</span></div>`;
+    lbl = "C3 tap: the camera dives from the clouds onto your peak";
+  }
+}
+S.innerHTML = html + `<div class="lbl">${lbl}</div>`;
+</script></body></html>
