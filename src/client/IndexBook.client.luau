@@ -20,7 +20,6 @@ local Sfx = require(Shared:WaitForChild("Sfx"))
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
 local GREY = Color3.fromHex("9A8FA8")
-local DARK = Color3.fromHex("3A3044")
 local SHAPE = Color3.fromHex("241C2C")
 local STAR_OFF = Color3.fromHex("4A3F55")
 local JADE = Color3.fromHex("59D39F")
@@ -64,42 +63,86 @@ end
 local seen = {} -- stars per entry at the last close: a tile with more since says NEW
 local close
 
+-- a small dark pill (the pull count, the stars)
+local function pill(parent, props)
+	local f = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = Color3.fromHex("1E1726") })
+	for k, v in props or {} do
+		f[k] = v
+	end
+	Toy.corner(f, UDim.new(1, 0))
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(4)), UDim.new(0, px(4))
+	pad.Parent = f
+	Toy.list(f, true, 0)
+	return f
+end
+
+-- One entry as a toy card (owner 2026-10-22: "make it sexier, the frames and add the auras"): a solid
+-- shadow, a face lit from the top in the rarity's colours, an ink rim, an inner rim in the rarity's
+-- colour (gold once all five stars are in), the toy buttons' glass cap, and the disciple in its moving
+-- rarity aura (Toy.aura). Never pulled: a slate card, the figure a dark shape and a "?".
 local function tile(parent, rarity, look, pulls, order)
 	local r = Config.rarity(rarity.name)
 	local stars = Config.indexStars(pulls)
+	local found = pulls > 0
+	local full = stars >= #Config.INDEX_STARS
+	local W, H, R = px(54), px(48), px(10)
 	local cell = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
-	Toy.list(cell, false, px(1))
-	local box = frame(cell, { Size = UDim2.fromOffset(px(52), px(42)), BackgroundTransparency = 0, BackgroundColor3 = pulls > 0 and r.color:Lerp(Color3.new(1, 1, 1), 0.72) or DARK, ClipsDescendants = true, LayoutOrder = 1 })
-	Toy.corner(box, UDim.new(0, px(9)))
+	Toy.list(cell, false, px(2))
+	local holder = frame(cell, { Size = UDim2.fromOffset(W, H), LayoutOrder = 1 })
+	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(3)), BackgroundTransparency = 0, BackgroundColor3 = INK })
+	Toy.corner(shadow, UDim.new(0, R))
+	local face = frame(holder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ClipsDescendants = true })
+	Toy.corner(face, UDim.new(0, R))
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = found and ColorSequence.new(r.color:Lerp(Color3.new(1, 1, 1), 0.62), r.color:Lerp(INK, 0.12)) or ColorSequence.new(Color3.fromHex("4A3F57"), Color3.fromHex("2A2232"))
+	grad.Parent = face
 	local st = Instance.new("UIStroke")
 	st.Color = INK
-	st.Thickness = px(2)
+	st.Thickness = px(3)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	st.Parent = box
-	local fig = Toy.disciple(box, px(40), rarity.name, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, px(3)), ZIndex = 2 }, true)
-	if pulls == 0 then
+	st.Parent = face
+	Toy.glass(face, R)
+	if found then
+		Toy.disciple(face, px(54), rarity.name, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(4)), ZIndex = 2 })
+	else
+		local fig = Toy.disciple(face, px(38), rarity.name, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, px(4)), ZIndex = 2 }, true)
 		fig.ImageColor3 = SHAPE -- never pulled: a dark shape
+		text(face, "?", px(17), Color3.fromHex("A89BBB"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), ZIndex = 3 })
 	end
-	if pulls > 0 then
-		text(box, "x" .. pulls, px(10), Color3.new(1, 1, 1), { Position = UDim2.fromOffset(px(3), px(1)), ZIndex = 3 })
+	-- the inner rim: the rarity's colour, gold with all five stars
+	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
+	Toy.corner(rim, UDim.new(0, R - px(3)))
+	local rs = Instance.new("UIStroke")
+	rs.Color = full and GOLD or (found and r.color:Lerp(Color3.new(1, 1, 1), 0.35) or Color3.fromHex("5E5270"))
+	rs.Thickness = full and px(3) or px(2)
+	rs.Parent = rim
+	if found then
+		local c = pill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 })
+		text(c, "x" .. pulls, px(9), Color3.new(1, 1, 1), { ZIndex = 7 })
 	end
 	local key = Config.indexKey(rarity.name, look)
 	if stars > (seen[key] or 0) then
-		local tag = frame(box, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(2), 0, px(2)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF5A5A"), ZIndex = 4 })
+		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
 		Toy.corner(tag, UDim.new(0, px(4)))
+		local ts = Instance.new("UIStroke")
+		ts.Color = INK
+		ts.Thickness = px(2)
+		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		ts.Parent = tag
 		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(2)), UDim.new(0, px(2))
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(3)), UDim.new(0, px(3))
 		pad.Parent = tag
-		text(tag, "NEW", px(8), Color3.new(1, 1, 1), { ZIndex = 5 })
+		text(tag, "NEW", px(9), Color3.new(1, 1, 1), { ZIndex = 9 })
 	end
-	-- the five stars: lit gold, the rest dark
-	local row = frame(cell, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-	Toy.list(row, true, 0)
+	-- the five stars on a dark pill: lit gold, the rest dim
+	local row = pill(cell, { LayoutOrder = 2 })
 	if stars > 0 then
-		text(row, string.rep("★", stars), px(10), GOLD, { LayoutOrder = 1 })
+		text(row, string.rep("★", stars), px(11), GOLD, { LayoutOrder = 1 })
 	end
 	if stars < #Config.INDEX_STARS then
-		text(row, string.rep("★", #Config.INDEX_STARS - stars), px(10), STAR_OFF, { LayoutOrder = 2 })
+		text(row, string.rep("★", #Config.INDEX_STARS - stars), px(11), STAR_OFF, { LayoutOrder = 2 })
 	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
@@ -125,8 +168,8 @@ local function build()
 	local total = Config.indexTotalStars(index)
 	local max = #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.INDEX_STARS
 	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), AutomaticSize = Enum.AutomaticSize.XY })
-	Toy.list(body, false, px(6))
-	text(body, "Disciple Index", px(30), GOLD, { LayoutOrder = 1, Rotation = -2 })
+	Toy.list(body, false, px(5))
+	text(body, "Disciple Index", px(28), GOLD, { LayoutOrder = 1, Rotation = -2 })
 	text(body, string.format("%d of %d stars · +%s%% qi forever", total, max, string.format("%.2f", (Config.indexMult(index) - 1) * 100):gsub("%.?0+$", "")), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 
 	local grid = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
@@ -134,7 +177,7 @@ local function build()
 	-- the head: each rarity's name once any of its looks is found, else ???
 	local head = frame(grid, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 0 })
 	Toy.list(head, true, px(4))
-	frame(head, { Size = UDim2.fromOffset(px(46), px(12)), LayoutOrder = 0 })
+	frame(head, { Size = UDim2.fromOffset(px(46), px(16)), LayoutOrder = 0 })
 	for i, r in Config.RARITIES do
 		local found = false
 		for _, look in Config.DISCIPLE_LOOKS do
@@ -142,13 +185,20 @@ local function build()
 		end
 		local name = string.gsub(r.name, " Disciple$", "")
 		name = string.gsub(name, "^Heavenly ", "")
-		local cellHead = frame(head, { Size = UDim2.fromOffset(px(52), px(14)), LayoutOrder = i })
-		text(cellHead, found and name or "???", px(#name > 9 and 9 or 11), found and r.color or GREY, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+		local cellHead = frame(head, { Size = UDim2.fromOffset(px(54), px(16)), LayoutOrder = i })
+		local ribbon = frame(cellHead, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(2), 1, 0), BackgroundTransparency = 0, BackgroundColor3 = found and r.color or Color3.fromHex("3A3044") })
+		Toy.corner(ribbon, UDim.new(1, 0))
+		local rbs = Instance.new("UIStroke")
+		rbs.Color = INK
+		rbs.Thickness = px(2)
+		rbs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		rbs.Parent = ribbon
+		text(ribbon, found and name or "???", px(#name > 9 and 8 or 10), found and Color3.new(1, 1, 1) or GREY, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	end
 	for li, look in Config.DISCIPLE_LOOKS do
 		local row = frame(grid, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = li })
 		Toy.list(row, true, px(4))
-		local lab = frame(row, { Size = UDim2.fromOffset(px(46), px(42)), LayoutOrder = 0 })
+		local lab = frame(row, { Size = UDim2.fromOffset(px(46), px(48)), LayoutOrder = 0 })
 		text(lab, Config.LOOK_NAMES[look], px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -px(2), 0.4, 0) })
 		for i, r in Config.RARITIES do
 			tile(row, r, look, index[Config.indexKey(r.name, look)] or 0, i)

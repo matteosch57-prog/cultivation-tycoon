@@ -104,6 +104,8 @@ stars pay `INDEX_STEP_SUMMONS` free summons (idle-chest summons, `data.indexStep
 steps). The page (`IndexBook.client`) opens from the gold Index button at the end of the disciples
 card; a new star lights the red dot on the Disciples button and the Index button (local `IndexNew`).
 The reveal card shows the look, its stars and "New index star!"; an x10 / x50 tile a gold star.
+Each found entry is a toy card lit in its rarity colours with its moving aura (Toy.aura); all five
+stars turn its inner rim gold (owner 2026-10-22 "make it sexier", capture `disciple_index_v2_play.jpg`).
 
 ## Idle chest (D39)
 While away, income runs at `OFFLINE_RATE` of the rate (up to `OFFLINE_CAP` s) and the idle chest on the
