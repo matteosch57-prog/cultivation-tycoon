@@ -74,8 +74,22 @@ def load(path):
         m = re.match(r'\s*\{ id = "(\w+)".*?cost = (\d+), income = (\d+), unlock = (\d+), req = \{([^}]*)\}', line)
         if m:
             d = re.search(r'district = "(\w+)"', line)
+            isl = re.search(r'islet = "(\w+)"', line)
+            kd = re.search(r'kind = "(\w+)"', line)
             pads.append(dict(id=m.group(1), cost=int(m.group(2)), income=int(m.group(3)), unlock=int(m.group(4)),
-                             req=re.findall(r'"(\w+)"', m.group(5)), district=d.group(1) if d else None))
+                             req=re.findall(r'"(\w+)"', m.group(5)), district=d.group(1) if d else None,
+                             islet=isl.group(1) if isl else None, kind=kd.group(1) if kd else None))
+    # Sky Islets (D42): a pad on an islet needs that islet's bridge (Config.isletOf / isletOpen)
+    islets = {}
+    for line in block("ISLETS"):
+        m = re.match(r'\s*(\w+) = \{.*?(?:bridge = "(\w+)")?\s*\},?$', line)
+        if m:
+            islets[m.group(1)] = m.group(2)
+    for p in pads:
+        name = p["islet"] or (p["district"] if p["district"] in islets else "heart")
+        b = islets.get(name)
+        if b and b != p["id"] and b not in p["req"]:
+            p["req"].append(b)
     rar = [(float(w), float(b)) for w, b in re.findall(r"weight = ([\d.]+), bonus = ([\d.]+)", "\n".join(block("RARITIES")))]
     dao = {}
     for line in block("DAO"):
@@ -84,7 +98,7 @@ def load(path):
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
-    for k, v in dict(DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
+    for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
                      VIP_SLOTS=1, SWORN_BASE=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1,
                      REINC_REALM=10, PAST_LIVES_MULT=3, WORKER_MAX=0, WORKER_BONUS=0, WORKER_COST=[0.5, 1, 2],
                      REALM_COST_LATE=env.get("REALM_COST_MULT", 8), REALM_COST_LATE_FROM=99).items():
@@ -167,7 +181,9 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def base():  # rate(s, away) without the live-only multipliers
         b = C["BASE_RATE"] + sum(pads[i]["income"] * (1 + C["WORKER_BONUS"] * S["workers"].get(i, 0)) * dist(i) for i in S["owned"])
         past = C["PAST_LIVES_MULT"] ** max(0, S["soul"] - (C["REINC_REALM"] - 1))
-        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past
+        # Harmony (Config.harmonyMult): every owned path or grove, capped
+        harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
+        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
@@ -236,7 +252,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         led_src["free summons"] = led_src.get("free summons", 0)
             tide_phase = rng.uniform(0, C["TIDE_INTERVAL"])
             gift_i, walking = 0, None
-            walk = 0 if lvl("hands") else st["walk"]
+            walk = 0 if lvl("hands") else st["walk"] * C["WALK_SCALE"]  # WALK_SCALE: islets' longer walks
             for s in range(int(K["session"] * 60)):
                 played += 1
                 tp = (s + tide_phase) % C["TIDE_INTERVAL"]
@@ -320,6 +336,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     if s >= walking:
                         walking = None
                         # choice metrics: how many open pads could be paid right now, how long since the last buy
+                        out.setdefault("kind_buys", []).append(dict(kind=target.get("kind"), id=target["id"], secs=tcost / base(), realm=S["realm"], life=S["life"]))
                         afford = sum(1 for p in choices if max(p["cost"] * cmult(), floor) <= S["qi"])
                         out.setdefault("buys", []).append(dict(life=S["life"], realm=S["realm"], afford=afford, open=len(choices),
                                                                wait=played - out.get("last_buy", played)))
