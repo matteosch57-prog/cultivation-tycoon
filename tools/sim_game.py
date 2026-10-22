@@ -451,6 +451,12 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         S["disciples"].append(roll())
                         S["disciples"].sort(reverse=True)
                         del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+                    S["boost"] += (C.get("GIFT_PILL") or [0] * 99)[gift_i]  # a 2x qi pill (Main ClaimGift: boostUntil +)
+                    gr = (C.get("GIFT_RARITY") or [""] * 99)[gift_i]
+                    if gr:  # a disciple of that rarity, every day it is reached (addDisciple, never turned away)
+                        S["disciples"].append(rar_bonus[gr])
+                        S["disciples"].sort(reverse=True)
+                        del S["disciples"][C["DISCIPLE_CAP"] + vip:]
                     gift_i += 1
                     S["gift_i"] = gift_i
                 if altar_win is not None and "ALTAR_INTERVAL" in C and (s + tide_phase - C["TIDE_INTERVAL"] / 2) % C["ALTAR_INTERVAL"] < 1:

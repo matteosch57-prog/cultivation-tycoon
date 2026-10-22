@@ -258,6 +258,13 @@ the log as a D-number.
   `GIFT_SUMMONS` free summons (into the idle chest pool). The server publishes GiftIn, GiftNext,
   GiftQi, GiftSummons and GiftResetIn so the HUD always shows the next reward; ClaimGift returns
   `{ qi, summons }`. Simmed: no pace change, ~9% of a regular player's qi.
+  Update (owner 2026-10-22: "way more explicit with the reward, attractive, click it opens a juicy page
+  with all timed rewards, make them interesting"; pick C of `docs/art/mocks/timed_gift_*.jpg`): the
+  gifts also pay `GIFT_PILL` s of 2x qi and a `GIFT_RARITY` disciple (Elder at 45 min, Immortal at 2 h);
+  the HUD button shows the next prize in its own words and colour; a tap opens the Free Gifts page
+  (`Gifts.client.luau`: the last gift as a hero card, the rest in a list), where the claim happens.
+  Simmed (`tools/sim_game.py`, gift pills + disciples modelled): lives end on the same days as before.
+  The Shop's free gift dot (`DOT_SHOP_FIRST`) now lights after 2 min of play (was 10).
 - **D50** First-time tips = mock A (owner: "Missing small tutorial at: first qi ball to get, first
   pill to use, first idle chest. Small and simple"; mocks `docs/art/mocks/tips_*.jpg`): a cream
   bubble with one line over the orb / chest pad (gold arrow, the jade trail leads there) or beside

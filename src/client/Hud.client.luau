@@ -253,7 +253,7 @@ end
 -- build
 local toastLayer
 local rebuildAll -- forward
-local popGain -- forward (the gift button calls it)
+local popGain -- forward
 local toast -- forward (it used to live on `ui`, which build() replaces: the recruit button
 -- then called a nil toast, errored, and stayed locked after the first recruit)
 local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands builds it)
@@ -489,54 +489,25 @@ local function build()
 	rightLayout.Parent = right
 	ui.right = right
 	ui.rightLayout = rightLayout
-	-- Playtime gift (daily ladder, owner 2026-10-22: "always show the next reward, reset daily, up to
-	-- 2h online"): the reward it pays sits under the button, then the countdown; ready = gold, wobbles,
-	-- red dot; all claimed today = the time to the reset
+	-- Playtime gift (daily ladder D49, owner 2026-10-22: "always show the next reward", then "way more
+	-- explicit with the reward, attractive, click it opens a juicy page with all timed rewards"): the
+	-- next prize sits on the button's corner and under it in its own words and colour, then the
+	-- countdown; ready = gold + red dot; all claimed today = the time to the reset. A tap opens the
+	-- Free Gifts page (Gifts.client, mock timed_gift C), where the claim happens.
 	local gCol, gBtn = sideButton(right, 1, 40, FACE, true)
 	gBtn.Name = "GiftButton"
 	Toy.icon(gBtn, "gift", px(28), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local gDot = Toy.dot(gBtn, px(16), { Visible = false })
-	-- the next reward: qi (and free summons when that gift has them), each with its icon (R18)
-	local reward = frame(gCol, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-	local rwl = Instance.new("UIListLayout")
-	rwl.FillDirection = Enum.FillDirection.Horizontal
-	rwl.VerticalAlignment = Enum.VerticalAlignment.Center
-	rwl.Padding = UDim.new(0, px(2))
-	rwl.Parent = reward
-	qiIcon(reward, px(12), { LayoutOrder = 1 })
-	ui.giftQi = text(reward, "", px(12), JADE_LIGHT, { LayoutOrder = 2 })
-	local sumRow = frame(reward, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
-	local srl = Instance.new("UIListLayout")
-	srl.FillDirection = Enum.FillDirection.Horizontal
-	srl.VerticalAlignment = Enum.VerticalAlignment.Center
-	srl.Padding = UDim.new(0, px(1))
-	srl.Parent = sumRow
-	discipleIcon(sumRow, px(12), { LayoutOrder = 1 })
-	ui.giftSummons = text(sumRow, "", px(12), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
-	ui.giftSumRow = sumRow
-	ui.giftReward = reward
+	ui.giftBadge = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.9, 0.9), Size = UDim2.fromOffset(px(22), px(22)), ZIndex = 4 })
+	ui.giftPrize = text(gCol, "", px(12), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.giftLabel = text(gCol, "", px(12), Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	ui.gCol = gCol
 	ui.giftBtn = gBtn
 	ui.giftDot = gDot
 	gBtn.Activated:Connect(function()
-		if (player:GetAttribute("GiftIn") or -1) == 0 then
-			local ok, res = pcall(function()
-				return remotes.ClaimGift:InvokeServer()
-			end)
-			-- { qi = n, summons = n } (D49 daily ladder; the summons land in ChestSummons)
-			local gain = ok and (type(res) == "table" and res.qi or res) or nil
-			if type(gain) == "number" then
-				popGain(gain, true)
-				local pieces = { amt("qi", gain, "+") }
-				local summons = type(res) == "table" and res.summons or 0
-				if summons > 0 then
-					table.insert(pieces, string.format("+%d summons", summons))
-				end
-				toast(pieces, GOLD, 2)
-			end
-		else
-			toast(ui.giftLabel.Text ~= "" and ("Next gift in " .. ui.giftLabel.Text) or "Gift soon", PINK, 1.5)
+		local ev = player:FindFirstChild("GiftsOpen")
+		if ev then
+			ev:Fire()
 		end
 	end)
 	-- Pill (Alchemy Furnace): brewing countdown -> ready (gold, wobbles) -> active 2x timer
@@ -1338,17 +1309,43 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	if ui.gCol.Visible then
-		-- the daily ladder (GiftIn / GiftQi / GiftSummons / GiftResetIn, Economy); GiftIn -1 = all
-		-- claimed today: the reward row hides and the label counts down to the reset
+		-- the daily ladder (GiftIn / GiftNext / GiftQi / GiftResetIn, Economy); GiftIn -1 = all
+		-- claimed today: the prize hides and the label counts down to the reset
 		local g = player:GetAttribute("GiftIn") or -1
 		local done = g < 0
 		put(ui.giftDot, "Visible", g == 0)
-		put(ui.giftReward, "Visible", not done)
-		if not done then
-			put(ui.giftQi, "Text", "+" .. compact(player:GetAttribute("GiftQi") or 0))
-			local summons = player:GetAttribute("GiftSummons") or 0
-			put(ui.giftSumRow, "Visible", summons > 0)
-			put(ui.giftSummons, "Text", "+" .. summons)
+		put(ui.giftBadge, "Visible", not done)
+		put(ui.giftPrize, "Visible", not done)
+		local n = player:GetAttribute("GiftNext") or 0
+		local prize = Config.giftPrize(n)
+		if prize then
+			-- the prize in words: the disciple's rarity, the pill, the summons, else the qi
+			local word, color
+			if prize.rarity then
+				word, color = prize.rarity, Config.rarity(prize.rarity).color
+			elseif prize.pill > 0 then
+				word, color = "2x Qi", Color3.fromHex("FF9A8C")
+			elseif prize.summons > 0 then
+				word, color = "+" .. prize.summons .. " summon" .. (prize.summons > 1 and "s" or ""), Color3.fromHex("D9B8FF")
+			else
+				word, color = "+" .. compact(player:GetAttribute("GiftQi") or 0), JADE_LIGHT
+			end
+			put(ui.giftPrize, "Text", word)
+			put(ui.giftPrize, "TextColor3", color)
+			if ui.giftBadgeOf ~= n then -- redraw the corner picture when the next gift changes
+				ui.giftBadgeOf = n
+				ui.giftBadge:ClearAllChildren()
+				local at = { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 5 }
+				if prize.rarity then
+					Toy.disciple(ui.giftBadge, px(22), prize.rarity, at)
+				elseif prize.pill > 0 then
+					Toy.icon(ui.giftBadge, "pill", px(22), at)
+				elseif prize.summons > 0 then
+					discipleIcon(ui.giftBadge, px(22), at)
+				else
+					qiIcon(ui.giftBadge, px(18), at)
+				end
+			end
 		end
 		if g == 0 then
 			put(ui.giftLabel, "Text", "")
