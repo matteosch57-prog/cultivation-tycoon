@@ -448,3 +448,11 @@ the log as a D-number.
   at 693x359, 751x389, 823x426. The turn itself is only provable on a real phone.
 - **D73** Round buttons (owner picked B Dome from `docs/art/mocks/2026-10-22_round_buttons.jpg`): circle
   buttons get `Toy.dome`, all other buttons keep `Toy.glass`.
+- **D74** Next step at the bottom centre, Rebirth seal on the realm bar (owner 2026-10-22: "the arrow
+  on next step in middle bottom? and the bar + rebirth thing remock", picked mock A of
+  `docs/art/mocks/hud_bar_all.jpg`: "A better, but slightly smaller or pushed down"). The next goal
+  (turning arrow, pad name, qi price) left the top right for one line over the realm bar; the realm
+  name sits over the bar; Rebirth is a round purple seal (karma orb, dome light) locked on the bar's
+  right end, its label on the lower rim, gold and wobbling once the price is held. The bar always
+  shows the hall count (the next step says Breakthrough). The right stack starts under the top bar.
+  Checked in Studio Play (fresh save): no overlaps, no Hud errors.
