@@ -37,11 +37,13 @@ checked in Studio Play (ROADMAP).
   are built and checked in Studio Play (mock save); Spirit Tide and playtime gifts (D30) too. Left:
   Matteo's look at the Karma Shop page with 8 tiles (not captured: it needs a tap).
 
-- **Economy** (D25, ECONOMY, research `2026-10-21_economy_math.md`): realms 2 to 5 are ~5 to 10 min
-  laps, then each realm ~2 to 3x the last; a regular player (2 x 30 min a day) reaches realm 10 about
-  day 7 and finishes it about day 20; recruit price restarts each realm. Sims: `tools/sim_economy.py`
-  (whole climb, passes, Robux disciples, reincarnation lives at ~5 to 7 days each with x3).
-  Simulated only: real pacing waits for the first live batch (funnel and realm events).
+- **Economy** (ECONOMY; sims `tools/sim_game.py` + the second opinion's `tools/sim_check.py`): the
+  island opens over realms 1 to 4 (D48), new lives start built (D56), rebirth opens only at a realm
+  gate (D63, D66), every realm costs x5, gates go on past realm 17, Harmony / rebirth / index / passes
+  stay out of prices (D67). Sim, regular player: realm 2 ~5 min, first rebirth ~11 min, realm 12 day 7,
+  18 day 21, 24 day 60. Simulated only: real pacing waits for the first live batch.
+- **Build flow** (D69, D71, on `integration`): a breakthrough asks for a confirm on its own screen; a
+  pad shows a build preview and the step-out teleport is gone. Checked in Studio Play.
 
 - **Shop** (D24, D33; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), items
   sold where they act (passes at the peak entrance, pill at the furnace, orbs at the array), a
