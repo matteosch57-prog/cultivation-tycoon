@@ -62,6 +62,7 @@ checked in Studio Play (ROADMAP).
   a status title over other players' heads; hub ranking wall (Greatest Sects, Richest Qi, This Week,
   global + per country stores), Lives in the player list. Checked in Studio Play (skins, hall,
   wall with sample rows via `Ranks.debugRows`). Left: the country-tab screen (BACKLOG).
+  Bigger boards, a bigger hub and portals to every island and back (D70, checked in Studio Play).
 
 - **Sky Islets** (D42, on `integration`): home island + Fields / Alchemy / Disciples / Summit islets
   opened by bridge pads; no default roads or trees (path and grove pads, optional, Harmony +2% each

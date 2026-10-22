@@ -415,3 +415,16 @@ the log as a D-number.
   offer; the server checks the pad, the price and the rebirth gate again. Why: a step on the pad reset
   qi and every building with no warning. Checked in Studio Play (mock save, realm 4 to 5, one pad step):
   `docs/art/captures/2026-10-22_breakthrough_confirm_play.jpg`.
+- **D70** Readable ranking wall and quick travel (owner 2026-10-22: "ranks could be bigger, hard to
+  read"; "central space can be slightly bigger, with quick TP to other islands, too long to walk").
+  Ranking wall (`RankBoard.luau`): gate 22 -> 29 studs, Greatest Sects 15.6 x 14, steles 10 x 12.5,
+  rows and text sized from each face (about twice the old text); braziers, lions and lanterns moved
+  so nothing overlaps (the lanterns stood on a bridge post). `TELEPORT_RANK_FRONT` 13 -> 9: from 13
+  the follow camera sat inside the cauldron and the altar. Every HUD teleport but Base turns the
+  camera the way the server faced you (Hud `teleportTo`). Hub: `HUB_RADIUS` 36 -> 44. Portals
+  (`Portals.luau`): one beside each bridge mouth on the hub (its plaque = the owner's sect, dark while
+  the peak is unclaimed) and a "Sect Hub" one on every island, left of the bridge head clear of the VIP
+  pad and the shrine. The client sees the step (tag `Portal`) and sends its `Where` on
+  `Remotes.Teleport`; the server checks you stand on that portal and picks the landing (R9).
+  Checked in Studio Play (mock save, both directions, overlap sweep):
+  `docs/art/captures/2026-10-22_rank_boards_bigger.jpg`, `docs/art/captures/2026-10-22_hub_portals.jpg`.
