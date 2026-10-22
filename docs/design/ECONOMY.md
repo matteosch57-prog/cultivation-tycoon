@@ -73,8 +73,8 @@ invite prompt. Event `Social` (friends_here at leave, next_door at join, invite)
 
 ## Group gift (D35)
 A gift button just right of the HUD's qi total, a gold gift box, "+10%" and the qi drop, wobbling slowly (owner: "just show +10% Qi with an attractive icon"; only while `GROUP_ID` is set and the gift is not active) opens the Sect
-Gift card, the owner's three steps: 1 Like the game, 2 Join our group (a button: Roblox's own join prompt,
-`GroupService:PromptJoinAsync`, D43), 3 Claim. Only the group
+Gift card, the owner's three steps: 1 Like the game, 2 Join the group (both on the game page, where the owner
+puts the community link; no in-game join, D65), 3 Claim. Only the group
 is checked and paid: remote `ClaimGroup` re-reads the player's groups (`GetGroupsAsync`; `IsInGroup`
 is cached per session), sets `data.groupClaimed`, and `rate` adds `GROUP_BONUS` everywhere while the
 player is still a member (checked at each join). Never reward or check a like (no API, against Roblox

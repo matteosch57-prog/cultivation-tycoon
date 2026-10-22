@@ -28,7 +28,13 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Claim: Toy.reward bursts on the button (D61), today's tile punches, flashes and turns jade, the reward line pops in under the row, the
   button reads "See you tomorrow!" and closes the card. Studio hooks `StreakOpen`, `StreakClaim`.
 
-## HUD (src/client/Hud.client.luau, D54 D55 D59)
+## HUD (src/client/Hud.client.luau, D54 D55 D59 D65)
+- Top centre: the qi counter between two travel chips (D65): Base (hall icon, jade) on the left, Ranks
+  (trophy, gold) on the right. A tap: Toy.feel, the `rise` whoosh, a jade disc grows over the screen,
+  `Remotes.Teleport` moves the avatar under it (peak spawn / facing the ranking wall), the disc fades.
+  The "+qi" pop rises off the counter's bottom-right corner (its right side is the Ranks chip).
+- Rails: `RAIL_GAP` (14 px) between buttons, left and right (owner: "they're super close").
+- The disciple card has a small coral X on its top-right corner (closes it like the Disciples button).
 - Two quiet rails. Left = what you open: Shop (the only gold button), Disciples (count), Karma (opens
   the Karma Shop page straight away, `ReincOpen:Fire("karma")`), Friends (`Friends.client`, caption =
   friends bonus). Right edge, under the next goal = what ticks, round chips: gift (its next reward
@@ -84,6 +90,14 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
   snap rather than a drift), then a stone snap, a small temple bell (the big bell for a Main Hall
   level), sparks, dust and a warm light flash. The pieces do not collide while they fly (they shoved
   the avatar onto the next pads in Play).
+
+## Robux purchase moment (src/client/BuyMoment.client.luau, D65)
+- A bought disciple (Welcome Pouch included) closes the Shop and plays the recruit reveal.
+- Passes, qi packs, the pill: "Spotlight": a dark veil, slow gold rays and a glow, the item pops in
+  (Back ease) and bursts with Toy.reward; its name in gold, then its line (a pack: the qi gained).
+  After `BUY_MOMENT.hold` it flies home: a qi pack breaks into drops that pour into the counter (the
+  HUD bumps it at `Config.buyArrive()`), the pill into the pill chip (which bursts), a pass into the
+  counter. A tap skips to the flight. Studio hook: local attribute `BuyMoment` = a shop key.
 
 ## Recruit reveal (src/client/RecruitReveal.client.luau, D34)
 - A qi orb flies from the Recruit button to the screen centre (`REVEAL.fly`), charges one `step`

@@ -357,6 +357,17 @@ the log as a D-number.
   Store meshes rebuilt from ids, no inserted scripts). Each board has a global and a per-country
   OrderedDataStore (Ranks.luau, batched writes, reads every RANK_REFRESH s); Lives joins Realm in
   the player list. Why: rankings are the cheapest status push and give the skins (D53) an audience.
+- **D65** HUD travel and purchase moments (owner 2026-10-22: two teleports at the top of the HUD, "MY BASE"
+  and "RANKINGS"; a confirm animation on every Robux buy, the recruit reveal for disciples; "Both A",
+  mock `docs/art/mocks/2026-10-22_teleport_and_buy.html`). Base (hall icon) and Ranks (new trophy icon,
+  cell 30 of the icon sheet) are round chips either side of the qi counter, as Grow a Garden puts its
+  travel buttons top centre; a jade wipe hides the jump, the server picks the spot (`Teleport`,
+  `TELEPORT_COOLDOWN`, the peak spawn or `TELEPORT_RANK_FRONT` studs in front of the ranking wall).
+  Every bought disciple plays the recruit reveal; passes, qi packs and the pill play "Spotlight"
+  (BuyMoment.client: veil, gold rays, Toy.reward burst, name, then it flies to the counter or the pill
+  chip; `BUY_MOMENT`). Same pass: rails 14 px apart (owner: "super close"), a small X on the disciple
+  card, and the Sect Gift card points to the game page for both the like and the group (owner: no
+  in-game group link; he puts the community link on the game page).
 - **D64** Every shop product is on sale at every realm (owner 2026-10-22: "open all products to any
   level, who cares if someone pays to rush the game"): the `minRealm` gates of Celestial, Dao Ancestor,
   Heavenly Emperor and Primordial (D28) are gone; the gate code stays for any future item.
