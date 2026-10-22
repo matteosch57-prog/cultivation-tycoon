@@ -107,6 +107,9 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
 - Life (client): a raised-hand mudra now and then, a qi surge every 14 to 28 s (deep breath, orbs and
   circles race, the rim brightens a little), a small bow to a visitor. Timers restart when a figure
   comes into view, or every overdue surge fires at once.
+- Arrival (D41): a new recruit's seat gets a standing copy behind the cushion; the client walks it in
+  with Roblox's R15 walk (rbxassetid://507777826, plays in any experience), it bows, then the seated
+  figure fades in with a puff of motes. Late joiners see only the seated figure.
 - Flying pose (thumbnails, showcases): `Cultivators.build(..., { pose = "fly" })` stands the disciple
   on a big spirit sword in the rarity colour (wind sparkles off the hilt), right hand forward in a sword
   mudra, left arm trailing back; no ground circles. Capture `characters_flying.jpg`.

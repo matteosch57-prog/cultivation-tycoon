@@ -162,6 +162,13 @@ the log as a D-number.
   life 14 moves from day 12 to day 13. Leftover qi stays reset at every breakthrough and reincarnation
   (the carry-over proposal is dropped). An idle chest with free summons and a return screen comes next
   (mock first).
+- **D41** Premium disciples = mock A + C (owner pick, `docs/art/mocks/characters_*.jpg`; research
+  `docs/research/2026-10-21_premium_characters.md`): one anime dynamic head for every look (one
+  cohesive style reads premium), hands in the lap, and a rarity ladder made only of light and glowing
+  objects (magic circle, light orbs never solid balls, halo, a fan of spirit swords, lotus seat, crowns).
+  Swords are a real steel jian (pick D of five): "fully coloured" swords were rejected, the rarity shows
+  as a rim glow and light orbs. A new recruit walks in with Roblox's own R15 walk (no upload); a
+  flying pose on a flat sword exists for thumbnails (`Cultivators.build(..., { pose = "fly" })`).
 - **D40** Resets make the climb faster (owner: "isn't reincarnation supposed to make the game faster?",
   "how does the game get infinite?", then "whatever research says, of similar games"). Research:
   idle games make the rebuild much faster after a prestige (the multiplier, often auto-buy); Roblox

@@ -53,6 +53,9 @@ checked in Studio Play (ROADMAP).
 - **Cultivators** (branch `cultivators`, merged into `integration`): disciples are R15 Roblox avatars
   in catalog hanfu, 4 looks x 9 rarities, layered auras, floating idle with faces that blink and watch
   a close player. Checked in Studio Edit (and a Play by Phone performance); design in ART_BIBLE.
+  Then the premium pass (D41, branch `characters`, merged): one anime head, rarity ladder of magic
+  circles, light orbs, halo, steel jian fans with a rim glow, lotus seat, ornaments, mudra / qi surge /
+  bow, a recruit arrival walk, a flying pose. Checked in Studio Play; left: Matteo's own playtest.
 
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the
