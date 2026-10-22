@@ -273,6 +273,17 @@ local function show(amount)
 	goNow = go
 end
 
+-- no launch screen (ReplicatedFirst.Launch missing, e.g. a Rojo still serving an older project tree,
+-- or it failed before drawing): nothing would ever set LaunchDone, and the gift, the return screen
+-- and the tips would wait forever. Launch draws before any StarterPlayerScripts run, so its absence
+-- a few seconds in means it is not coming.
+task.delay(5, function()
+	if not player:GetAttribute("LaunchDone") and not playerGui:FindFirstChild("Launch") then
+		warn("[Tycoon] no launch screen (restart Rojo if ReplicatedFirst.Launch is missing): skipping it")
+		player:SetAttribute("LaunchDone", true)
+	end
+end)
+
 local function check()
 	while not player:GetAttribute("LaunchDone") do -- the gift is the launch screen's reward (src/first/Launch)
 		player:GetAttributeChangedSignal("LaunchDone"):Wait()
