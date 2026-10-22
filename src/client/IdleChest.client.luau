@@ -139,10 +139,21 @@ local ui = {}
 local busy = false
 local balls = {}
 
+-- the chests' world labels would show through the veil behind the card: hide them while it is open
+local function chestLabels(on)
+	local sect = workspace:FindFirstChild("Sect")
+	for _, d in sect and sect:GetDescendants() or {} do
+		if d:IsA("BillboardGui") and d.Parent and d.Parent.Name == "IdleChest" then
+			d.Enabled = on
+		end
+	end
+end
+
 local function close()
 	if not gui.Enabled then
 		return
 	end
+	chestLabels(true)
 	tween(ui.scale, 0.2, { Scale = 0.8 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 	tween(ui.veil, 0.25, { BackgroundTransparency = 1 })
 	task.delay(0.25, function()
@@ -349,6 +360,7 @@ end
 local function play(gain, away, summons, mode)
 	build(away, summons, mode)
 	gui.Enabled = true
+	chestLabels(false)
 	tween(ui.veil, 0.3, { BackgroundTransparency = 0.45 })
 	tween(ui.scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
 	Sfx.play("toast")
