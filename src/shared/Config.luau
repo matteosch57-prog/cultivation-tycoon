@@ -71,13 +71,6 @@ Config.MOVE = {
 	floatFall = 0.45, -- share of gravity taken away while falling (a soft, floaty landing)
 	airSteps = 1, -- cloud steps: jump again in the air, once per jump
 	stepUp = 46, -- studs/s upward on a cloud step (~5.4 studs higher)
-	-- Roblox's own animation packs (any game may play them), slot = Animate value to replace:
-	-- Ninja run (a light forward dash), Levitation jump and fall (the robes float down). nil = keep.
-	anims = {
-		run = "rbxassetid://656118852",
-		jump = "rbxassetid://616008936",
-		fall = "rbxassetid://616005863",
-	},
 }
 
 -- Realms: each breakthrough multiplies income and costs.

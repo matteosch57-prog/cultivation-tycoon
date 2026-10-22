@@ -211,7 +211,14 @@ local function buildingFrame(plotFrame, pad, how)
 	if how == "centre" then
 		local p = Vector3.new(pad.x, 0, pad.z)
 		local i = Config.ISLETS[Config.isletAt(pad.x, pad.z)]
-		return plotFrame * CFrame.lookAt(p, Vector3.new(i.x, 0, i.z)) * CFrame.Angles(0, math.pi, 0)
+		local c = Vector3.new(i.x, 0, i.z)
+		-- a building AT its islet's centre (the Training Ground) faces +Z, as Builders turns it: a
+		-- look at its own position is NaN and sent both fighters to y = -1e6 (owner 2026-10-22:
+		-- "Fighters never appeared")
+		if (c - p).Magnitude < 1 then
+			c = p + Vector3.new(0, 0, 1)
+		end
+		return plotFrame * CFrame.lookAt(p, c) * CFrame.Angles(0, math.pi, 0)
 	end
 	return plotFrame * CFrame.new(pad.x, 0, pad.z)
 end
