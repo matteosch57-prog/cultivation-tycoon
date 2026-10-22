@@ -433,6 +433,21 @@ local function defaultData()
 	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
+-- Each disciple keeps the look it was rolled with (D60): data.discLooks[i] goes with data.disciples[i]
+-- (a parallel list, so every reader of the rarity list stays as it is). An old save, or a list
+-- another path changed, is padded with the look its place used to give.
+local function discLooks(d)
+	d.discLooks = d.discLooks or {}
+	local looks = Config.DISCIPLE_LOOKS
+	for i = #d.discLooks + 1, #d.disciples do
+		d.discLooks[i] = looks[(i - 1) % #looks + 1]
+	end
+	for i = #d.discLooks, #d.disciples + 1, -1 do
+		d.discLooks[i] = nil
+	end
+	return d.discLooks
+end
+
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
 -- benched, e.g. after a breakthrough resets the Quarters). `s.passes` = game passes owned (Shop).
 -- Karma Shop node level (0 = not bought)
@@ -508,7 +523,8 @@ local function rate(s, away)
 	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony
+	local index = Config.indexMult(data.index) -- the disciple index's stars (D60)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony * index
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
@@ -583,6 +599,13 @@ local function publish(player)
 		table.insert(pulled, name)
 	end
 	player:SetAttribute("Pulled", table.concat(pulled, ","))
+	-- the disciple index (D60): "key=pulls;..." for the Index page, and each seated disciple's look
+	local idx = {}
+	for key, count in d.index or {} do
+		table.insert(idx, key .. "=" .. count)
+	end
+	player:SetAttribute("Index", table.concat(idx, ";"))
+	player:SetAttribute("DiscLooks", table.concat(discLooks(d), ","))
 	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
@@ -707,41 +730,44 @@ local function buildDisciples(s, newcomer)
 	end
 	local ctx = ctxFor(s)
 	ctx.folder = folder
-	-- the working disciples (strongest first), counted by name
+	-- the working disciples (strongest first), counted by rarity and look ("Elder|lotus", D60)
 	local want = {}
 	local max = maxDisciples(s)
+	local looks = discLooks(s.data)
 	for slot, name in s.data.disciples do
 		if slot > max then
 			break -- benched
 		end
-		want[name] = (want[name] or 0) + 1
+		local key = Config.indexKey(name, looks[slot])
+		want[key] = (want[key] or 0) + 1
 	end
 	-- keep every seated figure whose disciple still works; clear the rest
 	local taken = {}
 	for _, m in folder:GetChildren() do
 		local slot = tonumber(m.Name:match("^Disciple(%d+)$"))
-		local name = m:GetAttribute("Disciple")
-		if slot and slot <= max and name and (want[name] or 0) > 0 and not taken[slot] then
-			want[name] -= 1
+		local key = m:GetAttribute("Disciple")
+		if slot and slot <= max and key and (want[key] or 0) > 0 and not taken[slot] then
+			want[key] -= 1
 			taken[slot] = true
 		else
 			m:Destroy()
 		end
 	end
-	-- the others take the free seats, strongest first
+	-- the others take the free seats, strongest first; `newcomer` is a rarity|look key
 	local slot = 1
-	for _, name in s.data.disciples do
-		if (want[name] or 0) > 0 then
+	for i, name in s.data.disciples do
+		local key = Config.indexKey(name, looks[i])
+		if (want[key] or 0) > 0 then
 			while taken[slot] do
 				slot += 1
 			end
-			want[name] -= 1
+			want[key] -= 1
 			taken[slot] = true
-			local arrive = name == newcomer
+			local arrive = key == newcomer
 			if arrive then
-				newcomer = nil -- only one seat walks in, the first with that name
+				newcomer = nil -- only one seat walks in, the first with that key
 			end
-			Builders.disciple(ctx, slot, Config.rarity(name), arrive):SetAttribute("Disciple", name)
+			Builders.disciple(ctx, slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
 		end
 	end
 	if fresh then
@@ -1300,6 +1326,16 @@ local function onJoin(player)
 	for id, n in data.workers or {} do -- WORKER_MAX went from 3 to 2 (owner 2026-10-22)
 		data.workers[id] = math.min(n, Config.WORKER_MAX)
 	end
+	-- the disciple index (D60): a save from before it starts its book with the disciples it has
+	if not data.index then
+		data.index = {}
+		local looks = discLooks(data)
+		for i, name in data.disciples do
+			local key = Config.indexKey(name, looks[i])
+			data.index[key] = (data.index[key] or 0) + 1
+		end
+		data.indexSteps = Config.indexTotalStars(data.index) // Config.INDEX_STEP_STARS
+	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Bless.refresh(plot) -- the shrine shows this owner's blessings
@@ -1468,29 +1504,58 @@ local function roll()
 end
 
 local function byBonus(a, b)
-	return Config.rarity(a).bonus > Config.rarity(b).bonus
+	return Config.rarity(a[1]).bonus > Config.rarity(b[1]).bonus
 end
 
--- Seat a new disciple (a recruit, or one bought in the Shop). Returns true when it works a seat;
--- false = the sect is full of stronger ones and it left (`force` keeps it on the bench instead).
-local function addDisciple(s, name, force, noBuild)
-	local list = s.data.disciples
+-- The disciple index (D60): one more pull of `name` in `look`; a new star can reach a summons step
+-- (Config.INDEX_STEP_STARS), paid at once as free summons. Returns the entry's stars before / after.
+local function indexAdd(s, name, look)
+	local d = s.data
+	d.index = d.index or {}
+	local key = Config.indexKey(name, look)
+	local before = Config.indexStars(d.index[key])
+	d.index[key] = (d.index[key] or 0) + 1
+	local after = Config.indexStars(d.index[key])
+	if after > before then
+		local steps = Config.indexTotalStars(d.index) // Config.INDEX_STEP_STARS
+		if steps > (d.indexSteps or 0) then
+			d.chestSummons = (d.chestSummons or 0) + (steps - (d.indexSteps or 0)) * Config.INDEX_STEP_SUMMONS
+			d.indexSteps = steps
+			s.player:SetAttribute("ChestSummons", d.chestSummons)
+			notify:FireClient(s.player, "indexStep", Config.INDEX_STEP_SUMMONS)
+		end
+	end
+	return before, after
+end
+
+-- Seat a new disciple (a recruit, or one bought in the Shop) in `look` (rolled when missing) and count
+-- it in the index. Returns kept (true when it works a seat; false = the sect is full of stronger ones
+-- and it left, `force` keeps it on the bench instead), its look, its index stars after, and whether
+-- this pull lit a new star.
+local function addDisciple(s, name, force, noBuild, look)
+	local d = s.data
+	look = look or Config.DISCIPLE_LOOKS[math.random(#Config.DISCIPLE_LOOKS)]
+	local looks = discLooks(d)
+	local list = {}
+	for i, n in d.disciples do
+		list[i] = { n, looks[i] }
+	end
 	local max = maxDisciples(s)
 	table.sort(list, byBonus)
-	local kept = #list < max or Config.rarity(name).bonus > Config.rarity(list[max]).bonus
+	local kept = #list < max or Config.rarity(name).bonus > Config.rarity(list[max][1]).bonus
 	if kept or force then
 		-- full: the newcomer takes the weakest working seat (it joins and the list re-sorts)
-		table.insert(list, name)
+		table.insert(list, { name, look })
 	end
 	table.sort(list, byBonus)
 	-- keep at most as many as the largest possible sect (benched ones beyond the slots), dropping
 	-- the weakest UNBOUGHT one: a disciple paid for with Robux (data.boughtDisciples) never leaves,
 	-- even if that leaves the list over the cap
-	local paid = table.clone(s.data.boughtDisciples or {})
+	local paid = table.clone(d.boughtDisciples or {})
 	local keep = {}
-	for i, name in list do -- strongest first: the bought copies are the strongest of their name
-		if (paid[name] or 0) > 0 then
-			paid[name] -= 1
+	for i, e in list do -- strongest first: the bought copies are the strongest of their name
+		if (paid[e[1]] or 0) > 0 then
+			paid[e[1]] -= 1
 			keep[i] = true
 		end
 	end
@@ -1502,10 +1567,16 @@ local function addDisciple(s, name, force, noBuild)
 			table.remove(list, i)
 		end
 	end
-	if not noBuild then -- a multi-recruit rebuilds once at the end
-		buildDisciples(s, kept and name or nil)
+	table.clear(d.disciples)
+	table.clear(looks)
+	for i, e in list do
+		d.disciples[i], looks[i] = e[1], e[2]
 	end
-	return kept
+	local starsBefore, stars = indexAdd(s, name, look)
+	if not noBuild then -- a multi-recruit rebuilds once at the end
+		buildDisciples(s, kept and Config.indexKey(name, look) or nil)
+	end
+	return kept, look, stars, stars > starsBefore
 end
 
 -- one free summon from the idle chest: the same roll and seating as a recruit, no qi
@@ -1521,14 +1592,14 @@ chestFn.OnServerInvoke = function(player)
 	s.data.chestSummons -= 1
 	player:SetAttribute("ChestSummons", s.data.chestSummons)
 	local r = roll()
-	local kept = addDisciple(s, r.name)
+	local kept, look, stars, newStar = addDisciple(s, r.name)
 	-- a rolled rarity keeps its "first pulled" mark, as with a recruit
 	s.data.pulled = s.data.pulled or {}
 	s.data.pulled[r.name] = true
 	publish(player)
 	Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
 	s.recruiting = false
-	return { rarity = r.name, kept = kept, left = s.data.chestSummons }
+	return { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, left = s.data.chestSummons }
 end
 
 -- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
@@ -1559,27 +1630,27 @@ recruitFn.OnServerInvoke = function(player, count)
 	s.data.recruited += want -- lifetime (telemetry)
 	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
 	Telemetry.sink(player, s.data, cost, "recruit")
-	local results, best, bestKept, bestKeptName = {}, nil, false, nil
+	local results, best, bestLook, bestKept, bestKeptName, bestKeptKey = {}, nil, nil, false, nil, nil
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
 		local r = roll()
-		local kept = addDisciple(s, r.name, false, true)
-		table.insert(results, { rarity = r.name, kept = kept })
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
 		if not best or r.bonus > Config.rarity(best).bonus then
-			best = r.name
+			best, bestLook = r.name, look
 		end
 		if kept and (not bestKeptName or r.bonus > Config.rarity(bestKeptName).bonus) then
-			bestKept, bestKeptName = true, r.name
+			bestKept, bestKeptName, bestKeptKey = true, r.name, Config.indexKey(r.name, look)
 		end
 		Telemetry.custom(player, "Recruit", r.name, Telemetry.realmBucket(s.data.realm), kept and "kept" or "benched")
 		-- a rarity rolled at least once keeps a "first pulled" mark (the Shop also sells it, D28)
 		s.data.pulled[r.name] = true
 	end
-	buildDisciples(s, bestKeptName) -- once, only the best newcomer arrives with its entrance
+	buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
 	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
-	return { ok = true, rarity = best, kept = bestKept, results = results }
+	return { ok = true, rarity = best, look = bestLook, kept = bestKept, results = results }
 end
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.

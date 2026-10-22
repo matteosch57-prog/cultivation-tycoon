@@ -15,7 +15,7 @@ local Rig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):
 local Cultivators = {}
 
 Cultivators.TAG = "Cultivator"
-Cultivators.LOOKS = { "sword", "lotus", "monk", "elder" }
+Cultivators.LOOKS = { "sword", "lotus", "monk", "elder" } -- = Config.DISCIPLE_LOOKS (a disciple keeps its look, D60)
 
 local SKIN = Color3.fromRGB(238, 204, 176)
 local CUSHION = Color3.fromHex("B8352B"):Lerp(Color3.new(0, 0, 0), 0.3)

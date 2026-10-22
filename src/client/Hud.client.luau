@@ -865,7 +865,7 @@ end
 -- layout: place things around Roblox's own controls (called on any change)
 -- a full-screen screen (Shop, Reincarnation) is open: the HUD steps aside (toasts stay), so nothing
 -- peeks out from under that screen's veil or under its title on a phone (phone check 2026-10-21)
-local MODALS = { "Shop", "Reincarnation", "WelcomeOffer" }
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "Index" }
 local function modalOpen()
 	for _, name in MODALS do
 		local g = playerGui:FindFirstChild(name)
@@ -982,7 +982,8 @@ refreshStatic = function()
 	ui.realm.Text = player:GetAttribute("RealmName") or ""
 	local lit = litDots()
 	ui.shopDot.Visible = lit.shop ~= nil
-	ui.discDot.Visible = lit.disc ~= nil and not state.discOpen
+	-- a new disciple, or a new disciple index star (D60, local IndexNew): the index's own dot is on its button in the card
+	ui.discDot.Visible = (lit.disc ~= nil or player:GetAttribute("IndexNew") == true) and not state.discOpen
 	ui.karmaDot.Visible = lit.karma ~= nil
 	ui.reincDot.Visible = lit.reinc == true
 	ui.karma.Text = short(player:GetAttribute("Karma") or 0)
@@ -1045,6 +1046,23 @@ refreshStatic = function()
 		end
 		text(cell, string.format("+%d%%", r.bonus * 100), px(11), r.color, { LayoutOrder = 2 })
 	end
+	-- the disciple index (D60, IndexBook.client): a gold book button at the end of the card, with a red
+	-- dot while a star is new (local attribute IndexNew, set by IndexBook where the stars change)
+	local iHolder, iBtn = toy(ui.card, UDim2.fromOffset(px(48), px(48)), GOLD, px(12))
+	iHolder.LayoutOrder = 100
+	local iCol = frame(iBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 3 })
+	Toy.list(iCol, false, 0)
+	text(iCol, "★", px(18), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 3 })
+	text(iCol, "Index", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
+	if player:GetAttribute("IndexNew") then
+		Toy.dot(iHolder, px(17))
+	end
+	iBtn.Activated:Connect(function()
+		local ev = playerGui:FindFirstChild("IndexOpen")
+		if ev then
+			ev:Fire()
+		end
+	end)
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
 	local total = Config.requiredPads(player:GetAttribute("Realm") or 1) -- this realm's island (D48); paths and groves optional
@@ -1081,7 +1099,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1314,6 +1332,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 		return
 	elseif kind == "pill" then
 		toast("Pill ready!", GOLD, 2.5)
+		return
+	elseif kind == "indexStep" then -- the disciple index paid a step (D60): `a` free summons
+		toast(string.format("Index step! +%d free summons", a), GOLD, 3)
 		return
 	elseif kind == "expand" then
 		toast("More land!", Color3.fromHex("9FF5C8"), 3)

@@ -324,3 +324,13 @@ the log as a D-number.
 - **D59** Red dots (owner 2026-10-22): one ruby-gem look (`Toy.dot`); every dot leads to a dot inside
   and clears when followed; the server lights them where state changes (`Dots.luau`); the Shop's dot
   leads to a free Daily Gift (300 s of income, once a UTC day).
+- **D60** Disciple index (owner list 2026-10-22 #2; picked B of `docs/art/mocks/disciple_index_{A,B,C}.png`
+  "with the C stars system. Max 5 stars each, giving a qi boost, low but good to get. Some summons at
+  each step"). One entry per rarity and look (9 x 4); a star at each of `INDEX_STARS` pulls of it,
+  `INDEX_STAR_BONUS` income per star (forever; kept out of the price income), `INDEX_STEP_SUMMONS` free
+  summons every `INDEX_STEP_STARS` stars (numbers from the economy pass: 0.005 a star sped the climb up
+  by 2-3 days). Every disciple counts, from any source. Each disciple now keeps the look it was rolled
+  with (`data.discLooks`, a list parallel to `data.disciples`, written only in `addDisciple`), so the
+  figure on its seat is its index entry; an old save fills looks from list order and starts its book
+  with the disciples it has. Why B over A: nine entries fill in a day; PS99-style variants multiply the
+  book without a new rarity. Captures `docs/art/captures/disciple_index_play.jpg`, `..._reveal_play.jpg`.

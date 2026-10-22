@@ -539,6 +539,17 @@ Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- play, or after any building from `late` s (owner: "after a big building after 5-10 minutes")
 Config.WELCOME = { after = 300, late = 600 }
 Config.VIP_SLOTS = 1
+-- The four cultivator looks (Cultivators.luau): each disciple keeps the one it was rolled with (D60)
+Config.DISCIPLE_LOOKS = { "sword", "lotus", "monk", "elder" }
+Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "Sage" }
+-- The disciple index (D60, owner pick B + C 2026-10-22: "B better, with the C stars system. Max 5 stars
+-- each, giving a qi boost, low but good to get. Some summons at each step"): one entry per rarity and
+-- look; a star at each of INDEX_STARS pulls of it, INDEX_STAR_BONUS income per star (forever, every
+-- life), INDEX_STEP_SUMMONS free summons each INDEX_STEP_STARS stars. Numbers: the economy pass.
+Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
+Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
+Config.INDEX_STEP_STARS = 10
+Config.INDEX_STEP_SUMMONS = 3
 Config.DISCIPLE_CAP = 8 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
@@ -859,6 +870,34 @@ function Config.rarityIndex(name)
 		end
 	end
 	return 1
+end
+
+-- the index key of a rarity and look: "Elder|lotus"
+function Config.indexKey(name, look)
+	return name .. "|" .. look
+end
+
+-- stars of one index entry pulled `count` times (0..#INDEX_STARS)
+function Config.indexStars(count)
+	local n = 0
+	for _, at in Config.INDEX_STARS do
+		if (count or 0) >= at then
+			n += 1
+		end
+	end
+	return n
+end
+
+-- every star of an index ({ [key] = pulls }) and the income multiplier they give
+function Config.indexTotalStars(index)
+	local n = 0
+	for _, count in index or {} do
+		n += Config.indexStars(count)
+	end
+	return n
+end
+function Config.indexMult(index)
+	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
 end
 
 -- seconds from the Recruit press to the burst (Juice lights the platform then)
