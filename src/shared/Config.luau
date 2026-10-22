@@ -412,7 +412,7 @@ Config.GROUP_BONUS = 0.1
 -- economy check confirms). Once per visitor and sect a UTC day; at most BLESS_GIVE_MAX given and
 -- BLESS_GET_MAX received a day. The owner's share needs a real giver: Roblox account age and play
 -- time (alts feed nobody, research 2026-10-22_neighbour_visits).
-Config.BLESS_SHRINE_AT = Vector3.new(-24, 0, 44) -- home island, left of the avenue, its stair facing it (a kit pavilion ~14 studs wide with its lanterns)
+Config.BLESS_SHRINE_AT = Vector3.new(-17, 0, 44) -- home island, left of the avenue, plaque facing it (pot on a pedestal, lanterns either side)
 Config.BLESS_HOLD = 3
 Config.BLESS_SECONDS = 120
 Config.BLESS_GIVE_MAX = 5

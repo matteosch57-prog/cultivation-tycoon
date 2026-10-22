@@ -68,9 +68,9 @@ checked in Studio Play (ROADMAP).
   opened by bridge pads; no default roads or trees (path and grove pads, optional, Harmony +2% each
   to +20%); 2 workers per farm / mine / furnace / training ground; guide trail routes over bridges.
   Layout script `tools/islet_layout.py`. Checked in Economy's Play; left: phone triangle count.
-- **Incense Blessing** (D57): a kit-pavilion shrine left of the avenue; a visitor's 3 s blessing
+- **Incense Blessing** (D57): a celadon incense-pot shrine left of the avenue; a visitor's 3 s blessing
   gives both players BLESS_SECONDS of income, once per sect a day, alt-proof. Checked in Studio Play
-  with the BlessTest hook (premium shrine on branch `shrine`, merging). Left: a real 2-player test.
+  with the BlessTest hook (the pot shrine on branch `shrine`). Left: a real 2-player test.
 
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the

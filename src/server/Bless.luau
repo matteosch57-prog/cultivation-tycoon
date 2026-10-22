@@ -8,13 +8,13 @@
 -- plaque counts every blessing the sect ever had (`blessTotal`, a monotonic record).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local AssetService = game:GetService("AssetService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Bless = {}
 local api -- { sessions, rate, publish, notify, telemetry, style, palette, kit }
 
 local EMBER = Color3.fromHex("FF8A3C")
-local BRONZE = Color3.fromHex("8C6A3A")
 
 local function today()
 	return os.time() // 86400
@@ -143,68 +143,97 @@ local function trigger(plot, player)
 	end)
 end
 
--- the shrine (owner 2026-10-22: the first plinth-and-pot was "ugly"; made premium from the kit): an
--- open kit pavilion on a stone deck with its stair to the avenue, a bronze ding censer under it
--- (three legs, loop handles, a gold rim) holding BLESS_GET_MAX sticks, a pair of stone lanterns at
--- the stair, and a gilt plaque on the front beam with the count. Called once per plot (it outlives
--- owners; Bless.refresh repaints it).
-local W, COL = 6, 6.2 -- pavilion span and column height (Kit.pavilion)
+-- the shrine (owner pick 2026-10-22 of three Creator Store burners, docs/art/mocks/shrine_candidates.jpg;
+-- the plinth-and-pot and the kit pavilion were both "ugly"): a celadon incense pot (the free mesh of
+-- asset 98661629860539, rebuilt from its id, no inserted scripts) on a carved stone pedestal, full of
+-- incense sticks (BLESS_GET_MAX of them light up), two stone lanterns, and a gilt plaque on red posts
+-- with the count, facing the avenue. Called once per plot (Bless.refresh repaints it).
+local POT_MESH = "rbxassetid://4204056065"
+local POT = Vector3.new(0.4047, 0.2083, 0.2924) -- the mesh's own size; scaled by POT_SCALE
+local POT_SCALE = 8.5
+local CELADON = Color3.fromHex("B9C4B1")
 function Bless.build(plot)
 	local P, PAL, Kit = api.style.P, api.palette, api.kit
 	local m = Instance.new("Model")
 	m.Name = "Shrine"
 	local at = Config.BLESS_SHRINE_AT
-	-- the stair (+Z of the pavilion) turned to face the avenue (+X of the peak frame)
+	-- +Z faces the avenue (+X of the peak frame)
 	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, math.rad(90), 0)
-	local _, deckH = Kit.pavilion(m, cf, W, COL)
-	local floor = cf * CFrame.new(0, deckH, 0)
-	-- the ding: three legs, a round body darkening to the base, a gold lip, two loop handles
-	local dark = Color3.fromHex("5E4A2C")
-	for k = 0, 2 do
-		local a = k / 3 * math.pi * 2
-		P(m, Vector3.new(0.35, 1.1, 0.35), floor * CFrame.new(math.cos(a) * 0.95, 0.55, math.sin(a) * 0.95), dark, Enum.Material.Metal)
+	-- the pedestal: a stepped stone base, a carved drum, a cap
+	P(m, Vector3.new(5.2, 0.5, 5.2), cf * CFrame.new(0, 0.25, 0), PAL.stone)
+	P(m, Vector3.new(4.2, 0.5, 4.2), cf * CFrame.new(0, 0.75, 0), PAL.stoneLight)
+	P(m, Vector3.new(1.6, 3.2, 3.2), cf * CFrame.new(0, 1.8, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.stone, nil, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.3, 3.5, 3.5), cf * CFrame.new(0, 2.15, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.4, 3.9, 3.9), cf * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.stoneLight, nil, Enum.PartType.Cylinder)
+	local top = cf * CFrame.new(0, 2.8, 0)
+	-- the pot
+	local size = POT * POT_SCALE
+	local ok, pot = pcall(AssetService.CreateMeshPartAsync, AssetService, POT_MESH, {
+		CollisionFidelity = Enum.CollisionFidelity.Box,
+		RenderFidelity = Enum.RenderFidelity.Automatic,
+	})
+	if not ok or not pot then
+		warn("[Tycoon][bless] event=pot_mesh_failed")
+		pot = P(m, Vector3.new(size.Y, size.X * 0.8, size.X * 0.8), top * CFrame.new(0, size.Y / 2, 0) * CFrame.Angles(0, 0, math.pi / 2), CELADON, Enum.Material.Marble, Enum.PartType.Cylinder)
+	else
+		pot.Anchored = true
+		pot.Size = size
+		pot.CFrame = top * CFrame.new(0, size.Y / 2, 0) * CFrame.Angles(0, math.rad(90), 0) -- handles to the sides
+		pot.Color = CELADON
+		pot.Material = Enum.Material.Marble
+		pot.Parent = m
 	end
-	local burner = P(m, Vector3.new(1.4, 2.6, 2.6), floor * CFrame.new(0, 1.75, 0) * CFrame.Angles(0, 0, math.pi / 2), BRONZE, Enum.Material.Metal, Enum.PartType.Cylinder)
-	burner.Name = "Burner"
-	P(m, Vector3.new(0.5, 2.2, 2.2), floor * CFrame.new(0, 1.05, 0) * CFrame.Angles(0, 0, math.pi / 2), dark, Enum.Material.Metal, Enum.PartType.Cylinder)
-	P(m, Vector3.new(0.25, 2.9, 2.9), floor * CFrame.new(0, 2.5, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)
-	P(m, Vector3.new(0.1, 2.4, 2.4), floor * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromHex("CDBB98"), Enum.Material.Sand, Enum.PartType.Cylinder) -- the ash
+	pot.Name = "Burner"
+	-- the ash bed just under the rim
+	local bed = top * CFrame.new(0, size.Y * 0.86, 0)
+	P(m, Vector3.new(0.15, size.Z * 0.78, size.Z * 0.78), bed * CFrame.Angles(0, 0, math.pi / 2), Color3.fromHex("C7AC78"), Enum.Material.Sand, Enum.PartType.Cylinder)
+	-- twelve sticks fanned a little: red foot, tan body, grey ash at the tip; the first
+	-- BLESS_GET_MAX of them carry the ember that lights for a blessing
+	local rng = Random.new(31)
+	for k = 1, 12 do
+		local a = (k - 1) / 12 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local r = (k % 3 == 0) and 0.15 or rng:NextNumber(0.25, 0.55)
+		local tilt = CFrame.Angles(math.sin(a) * 0.12, 0, -math.cos(a) * 0.12)
+		local foot = bed * CFrame.new(math.cos(a) * r, 0, math.sin(a) * r) * tilt
+		local len = rng:NextNumber(2.6, 3.2)
+		local foot1 = P(m, Vector3.new(0.12, 0.5, 0.12), foot * CFrame.new(0, 0.25, 0), Color3.fromHex("AF132D"))
+		local body = P(m, Vector3.new(0.09, len, 0.09), foot * CFrame.new(0, 0.5 + len / 2, 0), Color3.fromHex("C7AC78"), Enum.Material.Wood)
+		local ash = P(m, Vector3.new(0.11, 0.35, 0.11), foot * CFrame.new(0, 0.5 + len + 0.17, 0), Color3.fromHex("CACBD1"), Enum.Material.Slate)
+		for _, q in { foot1, body, ash } do
+			q.CanCollide = false
+		end
+		if k <= Config.BLESS_GET_MAX then
+			local tip = P(m, Vector3.new(0.16, 0.16, 0.16), foot * CFrame.new(0, 0.5 + len + 0.38, 0), Color3.fromHex("3A2A22"))
+			tip.Name = "Tip" .. k
+			tip.CanCollide = false
+			local light = Instance.new("PointLight") -- the ember itself lights the pot (a real lit object)
+			light.Color = EMBER
+			light.Range = 6
+			light.Brightness = 1
+			light.Enabled = false
+			light.Parent = tip
+			local smoke = Instance.new("ParticleEmitter")
+			smoke.Color = ColorSequence.new(Color3.fromHex("F2EEE6"))
+			smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+			smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.12), NumberSequenceKeypoint.new(1, 0.9) })
+			smoke.Lifetime = NumberRange.new(3, 4.5)
+			smoke.Rate = 3
+			smoke.Speed = NumberRange.new(0.7, 1.1)
+			smoke.Acceleration = Vector3.new(0.15, 0.35, 0)
+			smoke.RotSpeed = NumberRange.new(-30, 30)
+			smoke.LightEmission = 0
+			smoke.Enabled = false
+			smoke.Parent = tip
+		end
+	end
+	-- two stone lanterns either side, and the plaque low on red posts in front
 	for _, sx in { -1, 1 } do
-		P(m, Vector3.new(0.2, 0.9, 0.2), floor * CFrame.new(sx * 1.05, 3.05, 0), PAL.gold, Enum.Material.Metal)
-		P(m, Vector3.new(0.2, 0.2, 0.7), floor * CFrame.new(sx * 1.05, 3.45, 0), PAL.gold, Enum.Material.Metal)
+		api.style.lantern(m, cf * CFrame.new(sx * 4.4, 0, 1.2), 0.75)
 	end
-	for k = 1, Config.BLESS_GET_MAX do
-		local a = (k - 1) / Config.BLESS_GET_MAX * math.pi * 2
-		local base = floor * CFrame.new(math.cos(a) * 0.6, 2.65, math.sin(a) * 0.6)
-		local stick = P(m, Vector3.new(0.12, 2.4, 0.12), base * CFrame.new(0, 1.2, 0) * CFrame.Angles(math.cos(a) * 0.08, 0, math.sin(a) * 0.08), Color3.fromHex("7B3B2A"))
-		stick.CanCollide = false
-		local tip = P(m, Vector3.new(0.2, 0.25, 0.2), base * CFrame.new(0, 2.45, 0), Color3.fromHex("3A2A22"))
-		tip.Name = "Tip" .. k
-		tip.CanCollide = false
-		local light = Instance.new("PointLight") -- the ember itself lights the censer (a real lit object)
-		light.Color = EMBER
-		light.Range = 6
-		light.Brightness = 1
-		light.Enabled = false
-		light.Parent = tip
-		local smoke = Instance.new("ParticleEmitter")
-		smoke.Color = ColorSequence.new(Color3.fromHex("F2EEE6"))
-		smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
-		smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.9) })
-		smoke.Lifetime = NumberRange.new(3, 4)
-		smoke.Rate = 3
-		smoke.Speed = NumberRange.new(0.8, 1.2)
-		smoke.Acceleration = Vector3.new(0.15, 0.35, 0)
-		smoke.LightEmission = 0
-		smoke.Enabled = false
-		smoke.Parent = tip
-	end
-	-- a pair of stone lanterns either side of the stair
 	for _, sx in { -1, 1 } do
-		api.style.lantern(m, cf * CFrame.new(sx * 3.6, 0, W / 2 + 4.6), 0.7)
+		P(m, Vector3.new(0.35, 2.3, 0.35), cf * CFrame.new(sx * 2.5, 1.15, 3.6), Kit.RED)
 	end
-	-- the gilt plaque on the front beam, facing the stair: "Blessed N times"
-	local board = Kit.plaque(m, floor * CFrame.new(0, COL - 1.1, W / 2 + 0.45), 4.4, 1.1, "Incense Shrine")
+	local board = Kit.plaque(m, cf * CFrame.new(0, 1.75, 3.6), 4.6, 1.2, "Incense Shrine") -- low: the pot shows above it
 	local label = board:FindFirstChildWhichIsA("TextLabel", true)
 	if label then
 		label.Name = "Count"
@@ -215,7 +244,7 @@ function Bless.build(plot)
 	prompt.HoldDuration = Config.BLESS_HOLD
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = burner
+	prompt.Parent = pot
 	prompt.Triggered:Connect(function(player)
 		trigger(plot, player)
 	end)

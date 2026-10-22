@@ -315,9 +315,10 @@ the log as a D-number.
   giver with a 7-day-old account and 10 min played (alts feed nobody). Today's sticks stay lit; the
   plaque counts every blessing ever (`blessTotal`, a status number for the coming sect board). Never
   required, never prompted for (FarmVille's "spam your friends" backlash).
-  The shrine is a kit pavilion with a bronze ding censer, two stone lanterns and a gilt plaque, left
-  of the avenue at BLESS_SHRINE_AT (owner: the first plinth-and-pot was "ugly"; captures
-  `docs/art/captures/bless_shrine_premium_*.jpg`).
+  The shrine: a celadon incense pot (free Creator Store mesh of asset 98661629860539, rebuilt from its
+  id) full of sticks on a stone pedestal, two stone lanterns, a low gilt plaque with the count in jade
+  round digits (owner pick 2 of `docs/art/mocks/shrine_candidates.jpg`, after a plinth-and-pot and a
+  kit pavilion were both "ugly"; capture `docs/art/captures/bless_shrine_pot_play.jpg`).
 - **D58** Daily Blessing + badges (owner list 2026-10-22 #3 and #4; streak mock A, "make it more
   attractive", "elder d7 is super late, should be day 2 at least. I'd say even one tier more day
   2"): a 7-day ladder claimed once per UTC day that pauses on a missed day and loops after day 7
