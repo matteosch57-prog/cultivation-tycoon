@@ -58,6 +58,7 @@ Config.ROCK_MESH = { "", "", "", "" }
 Config.SKY_MESH = {
 	cloud = "rbxassetid://4862430258",
 	islet = "rbxassetid://5564853241",
+	isletTop = "rbxassetid://5564879293", -- the same model's grass top
 	ding = "rbxassetid://84550079612246",
 	lantern = "rbxassetid://131650726315765",
 	lanternTex = "rbxassetid://130929930789056",
