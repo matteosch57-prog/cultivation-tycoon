@@ -128,7 +128,8 @@ local function counterCentre()
 	local hud = playerGui:FindFirstChild("Hud")
 	local c = hud and hud:FindFirstChild("Counter", true)
 	if c and c.AbsoluteSize.X > 0 then
-		return c.AbsolutePosition + Vector2.new(px(24), c.AbsoluteSize.Y / 2)
+		-- Absolute* is measured from below the top bar even with IgnoreGuiInset: convert to this gui
+		return c.AbsolutePosition - gui.AbsolutePosition + Vector2.new(px(24), c.AbsoluteSize.Y / 2)
 	end
 	return Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, px(30))
 end
@@ -176,10 +177,8 @@ local function openBall(b)
 		BackgroundColor3 = r.color,
 		ZIndex = 9,
 	})
-	ring.Position = UDim2.fromOffset(
-		b.holder.AbsolutePosition.X + b.holder.AbsoluteSize.X / 2,
-		b.holder.AbsolutePosition.Y + b.holder.AbsoluteSize.Y / 2
-	)
+	local at = b.holder.AbsolutePosition - gui.AbsolutePosition + b.holder.AbsoluteSize / 2
+	ring.Position = UDim2.fromOffset(at.X, at.Y)
 	Toy.corner(ring, UDim.new(1, 0))
 	tween(ring, 0.45, { Size = UDim2.fromOffset(px(140), px(140)), BackgroundTransparency = 1 })
 	task.delay(0.5, function()
@@ -355,7 +354,7 @@ local function play(gain, away, summons)
 	Sfx.play("padSnap")
 	Sfx.play("buyChime")
 	tween(ui.lid, 0.35, { Position = UDim2.fromOffset(-px(10), -px(30)), Rotation = -24 }, Enum.EasingStyle.Back)
-	local centre = ui.chest.AbsolutePosition + ui.chest.AbsoluteSize * Vector2.new(0.5, 0.5)
+	local centre = ui.chest.AbsolutePosition - gui.AbsolutePosition + ui.chest.AbsoluteSize * Vector2.new(0.5, 0.5)
 	-- the qi explodes: drops burst out in a ring, hang a beat, then stream into the counter
 	local drops = math.clamp(6 + math.floor(math.log10(math.max(gain, 1)) * 2), 8, 18)
 	local target = counterCentre()

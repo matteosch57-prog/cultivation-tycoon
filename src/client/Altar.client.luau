@@ -88,7 +88,8 @@ local function counterBottom()
 	local hud = playerGui:FindFirstChild("Hud")
 	local c = hud and hud:FindFirstChild("Counter", true)
 	if c and c.AbsoluteSize.Y > 0 then
-		return c.AbsolutePosition.Y + c.AbsoluteSize.Y
+		-- Absolute* is measured from below the top bar even with IgnoreGuiInset: convert to this gui
+		return c.AbsolutePosition.Y + c.AbsoluteSize.Y - gui.AbsolutePosition.Y
 	end
 	return px(80)
 end
@@ -160,10 +161,12 @@ local function build()
 	local jump = jumpButton()
 	if jump then
 		local vp = workspace.CurrentCamera.ViewportSize
-		holder.Position =
-			UDim2.fromOffset(jump.AbsolutePosition.X + jump.AbsoluteSize.X, jump.AbsolutePosition.Y - px(24))
+		holder.Position = UDim2.fromOffset(
+			jump.AbsolutePosition.X + jump.AbsoluteSize.X - gui.AbsolutePosition.X,
+			jump.AbsolutePosition.Y - gui.AbsolutePosition.Y - px(24)
+		)
 		if holder.Position.X.Offset > vp.X - px(8) then
-			holder.Position = UDim2.new(1, -px(12), 0, jump.AbsolutePosition.Y - px(24))
+			holder.Position = UDim2.new(1, -px(12), 0, jump.AbsolutePosition.Y - gui.AbsolutePosition.Y - px(24))
 		end
 	else
 		holder.Position = UDim2.new(1, -px(24), 1, -px(96))
@@ -344,15 +347,35 @@ local function checkSprings()
 	end
 	for _, sp in springs do
 		local d = hrp.Position - sp.Position
-		if Vector2.new(d.X, d.Z).Magnitude < 2.4 and d.Y > -1 and d.Y < 5 then
+		if Vector2.new(d.X, d.Z).Magnitude < 3.2 and d.Y > -1 and d.Y < 6 then
 			lastLaunch = os.clock()
 			-- ballistic arc landing a third of the way in from the rim, T seconds from now
 			local land = Vector3.new(sp.Position.X * 0.35, top.Y + 3.2, sp.Position.Z * 0.35)
 			local T = 0.95
 			local g = Vector3.new(0, -workspace.Gravity, 0)
 			local v = (land - hrp.Position - 0.5 * g * T * T) / T
-			hum:ChangeState(Enum.HumanoidStateType.Jumping)
-			hrp.AssemblyLinearVelocity = v
+			hum:ChangeState(Enum.HumanoidStateType.Freefall)
+			-- fly the arc kinematically: a LinearVelocity follows v + g t until it lands (a humanoid
+			-- otherwise cancels the launch on the ground and steers the sideways part back to the stick)
+			local att = hrp:FindFirstChild("RootAttachment")
+			if att then
+				local lv = Instance.new("LinearVelocity")
+				lv.Attachment0 = att
+				lv.RelativeTo = Enum.ActuatorRelativeTo.World
+				lv.MaxForce = 1e6
+				lv.VectorVelocity = v
+				lv.Parent = hrp
+				local t0 = os.clock()
+				task.spawn(function()
+					while os.clock() - t0 < T and lv.Parent do
+						lv.VectorVelocity = v + g * (os.clock() - t0)
+						RunService.Heartbeat:Wait()
+					end
+					lv:Destroy()
+				end)
+			else
+				hrp.AssemblyLinearVelocity = v
+			end
 			Sfx.play("rise", { volume = 1.3 })
 			return
 		end
@@ -374,6 +397,10 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	local open = isOpen()
 	ui.panel.Visible = open
+	-- follow the qi counter's real bottom (the HUD lays out after this screen is built)
+	local below = counterBottom()
+	ui.panel.Position = UDim2.new(0.5, 0, 0, below + px(6))
+	ui.toast.Position = UDim2.new(0.5, 0, 0, below + (open and px(140) or px(8)))
 	local out = player:GetAttribute("AltarOut")
 	ui.palm.Visible = open and not out and amOnTop()
 	checkSprings()
