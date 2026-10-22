@@ -38,6 +38,9 @@ item, realm progression, and these custom events: FunnelTime, SessionEnd, LeaveS
 Feature (pill, orb, gift, hands), IdleChest, Shop, DiscipleBought, KarmaShop, Reincarnate, AltarRound,
 Social, ServerHealth, DataStorePressure, SaveIssue.
 - **Build** (2026-10-22): which building, realm, minutes played. Shows build order and skipped buildings.
+- **Menu** (2026-10-22): which HUD menu or panel opened (disciples row, Reincarnation screen, Karma
+  Shop, group gift card) and the realm. Client remote `MenuOpened` (Guard budget, a fixed key list,
+  once per 3 s per menu); the journal keeps it as `Menu:<key>`.
 - **LeaveState** (2026-10-22): minutes since the last buy, pads affordable at leave, AFK share. Splits
   "left at a wall" (nothing affordable, long since a buy) from "left lost" (things to buy) and "idled".
 - Roblox rules: only CustomField01..03 are read; at most 8,000 field combinations per event and 100
@@ -60,5 +63,4 @@ did it and when, and what one-session players did last before leaving. `USER_ID 
 player's sessions and action log.
 
 ## Not logged (on purpose or not yet)
-- Which menus a player opens, apart from the shop: these live in the client UI scripts.
 - Chat text, or anything personal.

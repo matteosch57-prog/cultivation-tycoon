@@ -22,6 +22,7 @@ local LIMITS = {
 	Reincarnate = { 1, 2 },
 	ShopBuy = { 2, 4 },
 	ShopOpened = { 2, 4 },
+	MenuOpened = { 2, 4 },
 	AltarPush = { 2, 4 },
 }
 

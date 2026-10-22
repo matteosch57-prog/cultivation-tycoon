@@ -134,6 +134,7 @@ end
 
 local function openCard()
 	closeCard()
+	remotes.MenuOpened:FireServer("group") -- analytics Menu (DATA.md)
 	local veil = Instance.new("TextButton")
 	veil.Text = ""
 	veil.AutoButtonColor = false

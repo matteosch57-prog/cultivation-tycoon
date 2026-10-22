@@ -491,6 +491,9 @@ local function build()
 	dBtn.Activated:Connect(function()
 		state.discOpen = not state.discOpen
 		card.Visible = state.discOpen
+		if state.discOpen then
+			remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md)
+		end
 	end)
 
 	-- realm progress: bottom centre

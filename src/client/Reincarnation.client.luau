@@ -234,6 +234,9 @@ local function goTo(p)
 	page = p
 	armedUntil = 0
 	build()
+	if p == "karma" then
+		remotes.MenuOpened:FireServer("karma") -- analytics Menu (DATA.md)
+	end
 end
 
 local function head(body, title)
@@ -400,6 +403,7 @@ local function open()
 	page = "road"
 	build()
 	gui.Enabled = true
+	remotes.MenuOpened:FireServer("reinc") -- analytics Menu (DATA.md)
 	Sfx.play("toast")
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.85

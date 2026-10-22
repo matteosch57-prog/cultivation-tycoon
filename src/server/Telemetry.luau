@@ -68,6 +68,10 @@ Telemetry.EVENTS = {
 		fields = { "life that ended (lifeBucket)", "realm reached (deepBucket)", "hours played in that life (hourBucket)" },
 		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",
 	},
+	Menu = {
+		fields = { "disciples | reinc | karma | group (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
+		question = "Which HUD menus do players open, and when in the climb (data audit 2026-10-22)?",
+	},
 	Shop = {
 		fields = {
 			"open | prompt | bought | closed",

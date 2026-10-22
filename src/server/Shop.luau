@@ -207,6 +207,8 @@ end
 
 local OPEN_SOURCES = { hud = true, pad = true, pill = true, short = true } -- short = the Get Qi offer on a pad out of reach
 local lastOpen = {}
+local MENUS = { disciples = true, reinc = true, karma = true, group = true } -- MenuOpened keys
+local lastMenu = {} -- [player] = { [menu] = os.clock() }
 
 -- World shop (D33, research 2026-10-21_shop_placement): every item stands where it acts. The
 -- passes and the pill stand on the owner's peak (Config.SHOP_PEAK_PADS, Shop.refreshPeak); the
@@ -376,6 +378,25 @@ function Shop.init(a)
 		end
 	end)
 
+	-- the HUD's own menus and panels (DATA.md): the client names one from MENUS, the server notes it
+	-- once per 3 s per menu (analytics event Menu, which the journal keeps as Menu:<key>)
+	local menu = Instance.new("RemoteEvent")
+	menu.Name = "MenuOpened"
+	menu.Parent = api.remotes
+	menu.OnServerEvent:Connect(function(player, key)
+		local s = api.sessions[player]
+		if not s or not Guard.allow(player, "MenuOpened") or type(key) ~= "string" or not MENUS[key] then
+			return
+		end
+		local seen = lastMenu[player] or {}
+		lastMenu[player] = seen
+		local now = os.clock()
+		if now - (seen[key] or 0) >= 3 then
+			seen[key] = now
+			Telemetry.custom(player, "Menu", key, realm(s))
+		end
+	end)
+
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
 		local it = itemById(Config.SHOP_PASSES, passId)
 		local s = api.sessions[player]
@@ -399,6 +420,7 @@ function Shop.init(a)
 	Players.PlayerRemoving:Connect(function(player)
 		lastPrompt[player] = nil
 		lastOpen[player] = nil
+		lastMenu[player] = nil
 	end)
 
 	-- [player] = key of the pad they stand on, false = seen off every pad. A pad prompts only for a
