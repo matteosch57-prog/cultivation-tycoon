@@ -834,6 +834,10 @@ refreshPads = function(player, s)
 	if all then
 		wanted.breakthrough = true
 	end
+	-- the idle chest's green pad: while it holds something the player has not been shown yet
+	if ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
+		wanted.chest = true
+	end
 	-- a hire pad beside every owned building that takes workers, until it has WORKER_MAX
 	for id in Config.WORKERS do
 		if s.data.owned[id] and ((s.data.workers or {})[id] or 0) < Config.WORKER_MAX then
@@ -894,6 +898,28 @@ refreshPads = function(player, s)
 				end)
 			end
 		end
+	end
+	if wanted.chest and not s.pads.chest then
+		local at = Config.IDLE_CHEST_PAD
+		local p = makePad(player, s, { id = "chest", x = at.X, z = at.Z, feature = "Fills while you're away" }, 0, "Idle Chest", 0, function()
+			s.chestShown = true
+			local gain = s.data.chestQi or 0
+			s.data.chestQi = 0
+			if gain > 0 then
+				s.data.qi += gain
+				Telemetry.source(player, s.data, gain, "chest")
+			end
+			if s.pads.chest then
+				s.pads.chest:Destroy()
+				s.pads.chest = nil
+			end
+			refreshPads(player, s)
+			publish(player)
+			notify:FireClient(player, "idleChest", gain, 0, s.data.chestSummons or 0, "chest")
+		end, "build")
+		p.Name = "Chest" -- not "Pad_": the HUD goal and the guide trail lead to buildings only
+		p:SetAttribute("FreeText", "Open!")
+		s.pads.chest = p
 	end
 	for id, spec in Config.WORKERS do
 		local key = "hire_" .. id
@@ -1152,6 +1178,14 @@ local function onJoin(player)
 	if data.welcomed == nil then
 		data.welcomed = (data.sessions or 0) > 0
 	end
+	-- the starter idle chest: a new save finds it full, opened from its green pad (not a popup)
+	local starterChest = false
+	if data.welcomed == false and not data.chestStarter then
+		data.chestStarter = true
+		data.chestQi = Config.CHEST_STARTER_QI
+		data.chestSummons = math.max(data.chestSummons or 0, Config.CHEST_STARTER_SUMMONS)
+		starterChest = true
+	end
 
 	-- offline qi
 	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
@@ -1168,6 +1202,18 @@ local function onJoin(player)
 	if away > 60 then
 		Telemetry.custom(player, "IdleChest", Telemetry.hourBucket(away), tostring(data.chestSummons), Telemetry.realmBucket(data.realm))
 	end
+	-- a returning player sees the return screen (before the pads are drawn: no chest pad then);
+	-- starter qi still waiting in the chest is paid with it
+	local showChest = not starterChest and (offlineGain > 0 or data.chestSummons > 0 or (data.chestQi or 0) > 0)
+	if showChest then
+		s.chestShown = true
+		if (data.chestQi or 0) > 0 then
+			offlineGain += data.chestQi
+			data.qi += data.chestQi
+			Telemetry.source(player, data, data.chestQi, "chest")
+			data.chestQi = 0
+		end
+	end
 	data.sessions = (data.sessions or 0) + 1
 	s.joinedAt = os.clock()
 	s.earned, s.orbEarned = 0, 0
@@ -1177,7 +1223,7 @@ local function onJoin(player)
 	refreshPads(player, s)
 	publish(player)
 	publishFriends(player)
-	if offlineGain > 0 or data.chestSummons > 0 then
+	if showChest then
 		task.delay(3, function()
 			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
 			notify:FireClient(player, "idleChest", offlineGain, away, data.chestSummons)

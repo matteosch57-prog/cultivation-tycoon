@@ -202,7 +202,7 @@ local function openBall(b)
 	b.state = "open"
 end
 
-local function build(away, summons)
+local function build(away, summons, mode)
 	for _, c in gui:GetChildren() do
 		c:Destroy()
 	end
@@ -222,8 +222,16 @@ local function build(away, summons)
 	ui.scale.Scale = 0.6
 	ui.scale.Parent = card
 	Toy.list(card, false, px(6))
-	text(card, "Welcome back!", px(28), GOLD, { LayoutOrder = 1 })
-	text(card, "Your sect worked for " .. awayText(away), px(15), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	-- "chest" = opened from its green pad (the starter chest): teach what it is
+	text(card, mode == "chest" and "Your Idle Chest!" or "Welcome back!", px(28), GOLD, { LayoutOrder = 1 })
+	text(
+		card,
+		mode == "chest" and string.format("It fills while you're away (up to %d h)", Config.OFFLINE_CAP / 3600)
+			or "Your sect worked for " .. awayText(away),
+		px(15),
+		Color3.new(1, 1, 1),
+		{ LayoutOrder = 2 }
+	)
 	local row = frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(row, true, px(18))
 	local chest, lid = drawChest(row, px(128))
@@ -338,8 +346,8 @@ local function build(away, summons)
 end
 
 -- the show: chest in, shake, burst, qi explodes and flies to the counter, balls pop out
-local function play(gain, away, summons)
-	build(away, summons)
+local function play(gain, away, summons, mode)
+	build(away, summons, mode)
 	gui.Enabled = true
 	tween(ui.veil, 0.3, { BackgroundTransparency = 0.45 })
 	tween(ui.scale, 0.45, { Scale = 1 }, Enum.EasingStyle.Back)
@@ -422,8 +430,8 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, gain, away, summons)
+remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, gain, away, summons, mode)
 	if kind == "idleChest" and not gui.Enabled then
-		task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX))
+		task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX), mode)
 	end
 end)

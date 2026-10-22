@@ -17,6 +17,12 @@ Config.OFFLINE_RATE = 0.5
 Config.CHEST_SUMMON_EVERY = 3600
 Config.CHEST_SUMMON_MAX = 4
 Config.IDLE_CHEST_AT = Vector3.new(10, 0, 44) -- on the peak (frame space): beside the avenue, past the gate
+-- A brand-new save finds the chest already full (owner: "give a full one at start, green pad in
+-- front, with the full animation to get the loop into their heads"): CHEST_STARTER_QI waiting and
+-- CHEST_STARTER_SUMMONS free summons, opened by stepping on the green pad at IDLE_CHEST_PAD.
+Config.CHEST_STARTER_QI = 150
+Config.CHEST_STARTER_SUMMONS = 3
+Config.IDLE_CHEST_PAD = Vector3.new(5, 0, 44)
 Config.AUTOSAVE = 60
 Config.DATASTORE = "CultivationTycoon_v1"
 Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing saved (false = the _studio store)

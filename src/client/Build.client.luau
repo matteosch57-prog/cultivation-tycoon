@@ -324,6 +324,11 @@ local function makeCard(pad, kind)
 	local amount = part(3, "")
 	local more = part(4, "more")
 	local costText = { need = need, amount = amount, more = more }
+	local free = pad:GetAttribute("FreeText") -- a free pad (the idle chest) says what it does instead of a price
+	if free then
+		row.Visible = false
+		text(3, 26, PadLook.textColor(kind, true)).Text = free
+	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "DistanceScale"
 	sc.Parent = f
