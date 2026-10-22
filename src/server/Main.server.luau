@@ -2171,6 +2171,7 @@ Bless.init({
 	telemetry = Telemetry,
 	style = Style,
 	palette = Style.PAL,
+	kit = Kit,
 })
 setupLighting()
 buildPlots()

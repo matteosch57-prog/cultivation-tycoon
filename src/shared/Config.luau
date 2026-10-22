@@ -214,7 +214,7 @@ Config.PADS = {
 	{ id = "bridge_disciples", name = "Disciple Bridge", cost = 1000, income = 0, unlock = 6, req = {}, x = -114, z = -105, feature = "Opens the Disciples' islet", islet = "fields", kind = "bridge" },
 	{ id = "bridge_summit", name = "Summit Bridge", cost = 15000, income = 0, unlock = 16, req = { "expand2" }, x = 91, z = -97, feature = "Opens the Summit", islet = "dao", kind = "bridge" },
 	{ id = "path_heart", name = "Plaza Ring", cost = 120, income = 0, unlock = 2, req = {}, x = -10, z = 16, islet = "heart", kind = "path" },
-	{ id = "grove_heart", name = "Plum Grove", cost = 250, income = 0, unlock = 3, req = {}, x = -22, z = 40, islet = "heart", kind = "grove" },
+	{ id = "grove_heart", name = "Plum Grove", cost = 250, income = 0, unlock = 3, req = {}, x = 40, z = 24, islet = "heart", kind = "grove" },
 	{ id = "path_fields", name = "Fields Path", cost = 400, income = 0, unlock = 4, req = {}, x = -81, z = -39, islet = "fields", kind = "path" },
 	{ id = "grove_fields", name = "Sakura Grove", cost = 900, income = 0, unlock = 5, req = { "bridge_fields" }, x = -42, z = -2, islet = "heart", tree = "sakura", kind = "grove" },
 	{ id = "path_dao", name = "Alchemy Path", cost = 2500, income = 0, unlock = 8, req = {}, x = 81, z = -41, islet = "dao", kind = "path" },
@@ -412,7 +412,7 @@ Config.GROUP_BONUS = 0.1
 -- economy check confirms). Once per visitor and sect a UTC day; at most BLESS_GIVE_MAX given and
 -- BLESS_GET_MAX received a day. The owner's share needs a real giver: Roblox account age and play
 -- time (alts feed nobody, research 2026-10-22_neighbour_visits).
-Config.BLESS_SHRINE_AT = Vector3.new(-13, 0, 47) -- home island, left of the avenue just inside the entrance (between the VIP pad and the lanterns)
+Config.BLESS_SHRINE_AT = Vector3.new(-24, 0, 44) -- home island, left of the avenue, its stair facing it (a kit pavilion ~14 studs wide with its lanterns)
 Config.BLESS_HOLD = 3
 Config.BLESS_SECONDS = 120
 Config.BLESS_GIVE_MAX = 5

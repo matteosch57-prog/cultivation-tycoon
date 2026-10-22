@@ -11,7 +11,7 @@ local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Bless = {}
-local api -- { sessions, rate, publish, notify, telemetry, style, palette }
+local api -- { sessions, rate, publish, notify, telemetry, style, palette, kit }
 
 local EMBER = Color3.fromHex("FF8A3C")
 local BRONZE = Color3.fromHex("8C6A3A")
@@ -139,69 +139,77 @@ local function trigger(plot, player)
 	end)
 end
 
--- the shrine: a stone plinth, a bronze burner with BLESS_GET_MAX sticks, a plaque with the count.
--- Called once per plot (it outlives owners; Bless.refresh repaints it).
+-- the shrine (owner 2026-10-22: the first plinth-and-pot was "ugly"; made premium from the kit): an
+-- open kit pavilion on a stone deck with its stair to the avenue, a bronze ding censer under it
+-- (three legs, loop handles, a gold rim) holding BLESS_GET_MAX sticks, a pair of stone lanterns at
+-- the stair, and a gilt plaque on the front beam with the count. Called once per plot (it outlives
+-- owners; Bless.refresh repaints it).
+local W, COL = 6, 6.2 -- pavilion span and column height (Kit.pavilion)
 function Bless.build(plot)
-	local P, PAL = api.style.P, api.palette
+	local P, PAL, Kit = api.style.P, api.palette, api.kit
 	local m = Instance.new("Model")
 	m.Name = "Shrine"
 	local at = Config.BLESS_SHRINE_AT
-	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) -- its +X faces the avenue (the shrine stands left of it)
-	P(m, Vector3.new(4.2, 0.8, 4.2), cf * CFrame.new(0, 0.4, 0), PAL.stone)
-	P(m, Vector3.new(3.4, 0.6, 3.4), cf * CFrame.new(0, 1.1, 0), PAL.stoneLight)
-	local burner = P(m, Vector3.new(1.6, 2.6, 2.6), cf * CFrame.new(0, 2.2, 0) * CFrame.Angles(0, 0, math.pi / 2), BRONZE, Enum.Material.Metal, Enum.PartType.Cylinder)
+	-- the stair (+Z of the pavilion) turned to face the avenue (+X of the peak frame)
+	local cf = plot.frame * CFrame.new(at.X, 0, at.Z) * CFrame.Angles(0, math.rad(90), 0)
+	local _, deckH = Kit.pavilion(m, cf, W, COL)
+	local floor = cf * CFrame.new(0, deckH, 0)
+	-- the ding: three legs, a round body darkening to the base, a gold lip, two loop handles
+	local dark = Color3.fromHex("5E4A2C")
+	for k = 0, 2 do
+		local a = k / 3 * math.pi * 2
+		P(m, Vector3.new(0.35, 1.1, 0.35), floor * CFrame.new(math.cos(a) * 0.95, 0.55, math.sin(a) * 0.95), dark, Enum.Material.Metal)
+	end
+	local burner = P(m, Vector3.new(1.4, 2.6, 2.6), floor * CFrame.new(0, 1.75, 0) * CFrame.Angles(0, 0, math.pi / 2), BRONZE, Enum.Material.Metal, Enum.PartType.Cylinder)
 	burner.Name = "Burner"
-	P(m, Vector3.new(2.9, 0.25, 2.9), cf * CFrame.new(0, 3.05, 0), PAL.gold, Enum.Material.Metal)
+	P(m, Vector3.new(0.5, 2.2, 2.2), floor * CFrame.new(0, 1.05, 0) * CFrame.Angles(0, 0, math.pi / 2), dark, Enum.Material.Metal, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.25, 2.9, 2.9), floor * CFrame.new(0, 2.5, 0) * CFrame.Angles(0, 0, math.pi / 2), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)
+	P(m, Vector3.new(0.1, 2.4, 2.4), floor * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromHex("CDBB98"), Enum.Material.Sand, Enum.PartType.Cylinder) -- the ash
+	for _, sx in { -1, 1 } do
+		P(m, Vector3.new(0.2, 0.9, 0.2), floor * CFrame.new(sx * 1.05, 3.05, 0), PAL.gold, Enum.Material.Metal)
+		P(m, Vector3.new(0.2, 0.2, 0.7), floor * CFrame.new(sx * 1.05, 3.45, 0), PAL.gold, Enum.Material.Metal)
+	end
 	for k = 1, Config.BLESS_GET_MAX do
 		local a = (k - 1) / Config.BLESS_GET_MAX * math.pi * 2
-		local base = cf * CFrame.new(math.cos(a) * 0.7, 3.1, math.sin(a) * 0.7)
-		local stick = P(m, Vector3.new(0.12, 2.2, 0.12), base * CFrame.new(0, 1.1, 0) * CFrame.Angles(math.cos(a) * 0.08, 0, math.sin(a) * 0.08), Color3.fromHex("7B3B2A"))
+		local base = floor * CFrame.new(math.cos(a) * 0.6, 2.65, math.sin(a) * 0.6)
+		local stick = P(m, Vector3.new(0.12, 2.4, 0.12), base * CFrame.new(0, 1.2, 0) * CFrame.Angles(math.cos(a) * 0.08, 0, math.sin(a) * 0.08), Color3.fromHex("7B3B2A"))
 		stick.CanCollide = false
-		local tip = P(m, Vector3.new(0.2, 0.25, 0.2), base * CFrame.new(0, 2.25, 0), Color3.fromHex("3A2A22"))
+		local tip = P(m, Vector3.new(0.2, 0.25, 0.2), base * CFrame.new(0, 2.45, 0), Color3.fromHex("3A2A22"))
 		tip.Name = "Tip" .. k
 		tip.CanCollide = false
-		local light = Instance.new("PointLight") -- the ember itself lights the burner (a real lit object)
+		local light = Instance.new("PointLight") -- the ember itself lights the censer (a real lit object)
 		light.Color = EMBER
-		light.Range = 5
-		light.Brightness = 0.8
+		light.Range = 6
+		light.Brightness = 1
 		light.Enabled = false
 		light.Parent = tip
 		local smoke = Instance.new("ParticleEmitter")
 		smoke.Color = ColorSequence.new(Color3.fromHex("F2EEE6"))
-		smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1) })
-		smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.7) })
-		smoke.Lifetime = NumberRange.new(2.5, 3.5)
-		smoke.Rate = 2
+		smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+		smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.9) })
+		smoke.Lifetime = NumberRange.new(3, 4)
+		smoke.Rate = 3
 		smoke.Speed = NumberRange.new(0.8, 1.2)
-		smoke.Acceleration = Vector3.new(0.2, 0.3, 0)
+		smoke.Acceleration = Vector3.new(0.15, 0.35, 0)
 		smoke.LightEmission = 0
 		smoke.Enabled = false
 		smoke.Parent = tip
 	end
-	-- plaque on a low post in front, facing the avenue
-	local post = P(m, Vector3.new(0.4, 2.4, 0.4), cf * CFrame.new(2.9, 1.2, 0), PAL.timberDark or Color3.fromHex("4A3330"))
-	post.CanCollide = false
-	local board = P(m, Vector3.new(0.2, 1.1, 3.2), cf * CFrame.new(3.05, 2.2, 0), Color3.fromHex("3A2410"))
-	board.Name = "Plaque"
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Right -- +X of the shrine frame: toward the avenue
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.Parent = board
-	local label = Instance.new("TextLabel")
-	label.Name = "Count"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.Font = Enum.Font.Fantasy
-	label.TextColor3 = Color3.fromRGB(255, 225, 150)
-	label.Text = "Incense Shrine"
-	label.Parent = gui
+	-- a pair of stone lanterns either side of the stair
+	for _, sx in { -1, 1 } do
+		api.style.lantern(m, cf * CFrame.new(sx * 3.6, 0, W / 2 + 4.6), 0.7)
+	end
+	-- the gilt plaque on the front beam, facing the stair: "Blessed N times"
+	local board = Kit.plaque(m, floor * CFrame.new(0, COL - 1.1, W / 2 + 0.45), 4.4, 1.1, "Incense Shrine")
+	local label = board:FindFirstChildWhichIsA("TextLabel", true)
+	if label then
+		label.Name = "Count"
+	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Bless"
 	prompt.ObjectText = "Incense Shrine"
 	prompt.HoldDuration = Config.BLESS_HOLD
-	prompt.MaxActivationDistance = 9
+	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = burner
 	prompt.Triggered:Connect(function(player)
