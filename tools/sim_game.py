@@ -195,8 +195,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
         return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm
 
-    def price_base():  # Main priceRate: buildings x realm x Past Lives x Harmony (no disciples, no pass)
-        return base() / (dmult() * x2)
+    def price_base():  # Main priceRate: base() without the paid 2x pass
+        return base() / x2
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))

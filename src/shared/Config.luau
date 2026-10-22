@@ -146,7 +146,7 @@ Config.REALM_COST_LATE = 10
 Config.REALM_COST_LATE_FROM = 5
 Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only by the older sims
 -- D48: the breakthrough costs BREAKTHROUGH_SECONDS of the price income (Main priceRate: buildings x
--- realm x Past Lives x Harmony, no disciples or passes) the realm ends on, so the save-up after the
+-- realm x disciples x Past Lives x Harmony, no pill, tide or paid pass) the realm ends on, so the save-up after the
 -- last building is the same short goal whatever the realm holds (research 2026-10-22_island_by_realm)
 Config.BREAKTHROUGH_SECONDS = 90
 

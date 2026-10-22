@@ -38,3 +38,15 @@ The whole island (55 pads) stands at 9.6 min, all of it in realm 1; every later 
 - B is the Build Your Backrooms pattern but our income compounds (x3 per realm on every building
   kept), so lives fall to 5-10 min and the long game ends by day 3: it needs a full rebalance.
 - C keeps the 5-minute island, only slower.
+
+## Built (D48), simmed on the branch (`_local/cmp_island.py`, 2 runs, 3 weeks)
+| | 10 min: built | realm 2 | whole island first | life 10 | life 20 | buy wait (median) |
+|---|---|---|---|---|---|---|
+| casual | 16 | 5.2 min | 86 min | day 17 | - | 10 s |
+| regular | 16 | 4.8 min | 75 min | day 6 | day 21 | 10 s |
+| hooked | 16 | 4.8 min | 77 min | day 3 | day 8 | 10 s |
+| regular + 2x / VIP / orbs passes | 18 | 3.0 min | 47 min | day 4 | day 13 | 5 s |
+
+Prices are measured against the income without the paid passes (Main `priceRate`), so a 2x pass now
+halves every wait (before, the D44 floor rose with it and ate the pass). A first try that also left
+the disciples out made lives 4x faster (life 20 on day 5): the disciples stay in.
