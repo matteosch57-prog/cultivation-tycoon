@@ -206,20 +206,23 @@ Config.PADS = {
 	-- A bridge opens its islet (every pad there needs it, Config.isletOf); paths and groves raise
 	-- Harmony (HARMONY_STEP each). Prices simmed (tools/sim_game.py, research 2026-10-22_islets_prices):
 	-- each sits on the ladder at its unlock rung; the pace cost is the extra walks, not the qi.
+	-- So paths and groves stand on the line you already walk: a path just past each bridge, and the
+	-- Fields and Alchemy groves flank their bridges on the home island (`tree` = the grove's kind).
+	-- DECOR_OPTIONAL: a breakthrough does not need them (Config.neededForBreakthrough).
 	{ id = "bridge_fields", name = "Fields Bridge", cost = 15, income = 0, unlock = 1, req = {}, x = -52, z = -25, feature = "Opens the Spirit Fields", islet = "heart", kind = "bridge" },
 	{ id = "bridge_dao", name = "Alchemy Bridge", cost = 800, income = 0, unlock = 5, req = {}, x = 52, z = -26, feature = "Opens Alchemy and Training", islet = "heart", kind = "bridge" },
 	{ id = "bridge_disciples", name = "Disciple Bridge", cost = 1000, income = 0, unlock = 6, req = {}, x = -114, z = -105, feature = "Opens the Disciples' islet", islet = "fields", kind = "bridge" },
 	{ id = "bridge_summit", name = "Summit Bridge", cost = 15000, income = 0, unlock = 16, req = { "expand2" }, x = 91, z = -97, feature = "Opens the Summit", islet = "dao", kind = "bridge" },
-	{ id = "path_heart", name = "Plaza Ring", cost = 120, income = 0, unlock = 2, req = {}, x = -20, z = 8, islet = "heart", kind = "path" },
-	{ id = "grove_heart", name = "Plum Grove", cost = 250, income = 0, unlock = 3, req = {}, x = 54, z = 18, islet = "heart", kind = "grove" },
-	{ id = "path_fields", name = "Fields Path", cost = 400, income = 0, unlock = 4, req = {}, x = -95.5, z = -48.5, islet = "fields", kind = "path" },
-	{ id = "grove_fields", name = "Sakura Grove", cost = 900, income = 0, unlock = 5, req = {}, x = -100, z = -98, islet = "fields", kind = "grove" },
-	{ id = "path_dao", name = "Alchemy Path", cost = 2500, income = 0, unlock = 8, req = {}, x = 92.5, z = -47, islet = "dao", kind = "path" },
-	{ id = "path_disciples", name = "Disciple Path", cost = 3000, income = 0, unlock = 9, req = {}, x = -108, z = -143.5, islet = "disciples", kind = "path" },
-	{ id = "grove_dao", name = "Maple Grove", cost = 4000, income = 0, unlock = 10, req = {}, x = 126, z = -18, islet = "dao", kind = "grove" },
-	{ id = "grove_disciples", name = "Pine Grove", cost = 6000, income = 0, unlock = 12, req = {}, x = -66, z = -180, islet = "disciples", kind = "grove" },
-	{ id = "path_summit", name = "Summit Stair", cost = 20000, income = 0, unlock = 17, req = {}, x = 65.5, z = -120, islet = "summit", kind = "path" },
-	{ id = "grove_summit", name = "Summit Pines", cost = 24000, income = 0, unlock = 18, req = {}, x = 26, z = -110, islet = "summit", kind = "grove" },
+	{ id = "path_heart", name = "Plaza Ring", cost = 120, income = 0, unlock = 2, req = {}, x = -10, z = 16, islet = "heart", kind = "path" },
+	{ id = "grove_heart", name = "Plum Grove", cost = 250, income = 0, unlock = 3, req = {}, x = -22, z = 40, islet = "heart", kind = "grove" },
+	{ id = "path_fields", name = "Fields Path", cost = 400, income = 0, unlock = 4, req = {}, x = -81, z = -39, islet = "fields", kind = "path" },
+	{ id = "grove_fields", name = "Sakura Grove", cost = 900, income = 0, unlock = 5, req = { "bridge_fields" }, x = -42, z = -2, islet = "heart", tree = "sakura", kind = "grove" },
+	{ id = "path_dao", name = "Alchemy Path", cost = 2500, income = 0, unlock = 8, req = {}, x = 81, z = -41, islet = "dao", kind = "path" },
+	{ id = "path_disciples", name = "Disciple Path", cost = 3000, income = 0, unlock = 9, req = {}, x = -108, z = -135, islet = "disciples", kind = "path" },
+	{ id = "grove_dao", name = "Maple Grove", cost = 4000, income = 0, unlock = 10, req = { "bridge_dao" }, x = 42, z = -2, islet = "heart", tree = "maple", kind = "grove" },
+	{ id = "grove_disciples", name = "Pine Grove", cost = 6000, income = 0, unlock = 12, req = {}, x = -117, z = -143, islet = "disciples", kind = "grove" },
+	{ id = "path_summit", name = "Summit Stair", cost = 20000, income = 0, unlock = 17, req = {}, x = 72, z = -114, islet = "summit", kind = "path" },
+	{ id = "grove_summit", name = "Summit Pines", cost = 24000, income = 0, unlock = 18, req = {}, x = 74, z = -126, islet = "summit", kind = "grove" },
 }
 -- Sky Islets (owner pick B 2026-10-22; research 2026-10-22_space_and_buildables; mock
 -- docs/art/mocks/peak_layouts.html): the peak is a home island (the heart: plaza, Main Hall) and
@@ -304,6 +307,12 @@ end
 -- Restaurant Tycoon 2): every owned path or grove adds HARMONY_STEP to all qi, up to HARMONY_MAX.
 Config.HARMONY_STEP = 0.02
 Config.HARMONY_MAX = 0.2
+-- Paths and groves are a choice, not a chore (economy sim 2026-10-22_islets_prices: as required pads
+-- they added 14 walk-and-buy steps a realm): a breakthrough and the "built" count skip them.
+Config.DECOR_OPTIONAL = true
+function Config.neededForBreakthrough(pad)
+	return not (Config.DECOR_OPTIONAL and (pad.kind == "path" or pad.kind == "grove"))
+end
 function Config.harmonyMult(owned)
 	local n = 0
 	for _, pad in Config.PADS do
@@ -672,6 +681,14 @@ function Config.padById(id)
 		end
 	end
 	return nil
+end
+
+-- pads a breakthrough needs (the HUD's "built" total)
+Config.REQUIRED_PADS = 0
+for _, pad in Config.PADS do
+	if Config.neededForBreakthrough(pad) then
+		Config.REQUIRED_PADS += 1
+	end
 end
 
 return Config
