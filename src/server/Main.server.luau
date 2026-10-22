@@ -18,6 +18,7 @@ local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
+local Skin = require(script.Parent:WaitForChild("Skin"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -607,6 +608,7 @@ local function buildModel(s, pad, attrs)
 		m:SetAttribute(k, v)
 	end
 	Builders[pad.id](ctxFor(s, m), pad)
+	Skin.apply(m, s.data.realm, s.data.lives) -- the realm / life grade (Config.skinFor)
 	return m
 end
 
@@ -1890,8 +1892,8 @@ if game:GetService("RunService"):IsStudio() then
 				rebuild(s) -- DebugSet:Invoke(player, "workers", { garden = 3 })
 				refreshPads(player, s)
 			end
-			if key == "realm" or key == "owned" then
-				rebuild(s) -- DebugSet:Invoke(player, "realm", 9) shows that realm's look (RealmLook)
+			if key == "realm" or key == "lives" or key == "owned" then
+				rebuild(s) -- DebugSet:Invoke(player, "realm", 9) shows that realm's look (RealmLook) and skin
 				refreshPads(player, s)
 			end
 			publish(player)

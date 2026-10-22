@@ -563,6 +563,63 @@ Config.PALETTES = {
 	{ stone = Color3.fromRGB(235, 225, 200), wood = Color3.fromRGB(110, 30, 30), roof = Color3.fromRGB(200, 150, 40), trim = Color3.fromRGB(255, 220, 120), glow = Color3.fromRGB(255, 210, 110) },
 }
 
+-- Building skins (research docs/research/2026-10-22_visible_progression.md, mocks
+-- docs/art/mocks/2026-10-22_skins_*.jpg): every building is recoloured after it is built
+-- (src/server/Skin.luau) so a peak shows how far its owner has come from the next peak over.
+-- A grade maps Style.PAL keys (ART_BIBLE palette) to a colour, or { colour, material }; keys left out
+-- keep the art colour. Grade 2 is the art itself.
+local hex = Color3.fromHex
+Config.SKIN_GRADES = {
+	{ name = "Timber", map = { vermilion = hex("8A5A3B"), tile = hex("7D6B4F"), tileDark = hex("5E4F3A"), gold = hex("6B5A45"), plaster = hex("CDBB9A"), jade = hex("6E8060") } },
+	{ name = "Red Lacquer", map = {} },
+	{ name = "Jade", map = { vermilion = hex("2E6F5A"), tile = hex("2F7A5E"), tileDark = hex("21573F"), plaster = hex("F2EFE6"), stone = hex("D9D6CC"), stoneLight = hex("E6E3DA") } },
+	{ name = "Imperial Gold", map = { tile = hex("D9A43A"), tileDark = hex("A87A22"), plaster = hex("F0D9A8"), gold = hex("F2C14E"), stone = hex("E4D7B5") } },
+	{ name = "White Jade", map = { tile = hex("E8ECEF"), tileDark = hex("B9C3CC"), vermilion = hex("EDE6D8"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, timber = hex("D8CFC0"), timberDark = hex("A89F8E"), gold = hex("F5D27A"), stone = { hex("EEF0F2"), Enum.Material.Marble }, stoneLight = hex("F7F8F9"), jade = hex("9FE3CF") } },
+}
+-- Gilding laid over a grade, one level per realm step: ridges, then beams, then gold leaf.
+Config.SKIN_GILD = {
+	{ tileDark = { hex("D4A445"), Enum.Material.Metal } },
+	{ tileDark = { hex("D4A445"), Enum.Material.Metal }, timberDark = hex("C08A2E") },
+	{ tileDark = { hex("F0C050"), Enum.Material.Foil }, timberDark = hex("C08A2E"), gold = { hex("FFD36A"), Enum.Material.Foil } },
+}
+-- "A": the grade climbs with the realm (white jade from the 2nd life at realm 4+), no gilding.
+-- "B": the art grade, gilding climbs with the realm.
+-- "C": the grade is the life's (Config.SKIN_LIFE_GRADES), gilding climbs with the realm.
+Config.SKIN_MODE = "C"
+Config.SKIN_REALM_GRADES = { 1, 2, 3, 4 } -- mode A, realms 1 to 4 (the island opens over the same 4 realms)
+Config.SKIN_LIFE_GRADES = { 2, 3, 4, 5 } -- mode C, lives 1 to 4; later lives keep the last
+-- grade index and gild level (0 = none) for a peak at `realm` in life `lives`
+function Config.skinFor(realm, lives)
+	realm, lives = realm or 1, lives or 1
+	local gild = math.clamp(realm - 1, 0, #Config.SKIN_GILD)
+	if Config.SKIN_MODE == "A" then
+		local g = Config.SKIN_REALM_GRADES[math.min(realm, #Config.SKIN_REALM_GRADES)]
+		if lives > 1 and realm >= #Config.SKIN_REALM_GRADES then
+			g = #Config.SKIN_GRADES
+		end
+		return g, 0
+	elseif Config.SKIN_MODE == "B" then
+		return 2, gild
+	end
+	return Config.SKIN_LIFE_GRADES[math.min(lives, #Config.SKIN_LIFE_GRADES)], gild
+end
+function Config.skinName(realm, lives)
+	return Config.SKIN_GRADES[(Config.skinFor(realm, lives))].name
+end
+-- the overhead status title (StatusTitle.client): realms 1 to 5 climb the rarity colours, then the realm tint
+function Config.realmColor(realm)
+	if realm <= 5 then
+		return Config.RARITIES[math.max(1, realm)].color
+	end
+	return Config.realmTint(realm)
+end
+Config.TITLE_SEE = 110 -- studs: farther titles are hidden
+function Config.ordinal(n)
+	local t = n % 100
+	local suffix = (t >= 11 and t <= 13) and "th" or ({ "st", "nd", "rd" })[n % 10] or "th"
+	return n .. suffix
+end
+
 -- What each realm from REALM_LOOK_FROM shows around its peak (src/server/RealmLook.luau, ROADMAP M3)
 Config.REALM_LOOK_FROM = 6
 Config.REALM_TINT_CLOUD = 0.35 -- how far the rim clouds lean to the realm colour (more read as smoke)
