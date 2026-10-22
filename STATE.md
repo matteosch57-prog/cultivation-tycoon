@@ -31,7 +31,7 @@ checked in Studio Play (ROADMAP).
   (flying build pieces shoved the avatar). Checked in Studio Play. Left: Matteo's ear test of the 6
   new sounds (Sfx `pad*`, `gather`, `smallBell`) and a look at the price card icon in his Play.
 
-- **Endless progression (D29, D31, D32, on integration):** reincarnation from realm 10, Past Lives,
+- **Endless progression (D29, D31, D32, on integration):** reincarnation from realm `REINC_REALM` (and past the soul peak), Past Lives,
   karma, the 8-node Karma Shop (Rebirth Gate, Heavenly Hands included) and the realm 6 to 10+ looks
   are built and checked in Studio Play (mock save); Spirit Tide and playtime gifts (D30) too. Left:
   Matteo's look at the Karma Shop page with 8 tiles (not captured: it needs a tap).
@@ -45,10 +45,8 @@ checked in Studio Play (ROADMAP).
 - **Shop** (D24, D33; MONETIZATION, SHOP_ITEMS): screen B (Boosts / Qi / Disciples tabs), items
   sold where they act (passes at the peak entrance, pill at the furnace, orbs at the array), a
   Disciple Garden island with the six disciples for sale, a Get Qi offer on a pad out of reach; 3
-  passes and 11 products (the 5 Robux Welcome Pouch included, D38) granted through saved receipts. Checked in Studio Play with ids at 0 (items read "Soon"). **Owner to do:** create the 14
-  items listed in `docs/design/SHOP_ITEMS.md` (type, name, description, price, icon in
-  `art/shop_icons/`) and paste each id into `Config.SHOP_PASSES` / `SHOP_PRODUCTS`; then a Studio
-  test purchase checks the prompt and ProcessReceipt.
+  passes and 11 products (the 5 Robux Welcome Pouch included, D38) granted through saved receipts. Item ids are in `Config.SHOP_PASSES` / `SHOP_PRODUCTS`. **Owner to do:** a Studio test
+  purchase checks the prompt and ProcessReceipt; badge ids in `Config.BADGES` (BADGES.md).
 
 - **Cultivators** (branch `cultivators`, merged into `integration`): disciples are R15 Roblox avatars
   in catalog hanfu, 4 looks x 9 rarities, layered auras, floating idle with faces that blink and watch
