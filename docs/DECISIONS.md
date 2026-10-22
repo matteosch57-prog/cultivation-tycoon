@@ -218,3 +218,8 @@ the log as a D-number.
   onto your peak, then the Heavenly Gift as the reward. The first avatar is made on the peak once it
   is built (`CharacterAutoLoads` off), so no hub stop and no teleport. The group card's Join step
   now opens Roblox's own join prompt (replaces D35's "find the group on the game page").
+- **D44** Pace and disciples (owner picks 2026-10-22, research `2026-10-22_choice_and_recruits.md`):
+  each recruit in a realm costs `RECRUIT_POW` (1.25) x the last, and a realm pad costs at least
+  `PRICE_FLOOR_S` (20) s of income from the second life on (`PRICE_FLOOR_FROM_LIFE`, keeps the first
+  life's hook; `Config.padCost`; open pads are repriced as income grows), so
+  buying is a choice and recruit spam ends. A new life keeps every disciple; the Sworn Bond node is gone.

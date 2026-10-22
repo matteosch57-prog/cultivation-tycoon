@@ -509,6 +509,19 @@ local function publish(player)
 	player:SetAttribute("Qi", math.floor(d.qi))
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
+	-- D44: the realm's open pads cost at least PRICE_FLOOR_S s of income; reprice them as it grows
+	local away = rate(s, true)
+	for id, part in s.pads or {} do
+		local pad = Config.padById(id)
+		local info = s.padData and s.padData[part]
+		if pad and info and not info.busy then
+			local cost = Config.padCost(pad, d.realm, away, d.lives)
+			if cost ~= info.cost then
+				info.cost = cost
+				part:SetAttribute("Cost", cost)
+			end
+		end
+	end
 	local friends = friendCount(s)
 	player:SetAttribute("FriendsHere", friends)
 	local ids = {}
@@ -828,11 +841,12 @@ refreshPads = function(player, s)
 		if not s.data.owned[pad.id] then
 			local ready = wanted[pad.id]
 			if ready and not s.pads[pad.id] then
-				local cost = math.floor(pad.cost * mult)
+				local cost = Config.padCost(pad, s.data.realm, rate(s, true), s.data.lives)
 				local income = pad.income * Config.incomeMult(s.data.realm)
-				s.pads[pad.id] = makePad(player, s, pad, cost, pad.name, income, function()
+				local part
+				part = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
-					Telemetry.sink(player, s.data, cost, pad.id)
+					Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, pad.id)
 					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
 					Telemetry.funnel(player, s.data)
 					-- BuiltAt tells clients to play the assemble animation for this model
@@ -875,6 +889,7 @@ refreshPads = function(player, s)
 					notify:FireClient(player, "built", pad.name)
 					Shop.maybeWelcome(player, s, pad)
 				end)
+				s.pads[pad.id] = part
 			end
 		end
 	end
@@ -1588,20 +1603,7 @@ local function reincarnate(player, s)
 	d.pillTimer = 0
 	d.boostUntil = 0
 	d.realmRecruits = 0
-	-- disciples bought in the Shop are permanent (data.boughtDisciples = { [rarity] = count }) and
-	-- do not use a sworn seat; then the SWORN_BASE strongest of the rest follow (list is sorted)
-	local bought = table.clone(d.boughtDisciples or {}) -- counted down as they are found in the list
-	local kept, sworn = {}, 0
-	for _, name in d.disciples do
-		if (bought[name] or 0) > 0 then
-			bought[name] -= 1
-			table.insert(kept, name)
-		elseif sworn < Config.SWORN_BASE + dao(d, "sworn") then
-			sworn += 1
-			table.insert(kept, name)
-		end
-	end
-	d.disciples = kept
+	-- every disciple follows into the new life (D44, owner: "let people accumulate them")
 	lightning(s)
 	rebuild(s)
 	refreshPads(player, s)

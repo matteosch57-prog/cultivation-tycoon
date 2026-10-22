@@ -554,6 +554,10 @@ local function addPad(pad)
 		end
 	end
 	pads[pad] = rec
+	-- the server reprices open pads as income grows (D44 price floor); the card reads rec.cost
+	pad:GetAttributeChangedSignal("Cost"):Connect(function()
+		rec.cost = pad:GetAttribute("Cost") or 0
+	end)
 	rec.cleanup = function()
 		if not pads[pad] then
 			return

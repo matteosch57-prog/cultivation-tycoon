@@ -51,3 +51,16 @@ and Build a Base and Steal wipe them (https://www.pockettactics.com/tap-simulato
 every disciple through a new life changes nothing measurable (life 20 day 16 with or without, option 2),
 because only the best `maxDisciples` work and the best ones come back fast anyway. So keeping them is
 free for the pace; it is a feel and collection decision.
+
+## Built (D44, owner picks: pace 2, disciples A), simmed on integration f31cf5e (Sky Islets)
+Medians of 3 runs, 3 weeks (`_local/cmp_pace.py`):
+
+| | Hall / realm 2 | life 10 | life 20 | buy wait | recruits a minute at a realm's end |
+|---|---|---|---|---|---|
+| regular, before | 2.9 / 10.7 min | day 3 (16 min) | day 8 (33 min) | 3 s | 500 |
+| regular, floor in every life | 4.5 / 13.9 min | day 7 (49 min) | day 20 (97 min) | 10 s | 2 |
+| regular, floor from life 2 (shipped) | 2.9 / 8.9 min | day 7 (48 min) | day 20 (101 min) | 10 s | 2 |
+| casual, floor from life 2 (shipped) | 4.9 / 15.6 min | day 19 (52 min) | - | 15 s | 3 |
+
+The floor in the first life pushed realm 2 past the 5-10 min hook, so it starts in life 2
+(`PRICE_FLOOR_FROM_LIFE`). Keeping every disciple costs nothing measurable.

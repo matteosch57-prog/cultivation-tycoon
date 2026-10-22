@@ -91,7 +91,7 @@ Config.REALMS = {
 -- Reincarnation (docs/research/2026-10-21_reincarnation_design.md): from REINC_REALM a player may
 -- start a new life at realm 1. Past Lives: every realm above REINC_REALM - 1 reached in a FINISHED
 -- life (`soulPeak`, monotonic) multiplies all qi by PAST_LIVES_MULT in later lives. Karma is paid
--- per reincarnation from how deep that life went; SWORN_BASE best disciples follow into the next life.
+-- per reincarnation from how deep that life went. Every disciple follows into the next life (D44).
 -- D37 (owner: "40m is long to hook, 5-10m is good"): the gate is realm 2, so the first new life
 -- comes ~10 min in; x1.5 per realm deeper keeps each life a little longer than the last (10, 14,
 -- 20 ... ~75 min by life 9, ~4 h by life 14 for 2 x 30 min a day; research 2026-10-21_economy_math).
@@ -103,7 +103,6 @@ Config.REINC_REALM = 2
 -- by life 40, with no hard wall (tools/sim_game.py LAND_HALF; research 2026-10-22_full_game_sim)
 Config.PAST_LIVES_MULT = 2.5
 Config.REINC_LAND_SHARE = 0.5
-Config.SWORN_BASE = 1
 function Config.pastLivesMult(soulPeak)
 	return Config.PAST_LIVES_MULT ^ math.max(0, (soulPeak or 0) - (Config.REINC_REALM - 1))
 end
@@ -114,7 +113,6 @@ end
 -- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
-	{ key = "sworn", name = "Sworn Bond", line = "+1 disciple follows you", costs = { 10, 30 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
 	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 8 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
@@ -537,7 +535,16 @@ Config.RECRUIT_BASE = 500
 -- for RECRUIT_PICK_SECONDS; the pick sticks to the seal). Each roll is priced in order (no discount).
 Config.RECRUIT_COUNTS = { 1, 10, 50 }
 Config.RECRUIT_PICK_SECONDS = 5
-Config.RECRUIT_GROWTH = 0.5 -- +50% cost per disciple recruited in THIS realm (restarts at a breakthrough, D25)
+-- D44 (owner pick 2 of 3, research 2026-10-22_choice_and_recruits): each recruit in a realm costs
+-- RECRUIT_POW x the last (restarts at a breakthrough), so the 20th costs ~90x the first: no spam.
+Config.RECRUIT_POW = 1.25
+Config.RECRUIT_GROWTH = 0.5 -- the old linear rule, read only by the older sims (sim_pacing, sim_economy)
+-- D44: a pad of the realm costs at least PRICE_FLOOR_S seconds of income (rate without the pill,
+-- tide and friends), so every building stays a small saving goal and you pick which comes first
+-- (DevForum rule of thumb; tools/sim_game.py). Open pads are repriced as income grows.
+Config.PRICE_FLOOR_S = 20
+-- the first life stays fast (D25 "first realms fast", the 5-10 min hook): the floor starts here
+Config.PRICE_FLOOR_FROM_LIFE = 2
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
@@ -615,7 +622,14 @@ end
 
 -- `recruits` = disciples recruited in the current realm (data.realmRecruits)
 function Config.recruitCost(realm, recruits)
-	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * (1 + recruits * Config.RECRUIT_GROWTH))
+	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
+end
+
+-- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more
+-- (from life PRICE_FLOOR_FROM_LIFE on; `lives` = data.lives)
+function Config.padCost(pad, realm, income, lives)
+	local floor = (lives or 1) >= Config.PRICE_FLOOR_FROM_LIFE and (income or 0) * Config.PRICE_FLOOR_S or 0
+	return math.floor(math.max(pad.cost * Config.costMult(realm), floor))
 end
 
 -- The recruit reveal (mock recruit_b, owner pick 2026-10-21): a qi orb flies `fly` s from the

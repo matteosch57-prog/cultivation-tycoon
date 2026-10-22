@@ -100,7 +100,7 @@ def load(path):
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
     for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
-                     VIP_SLOTS=1, SWORN_BASE=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1,
+                     VIP_SLOTS=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1,
                      REINC_REALM=10, PAST_LIVES_MULT=3, WORKER_MAX=0, WORKER_BONUS=0, WORKER_COST=[0.5, 1, 2],
                      REALM_COST_LATE=env.get("REALM_COST_MULT", 8), REALM_COST_LATE_FROM=99).items():
         env.setdefault(k, v)
@@ -120,7 +120,7 @@ KINDS = {
     "regular+passes": dict(play="active", session=30, per_day=2, passes=("2x", "vip", "orbs")),
     "regular+social": dict(play="active", session=30, per_day=2, friends=2, altar=0.25),
 }
-DAO_ORDER = ["hands", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # cheapest comfort first
+DAO_ORDER = ["hands", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
 
 
 def simulate(C, kind, seed, days, lives=99, trace=False):
@@ -231,8 +231,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         land = max(1, int(S["soul"] * share)) if share else 1
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
         S["owned"] = {p["id"] for p in C["PADS"]} if lvl("foundation") or land > 1 else set()
-        keep = sorted(S["disciples"], reverse=True)[:C["SWORN_BASE"] + lvl("sworn")]
-        S["disciples"] = keep
+        if "SWORN_BASE" in C:  # before D44 only the sworn ones followed; now every disciple does
+            S["disciples"] = sorted(S["disciples"], reverse=True)[:int(C["SWORN_BASE"]) + lvl("sworn")]
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time
             costs = C["DAO"].get(k)
             while costs and lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
@@ -320,7 +320,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     continue
                 target = min(choices, key=lambda p: p["cost"])
                 # PRICE_FLOOR_S (proposal lever): a building costs at least this many seconds of income
-                floor = base() * C.get("PRICE_FLOOR_S", 0)
+                # PRICE_FLOOR_FROM_LIFE: the first life(s) stay fast (D25 "first realms fast"), the floor starts later
+                floor = base() * C.get("PRICE_FLOOR_S", 0) if S["life"] >= C.get("PRICE_FLOOR_FROM_LIFE", 1) else 0
                 tcost = max(target["cost"] * cmult(), floor)
                 hire = hires()
                 # RECRUIT_POW (proposal lever): each recruit in a realm costs x RECRUIT_POW the last (else +GROWTH, linear)

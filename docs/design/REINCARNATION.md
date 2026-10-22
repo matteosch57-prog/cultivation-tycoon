@@ -7,10 +7,8 @@ A new life after realm 10 (D29). Numbers live in `Config.luau`; research and pac
 - **Gate:** realm `REINC_REALM` or deeper in this life, checked in the one server function
   `reincarnate` (`Main.server.luau`, remote `Reincarnate`). Lands at `REINC_LAND_SHARE` of the
   deepest realm, fully built (D40, at least realm 1): always below the next paying depth.
-- **Resets:** qi, buildings, realm, pill and boost, the recruit price, disciples except Shop-bought
-  ones (permanent, counted in `data.boughtDisciples`, they take no sworn seat) and the `SWORN_BASE` strongest
-  of the rest.
-- **Keeps:** `soulPeak` (deepest realm of any finished life), `karma`, `lives`, passes, `best`.
+- **Resets:** qi, buildings, realm, pill and boost, the recruit price.
+- **Keeps:** every disciple (D44, owner: "let people accumulate them"; the sim shows no pace cost), `soulPeak` (deepest realm of any finished life), `karma`, `lives`, passes, `best`.
 
 ## Past Lives (power)
 `Config.pastLivesMult(soulPeak)` = `PAST_LIVES_MULT` ^ (soulPeak - (`REINC_REALM` - 1)), on every qi
@@ -24,7 +22,7 @@ deeper than every life before (D37): a reset at the same depth takes minutes, so
 
 ## Karma Shop (the Dao Tree, owner: "a karma shop")
 `Config.DAO`: permanent nodes, `costs[i]` = karma for level i, remote `DaoBuy(key)`, levels saved in
-`data.dao`, published as `Dao_<key>`. Sworn Bond (+1 disciple follows you per level), Disciple Seat
+`data.dao`, published as `Dao_<key>`. Disciple Seat
 (+1 slot), Old Foundations (a new life starts with every building of realm 1), Elixir Mastery
 (a brewed pill lasts `DAO_PILL_SECONDS` more per level), Deep Meditation (+`DAO_OFFLINE_SECONDS` offline
 cap per level), Soul Echo (+`DAO_ECHO` karma per level), Heavenly Hands (a gold hand on the HUD "Next"
