@@ -14,6 +14,31 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Landscape only on phones, turning with the phone between its two landscape sides (owner 2026-10-22;
+-- StarterGui carries the same value in default.project.json). The property that turns a player who has
+-- already joined is PlayerGui.ScreenOrientation (StarterGui is only copied at join), and the load can
+-- put it back to the place default, so it is asserted again for the first seconds (Heavenly RNG's fix).
+local function landscape()
+	if playerGui.ScreenOrientation ~= Enum.ScreenOrientation.LandscapeSensor then
+		playerGui.ScreenOrientation = Enum.ScreenOrientation.LandscapeSensor
+	end
+end
+landscape()
+task.spawn(function()
+	for _ = 1, 10 do
+		task.wait(0.5)
+		landscape()
+	end
+end)
+-- a phone held upright turns now: size the launch screen for the landscape view, not the upright one
+if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+	local cam = workspace.CurrentCamera
+	local t0 = os.clock()
+	while cam.ViewportSize.X < cam.ViewportSize.Y and os.clock() - t0 < 1.5 do
+		task.wait()
+	end
+end
+
 local VEIL = Color3.fromHex("0B1F1A")
 local QI_LIGHT = Color3.fromHex("9FF5C8")
 local QI_PALE = Color3.fromHex("E8FFF4")

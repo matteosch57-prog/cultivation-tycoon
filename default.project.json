@@ -18,6 +18,10 @@
         "$path": "src/server"
       }
     },
+    "StarterGui": {
+      "$ignoreUnknownInstances": true,
+      "$properties": { "ScreenOrientation": "LandscapeSensor" }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
