@@ -597,42 +597,22 @@ local function build()
 	text(xBtn, "X", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 4 })
 	xBtn.Activated:Connect(toggleDisciples)
 
-	-- realm progress: bottom centre
-	local prog = frame(root, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(14)), AutomaticSize = Enum.AutomaticSize.XY })
+	-- realm progress: bottom centre (mock A docs/art/mocks/hud_bar_A.jpg, owner pick 2026-10-22: "A
+	-- better, but slightly smaller or pushed down"). Top to bottom: the next step (built further down,
+	-- LayoutOrder 1), the realm name over the bar, the Rebirth seal locked on the bar's right end.
+	local prog = frame(root, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(10)), AutomaticSize = Enum.AutomaticSize.XY })
 	local pLayout = Instance.new("UIListLayout")
 	pLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	pLayout.Padding = UDim.new(0, px(2))
+	pLayout.Padding = UDim.new(0, px(4))
 	pLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	pLayout.Parent = prog
-	-- realm name + the Rebirth chip (road to reincarnation: "Rebirth 3/10", opens Reincarnation.client)
-	local realmRow = frame(prog, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
-	local rrLayout = Instance.new("UIListLayout")
-	rrLayout.FillDirection = Enum.FillDirection.Horizontal
-	rrLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	rrLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	rrLayout.Padding = UDim.new(0, px(8))
-	rrLayout.Parent = realmRow
-	ui.realm = text(realmRow, "", px(15), Color3.fromHex("FFE9A8"), { LayoutOrder = 1 })
-	local chipHolder, chipBtn = toy(realmRow, UDim2.fromOffset(px(84), px(26)), Color3.fromHex("B06BFF"), px(9))
-	chipHolder.LayoutOrder = 2
-	local chipRow = frame(chipBtn, { Size = UDim2.fromScale(1, 1), ZIndex = 3 })
-	local crl = Instance.new("UIListLayout")
-	crl.FillDirection = Enum.FillDirection.Horizontal
-	crl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	crl.VerticalAlignment = Enum.VerticalAlignment.Center
-	crl.Padding = UDim.new(0, px(3))
-	crl.Parent = chipRow
-	Toy.icon(chipRow, "karma", px(18), { LayoutOrder = 1 })
-	ui.rebirth = text(chipRow, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	ui.rebirthBtn = chipBtn
-	ui.reincDot = Toy.dot(chipBtn, px(15), { Visible = false })
-	chipBtn.Activated:Connect(function()
-		local ev = player:FindFirstChild("ReincOpen")
-		if ev then
-			ev:Fire()
-		end
-	end)
-	local barHolder = frame(prog, { Size = UDim2.fromOffset(px(240), px(24)), LayoutOrder = 2 })
+	local BAR_W, BAR_H, ORB = px(230), px(22), px(46)
+	local LABEL_H = px(17)
+	-- the bar's area: the realm name, then the bar; the seal hangs over the bar's right end and rises
+	-- above it (its bottom sits a little under the bar's, its label on its lower rim)
+	local barArea = frame(prog, { Size = UDim2.fromOffset(BAR_W + math.floor(ORB * 0.7), LABEL_H + BAR_H), LayoutOrder = 2 })
+	ui.realm = text(barArea, "", px(13), Color3.fromHex("FFE9A8"), { Position = UDim2.fromOffset(px(12), 0) })
+	local barHolder = frame(barArea, { Size = UDim2.fromOffset(BAR_W, BAR_H), Position = UDim2.fromOffset(0, LABEL_H) })
 	local barShadow = frame(barHolder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(3)), BackgroundTransparency = 0, BackgroundColor3 = INK })
 	corner(barShadow, UDim.new(1, 0))
 	local track = frame(barHolder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("3A2D40"), ClipsDescendants = true })
@@ -650,8 +630,40 @@ local function build()
 	prl2.VerticalAlignment = Enum.VerticalAlignment.Center
 	prl2.Padding = UDim.new(0, px(4))
 	prl2.Parent = progRow
-	ui.progIcon = hallIcon(progRow, px(17), { LayoutOrder = 1 })
-	ui.progText = text(progRow, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.progIcon = hallIcon(progRow, px(15), { LayoutOrder = 1 })
+	ui.progText = text(progRow, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	-- the Rebirth seal (road to reincarnation, opens Reincarnation.client): a round toy button with the
+	-- karma orb and the round buttons' dome light (Toy.shine)
+	local orbHolder = frame(barArea, { AnchorPoint = Vector2.new(0.5, 1), Size = UDim2.fromOffset(ORB, ORB), Position = UDim2.fromOffset(BAR_W + math.floor(ORB * 0.2), LABEL_H + BAR_H + px(4)), ZIndex = 4 })
+	local orbShadow = frame(orbHolder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(4)), BackgroundTransparency = 0, BackgroundColor3 = INK, ZIndex = 4 })
+	corner(orbShadow, UDim.new(0.5, 0))
+	local chipBtn = Instance.new("TextButton")
+	chipBtn.Name = "RebirthSeal"
+	chipBtn.Text = ""
+	chipBtn.AutoButtonColor = false
+	chipBtn.Size = UDim2.fromScale(1, 1)
+	chipBtn.BackgroundColor3 = Color3.fromHex("B06BFF")
+	chipBtn.BorderSizePixel = 0
+	chipBtn.ZIndex = 4
+	chipBtn.Parent = orbHolder
+	corner(chipBtn, UDim.new(0.5, 0))
+	local ost2 = Instance.new("UIStroke")
+	ost2.Color = INK
+	ost2.Thickness = px(3)
+	ost2.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	ost2.Parent = chipBtn
+	Toy.shine(chipBtn, UDim2.fromOffset(ORB, ORB), ORB / 2)
+	Toy.icon(chipBtn, "karma", math.floor(ORB * 0.6), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), ZIndex = 5 })
+	ui.rebirth = text(orbHolder, "", px(12), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.95), ZIndex = 6 })
+	ui.rebirthBtn = chipBtn
+	ui.reincDot = Toy.dot(chipBtn, px(15), { Visible = false })
+	Toy.feel(chipBtn, { scale = orbHolder, squash = { chipBtn, orbShadow } })
+	chipBtn.Activated:Connect(function()
+		local ev = player:FindFirstChild("ReincOpen")
+		if ev then
+			ev:Fire()
+		end
+	end)
 	ui.prog = prog
 
 	-- recruit: the formation seal (mock docs/art/mocks/recruit_button_c.gif, owner pick 2026-10-22: "C,
@@ -792,35 +804,32 @@ local function build()
 	-- press feel, like the toy buttons
 	Toy.feel(rBtn, { squash = { rBtn, shadow }, hover = false })
 
-	-- next goal: top right, under Roblox's own buttons
-	local goal = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY, Rotation = 2 })
+	-- next goal: bottom centre, over the realm bar (owner 2026-10-22: "the arrow on next step in middle
+	-- bottom"); one line: the turning arrow, the pad's name, its qi price
+	local goal = frame(ui.prog, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	local gl = Instance.new("UIListLayout")
 	gl.FillDirection = Enum.FillDirection.Horizontal
 	gl.VerticalAlignment = Enum.VerticalAlignment.Center
 	gl.Padding = UDim.new(0, px(6))
 	gl.Parent = goal
-	local _, spinner = arrowIcon(goal, px(30), { LayoutOrder = 1 })
+	local _, spinner = arrowIcon(goal, px(26), { LayoutOrder = 1 })
 	ui.arrow = spinner
-	local gt = frame(goal, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-	local gtl = Instance.new("UIListLayout")
-	gtl.Padding = UDim.new(0, px(2))
-	gtl.Parent = gt
-	ui.goalName = text(gt, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.goalName = text(goal, "", px(15), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	-- the price shows its qi drop (R18)
-	local gcRow = frame(gt, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	local gcRow = frame(goal, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	local gcl = Instance.new("UIListLayout")
 	gcl.FillDirection = Enum.FillDirection.Horizontal
 	gcl.VerticalAlignment = Enum.VerticalAlignment.Center
 	gcl.Padding = UDim.new(0, px(3))
 	gcl.Parent = gcRow
-	qiIcon(gcRow, px(15), { LayoutOrder = 1 })
-	ui.goalCost = text(gcRow, "", px(13), PINK, { LayoutOrder = 2 })
+	qiIcon(gcRow, px(14), { LayoutOrder = 1 })
+	ui.goalCost = text(gcRow, "", px(14), PINK, { LayoutOrder = 2 })
 	ui.goal = goal
 	-- Heavenly Hands (Karma Shop): a gold hand that builds the Next pad from anywhere (mock A)
-	local hHolder, hBtn = toy(goal, UDim2.fromOffset(px(50), px(42)), Color3.fromHex("FFD34D"), px(12))
-	hHolder.LayoutOrder = 3
+	local hHolder, hBtn = toy(goal, UDim2.fromOffset(px(40), px(34)), Color3.fromHex("FFD34D"), px(10))
+	hHolder.LayoutOrder = 4
 	hHolder.Visible = false
-	Toy.icon(hBtn, "hands", px(32), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	Toy.icon(hBtn, "hands", px(26), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	hBtn.Activated:Connect(function()
 		local id = goalPad and goalPad.Parent and goalPad:GetAttribute("PadId")
 		local ok, done = pcall(function()
@@ -981,7 +990,6 @@ local function layout()
 		return
 	end
 	local inset = GuiService.TopbarInset
-	ui.goal.Position = UDim2.new(1, -px(14), 0, inset.Max.Y + px(8))
 	-- left buttons: the band under the top bar and above the thumbstick (bottom-left on a phone)
 	local rootScale = ui.root:FindFirstChildOfClass("UIScale") -- (a phone check scales the root)
 	local rootH = ui.root.AbsoluteSize.Y / (rootScale and rootScale.Scale or 1)
@@ -1035,7 +1043,7 @@ local function layout()
 	-- right stack: under the next goal, at the right edge. It must stay clear of the Recruit seal and
 	-- the x10 / x50 picker that pops above it: a column if it ends above them, else a row if that
 	-- does; else (the seal sits high, above the jump button) it moves left of the seal.
-	local stackTop = inset.Max.Y + px(8) + math.max(px(34), ui.goal.AbsoluteSize.Y / unscale) + px(10)
+	local stackTop = inset.Max.Y + px(8) -- (the next goal moved to the bottom centre)
 	local floor = state.phoneMode and rootH * 0.72 or rootH - px(24)
 	local need, rowH, n = 0, 0, 0
 	for _, c in ui.right:GetChildren() do
@@ -1173,8 +1181,7 @@ refreshStatic = function()
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
 	local total = Config.requiredPads(player:GetAttribute("Realm") or 1) -- this realm's island (D48); paths and groves optional
-	ui.progIcon.Visible = owned < total
-	ui.progText.Text = owned >= total and "Break through!" or string.format("%d/%d", owned, total)
+	ui.progText.Text = string.format("%d/%d", math.min(owned, total), total) -- the next step above says Breakthrough
 	TweenService:Create(ui.fill, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(math.clamp(owned / total, 0.04, 1), 1) }):Play()
 	ui.fill.BackgroundColor3 = owned >= total and GOLD or JADE
 end
@@ -1328,7 +1335,7 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
 	end
 
-	-- the Rebirth chip wobbles gold once the rebirth price is held
+	-- the Rebirth seal wobbles gold once the rebirth price is held
 	if player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge) then
 		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
 		ui.rebirthBtn.BackgroundColor3 = GOLD

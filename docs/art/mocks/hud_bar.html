@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUD Bar Remock</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<!-- Mock: next-step arrow at the bottom centre + the realm bar and Rebirth remocked (2026-10-22).
+     Render: python tools/mock_hud_bar.py (?opt=A|B|C&s=0|1 draws one 1808x938 frame). -->
+<style>
+:root{--ink:#1B1420;--jade:#59D39F;--jadeL:#9BF0C8;--gold:#FFD34D;--goldL:#FFF0A0;--karma:#B06BFF;--karmaL:#D9B8FF;--track:#3A2D40;--pink:#FFB3C7}
+html,body{margin:0;background:#2B2140;font-family:"Fredoka",system-ui,sans-serif;color:#fff}
+.stage{position:relative;width:1808px;height:938px;overflow:hidden;background:url(hud_bar_bg.jpg) 0 0/1808px 938px}
+.t{font-weight:700;color:#fff;-webkit-text-stroke:8px var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink);white-space:nowrap;line-height:1}
+.row{display:flex;align-items:center}
+.abs{position:absolute}
+.bc{position:absolute;left:50%;transform:translateX(-50%);bottom:20px;display:flex;flex-direction:column;align-items:center}
+.ico{display:block;flex:none}
+/* the toy button: colour face, ink border, ink drop, a soft top light */
+.toy{position:relative;border:5px solid var(--ink);box-shadow:0 7px 0 var(--ink);display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:7%;height:30%;border-radius:999px;background:linear-gradient(#ffffff70,#ffffff00)}
+.bar{position:relative;border:5px solid var(--ink);border-radius:999px;background:var(--track);box-shadow:0 7px 0 var(--ink);overflow:hidden;box-sizing:border-box}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(var(--jadeL),var(--jade) 55%,#3FB585)}
+.fill.gold{background:linear-gradient(var(--goldL),var(--gold) 55%,#F0B020)}
+.fill::after{content:"";position:absolute;left:14px;right:14px;top:5px;height:28%;border-radius:999px;background:#ffffff55}
+.inbar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px}
+.rays{position:absolute;border-radius:50%;z-index:-1;background:repeating-conic-gradient(#FFF6B0aa 0 9deg,#FFF6B000 9deg 30deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.dot{position:absolute;width:30px;height:30px;border-radius:50%;background:#FF4B4B;border:4px solid var(--ink);box-sizing:border-box}
+/* gallery */
+.gal{max-width:1100px;margin:0 auto;padding:20px 16px 60px;display:grid;gap:22px}
+.gal h1{margin:0;font-size:26px}.gal p{margin:4px 0 0;color:#CBBFD6;font-weight:500}
+.gal section{background:#2A2036;border:3px solid var(--ink);border-radius:18px;padding:14px;display:grid;gap:10px}
+.gal img{width:100%;border-radius:12px;border:3px solid var(--ink)}
+.gal .tag{color:var(--gold);font-weight:700;font-size:20px}
+</style></head><body>
+<div id="app"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const INK = "#1B1420";
+// ---- icons (64 box, ink outline under every shape) ----
+const svg = (s, body) => `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 64 64">${body}</svg>`;
+const qi = s => svg(s, `<path d="M32 5 C40 20 52 30 52 42 A20 20 0 0 1 12 42 C12 30 24 20 32 5Z" fill="#6FD6AE" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><circle cx="38" cy="44" r="8" fill="#E8FFF4"/><circle cx="24" cy="38" r="4" fill="#fff" opacity=".8"/>`);
+const karma = s => svg(s, `<circle cx="32" cy="32" r="25" fill="#9A6BFF" stroke="${INK}" stroke-width="6"/><path d="M32 7 A12.5 12.5 0 0 1 32 32 A12.5 12.5 0 0 0 32 57 A25 25 0 0 1 32 7Z" fill="#6C3FD8"/><circle cx="32" cy="19.5" r="4.5" fill="#6C3FD8"/><circle cx="32" cy="44.5" r="4.5" fill="#D9B8FF"/><circle cx="24" cy="20" r="5" fill="#fff" opacity=".55"/>`);
+const hall = s => svg(s, `<rect x="16" y="30" width="32" height="24" fill="#FFF1D6" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M6 32 L32 12 L58 32 Z" fill="#E8524A" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><rect x="27" y="40" width="10" height="14" fill="#B8432F"/>`);
+const arrow = (s, deg, col) => svg(s, `<g transform="rotate(${deg} 32 32)"><path d="M8 25 H34 V12 L58 32 L34 52 V39 H8 Z" fill="${col || "#FFD34D"}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M12 28 H37 V20 L50 31" fill="none" stroke="#FFF6C0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>`);
+const T = (txt, px, col, extra) => `<span class="t" style="font-size:${px}px;${col ? `color:${col};` : ""}${extra || ""}">${txt}</span>`;
+
+// ---- shared bits ----
+const ready = Q.get("s") === "1";
+const GOAL = ready ? "Break through" : "Stone Path";
+const GOAL_COST = ready ? "2.9M" : "10";
+const N = ready ? 14 : 9, OF = 14, PCT = Math.round(100 * N / OF);
+const REALM = "Core Formation";
+const rebirthPct = ready ? 100 : 42;
+
+function rebirthOrb(size) { // option A: a round seal on the bar's end
+  const face = ready ? "var(--gold)" : "var(--karma)";
+  return `<div style="position:relative;width:${size}px;height:${size}px">
+    ${ready ? `<div class="rays" style="width:${size * 2.2}px;height:${size * 2.2}px;left:${-size * .6}px;top:${-size * .6}px"></div>` : ""}
+    <div class="toy" style="position:absolute;inset:0;border-radius:50%;background:${face};transform:rotate(${ready ? -6 : 0}deg)">${karma(size * .56)}</div>
+    ${ready ? `<div class="dot" style="right:-4px;top:-4px"></div>` : ""}
+    <div class="abs" style="left:50%;transform:translateX(-50%);bottom:${-34}px">${T(ready ? "Rebirth!" : "Rebirth", 28, ready ? "var(--goldL)" : "#fff")}</div>
+  </div>`;
+}
+
+// ---------------- A: guide line above the bar, Rebirth seal on the bar's right end ----------------
+function optA() {
+  return `<div class="bc" style="bottom:46px">
+    <div class="row" style="gap:12px;margin-bottom:14px">${arrow(70, ready ? -90 : -35)}${T(GOAL, 40)}<div class="row" style="gap:4px;margin-left:6px">${qi(38)}${T(GOAL_COST, 36, "var(--jadeL)")}</div></div>
+    <div class="row" style="gap:0;align-items:center">
+      <div style="position:relative">
+        <div class="abs" style="left:26px;top:-40px">${T(REALM, 30, "#FFE9A8")}</div>
+        <div class="bar" style="width:560px;height:60px"><div class="fill ${ready ? "gold" : ""}" style="width:${PCT}%"></div>
+          <div class="inbar">${hall(36) + T(`${N}/${OF}`, 32)}</div></div>
+      </div>
+      <div style="margin-left:-34px;margin-top:-6px;z-index:2">${rebirthOrb(108)}</div>
+    </div>
+  </div>`;
+}
+
+// ---------------- B: the bar IS the guide: arrow medallion on its left end, Rebirth tab on the right ----------------
+function optB() {
+  const rb = ready ? "var(--gold)" : "var(--karma)";
+  return `<div class="bc" style="bottom:34px">
+    <div class="row" style="gap:10px;margin-bottom:8px">${T("IV", 30, "#FFE9A8")}${T(REALM, 30, "#FFE9A8")}<span class="t" style="font-size:30px;color:#CBBFD6">${T(`· ${N}/${OF}`, 30, "#fff")}</span></div>
+    <div class="row">
+      <div class="toy" style="width:104px;height:104px;border-radius:50%;background:var(--gold);z-index:2;margin-right:-40px">${arrow(78, ready ? -90 : -35, "#fff")}</div>
+      <div class="bar" style="width:600px;height:72px"><div class="fill ${ready ? "gold" : ""}" style="width:${PCT}%"></div>
+        <div class="inbar" style="justify-content:flex-start;padding-left:58px;gap:12px">${T(GOAL, 36)}<div class="row" style="gap:4px">${qi(36)}${T(GOAL_COST, 34, "var(--jadeL)")}</div></div></div>
+      <div style="position:relative;margin-left:-30px;z-index:2">
+        ${ready ? `<div class="rays" style="width:220px;height:220px;left:-46px;top:-60px"></div>` : ""}
+        <div class="toy" style="width:184px;height:88px;border-radius:24px;background:${rb};flex-direction:column;gap:0;transform:rotate(${ready ? -4 : 0}deg)">
+          <div class="row" style="gap:6px">${karma(36)}${T(ready ? "Rebirth!" : "Rebirth", 26)}</div>
+          <div style="width:140px;height:14px;border:3px solid var(--ink);border-radius:9px;background:#3A2D40;margin-top:4px;overflow:hidden"><div style="width:${rebirthPct}%;height:100%;background:${ready ? "#fff" : "var(--karmaL)"}"></div></div>
+        </div>
+        ${ready ? `<div class="dot" style="right:-6px;top:-8px"></div>` : ""}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------------- C: Muscle Legends: Rebirth is a side button; bottom centre = guide + a slim bar ----------------
+function optC() {
+  const rb = ready ? "var(--gold)" : "var(--karma)";
+  return `
+  <div class="abs" style="left:16px;top:470px;display:flex;flex-direction:column;align-items:center;width:94px">
+    ${ready ? `<div class="rays" style="width:220px;height:220px;left:-63px;top:-60px"></div>` : ""}
+    <div class="toy" style="width:92px;height:92px;border-radius:22px;background:${rb};transform:rotate(${ready ? -6 : 0}deg)">${karma(58)}</div>
+    ${ready ? `<div class="dot" style="right:-6px;top:-8px"></div>` : ""}
+    <div style="margin-top:12px">${T(ready ? "Rebirth!" : `${rebirthPct}%`, 28, ready ? "var(--goldL)" : "#fff")}</div>
+  </div>
+  <div class="bc" style="bottom:28px">
+    <div class="row" style="gap:12px;margin-bottom:12px">${arrow(80, ready ? -90 : -35)}<div style="display:flex;flex-direction:column;gap:6px">${T(GOAL, 42)}<div class="row" style="gap:4px">${qi(34)}${T(GOAL_COST, 32, "var(--jadeL)")}</div></div></div>
+    <div class="row" style="justify-content:space-between;width:470px;margin-bottom:8px">${T(REALM, 28, "#FFE9A8")}<div class="row" style="gap:6px">${hall(30)}${T(`${N}/${OF}`, 28)}</div></div>
+    <div class="bar" style="width:470px;height:34px"><div class="fill ${ready ? "gold" : ""}" style="width:${PCT}%"></div></div>
+  </div>`;
+}
+
+const OPTS = { A: optA, B: optB, C: optC };
+const app = document.getElementById("app");
+const opt = Q.get("opt");
+if (opt) {
+  app.innerHTML = `<div class="stage">${OPTS[opt]()}</div>`;
+} else {
+  const blurb = {
+    A: "Next step (arrow + name + price) sits right above the bar. The bar keeps the realm name and the hall count; Rebirth becomes a round seal locked on the bar's right end.",
+    B: "One piece: the bar is the guide. A gold arrow medallion on its left end, the next step written inside the bar, Rebirth as a tab with its own small bar on the right end.",
+    C: "Muscle Legends' layout: Rebirth moves to the left buttons with its %, and the bottom centre is only the next step over a slim realm bar.",
+  };
+  app.innerHTML = `<div class="gal"><div><h1>HUD bar + Rebirth</h1><p>Next-step arrow moved to the bottom centre. Each option: playing, then realm full + Rebirth ready.</p></div>` +
+    ["A", "B", "C"].map(k => `<section><div><span class="tag">${k}</span>${blurb[k]}</div><img src="hud_bar_${k}.jpg"><img src="hud_bar_${k}_ready.jpg"></section>`).join("") + `</div>`;
+}
+</script></body></html>
