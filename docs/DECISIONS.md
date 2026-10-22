@@ -360,3 +360,14 @@ the log as a D-number.
 - **D64** Every shop product is on sale at every realm (owner 2026-10-22: "open all products to any
   level, who cares if someone pays to rush the game"): the `minRealm` gates of Celestial, Dao Ancestor,
   Heavenly Emperor and Primordial (D28) are gone; the gate code stays for any future item.
+- **D63** Rebirth = Muscle Legends' rebirth, copied as it is (owner 2026-10-22: "let's just do like
+  other games, don't reinvent the wheel"; "I asked you to copy the successful games"). Replaces D29,
+  D37, D40's gate, landing and Past Lives: a rebirth costs qi (a price that rises the same step each
+  rebirth), resets qi, buildings and realm (realm 1 built, D56), keeps every disciple, adds +5% qi per
+  rebirth and pays a growing karma amount; rebirth counts open the deeper realms. Why: the custom
+  record-depth rule made every life exactly one realm deeper and lives longer each time, the half
+  landing caused the free-repeat exploit, and Past Lives reached x372K by life 14
+  (`sim_game.py`); research of 11 Roblox games `docs/research/2026-10-22_rebirth_standard.md`.
+  Economy sim (`sim_game.py` b18f691): the realm table binds (first rebirth ~11 to 15 min), +50% a
+  rebirth instead of their literal +5% (+5% made every life longer: 46 to 99 min), the boost stays out
+  of the price income (the price floor and breakthrough scale with income, so it would do nothing there).

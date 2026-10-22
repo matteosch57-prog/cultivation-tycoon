@@ -943,6 +943,16 @@ end
 
 ---------------------------------------------------------------------------------------------
 -- data -> UI
+-- the rebirth price in qi (Muscle Legends' rebirth): "Rebirth!" once it is held, else how far
+local function rebirthChip()
+	if not ui.rebirth then
+		return
+	end
+	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
+	local held = player:GetAttribute("Qi") or 0
+	ui.rebirth.Text = held >= price and "Rebirth!" or string.format("%d%%", math.floor(100 * held / math.max(price, 1)))
+end
+
 refreshStatic = function()
 	if not ui.root then
 		return
@@ -957,9 +967,7 @@ refreshStatic = function()
 	ui.reincDot.Visible = lit.reinc == true
 	ui.karma.Text = short(player:GetAttribute("Karma") or 0)
 	local realmNow = player:GetAttribute("Realm") or 1
-	-- a new life pays once this one goes deeper than every life before (D37)
-	local target = math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1)
-	ui.rebirth.Text = realmNow >= target and "Rebirth!" or string.format("%d/%d", realmNow, target)
+	rebirthChip()
 	-- the price of each press size (all or nothing, Config.recruitBatchCost): the seal shows the pick's
 	local n = state.recruitN or 1
 	local rr = player:GetAttribute("RealmRecruits") or 0
@@ -1068,7 +1076,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1087,6 +1095,7 @@ player:GetAttributeChangedSignal("Qi"):Connect(function()
 	local q = player:GetAttribute("Qi") or 0
 	local gain = q - state.lastQi
 	state.lastQi = q
+	rebirthChip()
 	if gain > 0 and gain <= (player:GetAttribute("Rate") or 0) * 1.6 + 1 then
 		popGain(gain) -- passive income tick (not a purchase refund or a big grant)
 	end
@@ -1189,8 +1198,8 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
 	end
 
-	-- the Rebirth chip wobbles gold once a new life is open
-	if (player:GetAttribute("Realm") or 1) >= math.max(Config.REINC_REALM, (player:GetAttribute("SoulPeak") or 0) + 1) then
+	-- the Rebirth chip wobbles gold once the rebirth price is held
+	if (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge) then
 		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
 		ui.rebirthBtn.BackgroundColor3 = GOLD
 	else
