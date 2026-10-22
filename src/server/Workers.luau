@@ -1,7 +1,7 @@
 -- Sect workers: outer disciples hired at a building (Config.WORKERS, hire pads in Main). Each one
 -- is a real R15 avatar in plain classic clothes (no layered robes: cheap on phones), standing at a
--- spot of its building with a tool in the right hand. The rig is anchored with its joints
--- disabled (Rig.luau); the client plays the job loop by solving the joints by hand
+-- spot of its building with a tool in the right hand. Only the root is anchored and the body hangs
+-- on its own joints (Rig.luau); the client plays the job loop through the joints' Transforms
 -- (WorkerJobs.client.luau), so nothing is uploaded and nothing replicates while they work.
 -- Mock and look pick: docs/art/mocks/workers.html (owner 2026-10-21: hire pads, straw hats).
 local Players = game:GetService("Players")
@@ -126,8 +126,7 @@ local function describe(look, skin)
 	return d
 end
 
--- the tool's parts, each hung on the right hand by its own (disabled) RigidConstraint so the
--- client's joint walk carries it with the hand
+-- the tool's parts, each hung on the right hand by its own RigidConstraint, so the hand carries it
 local function arm(m, tool)
 	local hand = m:FindFirstChild("RightHand")
 	if not hand or not TOOLS[tool] then
@@ -154,7 +153,6 @@ local function arm(m, tool)
 		local rc = Instance.new("RigidConstraint")
 		rc.Name = "Tool" .. i
 		rc.Attachment0, rc.Attachment1 = grip, a
-		rc.Enabled = false
 		rc.Parent = p
 	end
 	holder.Parent = m
@@ -186,8 +184,8 @@ local function template(job, li, tool)
 		hum.RequiresNeck = false
 		hum.BreakJointsOnDeath = false
 		m:PivotTo(CFrame.identity)
-		Rig.freeze(m)
 		arm(m, tool)
+		Rig.live(m)
 		-- feet on the ground (y = 0 of the template)
 		local low = math.huge
 		for _, p in m:GetDescendants() do
@@ -195,11 +193,7 @@ local function template(job, li, tool)
 				low = math.min(low, p.Position.Y - p.Size.Y / 2)
 			end
 		end
-		for _, p in m:GetDescendants() do
-			if p:IsA("BasePart") then
-				p.CFrame += Vector3.new(0, -low, 0)
-			end
-		end
+		m:PivotTo(m:GetPivot() + Vector3.new(0, -low, 0)) -- the root carries the body on its joints
 		templates[key] = m
 	else
 		warn("[Workers] avatar build failed", job, li, m)

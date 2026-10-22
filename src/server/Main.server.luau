@@ -615,30 +615,66 @@ local function buildPreview(s, pad, parent)
 	m.Parent = parent
 end
 
--- `newcomer`: the name of a disciple who just joined; its seat walks it in (Cultivators arrival)
+-- `newcomer`: the name of a disciple who just joined; its seat walks it in (Cultivators arrival).
+-- Seats are kept: a disciple who still works stays on its cushion untouched, and only the seats
+-- whose disciple changed are rebuilt (owner 2026-10-22: a recruit rebuilt the whole platform and
+-- every figure popped out and back in). So the seat order is not the strength order: a newcomer
+-- takes a free seat, or the seat of the one it pushed to the bench.
 local function buildDisciples(s, newcomer)
-	local old = s.plot.built:FindFirstChild("Disciples")
-	if old then
-		old:Destroy()
-	end
+	local folder = s.plot.built:FindFirstChild("Disciples")
 	if not s.data.owned.platform then
+		if folder then
+			folder:Destroy()
+		end
 		return
 	end
+	local fresh = folder == nil
+	if fresh then
+		folder = Instance.new("Folder")
+		folder.Name = "Disciples"
+	end
 	local ctx = ctxFor(s)
-	ctx.folder = Instance.new("Folder")
-	ctx.folder.Name = "Disciples"
+	ctx.folder = folder
+	-- the working disciples (strongest first), counted by name
+	local want = {}
 	local max = maxDisciples(s)
 	for slot, name in s.data.disciples do
 		if slot > max then
 			break -- benched
 		end
-		local arrive = name == newcomer
-		if arrive then
-			newcomer = nil -- only one seat walks in, the first with that name
-		end
-		Builders.disciple(ctx, slot, Config.rarity(name), arrive)
+		want[name] = (want[name] or 0) + 1
 	end
-	ctx.folder.Parent = s.plot.built
+	-- keep every seated figure whose disciple still works; clear the rest
+	local taken = {}
+	for _, m in folder:GetChildren() do
+		local slot = tonumber(m.Name:match("^Disciple(%d+)$"))
+		local name = m:GetAttribute("Disciple")
+		if slot and slot <= max and name and (want[name] or 0) > 0 and not taken[slot] then
+			want[name] -= 1
+			taken[slot] = true
+		else
+			m:Destroy()
+		end
+	end
+	-- the others take the free seats, strongest first
+	local slot = 1
+	for _, name in s.data.disciples do
+		if (want[name] or 0) > 0 then
+			while taken[slot] do
+				slot += 1
+			end
+			want[name] -= 1
+			taken[slot] = true
+			local arrive = name == newcomer
+			if arrive then
+				newcomer = nil -- only one seat walks in, the first with that name
+			end
+			Builders.disciple(ctx, slot, Config.rarity(name), arrive):SetAttribute("Disciple", name)
+		end
+	end
+	if fresh then
+		folder.Parent = s.plot.built
+	end
 end
 
 -- the hired workers at their buildings (Workers.luau); rebuilt whole, like the disciples

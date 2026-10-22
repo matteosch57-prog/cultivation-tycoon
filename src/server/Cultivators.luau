@@ -1,6 +1,7 @@
 -- Seated cultivators for the Meditation Platform: real Roblox R15 avatars built from a
--- HumanoidDescription (catalog hanfu, hair, beard), posed cross-legged and anchored. The client
--- breathes them (CultivatorIdle.client.luau): no animation upload needed.
+-- HumanoidDescription (catalog hanfu, hair, beard), posed cross-legged on their own joints (only the
+-- root anchored). The client breathes them through the joints (CultivatorIdle.client.luau): no
+-- animation upload needed.
 -- Four looks (sword disciple, lotus maiden, pill monk, elder sage); the rarity picks the robe colour
 -- and the aura tier. Front faces -Z (LookVector). `cf` is the ground point under the cushion.
 -- Auras are layered glowing objects only (magic circles and spirit swords from free Creator Store
@@ -9,6 +10,7 @@
 -- range, so a full platform stays cheap on phones.
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local Rig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Rig"))
 
 local Cultivators = {}
 
@@ -77,36 +79,8 @@ local LOOK = {
 	elder = { robes = "male", body = MAN, head = ANIME, hair = { 12373799299 }, face = { 123149555491840 }, props = { { 10070655361, BACK } } },
 }
 
--- joint rotations of the cross-legged pose, applied in each joint's parent attachment frame
-local POSE = {
-	-- thighs forward and out, shins folded back across under the other knee (a level swing)
-	LeftHip = CFrame.Angles(0, math.rad(50), 0) * CFrame.Angles(math.rad(90), 0, 0),
-	RightHip = CFrame.Angles(0, math.rad(-50), 0) * CFrame.Angles(math.rad(90), 0, 0),
-	LeftKnee = CFrame.Angles(0, 0, math.rad(140)),
-	RightKnee = CFrame.Angles(0, 0, math.rad(-140)),
-	-- the hands meet in the lap (a meditation mudra): it also hides the blocky hands, which read cheap
-	-- resting on the knees (mock 2026-10-21)
-	LeftShoulder = CFrame.Angles(math.rad(-15), math.rad(-50), 0),
-	RightShoulder = CFrame.Angles(math.rad(-15), math.rad(50), 0),
-	LeftElbow = CFrame.Angles(math.rad(95), 0, 0),
-	RightElbow = CFrame.Angles(math.rad(95), 0, 0),
-}
-
--- Flying (owner 2026-10-22: "a flying animation too, for the thumbnails for example"): standing on a
--- spirit sword, leaning into the wind, the right hand forward in a sword mudra, the left arm trailing
--- back. Used by Cultivators.build with opts.pose = "fly".
-local FLY_POSE = {
-	Waist = CFrame.Angles(math.rad(-8), 0, 0),
-	RightShoulder = CFrame.Angles(math.rad(75), 0, math.rad(8)),
-	RightElbow = CFrame.Angles(math.rad(15), 0, 0),
-	-- the left arm trails back in the wind (an elbow bent forward read as a boxing guard)
-	LeftShoulder = CFrame.Angles(math.rad(-35), 0, math.rad(-18)),
-	LeftElbow = CFrame.Angles(math.rad(20), 0, 0),
-	LeftHip = CFrame.Angles(math.rad(12), 0, 0),
-	RightHip = CFrame.Angles(math.rad(-12), 0, 0),
-	RightKnee = CFrame.Angles(math.rad(-15), 0, 0),
-}
-local POSES = { seated = POSE, fly = FLY_POSE }
+-- the seated and flying poses (shared: the client turns the arms in the body's frame)
+local POSES = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("CultivatorPoses"))
 
 local function P(parent, size, cf, color, mat, shape)
 	local p = Instance.new("Part")
@@ -218,8 +192,10 @@ local function jointParts(j)
 	return a0 and a0.Parent, a1 and a1.Parent
 end
 
--- Pose the rig by walking its joint graph from the root: compute every part's target CFrame
--- first, then disable the joints and anchor (new rigs have AnimationConstraints, not Motor6Ds).
+-- Pose the rig by walking its joint graph from the root: every part goes where its joint puts it
+-- (new rigs have AnimationConstraints, not Motor6Ds). The same rotations are then baked into the
+-- joints' rest frames (Rig.bake) and the rig stays live on its joints (Rig.live): the client moves
+-- it through them, so the robes, hair and props follow (owner 2026-10-22).
 local function pose(m, rot)
 	local root = m:FindFirstChild("HumanoidRootPart")
 	local joints = {}
@@ -247,21 +223,11 @@ local function pose(m, rot)
 			end
 		end
 	end
-	for _, e in joints do
-		e.j.Enabled = false
-	end
 	for p, cf in at do
-		p.Anchored = true
 		p.CFrame = cf
 	end
-	for _, p in m:GetDescendants() do
-		if p:IsA("BasePart") then
-			p.Anchored = true
-			p.CanCollide = false
-			p.CanQuery = false
-			p.CanTouch = false
-		end
-	end
+	Rig.bake(m, rot)
+	Rig.live(m)
 end
 
 -- posed templates, one per look and tier, built once per server and cloned
@@ -292,11 +258,7 @@ local function template(look, tier, poseName)
 				low = math.min(low, p.Position.Y - p.Size.Y / 2)
 			end
 		end
-		for _, p in m:GetDescendants() do
-			if p:IsA("BasePart") then
-				p.CFrame += Vector3.new(0, (poseName == "fly" and 0 or SEAT) - low, 0)
-			end
-		end
+		m:PivotTo(m:GetPivot() + Vector3.new(0, (poseName == "fly" and 0 or SEAT) - low, 0))
 		templates[key] = m
 	else
 		warn("[Cultivators] avatar build failed", look, tier, m)
@@ -575,15 +537,7 @@ local function walkerTemplate(look, tier)
 		if not hum:FindFirstChildOfClass("Animator") then
 			Instance.new("Animator").Parent = hum
 		end
-		for _, p in m:GetDescendants() do
-			if p:IsA("BasePart") then
-				p.Anchored = p.Name == "HumanoidRootPart"
-				p.CanCollide = false
-				p.CanQuery = false
-				p.CanTouch = false
-				p.Massless = true
-			end
-		end
+		Rig.live(m) -- only the root anchored; streams in whole
 		walkers[key] = m
 	else
 		warn("[Cultivators] walker build failed", look, tier, m)
