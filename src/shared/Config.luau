@@ -576,6 +576,13 @@ Config.PALETTES = {
 	{ stone = Color3.fromRGB(235, 225, 200), wood = Color3.fromRGB(110, 30, 30), roof = Color3.fromRGB(200, 150, 40), trim = Color3.fromRGB(255, 220, 120), glow = Color3.fromRGB(255, 210, 110) },
 }
 
+-- Best sects (src/server/Ranks.luau): one OrderedDataStore, score = realms climbed * 1000 + lives
+Config.RANK_STORE = "Ranks1"
+Config.RANK_TOP = 10 -- rows read and shown
+Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
+Config.RANK_WRITE_EVERY = 60 -- s between write rounds (one SetAsync per changed player)
+Config.RANK_MIN_BUDGET = 10 -- requests of that type left before the board may spend one
+
 -- Building skins (research docs/research/2026-10-22_visible_progression.md, mocks
 -- docs/art/mocks/2026-10-22_skins_*.jpg): every building is recoloured after it is built
 -- (src/server/Skin.luau) so a peak shows how far its owner has come from the next peak over.

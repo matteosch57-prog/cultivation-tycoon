@@ -19,6 +19,7 @@ local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
+local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -423,7 +424,7 @@ end
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
 	-- workers = { [building id] = workers hired there } (Config.WORKERS)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, climbed = 0, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
@@ -615,6 +616,7 @@ local function publish(player)
 	local ls = player:FindFirstChild("leaderstats")
 	if ls then
 		ls.Realm.Value = d.realm
+		ls.Lives.Value = d.lives or 1
 	end
 end
 
@@ -1046,6 +1048,9 @@ refreshPads = function(player, s)
 			Telemetry.sink(player, s.data, cost, "breakthrough")
 			s.data.realm += 1
 			s.data.best = math.max(s.data.best or 1, s.data.realm)
+			s.data.climbed = (s.data.climbed or 0) + 1 -- the ranking score: only a real breakthrough counts
+			Ranks.submit(player, s.data)
+			Ranks.touch()
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
 			s.data.owned = {}
@@ -1124,6 +1129,9 @@ local function load(player, sessionId)
 		data, loaded, reason = SaveStore.load(store, player.UserId, sessionId, function()
 			return player.Parent ~= nil
 		end)
+	end
+	if type(data) == "table" and data.climbed == nil then
+		data.climbed = math.max(0, (data.best or 1) - 1) -- saves from before the ranking: their deepest climb
 	end
 	local d = if type(data) == "table" then backfill(data, defaultData()) else defaultData()
 	return d, loaded, reason
@@ -1225,6 +1233,10 @@ local function onJoin(player)
 	local realm = Instance.new("IntValue")
 	realm.Name = "Realm"
 	realm.Parent = ls
+	local lives = Instance.new("IntValue")
+	lives.Name = "Lives"
+	lives.Value = 1
+	lives.Parent = ls
 	ls.Parent = player
 
 	local friends = findFriends(player)
@@ -1281,6 +1293,8 @@ local function onJoin(player)
 	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
+	Ranks.submit(player, s.data)
+	Ranks.touch()
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
 	if Config.GROUP_ID > 0 then
@@ -1383,6 +1397,7 @@ local function onLeave(player)
 		return
 	end
 	sessions[player] = nil
+	Ranks.leave(player, s.data)
 	for other in friends do
 		if sessions[other] then
 			publish(other)
@@ -1688,6 +1703,8 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
+	Ranks.submit(player, d)
+	Ranks.touch()
 	-- D40: the new life lands at half the deepest realm, built (the climb back is the fast part).
 	-- Always below the next paying depth (soulPeak + 1) and karma pays only a new record (D37), so
 	-- a reset can never be repeated for profit.
@@ -2005,6 +2022,7 @@ buildPlots()
 ServerHealth.start()
 Players.PlayerAdded:Connect(onJoin)
 Players.PlayerRemoving:Connect(onLeave)
+Ranks.start()
 for _, p in Players:GetPlayers() do
 	task.spawn(onJoin, p)
 end
