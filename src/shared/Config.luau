@@ -603,6 +603,11 @@ Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "
 Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
 Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
 Config.INDEX_STEP_STARS = 10
+-- A disciple's own stars (owner 2026-10-22: "stars should count on their performance too. And they
+-- could show when you look at them"): a working disciple's bonus x (1 + this x the stars of its index
+-- entry), so a five-star disciple works twice as hard. Bee Swarm Simulator's gifted bee, per seat.
+-- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
+Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
 Config.DISCIPLE_CAP = 21 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
@@ -1020,6 +1025,10 @@ function Config.indexTotalStars(index)
 		n += Config.indexStars(count)
 	end
 	return n
+end
+-- a working disciple's bonus multiplier from its own entry's stars (`count` = that entry's pulls)
+function Config.discipleStarMult(count)
+	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)
 end
 function Config.indexMult(index)
 	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
