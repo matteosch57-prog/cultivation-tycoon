@@ -7,6 +7,7 @@ The kept icon and thumbnails for the Roblox store page. Upload from here (Creato
   - `day1_day100_high.png`, `day1_day100_wide.png`
   - `burst_<rarity>.png` and `burst_<rarity>_awaken.png` (Heavenly Emperor, Dao Ancestor, Celestial)
   - `flying_<rarity>.png` and `flying_<rarity>_ascend.png`
+  - `cine_day_side.png` and `cine_dusk_disciples.png`: cinematic shots (realm 21, 4th life, every pad, 8 top disciples, no HUD)
 
 Everything else (research, every round of mocks, raw Studio captures, how to rebuild) is the work behind
 these: `docs/research/2026-10-21_store_icons_thumbnails.md` and `docs/art/mocks/store/`.

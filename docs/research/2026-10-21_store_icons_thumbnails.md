@@ -131,3 +131,12 @@ Closed by the owner ("document and close for now"); nothing uploaded to Roblox y
   nothing on an image made by `Image.fromarray` unless it is copied first.
 
 **The picks live in [store/](../../store/) at the repo root** (owner 2026-10-22: one folder high in the tree); `docs/art/mocks/store/` is the working archive.
+
+## Cinematic sect shots (2026-10-22)
+Studio Play on the mock save (DebugSet: every pad, realm 21, lives 4 = Celestial Azure, VIP, 8 top disciples, 2 workers
+each), HUD, BillboardGuis and the avatar hidden client-side, camera via `screen_capture` args, ClockTime 16.9 (day),
+18.1 (dusk), 21 (night: plain black sky and dark hall windows, dropped). Raw: `raw/cine/`; grade + 16:9 crop:
+`python tools/store_cine.py <in> <out> xshift yshift zoom warm`; candidates `final/cine/`.
+Owner kept **day side** and **dusk disciples** -> `store/thumbnails/cine_day_side.png`, `cine_dusk_disciples.png`. Notes: realm 20 tints the halo red (realm 21 = gold);
+low sky angles beat high ones (the cloud sea reads as flat teal from above); the Studio viewport was small (1405 px),
+so a re-shoot with a wider window would be sharper.
