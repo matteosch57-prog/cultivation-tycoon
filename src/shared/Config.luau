@@ -4,7 +4,7 @@ local Config = {}
 Config.PLOT_COUNT = 6
 Config.PLOT_RADIUS = 280 -- distance from the hub to each peak centre (room for the sky islets, Config.ISLETS)
 Config.ISLAND_RADIUS = 66 -- the home island (the heart islet); expansions add lobes to islets (ISLAND_LOBES)
-Config.HUB_RADIUS = 36
+Config.HUB_RADIUS = 44 -- owner 2026-10-22: "central space can be slightly bigger" (was 36)
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept

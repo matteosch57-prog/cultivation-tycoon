@@ -22,6 +22,7 @@ local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local RankBoard = require(script.Parent:WaitForChild("RankBoard"))
+local Portals = require(script.Parent:WaitForChild("Portals"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -87,7 +88,7 @@ local welcomeFn = Instance.new("RemoteFunction")
 welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
 welcomeFn.Parent = remotes
 local teleportEv = Instance.new("RemoteEvent")
-teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons: "home" or "ranks"
+teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks") and the portals ("isle<i>", "hub")
 teleportEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
@@ -104,6 +105,9 @@ world.Name = "Sect"
 world.Parent = workspace
 
 local rankStand -- where the Ranks teleport lands (set when the hub is built)
+-- hubPortals[i] = { at = Vector3, label, pad, arrive = CFrame }: the hub's portal to island i and
+-- where you land coming back from island i (Portals.luau)
+local hubPortals = {}
 
 local function bridgeAngle(i)
 	return (i - 1) / Config.PLOT_COUNT * math.pi * 2
@@ -162,6 +166,16 @@ local function buildHub()
 		if fromWall > math.pi / 3 then
 			Style.lantern(folder, CFrame.new(math.cos(side) * lr, BASE_Y, math.sin(side) * lr), 0.9)
 		end
+		-- the portal to this bridge's island stands beside its mouth, facing the plaza: on the side
+		-- without the lantern, unless the ranking wall is there (that bridge's lantern is skipped)
+		local toWall = (wallMid - a + math.pi) % (math.pi * 2) - math.pi
+		local pa = (toWall < 0 and toWall > -math.pi / 3) and a + 0.26 or a - 0.26
+		local pr = Config.HUB_RADIUS - 6
+		local at = Vector3.new(math.cos(pa) * pr, BASE_Y, math.sin(pa) * pr)
+		local label, pad = Portals.pad(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)) * CFrame.Angles(0, math.pi, 0), "isle" .. i, "Unclaimed Peak")
+		Portals.setOpen(label, pad, false, "Unclaimed Peak")
+		local back = Vector3.new(math.cos(a), 0, math.sin(a)) * (Config.HUB_RADIUS - 14) + Vector3.new(0, BASE_Y + 4, 0)
+		hubPortals[i] = { at = at, label = label, pad = pad, arrive = CFrame.lookAt(back, Vector3.new(0, BASE_Y + 4, 0)) }
 		task.wait()
 	end
 	folder.Parent = world
@@ -308,6 +322,10 @@ local function buildGrounds(plot, owned)
 	local hubEdge = dir * (Config.HUB_RADIUS - 3) + Vector3.new(0, BASE_Y, 0)
 	local peakEdge = plot.center - dir * (radius - 3)
 	Style.bridge(g, hubEdge + Vector3.new(0, 0.05, 0), peakEdge + Vector3.new(0, 0.05, 0), 8)
+	-- the portal back to the hub, left of the bridge head past the VIP pad and the incense shrine,
+	-- facing into the island (Portals.luau)
+	plot.portalAt = plot.frame * Vector3.new(-27, 0, radius - 12)
+	Portals.pad(g, plot.frame * CFrame.new(-27, 0, radius - 12) * CFrame.Angles(0, math.pi, 0), "hub", "Sect Hub")
 	-- and one from the peak rim to its shop island (Shop.buildIsland)
 	local foot = plot.frame * Vector3.new(SHOP_DIR.X * (radius - 3), 0, SHOP_DIR.Y * (radius - 3))
 	Style.bridge(g, foot + Vector3.new(0, 0.05, 0), Shop.islandEntry(plot.frame) + Vector3.new(0, 0.05, 0), 6)
@@ -356,6 +374,10 @@ local function setPlotLabel(plot, text)
 	plot.labelText = text
 	if plot.label then
 		plot.label.Text = text
+	end
+	local hp = hubPortals[plot.index]
+	if hp then
+		Portals.setOpen(hp.label, hp.pad, plot.owner ~= nil, text)
 	end
 end
 
@@ -1900,6 +1922,27 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 	elseif where == "ranks" and rankStand then
 		s.teleportAt = os.clock()
 		char:PivotTo(rankStand)
+	elseif type(where) == "string" then
+		-- a portal (Portals.luau): only from where you stand on it, to a claimed island or the hub
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local function near(at)
+			return root and at and (root.Position - at).Magnitude < 8
+		end
+		local i = tonumber(where:match("^isle(%d)$"))
+		local hp = i and hubPortals[i]
+		if hp and plots[i] and plots[i].owner and near(hp.at) then
+			s.teleportAt = os.clock()
+			local plot = plots[i]
+			char:PivotTo(plot.frame * CFrame.new(0, 4, (plot.radius or Config.ISLAND_RADIUS) - 8))
+		elseif where == "hub" then
+			for k, plot in plots do
+				if near(plot.portalAt) and hubPortals[k] then
+					s.teleportAt = os.clock()
+					char:PivotTo(hubPortals[k].arrive)
+					break
+				end
+			end
+		end
 	end
 end)
 

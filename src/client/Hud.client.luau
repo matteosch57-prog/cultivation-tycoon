@@ -298,8 +298,9 @@ local function teleportTo(where)
 	local from = root and root.Position
 	remotes.Teleport:FireServer(where)
 	task.wait(0.25) -- the move replicates and the camera settles behind the veil
-	if where == "ranks" and root then
-		-- turn the camera level with the ranking wall the server faced you to (owner: boards hard to read)
+	if where ~= "home" and root then
+		-- turn the camera the way the server faced you: level with the ranking wall (owner: boards
+		-- hard to read), into the island or toward the plaza after a portal
 		local t = os.clock()
 		while (root.Position - from).Magnitude < 4 and os.clock() - t < 1 do
 			task.wait()
@@ -316,6 +317,31 @@ local function teleportTo(where)
 	open.Completed:Wait()
 	wipeGui:Destroy()
 end
+
+-- Portals (server Portals.luau): stepping onto one travels to its `Where`; you step off and on again
+-- to go back, so landing beside a portal never bounces you
+task.spawn(function()
+	local CollectionService = game:GetService("CollectionService")
+	local onPortal
+	while true do
+		task.wait(0.15)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local here
+		if root then
+			for _, pad in CollectionService:GetTagged("Portal") do
+				local d = root.Position - pad.Position
+				if Vector3.new(d.X, 0, d.Z).Magnitude < 2.8 and d.Y > -1 and d.Y < 5 then
+					here = pad
+					break
+				end
+			end
+		end
+		if here and here ~= onPortal and not here:GetAttribute("Off") then
+			task.spawn(teleportTo, here:GetAttribute("Where"))
+		end
+		onPortal = here
+	end
+end)
 
 local function build()
 	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
