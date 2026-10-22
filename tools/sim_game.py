@@ -194,17 +194,44 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         past = C["PAST_LIVES_MULT"] ** max(0, S["soul"] - (C["REINC_REALM"] - 1))
         # Harmony (Config.harmonyMult): every owned path or grove, capped
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
-        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm
+        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm * idx_mult()
 
-    def price_base():  # Main priceRate: base() without the paid 2x pass
-        return base() / x2
+    # INDEX_STARS (disciple index lever): pulls of one rarity x look give stars at these counts;
+    # each star adds INDEX_STAR_BONUS income (outside the price income); every INDEX_STEP_STARS stars
+    # pays INDEX_STEP_SUMMONS free summons
+    idx = {"pulls": {}, "stars": 0, "paid_steps": 0}
+    out["index"] = idx
+
+    def idx_mult():
+        return 1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]
+
+    def idx_record(i):
+        if not C.get("INDEX_STARS"):
+            return
+        key = (i, rng.randrange(int(C.get("INDEX_LOOKS", 4))))
+        n = idx["pulls"].get(key, 0) + 1
+        idx["pulls"][key] = n
+        if n in C["INDEX_STARS"]:
+            idx["stars"] += 1
+            steps = idx["stars"] // int(C.get("INDEX_STEP_STARS", 10))
+            while idx["paid_steps"] < steps:
+                idx["paid_steps"] += 1
+                for _ in range(int(C.get("INDEX_STEP_SUMMONS", 0))):
+                    S["disciples"].append(roll())
+                S["disciples"].sort(reverse=True)
+                del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+
+    def price_base():  # Main priceRate: base() without the paid 2x pass and the index boost
+        return base() / (x2 * idx_mult())
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
-        for w, b in C["RARITIES"]:
+        for i, (w, b) in enumerate(C["RARITIES"]):
             x -= w
             if x <= 0:
+                idx_record(i)
                 return b
+        idx_record(0)
         return C["RARITIES"][0][1]
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
