@@ -1,0 +1,359 @@
+"""Second-opinion economy sim (2026-10-22): written from the server code, not from sim_game.py.
+
+Why a second sim: sim_game.py rebirths only when a realm gate blocks it, but the HUD chip turns gold
+and wobbles (and the red dot lights) the moment qi >= the rebirth price (Hud.client rebirthChip,
+Dots.luau). This sim plays the rebirth the way the HUD asks for it, adds the sources sim_game.py skips
+(Daily Blessing streak with its Immortal / Celestial days, the Shop free gift, Incense Blessing, the
+starter chest, Welcome Pouch, Robux disciples) and prices recruits with the x10 button.
+
+    python tools/sim_check.py                          # the standard table
+    python tools/sim_check.py --kind regular --policy eager --days 30 --trace
+    python tools/sim_check.py --set REBIRTH_PRICE_STEP=... --set REBIRTH_BONUS=...
+
+Every rule names the code it copies (Main.server.luau unless said).
+"""
+
+import argparse
+import math
+import random
+import statistics
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from sim_game import load, DEFAULT_CONFIG  # noqa: E402  (the Config.luau parser only)
+
+# Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
+STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
+          dict(summons=3), dict(qi=1800), dict(rarity="Celestial", again=3)]
+SLOT_PADS = ("quarters1", "quarters2")
+
+KINDS = {
+    "casual": dict(session=20, per_day=1, walk=15, orb_every=120),
+    "regular": dict(session=30, per_day=2, walk=6, orb_every=30),
+    "hooked": dict(session=60, per_day=3, walk=6, orb_every=30),
+}
+
+
+def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10):
+    """policy: gated = rebirth only when the next realm's gate blocks (sim_game.py's rule);
+    eager = rebirth `react` s after qi first holds the price (the gold wobbling chip);
+    hybrid = eager until every REBIRTH_REALMS gate is open, then climb (the min-max route)."""
+    K = KINDS[kind]
+    rng = random.Random(seed)
+    P = {p["id"]: p for p in C["PADS"]}
+    RO = C["REALM_OF"]
+    rar = C["RARITIES"]  # (weight, bonus)
+    names = C["RARITY_NAMES"]
+    wsum = sum(w for w, _ in rar)
+    x2 = 2 if "x2" in buy else 1
+    vip = 1 if "vip" in buy else 0
+    auto = "auto" in buy
+    gates = C.get("REBIRTH_REALMS", {})
+
+    S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
+             boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=C.get("CHEST_STARTER_SUMMONS", 0),
+             welcome=0.0, index={}, steps=0, bought=[])
+    src, sink = {}, {}
+    log = dict(realms=[], lives=[], days=[])
+    clock = dict(play=0, realm_t=0, life_t=0)
+
+    def add(k, v):
+        src[k] = src.get(k, 0) + v
+        S["qi"] += v
+
+    def pay(k, v):
+        sink[k] = sink.get(k, 0) + v
+        S["qi"] -= v
+
+    def lvl(k):
+        return S["dao"].get(k, 0)
+
+    def cmult(r=None):
+        r = r or S["realm"]
+        lf = C["REALM_COST_LATE_FROM"]
+        return C["REALM_COST_MULT"] ** (min(r, lf) - 1) * C["REALM_COST_LATE"] ** max(0, r - lf)
+
+    def seats():  # Config.maxDisciples + Disciple Seat
+        return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(1 for i in SLOT_PADS if i in S["owned"])
+
+    def dmult():
+        return 1 + sum(sorted(S["disc"], reverse=True)[:seats()])
+
+    def roll():
+        x = rng.uniform(0, wsum)
+        for i, (w, b) in enumerate(rar):
+            x -= w
+            if x <= 0:
+                return i
+        return 0
+
+    def seat(i):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+        S["disc"].append(rar[i][1])
+        S["disc"].sort(reverse=True)
+        keep = int(C["DISCIPLE_CAP"]) + len(S["bought"])
+        del S["disc"][keep:]
+        # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
+        key = (i, rng.randrange(4))
+        n = S["index"].get(key, 0) + 1
+        S["index"][key] = n
+        if n in C["INDEX_STARS"]:
+            steps = stars() // int(C["INDEX_STEP_STARS"])
+            if steps > S["steps"]:
+                S["chest"] += (steps - S["steps"]) * int(C["INDEX_STEP_SUMMONS"])
+                S["steps"] = steps
+
+    def stars():
+        return sum(1 for k, n in S["index"].items() for at in C["INDEX_STARS"] if n >= at)
+
+    def base_income():
+        b = C["BASE_RATE"]
+        for i in S["owned"]:
+            p = P[i]
+            if p["income"] <= 0:
+                continue
+            dm = 1
+            if p["district"] and p["district"] != "heart":
+                dm += C["DISTRICT_BONUS"] * sum(1 for j in S["owned"] if j != i and P[j]["district"] == p["district"] and P[j]["income"] > 0)
+            b += p["income"] * (1 + C["WORKER_BONUS"] * S["workers"].get(i, 0)) * dm
+        return b
+
+    def harmony():
+        n = sum(1 for i in S["owned"] if P[i]["kind"] in ("path", "grove"))
+        return 1 + min(n * C["HARMONY_STEP"], C["HARMONY_MAX"])
+
+    cache = {}
+
+    def recalc():
+        cache["price"] = base_income() * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * harmony()  # priceRate
+        reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)  # Config.rebirthMult
+        idx = 1 + C["INDEX_STAR_BONUS"] * stars()
+        cache["away"] = cache["price"] * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
+
+    def pad_cost(p):  # Config.padCost
+        fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
+        return max(p["cost"] * cmult(), fl)
+
+    def needed(p):
+        return not (C.get("DECOR_OPTIONAL") and p["kind"] in ("path", "grove"))
+
+    def open_pads():
+        n = len(S["owned"])
+        return [p for p in C["PADS"] if p["id"] not in S["owned"] and RO[p["id"]] <= S["realm"]
+                and n >= p["unlock"] and all(r in S["owned"] for r in p["req"])]
+
+    def all_built():
+        return not any(needed(p) and RO[p["id"]] <= S["realm"] and p["id"] not in S["owned"] for p in C["PADS"])
+
+    def rebirth_price():
+        return C["REBIRTH_PRICE"] + C["REBIRTH_PRICE_STEP"] * (S["lives"] - 1)
+
+    def gate(realm):  # Config.rebirthsFor
+        if C.get("GATE_EXTEND"):  # proposal: the table's own rule, endless (every odd realm, +ceil(i/2) each)
+            i = (realm - 1) // 2
+            return 0 if i < 1 else 1 + sum(math.ceil(j / 2) for j in range(2, i + 1))
+        return max([n for r, n in gates.items() if realm >= r] or [0])
+
+    def recruit_cost(k):
+        return math.floor(C["RECRUIT_BASE"] * cmult() * C["RECRUIT_POW"] ** k)
+
+    def do_rebirth():  # reincarnate
+        pay("rebirth", rebirth_price())
+        r = S["lives"] - 1
+        gain = int((C["REBIRTH_KARMA"] + C["REBIRTH_KARMA_STEP"] * r) * (1 + C["DAO_ECHO"] * lvl("echo")))
+        sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
+        log["lives"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["life_t"], at=clock["play"]))
+        S["karma"] += gain
+        S["lives"] += 1
+        S.update(realm=1, qi=0.0, workers={}, rr=0, pill=False, pill_t=0, boost=0)
+        S["owned"] = {p["id"] for p in C["PADS"] if RO[p["id"]] <= 1}
+        S.pop("bt", None)
+        for k in ("hands", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
+            costs = C["DAO"].get(k, [])
+            while lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
+                S["karma"] -= costs[lvl(k)]
+                S["dao"][k] = lvl(k) + 1
+        clock["life_t"] = clock["play"]
+        clock["realm_t"] = clock["play"]
+        recalc()
+
+    for i in buy:  # Robux disciples bought on day 1 (Shop.grantProduct)
+        if i in names:
+            S["bought"].append(i)
+            seat(names.index(i))
+        if i == "welcome":
+            S["welcome"] += 0.1
+            S["bought"].append("Elder")
+            seat(names.index("Elder"))
+    S["owned"] = set()
+    recalc()
+    add("welcome gift", C["WELCOME_QI"])
+    add("starter chest", C.get("CHEST_STARTER_QI", 0))
+    streak_day, streak_got = 0, set()
+    gap = 24 * 3600 / K["per_day"] - K["session"] * 60
+    eager_at = None
+    for day in range(days):
+        for sess in range(K["per_day"]):
+            if clock["play"]:
+                away = min(gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
+                add("offline", cache["away"] * away * C["OFFLINE_RATE"])
+                S["chest"] = max(S["chest"], min(S["chest"] + int(away // C["CHEST_SUMMON_EVERY"]), int(C["CHEST_SUMMON_MAX"])))
+            if sess == 0:  # the playtime gift ladder restarts each UTC day (D49)
+                gift_i, gift_play = 0, 0
+            if sess == 0:  # Daily Blessing (claimed on the first join of the day), Shop free gift, a blessing
+                st = STREAK[streak_day % 7]
+                if st.get("rarity") and streak_day % 7 not in streak_got:
+                    streak_got.add(streak_day % 7)
+                    seat(names.index(st["rarity"]))
+                elif st.get("rarity"):
+                    S["chest"] += st["again"]
+                add("streak", cache["away"] * st.get("qi", 0))
+                S["chest"] += st.get("summons", 0)
+                streak_day += 1
+            while S["chest"] > 0:  # idle chest / gift / index summons are opened at once
+                S["chest"] -= 1
+                seat(roll())
+            recalc()
+            tide0 = rng.uniform(0, C["TIDE_INTERVAL"])
+            walk_until = None
+            for s in range(int(K["session"] * 60)):
+                clock["play"] += 1
+                if sess == 0 and s == 600:  # free Shop gift (DOT_SHOP_FIRST), a blessing given and received
+                    add("shop free gift", cache["away"] * C["SHOP_FREE_SECONDS"])
+                    add("incense blessing", cache["away"] * C["BLESS_SECONDS"] * bless)
+                tide = C["TIDE_MULT"] if (s + tide0) % C["TIDE_INTERVAL"] < C["TIDE_DURATION"] else 1
+                pill = 2 if S["boost"] > 0 else 1
+                live = cache["away"] * pill * tide  # rate(s): friends / group not modelled
+                add("live income", cache["away"])
+                if live > cache["away"]:
+                    add("pill + tide", live - cache["away"])
+                S["boost"] = max(0, S["boost"] - 1)
+                if "furnace" in S["owned"] and not S["pill"]:
+                    S["pill_t"] += 1
+                    S["pill"] = S["pill_t"] >= C["PILL_INTERVAL"]
+                if S["pill"]:
+                    S["pill"], S["pill_t"] = False, 0
+                    S["boost"] = C["PILL_DURATION"] + C["DAO_PILL_SECONDS"] * lvl("elixir")
+                if "array" in S["owned"]:
+                    S["orb_t"] += 1
+                    if S["orb_t"] >= C["ORB_INTERVAL"]:
+                        S["orb_t"], S["orbs"] = 0, min(C["ORB_MAX"], S["orbs"] + 1)
+                if S["orbs"] and (auto or s % K["orb_every"] == 0):
+                    add("qi orbs", S["orbs"] * live * C["ORB_VALUE"])
+                    S["orbs"] = 0
+                gift_play += 1
+                if gift_i < len(C["GIFT_TIMES"]) and gift_play >= C["GIFT_TIMES"][gift_i]:
+                    add("playtime gifts", cache["away"] * C["GIFT_VALUE"][gift_i])
+                    for _ in range(int(C["GIFT_SUMMONS"][gift_i])):
+                        seat(roll())
+                    gift_i += 1
+                    recalc()
+
+                # --- rebirth (the HUD chip): eager presses it once the price is held
+                built = all_built()
+                eager = policy == "eager" or (policy == "hybrid" and S["lives"] - 1 < gate(S["realm"] + 2))
+                if eager and S["qi"] >= rebirth_price():
+                    eager_at = s if eager_at is None else eager_at
+                    if s - eager_at >= react:
+                        eager_at = None
+                        do_rebirth()
+                        continue
+                else:
+                    eager_at = None
+                if built:
+                    if S["lives"] - 1 < gate(S["realm"] + 1):  # blocked: save for the rebirth
+                        if S["qi"] >= rebirth_price():
+                            do_rebirth()
+                        continue
+                    S.setdefault("bt", math.floor(cache["price"] * C["BREAKTHROUGH_SECONDS"]))
+                    if S["qi"] >= S["bt"]:
+                        pay("breakthrough", S.pop("bt"))
+                        sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
+                        log["realms"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["realm_t"], at=clock["play"], day=day))
+                        S.update(realm=S["realm"] + 1, qi=0.0, owned=set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        clock["realm_t"] = clock["play"]
+                        recalc()
+                    continue
+                choices = open_pads()
+                target = min(choices, key=pad_cost)
+                tcost = pad_cost(target)
+                # recruits: an xN press when it costs no more than the next building (the HUD's seal)
+                if "hall" in S["owned"]:
+                    b10 = sum(recruit_cost(S["rr"] + i) for i in range(batch))
+                    if b10 <= tcost and S["qi"] >= b10:
+                        pay("recruits", b10)
+                        S["rr"] += batch
+                        for _ in range(batch):
+                            seat(roll())
+                        recalc()
+                        continue
+                hires = [(P[i]["cost"] * C["WORKER_COST"][S["workers"].get(i, 0)] * cmult(), i) for i in C["WORKER_PADS"]
+                         if i in S["owned"] and S["workers"].get(i, 0) < C["WORKER_MAX"]]
+                if hires and min(hires)[0] < tcost:
+                    wc, wi = min(hires)
+                    if S["qi"] >= wc:
+                        pay("workers", wc)
+                        S["workers"][wi] = S["workers"].get(wi, 0) + 1
+                        recalc()
+                    continue
+                if S["qi"] >= tcost:
+                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") else K["walk"])
+                    if s >= walk_until:
+                        walk_until = None
+                        pay("buildings", tcost)
+                        S["owned"].add(target["id"])
+                        recalc()
+        log["days"].append(dict(day=day + 1, realm=S["realm"], lives=S["lives"], mult=1 + C["REBIRTH_BONUS"] * (S["lives"] - 1),
+                                dmult=dmult(), stars=stars(), deepest=max([S["realm"]] + [x["realm"] for x in log["lives"]])))
+    return log, src, sink
+
+
+def fmt(sec):
+    return "%.0f s" % sec if sec < 90 else ("%.0f min" % (sec / 60) if sec < 5400 else "%.1f h" % (sec / 3600))
+
+
+def share(d):
+    t = sum(d.values()) or 1
+    return ", ".join("%s %.0f%%" % (k, 100 * v / t) for k, v in sorted(d.items(), key=lambda x: -x[1]) if v / t >= 0.01)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", default=str(DEFAULT_CONFIG))
+    ap.add_argument("--kind", default="regular")
+    ap.add_argument("--policy", default="eager")
+    ap.add_argument("--days", type=int, default=30)
+    ap.add_argument("--buy", default="", help="comma list: x2,vip,auto,welcome,Primordial,...")
+    ap.add_argument("--seeds", type=int, default=3)
+    ap.add_argument("--trace", action="store_true")
+    ap.add_argument("--batch", type=int, default=10, help="recruits per press (1, 10, 50)")
+    ap.add_argument("--set", action="append", default=[])
+    a = ap.parse_args()
+    C = load(a.config)
+    for kv in a.set:
+        k, v = kv.split("=", 1)
+        C[k] = eval(v)
+    buy = tuple(x for x in a.buy.split(",") if x)
+    runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
+    log, src, sink = runs[0]
+    print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))
+    print("day | realm | deepest | rebirths | rebirth x | disciples x | index stars   (median of %d seeds)" % a.seeds)
+    for d in (1, 2, 3, 5, 7, 10, 14, 21, 30, 45, 60):
+        if d <= a.days:
+            rows = [r[0]["days"][d - 1] for r in runs]
+            m = lambda k: statistics.median(x[k] for x in rows)  # noqa: E731
+            print("%3d | %5d | %7d | %8d | x%.1f | x%.0f | %d" % (d, m("realm"), m("deepest"), m("lives") - 1, m("mult"), m("dmult"), m("stars")))
+    print("first rebirth after %s played" % (fmt(log["lives"][0]["t"]) if log["lives"] else "-"))
+    if len(log["lives"]) < 60:
+        print("lives (seed 1): " + ", ".join("%d:R%d %s" % (L["life"], L["realm"], fmt(L["t"])) for L in log["lives"]))
+    print("sources: " + share(src))
+    print("sinks:   " + share(sink))
+    if a.trace:
+        for r in log["realms"][:400]:
+            print("  life %3d realm %2d -> %2d  %8s  day %d" % (r["life"], r["realm"], r["realm"] + 1, fmt(r["t"]), r["day"] + 1))
+        for L in log["lives"][:200]:
+            print("  rebirth from life %3d at realm %2d after %s" % (L["life"], L["realm"], fmt(L["t"])))
+
+
+if __name__ == "__main__":
+    main()
