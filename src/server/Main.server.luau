@@ -18,6 +18,7 @@ local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
+local Journal = require(script.Parent:WaitForChild("Journal"))
 
 local store = nil
 if Config.MOCK_DATASTORE and game:GetService("RunService"):IsStudio() then
@@ -865,6 +866,7 @@ refreshPads = function(player, s)
 				s.pads[pad.id] = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
 					Telemetry.sink(player, s.data, cost, pad.id)
+					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
 					Telemetry.funnel(player, s.data)
 					-- BuiltAt tells clients to play the assemble animation for this model
 					-- a Main Hall level replaces the one before it
@@ -1168,6 +1170,7 @@ local function onJoin(player)
 	end
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
+	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
 	if Config.GROUP_ID > 0 then
 		local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID) -- yields; before the offline qi
@@ -1275,6 +1278,21 @@ local function onLeave(player)
 	Telemetry.source(player, s.data, s.earned or 0, "income")
 	Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
 	Telemetry.custom(player, "SessionEnd", Telemetry.builtBucket(built), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())), s.data.sessions == 1 and "first" or "return")
+	-- why they left: stuck waiting for qi, lost with things to buy, or idle (journal closes its line)
+	local sinceBuy, afkShare = Journal.detach(player, built)
+	local afford = 0
+	for _, info in s.padData or {} do
+		if not info.busy and s.data.qi >= info.cost then
+			afford += 1
+		end
+	end
+	Telemetry.custom(
+		player,
+		"LeaveState",
+		Telemetry.minuteBucket(sinceBuy),
+		afford >= 3 and "3+" or tostring(afford),
+		afkShare >= 0.5 and "afk50plus" or (afkShare >= 0.1 and "afk10_50" or "afk0_10")
+	)
 	save(s, true)
 	s.plot.built:ClearAllChildren()
 	Shop.clearPeak(s.plot)
@@ -1432,6 +1450,7 @@ giftFn.OnServerInvoke = function(player)
 	local gain = math.floor(rate(s, true) * Config.GIFT_VALUE[gi])
 	s.giftIdx = gi + 1
 	s.data.qi += gain
+	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(s.data.realm))
 	publish(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s", gi, player.UserId, math.floor(s.playTime)))
 	return gain
@@ -1608,6 +1627,7 @@ handsFn.OnServerInvoke = function(player, padId)
 		return false
 	end
 	buyPad(s, part, info)
+	Telemetry.custom(player, "Feature", "hands", Telemetry.realmBucket(s.data.realm))
 	return true
 end
 
@@ -1915,6 +1935,7 @@ while true do
 		s.earned = (s.earned or 0) + gain
 		s.playTime = (s.playTime or 0) + dt
 		d.playSec = (d.playSec or 0) + dt
+		Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
 		-- Alchemy Furnace brews a pill while none is waiting
 		if d.owned.furnace and not d.pillReady then
 			d.pillTimer = (d.pillTimer or 0) + dt

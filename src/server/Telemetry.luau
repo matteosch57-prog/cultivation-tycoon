@@ -8,6 +8,7 @@ local AnalyticsService = game:GetService("AnalyticsService")
 local RunService = game:GetService("RunService")
 
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+local Journal = require(script.Parent:WaitForChild("Journal"))
 
 local Telemetry = {}
 
@@ -36,8 +37,8 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb", "realm (realmBucket)" },
-		question = "Are the pill and the qi orbs used, or ignored?",
+		fields = { "pill | orb | gift | hands", "realm (realmBucket)" },
+		question = "Are the pill, the qi orbs, the playtime gifts and Heavenly Hands used, or ignored?",
 	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
@@ -74,6 +75,18 @@ Telemetry.EVENTS = {
 			"realm (realmBucket)",
 		},
 		question = "Where do players open the shop, which items get a prompt, and how many prompts end in a buy?",
+	},
+	Build = {
+		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
+		question = "In what order and how fast do players build, and which buildings do they skip?",
+	},
+	LeaveState = {
+		fields = {
+			"minutes since the last purchase (minuteBucket)",
+			"pads they could afford when leaving (0 | 1 | 2 | 3+)",
+			"share of the session standing still 2+ min (afk0_10 | afk10_50 | afk50plus)",
+		},
+		question = "Do players leave stuck waiting for qi (a wall), with things to buy (lost), or after idling?",
 	},
 	Social = {
 		fields = {
@@ -252,8 +265,19 @@ local function send(what, fn, ...)
 	end
 end
 
+-- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true }
+
 function Telemetry.custom(player, name, ...)
 	assert(Telemetry.EVENTS[name], "uncatalogued event " .. tostring(name))
+	if not NOT_JOURNAL[name] then
+		local first, second = ...
+		local code = (first ~= nil and first ~= "") and (name .. ":" .. tostring(first)) or name
+		if name == "Shop" then
+			code ..= ":" .. tostring(second) -- which item, or where it was opened
+		end
+		Journal.note(player, code)
+	end
 	if spend(player) then
 		send(name, AnalyticsService.LogCustomEvent, AnalyticsService, player, name, 1, fields(...))
 	end
@@ -291,6 +315,8 @@ end
 -- Qi flows. Sinks are sent per purchase; income is summed per player and sent with each autosave
 -- (one event per source per minute instead of one per second).
 function Telemetry.sink(player, d, amount, sku)
+	Journal.note(player, "buy:" .. sku)
+	Journal.bought(player)
 	if amount > 0 and spend(player) then
 		send(
 			"sink " .. sku,
@@ -308,6 +334,9 @@ function Telemetry.sink(player, d, amount, sku)
 end
 
 function Telemetry.source(player, d, amount, sku, timed)
+	if sku ~= "income" and sku ~= "orb" and amount >= 1 then -- the minute sums are not actions
+		Journal.note(player, "get:" .. sku)
+	end
 	if amount >= 1 and spend(player) then
 		local kind = timed and Enum.AnalyticsEconomyTransactionType.TimedReward
 			or Enum.AnalyticsEconomyTransactionType.Gameplay
