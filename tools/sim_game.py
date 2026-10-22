@@ -257,7 +257,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         share = C.get("LAND_HALF") or C.get("REINC_LAND_SHARE")  # Config.REINC_LAND_SHARE (D40)
         land = max(1, int(S["soul"] * share)) if share else 1
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
-        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)} if lvl("foundation") or land > 1 else set()
+        S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)} if C.get("LAND_BUILT", True) else set()  # D56: always built
         if "SWORN_BASE" in C:  # before D44 only the sworn ones followed; now every disciple does
             S["disciples"] = sorted(S["disciples"], reverse=True)[:int(C["SWORN_BASE"]) + lvl("sworn")]
         for k in DAO_ORDER:  # spend karma: cheapest comfort first, one level at a time

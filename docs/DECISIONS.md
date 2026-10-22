@@ -303,3 +303,7 @@ the log as a D-number.
 - **D55** Phone calm pass = mock A (owner pick): two quiet rails; left = Shop, Disciples, Karma,
   Friends (small, numbers only); right edge = round timers (gift with its reward, pill, altar); one
   Friends button replaces the friends card and the group chip; smaller Recruit seal.
+- **D56** Every new life starts with its landing realm built (owner pick 2026-10-22; sim: minutes 6
+  to 16 rebuilt the same 16 realm-1 buildings slower, first new land at minute 19). Life 2 now breaks
+  through in about a minute and buys new land at about minute 10. The Old Foundations Karma node did
+  exactly this, so it is gone.

@@ -113,7 +113,6 @@ end
 -- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
-	{ key = "foundation", name = "Old Foundations", line = "Lives start fully built", costs = { 8 } },
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },

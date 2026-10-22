@@ -1694,12 +1694,11 @@ local function reincarnate(player, s)
 	d.realm = math.max(1, math.floor(d.soulPeak * Config.REINC_LAND_SHARE))
 	d.owned = {}
 	d.workers = {}
-	if d.realm > 1 or dao(d, "foundation") > 0 then
-		-- Old Foundations: the new life starts with every building of its landing realm (skips the walk)
-		for _, pad in Config.PADS do
-			if Config.padOpen(pad, d.realm) then
-				d.owned[pad.id] = true
-			end
+	-- D56 (owner pick 2026-10-22): every new life starts with its landing realm built (it replaces
+	-- the Old Foundations node). Life 2 rebuilt the same 16 pads for ~10 min before any new land.
+	for _, pad in Config.PADS do
+		if Config.padOpen(pad, d.realm) then
+			d.owned[pad.id] = true
 		end
 	end
 	d.qi = 0
