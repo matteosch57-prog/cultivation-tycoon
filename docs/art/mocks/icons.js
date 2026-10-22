@@ -117,8 +117,12 @@ NEW.elixir = NEW.pill;
 NEW.meditation = [{ d: circ(32, 32, 22), c: C.gold }, { d: "M40 12 A22 22 0 0 1 40 52 A16 16 0 0 0 40 12Z", c: C.goldDk, k: "flat" }, { d: "M14 44 C20 40 26 40 32 44 C38 48 44 48 50 44", c: "#fff", k: "line", w: 3.5 }];
 NEW.echo = [{ d: circ(22, 40, 15), c: C.karma }, { d: circ(42, 25, 18), c: C.karma }, { d: circ(36, 19, 5), c: C.karmaHi, k: "flat" }, { d: circ(17, 35, 4), c: C.karmaHi, k: "flat" }];
 
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo"];
-const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo" };
+// Ranks (HUD teleport to the ranking wall, owner 2026-10-22): a gold cup with handles on a stand
+NEW.trophy = [{ d: "M19 14 C8 13 7 30 21 33", c: C.gold, k: "line", w: 5, ol: true }, { d: "M45 14 C56 13 57 30 43 33", c: C.gold, k: "line", w: 5, ol: true },
+  { d: rr(20, 49, 24, 10, 2), c: C.goldDk }, { d: rr(28, 38, 8, 13, 1), c: C.gold }, { d: "M15 9 H49 V22 C49 34 42 41 32 41 C22 41 15 34 15 22 Z", c: C.gold }, { d: circ(24, 17, 3), c: "#fff", k: "flat" }];
+
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy"];
+const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
 let uid = 0;

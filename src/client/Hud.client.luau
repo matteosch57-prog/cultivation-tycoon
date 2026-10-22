@@ -179,6 +179,10 @@ local function arrowIcon(parent, size, props)
 	return slot, Toy.icon(slot, "goal", size)
 end
 
+-- the gap between the buttons of a rail (owner 2026-10-22: "put a bit of space between the items,
+-- they're super close"; was 6 left, 8 right)
+local RAIL_GAP = 14
+
 -- toy button: solid shadow + outlined face + glass shine (Toy.glass). Returns (holder, button).
 local function toy(parent, size, color, radius)
 	local holder = frame(parent, { Size = size })
@@ -254,6 +258,50 @@ local toast -- forward (it used to live on `ui`, which build() replaces: the rec
 -- then called a nil toast, errored, and stayed locked after the first recruit)
 local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands builds it)
 
+-- the Base / Ranks chips: a jade wipe closes over the screen, the server moves the avatar under it
+-- (Remotes.Teleport, the server picks the spot), then the wipe opens (mock 2026-10-22_teleport_and_buy)
+local travelAt = 0
+local function teleportTo(where)
+	if os.clock() - travelAt < Config.TELEPORT_COOLDOWN then
+		return
+	end
+	travelAt = os.clock()
+	local wipeGui = Instance.new("ScreenGui")
+	wipeGui.Name = "TravelWipe"
+	wipeGui.IgnoreGuiInset = true
+	wipeGui.DisplayOrder = 50
+	wipeGui.ResetOnSpawn = false
+	wipeGui.Parent = playerGui
+	local vp = workspace.CurrentCamera.ViewportSize
+	local d = math.sqrt(vp.X * vp.X + vp.Y * vp.Y) * 1.1
+	local disc = Instance.new("Frame")
+	disc.AnchorPoint = Vector2.new(0.5, 0.5)
+	disc.Position = UDim2.fromScale(0.5, 0.5)
+	disc.Size = UDim2.fromOffset(0, 0)
+	disc.BackgroundColor3 = Color3.new(1, 1, 1)
+	disc.BorderSizePixel = 0
+	disc.Parent = wipeGui
+	corner(disc, UDim.new(1, 0))
+	local g = Instance.new("UIGradient") -- pale jade at the heart, deep jade at the rim
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromHex("EAFFF6")),
+		ColorSequenceKeypoint.new(0.45, Color3.fromHex("8FF3CF")),
+		ColorSequenceKeypoint.new(1, Color3.fromHex("23B98A")),
+	})
+	g.Rotation = 90
+	g.Parent = disc
+	Sfx.play("rise")
+	local close = TweenService:Create(disc, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.fromOffset(d, d) })
+	close:Play()
+	close.Completed:Wait()
+	remotes.Teleport:FireServer(where)
+	task.wait(0.25) -- the move replicates and the camera settles behind the veil
+	local open = TweenService:Create(disc, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+	open:Play()
+	open.Completed:Wait()
+	wipeGui:Destroy()
+end
+
 local function build()
 	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
 	-- destroy them; they re-parent on Rebuilt
@@ -271,8 +319,17 @@ local function build()
 	local root = frame(gui, { Size = UDim2.fromScale(1, 1) })
 	ui.root = root
 
-	-- qi counter: top centre
-	local counter = frame(root, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, px(8)), AutomaticSize = Enum.AutomaticSize.XY })
+	-- top centre: the qi counter between the two teleport chips (owner pick A, mock
+	-- docs/art/mocks/2026-10-22_teleport_and_buy.html): Base on its left, Ranks on its right
+	local top = frame(root, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, px(8)), AutomaticSize = Enum.AutomaticSize.XY })
+	local topLayout = Instance.new("UIListLayout")
+	topLayout.FillDirection = Enum.FillDirection.Horizontal
+	topLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	topLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	topLayout.Padding = UDim.new(0, px(RAIL_GAP))
+	topLayout.Parent = top
+	ui.top = top
+	local counter = frame(top, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local row = Instance.new("UIListLayout")
 	row.FillDirection = Enum.FillDirection.Horizontal
 	row.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -318,7 +375,7 @@ local function build()
 	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	local leftLayout = Instance.new("UIListLayout")
-	leftLayout.Padding = UDim.new(0, px(6))
+	leftLayout.Padding = UDim.new(0, px(RAIL_GAP))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	leftLayout.Wraps = true
@@ -367,12 +424,26 @@ local function build()
 	end)
 	ui.kCol = kCol
 
+	-- the teleport chips beside the counter: the server picks the spot (Remotes.Teleport)
+	local function travelChip(order, key, caption, face, where)
+		local c, b = sideButton(top, order, 40, face, true)
+		Toy.icon(b, key, px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		b.Name = caption .. "Button"
+		text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		b.Activated:Connect(function()
+			teleportTo(where)
+		end)
+		return c
+	end
+	travelChip(1, "hall", "Base", Color3.fromHex("6FE0B4"), "home")
+	travelChip(3, "trophy", "Ranks", Color3.fromHex("FFD36B"), "ranks")
+
 	-- right stack: under the next goal, right-aligned (layout() places it, or lays it in a row when
 	-- the space down to the Recruit seal is short)
 	local right = frame(root, { AnchorPoint = Vector2.new(1, 0), AutomaticSize = Enum.AutomaticSize.XY })
 	right.Name = "RightStack"
 	local rightLayout = Instance.new("UIListLayout")
-	rightLayout.Padding = UDim.new(0, px(8))
+	rightLayout.Padding = UDim.new(0, px(RAIL_GAP))
 	rightLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	rightLayout.Parent = right
 	ui.right = right
@@ -453,15 +524,19 @@ local function build()
 
 	-- disciples card (opens beside the button)
 	-- (no panel, R4: disciples in their rarity colours, 4 to a row, their bonus under each)
+	-- `card` = the box (placed and shown by layout(), holds the close X); ui.card = the list in it
+	-- (refreshStatic redraws the list's children)
 	local card = frame(root, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(80), 0.45, 0), Size = UDim2.fromOffset(px(4 * 52), 0), AutomaticSize = Enum.AutomaticSize.Y, Visible = state.discOpen })
+	local list = frame(card, { Size = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.Y })
 	local cLayout = Instance.new("UIListLayout")
 	cLayout.FillDirection = Enum.FillDirection.Horizontal
 	cLayout.Wraps = true
 	cLayout.Padding = UDim.new(0, px(4))
 	cLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	cLayout.Parent = card
-	ui.card = card
-	dBtn.Activated:Connect(function()
+	cLayout.Parent = list
+	ui.card = list
+	ui.cardBox = card
+	local function toggleDisciples()
 		state.discOpen = not state.discOpen
 		card.Visible = state.discOpen
 		-- the new ones keep their dot while the list stays open (a snapshot: the server clears its own
@@ -471,7 +546,15 @@ local function build()
 		if state.discOpen then
 			remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md); marks the dot seen
 		end
-	end)
+	end
+	dBtn.Activated:Connect(toggleDisciples)
+	-- a small X on the box's top-right corner closes it too (owner 2026-10-22)
+	local xHolder, xBtn = toy(card, UDim2.fromOffset(px(24), px(24)), Color3.fromHex("FF7A6B"), px(7))
+	xHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	xHolder.Position = UDim2.new(1, px(6), 0, -px(6))
+	xHolder.ZIndex = 4
+	text(xBtn, "X", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 4 })
+	xBtn.Activated:Connect(toggleDisciples)
 
 	-- realm progress: bottom centre
 	local prog = frame(root, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(14)), AutomaticSize = Enum.AutomaticSize.XY })
@@ -817,9 +900,11 @@ popGain = function(amount, big)
 	bump.Parent = ui.counter
 	bump.Scale = big and 1.22 or 1.08
 	TweenService:Create(bump, TweenInfo.new(big and 0.5 or 0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	-- it pops off the counter's bottom-right corner (its right side holds the Ranks chip)
 	local abs = ui.counter.AbsolutePosition - ui.root.AbsolutePosition
 	local t = line(ui.root, { amt("qi", amount, "+") }, px(18), GOLD, {
-		Position = UDim2.fromOffset(abs.X + ui.counter.AbsoluteSize.X + px(2), abs.Y + px(4)),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromOffset(abs.X + ui.counter.AbsoluteSize.X + px(8), abs.Y + ui.counter.AbsoluteSize.Y - px(4)),
 		Rotation = -8,
 		ZIndex = 10,
 	})
@@ -863,7 +948,7 @@ local function layout()
 	local bottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
 	ui.left.Position = UDim2.fromOffset(px(12), top)
 	ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
-	ui.card.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
+	ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
 	local hasHall = player:GetAttribute("HasHall") == true
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
 	ui.dCol.Visible = hasHall
@@ -874,13 +959,13 @@ local function layout()
 	state.modal = modal
 	ui.recruit.Visible = hasHall and not modal
 	ui.prog.Visible = not modal
-	ui.counter.Visible = not modal
+	ui.top.Visible = not modal
 	ui.left.Visible = not modal -- the Shop button is always there otherwise
 	ui.right.Visible = not modal
-	ui.card.Visible = state.discOpen and hasHall and not modal
+	ui.cardBox.Visible = state.discOpen and hasHall and not modal
 	if not hasHall then
 		state.discOpen = false
-		ui.card.Visible = false
+		ui.cardBox.Visible = false
 	end
 	-- recruit: left of the phone jump button, or above it when the progress bar is in the way
 	-- (positions in the root's own units: a phone check scales the root, AbsolutePosition does not)
@@ -920,7 +1005,7 @@ local function layout()
 			n += 1
 		end
 	end
-	need += math.max(0, n - 1) * px(8)
+	need += math.max(0, n - 1) * px(RAIL_GAP)
 	local edge = rootW - px(14)
 	local clearBottom = floor
 	local sealLeft = sealRight - recruitW
@@ -1320,15 +1405,13 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 	elseif kind == "tideSoon" then
 		toast(string.format("Spirit Tide in %ds", a), Color3.fromHex("9FD0FF"), 3)
 		return
-	elseif kind == "shopPass" then
-		toast(a .. " is yours!", GOLD, 3)
-		return
+	elseif kind == "shopPass" or kind == "shopPill" then
+		return -- BuyMoment.client shows it
 	elseif kind == "shopQi" then
-		popGain(a, true)
-		toast({ b, amt("qi", a, "+") }, GOLD, 2.5)
-		return
-	elseif kind == "shopPill" then
-		toast("2x Qi!", GOLD, 2.5)
+		-- BuyMoment.client pours the drops in; the counter bumps when they land (a skip lands them sooner)
+		task.delay(Config.buyArrive(), function()
+			popGain(a, true)
+		end)
 		return
 	elseif kind == "shopWelcome" then
 		-- after the recruit reveal of its disciple: the forever bonus (`c` = 0.1)
@@ -1337,7 +1420,12 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 		end)
 		return
 	elseif kind == "shopDisciple" then
-		toast(a .. (b and "!" or " (resting)"), Config.rarity(a).color, 3)
+		-- the recruit reveal shows it (Shop.client); only a disciple with no free seat gets a line after
+		if not b then
+			task.delay(Config.revealBurst(a) + Config.REVEAL.hold + 1, function()
+				toast(a .. " (resting)", Config.rarity(a).color, 3)
+			end)
+		end
 		return
 	elseif kind == "shopGate" then
 		toast(a .. " opens at " .. b, PINK, 2.5)

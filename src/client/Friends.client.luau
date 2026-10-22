@@ -1,14 +1,13 @@
 -- Friends card (D35, mock A docs/art/mocks/friends_A.png and friends_C.png): top right, under the
 -- HUD's Next goal. With friends here: their head shots and the bonus; alone (after the
 -- intro): an ask to play with friends. Invite opens Roblox's own invite prompt. Group (only when
--- Config.GROUP_ID is set): a button that opens the group card: like the game, join the group (Roblox's
--- own join prompt, GroupService:PromptJoinAsync, owner 2026-10-22), claim.
+-- Config.GROUP_ID is set): a button that opens the group card: like the game and join the group (both
+-- on the game page, no in-game link: owner 2026-10-22), claim.
 -- The server checks and pays only the group (R9); nothing here grants anything.
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
-local GroupService = game:GetService("GroupService")
 local SocialService = game:GetService("SocialService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -95,31 +94,15 @@ local function openCard()
 	text(row, "1", px(28), JADE, { LayoutOrder = 1 })
 	thumbIcon(row, px(40), { LayoutOrder = 2 })
 	text(row, "Like the game", px(24), Color3.new(1, 1, 1), { LayoutOrder = 3 })
-	-- step 2 is a button: Roblox's own join prompt, no leaving the game
-	local joinHolder, joinBtn = Toy.button(col, UDim2.fromOffset(px(250), px(54)), PURPLE, px(14))
-	joinHolder.LayoutOrder = 3
-	local jl = frame(joinBtn, { Size = UDim2.fromScale(1, 1) })
-	Toy.list(jl, true, px(8))
-	text(jl, "2", px(24), Color3.new(1, 1, 1), { LayoutOrder = 1 })
-	bannerIcon(jl, px(34), { LayoutOrder = 2 })
-	text(jl, "Join our group", px(22), Color3.new(1, 1, 1), { LayoutOrder = 3 })
-	local hint = text(col, "Tap Join, then Claim", px(15), Color3.fromHex("CBBFD6"), { LayoutOrder = 4 })
-	local joining = false
-	joinBtn.Activated:Connect(function()
-		if joining then
-			return
-		end
-		joining = true
-		local ok, status = pcall(GroupService.PromptJoinAsync, GroupService, Config.GROUP_ID)
-		joining = false
-		if ok and (status == Enum.GroupMembershipStatus.Joined or status == Enum.GroupMembershipStatus.AlreadyMember) then
-			Sfx.play("smallBell")
-			hint.Text = "Welcome to the sect! Now Claim"
-			hint.TextColor3 = JADE
-		elseif ok and status == Enum.GroupMembershipStatus.JoinRequestPending then
-			hint.Text = "Request sent: Claim once you are in"
-		end
-	end)
+	-- step 2 is a line like step 1: both happen on the game page, where the community link is (owner
+	-- 2026-10-22: "dont put a link of the group, just say to go on game page themselves, so they pass
+	-- for the like too")
+	local jrow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	Toy.list(jrow, true, px(10))
+	text(jrow, "2", px(28), JADE, { LayoutOrder = 1 })
+	bannerIcon(jrow, px(40), { LayoutOrder = 2 })
+	text(jrow, "Join the group", px(24), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	local hint = text(col, "Both on the game page", px(17), Color3.fromHex("CBBFD6"), { LayoutOrder = 4 })
 	local claimHolder, claimBtn = Toy.button(col, UDim2.fromOffset(px(210), px(54)), GOLD, px(14))
 	claimHolder.LayoutOrder = 5
 	Toy.dot(claimBtn, px(18)) -- where the Friends button's dot leads
@@ -145,7 +128,7 @@ local function openCard()
 			closeCard()
 		elseif ok and res == "notMember" then
 			Sfx.play("deny")
-			hint.Text = "Join the group, then come back"
+			hint.Text = "Join on the game page, then Claim"
 			hint.TextColor3 = PINK
 		else
 			Sfx.play("deny")

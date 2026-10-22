@@ -672,8 +672,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, rarity, kept)
 		if not gui.Enabled then
 			showOffer()
 		end
-	elseif kind == "shopWelcome" then
-		-- bought: close the card and the shop, and let the recruit reveal show the Elder arrive
+	elseif kind == "shopWelcome" or kind == "shopDisciple" then
+		-- bought: close the card and the shop, and let the recruit reveal show the disciple arrive
+		-- (owner 2026-10-22: every Robux disciple plays the recruit reveal)
 		offerGui.Enabled = false
 		close()
 		local fx = playerGui:FindFirstChild("RecruitFx")

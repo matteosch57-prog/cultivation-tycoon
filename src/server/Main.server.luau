@@ -86,6 +86,9 @@ inviteEv.Parent = remotes
 local welcomeFn = Instance.new("RemoteFunction")
 welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
 welcomeFn.Parent = remotes
+local teleportEv = Instance.new("RemoteEvent")
+teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons: "home" or "ranks"
+teleportEv.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -96,6 +99,8 @@ local BASE_Y = 2
 local world = Instance.new("Folder")
 world.Name = "Sect"
 world.Parent = workspace
+
+local rankStand -- where the Ranks teleport lands (set when the hub is built)
 
 local function bridgeAngle(i)
 	return (i - 1) / Config.PLOT_COUNT * math.pi * 2
@@ -137,6 +142,9 @@ local function buildHub()
 			-- the ranking wall stands here instead of a tree (RankBoard)
 			local at = Vector3.new(math.cos(mid) * Config.RANK_WALL_R, BASE_Y, math.sin(mid) * Config.RANK_WALL_R)
 			RankBoard.build(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)))
+			-- the Ranks teleport lands in front of the wall, facing it
+			local front = at + (Vector3.new(0, BASE_Y, 0) - at).Unit * Config.TELEPORT_RANK_FRONT
+			rankStand = CFrame.lookAt(front + Vector3.new(0, 4, 0), at + Vector3.new(0, 4, 0))
 		elseif i % 2 == 0 then
 			Style.sakura(folder, CFrame.new(math.cos(mid) * r, BASE_Y, math.sin(mid) * r), i)
 		else
@@ -1857,6 +1865,26 @@ inviteEv.OnServerEvent:Connect(function(player)
 	end
 	s.inviteAt = os.clock()
 	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
+end)
+
+-- HUD teleports: the server picks the spot (R9), the client only names where
+teleportEv.OnServerEvent:Connect(function(player, where)
+	if not Guard.allow(player, "Teleport") then
+		return
+	end
+	local s = sessions[player]
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not s or not hum or hum.Health <= 0 or os.clock() - (s.teleportAt or 0) < Config.TELEPORT_COOLDOWN then
+		return
+	end
+	if where == "home" then
+		s.teleportAt = os.clock()
+		placeOnPeak(player)
+	elseif where == "ranks" and rankStand then
+		s.teleportAt = os.clock()
+		char:PivotTo(rankStand)
+	end
 end)
 
 -- Rebirth (Muscle Legends' rebirth): the ONE function every caller goes through, so the price lives
