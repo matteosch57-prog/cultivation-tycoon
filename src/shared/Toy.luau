@@ -88,6 +88,37 @@ function Toy.glass(face, radius)
 	return g
 end
 
+-- The light on a ROUND toy button (owner pick B "Dome" of docs/art/mocks/2026-10-22_round_buttons.jpg:
+-- the glass cap "looks weird" on circles): lit from above like a ball, the Recruit seal's soft light.
+-- A full-face shade (white at the top, clear across the middle, dark at the bottom) and a soft white
+-- lift over the top. Both are overlays, so a face that changes colour (ready = gold) keeps its light.
+function Toy.dome(face)
+	local shade = frame(face, { Name = "Dome", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1) })
+	corner(shade, UDim.new(0.5, 0))
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.51, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(0.53, Color3.new(0, 0, 0)),
+		ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0)),
+	})
+	grad.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.66), NumberSequenceKeypoint.new(0.52, 1), NumberSequenceKeypoint.new(1, 0.76) })
+	grad.Parent = shade
+	Toy.atlasPiece(face, "glow", 0, 0, Color3.new(1, 1, 1), 0.55, { Name = "DomeLift", Position = UDim2.fromScale(0.5, 0.31), Size = UDim2.fromScale(0.8, 0.6) })
+	return shade
+end
+
+-- the right light for a toy button: the dome on a circle (corner radius at least half its smaller
+-- side, in px), the glass cap on everything else
+function Toy.shine(face, size, radius)
+	local side = math.min(size.X.Offset, size.Y.Offset)
+	if side > 0 and radius * 2 >= side - 1 then
+		return Toy.dome(face)
+	end
+	return Toy.glass(face, radius)
+end
+
 -- Click feel for every button in the game: "Jelly" (D61, owner pick C of
 -- docs/art/mocks/button_feel.html). On touch, not on release, so it answers instantly: the click
 -- sound, a phone buzz (Haptic), and the face squashes wide and short onto its shadow; release
@@ -330,7 +361,7 @@ function Toy.reward(btn, opts)
 	end
 end
 
--- toy button: solid shadow + outlined face + glass shine. Returns (holder, button).
+-- toy button: solid shadow + outlined face + its light (Toy.shine: glass cap, dome on a circle). Returns (holder, button).
 function Toy.button(parent, size, color, radius)
 	local holder = frame(parent, { Size = size })
 	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(4)), BackgroundTransparency = 0, BackgroundColor3 = Toy.INK })
@@ -348,7 +379,7 @@ function Toy.button(parent, size, color, radius)
 	st.Thickness = px(3)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = btn
-	Toy.glass(btn, radius)
+	Toy.shine(btn, size, radius)
 	Toy.feel(btn, { scale = holder, squash = { btn, shadow } })
 	return holder, btn
 end
