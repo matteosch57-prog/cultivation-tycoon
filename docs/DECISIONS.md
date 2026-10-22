@@ -300,3 +300,6 @@ the log as a D-number.
   over every head shows the realm in its colour and, from life 2, "Nth Life · grade"
   (`StatusTitle.client`). Why: the owner found realms and reincarnation worthless without a visible
   change ("like social status"); a material ladder reads from the next peak like Clash of Clans walls.
+- **D55** Phone calm pass = mock A (owner pick): two quiet rails; left = Shop, Disciples, Karma,
+  Friends (small, numbers only); right edge = round timers (gift with its reward, pill, altar); one
+  Friends button replaces the friends card and the group chip; smaller Recruit seal.

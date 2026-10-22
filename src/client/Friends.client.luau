@@ -10,7 +10,6 @@ local GuiService = game:GetService("GuiService")
 local GroupService = game:GetService("GroupService")
 local SocialService = game:GetService("SocialService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -26,9 +25,6 @@ local GREEN = Color3.fromHex("59D39F")
 local PURPLE = Color3.fromHex("C59BFF")
 local GOLD = Color3.fromHex("FFD34D")
 local PINK = Color3.fromHex("FF9FB0")
-local SKIN = Color3.fromHex("F2C9A0")
-
-local heads = {} -- [userId] = head shot image
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Friends"
@@ -49,43 +45,11 @@ local function computeScale()
 end
 
 -- icons from the shared icon sheet (Toy.icon)
-local function personIcon(parent, size) -- person with a plus (Invite)
-	return Toy.icon(parent, "invite", size, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) })
-end
 local function bannerIcon(parent, size, props) -- the sect banner (Group)
 	return Toy.icon(parent, "group", size, props)
 end
-local function giftIcon(parent, size, props) -- the group gift button
-	return Toy.icon(parent, "gift", size, props)
-end
 local function thumbIcon(parent, size, props) -- thumbs up (Like)
 	return Toy.icon(parent, "like", size, props)
-end
-
-local function head(parent, userId, order)
-	local img = Instance.new("ImageLabel")
-	img.Size = UDim2.fromOffset(px(34), px(34))
-	img.BackgroundColor3 = SKIN
-	img.LayoutOrder = order
-	img.Image = heads[userId] or ""
-	Toy.corner(img, UDim.new(0.5, 0))
-	local st = Instance.new("UIStroke")
-	st.Color = Toy.INK
-	st.Thickness = px(2.5)
-	st.Parent = img
-	img.Parent = parent
-	if not heads[userId] then
-		task.spawn(function()
-			local ok, url = pcall(Players.GetUserThumbnailAsync, Players, userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
-			if ok and url then
-				heads[userId] = url
-				if img.Parent then
-					img.Image = url
-				end
-			end
-		end)
-	end
-	return img
 end
 
 local function invite()
@@ -184,6 +148,15 @@ local function openCard()
 			Sfx.play("deny")
 		end
 	end)
+	local iHolder, iBtn = Toy.button(col, UDim2.fromOffset(px(210), px(44)), GREEN, px(12))
+	iHolder.LayoutOrder = 6
+	local il = frame(iBtn, { Size = UDim2.fromScale(1, 1) })
+	Toy.list(il, true, px(6))
+	Toy.icon(il, "invite", px(28), { LayoutOrder = 1 })
+	text(il, "Invite", px(20), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	text(il, string.format("+%d%%", math.round(Config.FRIEND_STEP * 100)), px(18), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	Toy.qiIcon(il, px(20), { LayoutOrder = 4 })
+	iBtn.Activated:Connect(invite)
 	local xHolder, xBtn = Toy.button(veil, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF7A6B"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
 	xHolder.Position = UDim2.new(1, -px(16), 0, GuiService.TopbarInset.Max.Y + px(8))
@@ -193,10 +166,18 @@ local function openCard()
 end
 
 ---------------------------------------------------------------------------------------------
--- the right card, redrawn only when what it shows changes
-local root
-local groupHolder -- the Group button, beside the HUD's qi total (owner)
+-- ONE Friends button on the HUD's left rail (owner pick A, phone calm pass, mock
+-- docs/art/mocks/hud_phone_A.jpg): it replaces the "Play with friends" card and the "+10%" group chip.
+-- Caption = the friends bonus (live, or what one friend would add); a red dot while the Sect Gift
+-- (group) is unclaimed. Tap: the Sect Gift card (with Invite in it) while that gift is open, else Invite.
+local root -- the button's column, a row of the left rail (PlayerGui.HudSlots.Left)
 local shown -- the key of what is drawn
+
+local FACE = Color3.fromHex("3A2C44") -- the HUD's button face
+
+local function groupOpen()
+	return Config.GROUP_ID > 0 and player:GetAttribute("GroupBonus") ~= true
+end
 
 local function draw()
 	local ids = {}
@@ -205,9 +186,8 @@ local function draw()
 	end
 	local alone = #ids == 0
 	-- alone: shown once the intro is done (owner: the social card should be there from the start)
-	local showAlone = alone and (player:GetAttribute("WelcomeQi") or 0) == 0
-	local showGroup = Config.GROUP_ID > 0 and player:GetAttribute("GroupBonus") ~= true and (not alone or showAlone)
-	local key = table.concat(ids, ",") .. "|" .. tostring(showAlone) .. "|" .. tostring(showGroup) .. "|" .. Toy.S
+	local show = not alone or (player:GetAttribute("WelcomeQi") or 0) == 0
+	local key = #ids .. "|" .. tostring(show) .. "|" .. tostring(groupOpen()) .. "|" .. Toy.S
 	if key == shown then
 		return
 	end
@@ -216,103 +196,56 @@ local function draw()
 		root:Destroy()
 		root = nil
 	end
-	if groupHolder then
-		groupHolder:Destroy()
-		groupHolder = nil
-	end
-	if alone and not showAlone then
+	if not show then
 		return
 	end
-	root = frame(gui, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -px(14), 0, GuiService.TopbarInset.Max.Y + px(58)),
-		AutomaticSize = Enum.AutomaticSize.XY,
-	})
+	root = frame(gui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	root.Name = "FriendsRow"
-	Toy.list(root, false, px(6), { HorizontalAlignment = Enum.HorizontalAlignment.Right })
-	local pct = math.round(#ids * Config.FRIEND_STEP * 100)
-	if alone then
-		text(root, "Play with friends", px(15), Color3.new(1, 1, 1), { LayoutOrder = 1 })
-		text(root, string.format("+%d%% Qi each", math.round(Config.FRIEND_STEP * 100)), px(19), JADE, { LayoutOrder = 2 })
-	else
-		local row = frame(root, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
-		Toy.list(row, true, px(6))
-		text(row, string.format("+%d%% Qi", pct), px(19), JADE, { LayoutOrder = 1 })
-		local hs = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-		Toy.list(hs, true, -px(8))
-		for i, id in ids do
-			local h = head(hs, id, i)
-			h.ZIndex = 10 - i
+	Toy.list(root, false, px(1))
+	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), FACE, px(11))
+	holder.LayoutOrder = 1
+	btn.Name = "FriendsButton"
+	Toy.icon(btn, "invite", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	if groupOpen() then
+		local dot = frame(btn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(16), px(16)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
+		Toy.corner(dot, UDim.new(1, 0))
+		local st = Instance.new("UIStroke")
+		st.Color = Toy.INK
+		st.Thickness = px(3)
+		st.Parent = dot
+	end
+	local pct = math.round(math.max(1, #ids) * Config.FRIEND_STEP * 100)
+	text(root, "+" .. pct .. "%", px(12), alone and Color3.fromHex("CBBFD6") or JADE, { LayoutOrder = 2 })
+	btn.Activated:Connect(function()
+		if groupOpen() then
+			openCard()
+		else
+			invite()
 		end
-		text(root, #ids == 1 and "1 friend here" or string.format("%d friends here", #ids), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	end
-	local iHolder, iBtn = Toy.button(root, UDim2.fromOffset(px(104), px(36)), GREEN, px(11))
-	iHolder.LayoutOrder = 3
-	local il = frame(iBtn, { Size = UDim2.fromScale(1, 1) })
-	Toy.list(il, true, px(4))
-	personIcon(il, px(24)).LayoutOrder = 1
-	text(il, "Invite", px(17), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	iBtn.Activated:Connect(invite)
-	if showGroup then
-		local gHolder, gBtn = Toy.button(gui, UDim2.fromOffset(px(116), px(40)), PURPLE, px(12))
-		gHolder.AnchorPoint = Vector2.new(0, 0.5)
-		gHolder.Visible = false -- until place() finds the counter
-		groupHolder = gHolder
-		-- owner: "just show +10% Qi with an attractive icon, when they click they'll know"
-		local gl = frame(gBtn, { Size = UDim2.fromScale(1, 1) })
-		Toy.list(gl, true, px(3))
-		giftIcon(gl, px(28), { LayoutOrder = 1 })
-		text(gl, string.format("+%d%%", math.round(Config.GROUP_BONUS * 100)), px(19), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-		Toy.qiIcon(gl, px(22), { LayoutOrder = 3 })
-		gBtn.Activated:Connect(openCard)
-		-- a slow wobble (one looping tween, on screen only while the button exists)
-		gHolder.Rotation = -3
-		TweenService:Create(gHolder, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = 3 }):Play()
-	end
+	end)
 end
 
--- keep the Group button just right of the HUD's qi counter (its width grows with the number; the
--- HUD rebuilds it on a rescale, so it is looked up again each time)
-local function place()
-	if not groupHolder then
-		return
-	end
-	local hud = playerGui:FindFirstChild("Hud")
-	local counter = hud and hud:FindFirstChild("Counter", true)
-	if not (counter and counter.Visible and counter.AbsoluteSize.X > 0) then
-		groupHolder.Visible = false
-		return
-	end
-	local inset = gui.AbsolutePosition
-	local pos = UDim2.fromOffset(counter.AbsolutePosition.X - inset.X + counter.AbsoluteSize.X + px(14), counter.AbsolutePosition.Y - inset.Y + counter.AbsoluteSize.Y / 2)
-	if groupHolder.Position ~= pos then
-		groupHolder.Position = pos
-	end
-	groupHolder.Visible = true
-end
-
--- the card is a row of the HUD's right stack (PlayerGui.HudSlots, D54): under the next goal with the
--- gift, pill and altar rows, so it never covers them; its own corner only if the HUD is missing
-local function rightStack()
+-- the button is a row of the HUD's left rail (PlayerGui.HudSlots, D54); its own corner only if the
+-- HUD is missing
+local function leftRail()
 	local slots = playerGui:FindFirstChild("HudSlots")
-	local right = slots and slots:FindFirstChild("Right")
-	return right and right.Value
+	local left = slots and slots:FindFirstChild("Left")
+	return left and left.Value
 end
 local function placeCard()
 	if not root then
 		return
 	end
-	local stack = rightStack()
-	if stack then
-		if root.Parent ~= stack then
+	local rail = leftRail()
+	if rail then
+		if root.Parent ~= rail then
 			root.AnchorPoint = Vector2.new(0, 0)
 			root.Position = UDim2.new()
-			root.LayoutOrder = 4
-			root.Parent = stack
+			root.Parent = rail
 		end
 	elseif root.Parent ~= gui then
-		root.AnchorPoint = Vector2.new(1, 0)
-		root.Position = UDim2.new(1, -px(14), 0, GuiService.TopbarInset.Max.Y + px(58))
+		root.AnchorPoint = Vector2.new(0, 0)
+		root.Position = UDim2.fromOffset(px(12), GuiService.TopbarInset.Max.Y + px(200))
 		root.Parent = gui
 	end
 end
@@ -339,8 +272,7 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale
 rescale()
 task.spawn(function()
 	while true do
-		place() -- writes only on a change (R16)
-		placeCard()
+		placeCard() -- writes only on a change (R16)
 		task.wait(0.25)
 	end
 end)

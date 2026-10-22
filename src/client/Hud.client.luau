@@ -270,9 +270,9 @@ local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands bu
 local function build()
 	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
 	-- destroy them; they re-parent on Rebuilt
-	if ui.right then
-		for _, c in ui.right:GetChildren() do
-			if c ~= ui.gCol and c ~= ui.pCol and c ~= ui.rightLayout then
+	for _, rail in { ui.left, ui.right } do
+		for _, c in rail:GetChildren() do
+			if not c:GetAttribute("HudOwn") and not c:IsA("UIListLayout") then
 				c.Parent = nil
 			end
 		end
@@ -331,27 +331,27 @@ local function build()
 	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	local leftLayout = Instance.new("UIListLayout")
-	leftLayout.Padding = UDim.new(0, px(8))
+	leftLayout.Padding = UDim.new(0, px(6))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	leftLayout.Wraps = true
 	leftLayout.Parent = left
 	-- one button with its caption under it (a count, a timer: no words where a number says it)
-	local function sideButton(parent, order, size, face)
+	local function sideButton(parent, order, size, face, round)
 		local col = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
+		col:SetAttribute("HudOwn", true) -- the HUD's own row (others' rows step out on a rebuild)
 		local l = Instance.new("UIListLayout")
 		l.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		l.SortOrder = Enum.SortOrder.LayoutOrder
 		l.Padding = UDim.new(0, px(2))
 		l.Parent = col
-		local holder, btn = toy(col, UDim2.fromOffset(px(size), px(size)), face, px(size * 0.26))
+		local holder, btn = toy(col, UDim2.fromOffset(px(size), px(size)), face, round and px(size / 2) or px(size * 0.26))
 		holder.LayoutOrder = 1
 		return col, btn
 	end
 	-- Shop (mock shop B, D24): always shown, on top, the one gold button; opens Shop.client's screen
-	local sCol, sBtn = sideButton(left, 0, 50, Color3.fromHex("FFD36B"))
-	Toy.icon(sBtn, "shop", px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	text(sCol, "Shop", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	local _, sBtn = sideButton(left, 0, 42, Color3.fromHex("FFD36B"))
+	Toy.icon(sBtn, "shop", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	sBtn.Name = "ShopButton"
 	sBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ShopOpen")
@@ -360,16 +360,15 @@ local function build()
 		end
 	end)
 	-- Disciples: the label is the count (less text, mock less_text A)
-	local dCol, dBtn = sideButton(left, 1, 50, FACE)
-	discipleIcon(dBtn, px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local dCol, dBtn = sideButton(left, 1, 42, FACE)
+	discipleIcon(dBtn, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	dBtn.Name = "DisciplesButton"
-	ui.dLabel = text(dCol, "0", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.dLabel = text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
 	-- Karma: straight to the Karma Shop page of the reincarnation screen (owner: no direct way in before)
-	local kCol, kBtn = sideButton(left, 2, 50, FACE)
-	Toy.icon(kBtn, "karma", px(37), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local kCol, kBtn = sideButton(left, 2, 42, FACE)
+	Toy.icon(kBtn, "karma", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	kBtn.Name = "KarmaButton"
-	text(kCol, "Karma", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	kBtn.Activated:Connect(function()
 		local ev = playerGui:FindFirstChild("ReincOpen")
 		if ev then
@@ -391,9 +390,9 @@ local function build()
 	-- Playtime gift (daily ladder, owner 2026-10-22: "always show the next reward, reset daily, up to
 	-- 2h online"): the reward it pays sits under the button, then the countdown; ready = gold, wobbles,
 	-- red dot; all claimed today = the time to the reset
-	local gCol, gBtn = sideButton(right, 1, 46, FACE)
+	local gCol, gBtn = sideButton(right, 1, 40, FACE, true)
 	gBtn.Name = "GiftButton"
-	Toy.icon(gBtn, "gift", px(34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	Toy.icon(gBtn, "gift", px(28), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	local gDot = frame(gBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(16), px(16)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("EE3333"), ZIndex = 5 })
 	corner(gDot, UDim.new(1, 0))
 	local gst = Instance.new("UIStroke")
@@ -407,19 +406,19 @@ local function build()
 	rwl.VerticalAlignment = Enum.VerticalAlignment.Center
 	rwl.Padding = UDim.new(0, px(2))
 	rwl.Parent = reward
-	qiIcon(reward, px(14), { LayoutOrder = 1 })
-	ui.giftQi = text(reward, "", px(13), JADE_LIGHT, { LayoutOrder = 2 })
+	qiIcon(reward, px(12), { LayoutOrder = 1 })
+	ui.giftQi = text(reward, "", px(12), JADE_LIGHT, { LayoutOrder = 2 })
 	local sumRow = frame(reward, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
 	local srl = Instance.new("UIListLayout")
 	srl.FillDirection = Enum.FillDirection.Horizontal
 	srl.VerticalAlignment = Enum.VerticalAlignment.Center
 	srl.Padding = UDim.new(0, px(1))
 	srl.Parent = sumRow
-	discipleIcon(sumRow, px(14), { LayoutOrder = 1 })
-	ui.giftSummons = text(sumRow, "", px(13), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
+	discipleIcon(sumRow, px(12), { LayoutOrder = 1 })
+	ui.giftSummons = text(sumRow, "", px(12), Color3.fromHex("D9B8FF"), { LayoutOrder = 2 })
 	ui.giftSumRow = sumRow
 	ui.giftReward = reward
-	ui.giftLabel = text(gCol, "", px(13), Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	ui.giftLabel = text(gCol, "", px(12), Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	ui.gCol = gCol
 	ui.giftBtn = gBtn
 	ui.giftDot = gDot
@@ -444,9 +443,9 @@ local function build()
 		end
 	end)
 	-- Pill (Alchemy Furnace): brewing countdown -> ready (gold, wobbles) -> active 2x timer
-	local pCol, pBtn = sideButton(right, 2, 46, FACE)
-	Toy.icon(pBtn, "pill", px(34), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	ui.pillLabel = text(pCol, "Pill", px(13), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	local pCol, pBtn = sideButton(right, 2, 40, FACE, true)
+	Toy.icon(pBtn, "pill", px(28), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	ui.pillLabel = text(pCol, "Pill", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.pCol = pCol
 	ui.pillBtn = pBtn
 	pBtn.Name = "PillButton" -- the first-pill tip points at it (Tips.client)
@@ -545,7 +544,7 @@ local function build()
 	-- a qi orb charging through the rarity colours inside a turning ring, rays and a glow behind; the
 	-- soft pieces are the uploaded aura atlas (Toy.atlasPiece), moved in the frame loop. Still and dim
 	-- when a recruit is out of reach.
-	local SEAL = px(104)
+	local SEAL = px(84) -- (owner pick A, phone calm pass: was 104)
 	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44)) })
 	local seal = frame(rHolder, { Size = UDim2.fromOffset(SEAL, SEAL) })
 	local sealScale = Instance.new("UIScale")
@@ -1031,14 +1030,18 @@ refreshStatic = function()
 	ui.fill.BackgroundColor3 = owned >= total and GOLD or JADE
 end
 
--- PlayerGui.HudSlots: other scripts add a row to the right stack (the altar chip). The HUD rebuilds
--- itself on a viewport change, so it points `Right` at the current stack and fires `Rebuilt` with it:
--- a row re-parents itself there on every Rebuilt (LayoutOrder: gift 1, pill 2, then yours).
+-- PlayerGui.HudSlots: other scripts add a row to the right stack (the altar chip) or the left rail
+-- (the Friends button). The HUD rebuilds itself on a viewport change, so it points `Right` / `Left`
+-- at the current rails and fires `Rebuilt`: a row re-parents itself there on every Rebuilt
+-- (LayoutOrder: right = gift 1, pill 2, then yours; left = Shop 0, Disciples 1, Karma 2, then yours).
 local slots = Instance.new("Folder")
 slots.Name = "HudSlots"
 local slotRight = Instance.new("ObjectValue")
 slotRight.Name = "Right"
 slotRight.Parent = slots
+local slotLeft = Instance.new("ObjectValue")
+slotLeft.Name = "Left"
+slotLeft.Parent = slots
 local slotRebuilt = Instance.new("BindableEvent")
 slotRebuilt.Name = "Rebuilt"
 slotRebuilt.Parent = slots
@@ -1048,6 +1051,7 @@ rebuildAll = function()
 	build()
 	refreshStatic()
 	slotRight.Value = ui.right
+	slotLeft.Value = ui.left
 	slotRebuilt:Fire(ui.right)
 	task.defer(layout)
 end
@@ -1197,8 +1201,7 @@ RunService.RenderStepped:Connect(function(dt)
 			put(ui.giftSummons, "Text", "+" .. summons)
 		end
 		if g == 0 then
-			put(ui.giftLabel, "Text", "Claim!")
-			put(ui.giftLabel, "TextColor3", GOLD)
+			put(ui.giftLabel, "Text", "")
 			put(ui.giftBtn, "Rotation", math.sin(os.clock() * 7) * 6)
 			put(ui.giftBtn, "BackgroundColor3", FACE_READY)
 		else
