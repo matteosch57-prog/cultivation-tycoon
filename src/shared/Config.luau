@@ -411,7 +411,7 @@ Config.WELCOME_QI = 200
 -- over the hub. It opens half a tide cycle after each tide (never with one); stand on it ALONE for
 -- ALTAR_HOLD s to claim it (two or more on it pause the timer); Palm Strike pushes, a fall locks
 -- you out until the round ends. Rewards are seconds of the player's own income (fair at any
--- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a crown until the next round (only
+-- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a light aura until the next round (only
 -- ALTAR_SOLO_SECONDS if nobody else came to fight), everyone else who stood on it
 -- ALTAR_JOIN_SECONDS. That is ~+20% live income per round on average (research 2026-10-21_economy_math).
 Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
@@ -662,6 +662,23 @@ Config.DISCIPLE_ATLAS = {
 		fig9 = { 0, 640, 128, 128 },
 	},
 }
+
+-- The UI icon set (owner 2026-10-22: the box-built icons "look AI"; pick A "sticker" of
+-- docs/art/mocks/icons_board.jpg): one uploaded 1024 x 1024 sheet of 128 px cells drawn by
+-- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
+-- by row, in the mock's ORDER. Robux is Roblox's own icon (ROBUX_ICON, ships with the client).
+Config.ICON_ATLAS = {
+	image = "rbxassetid://83850133060052",
+	cell = 128,
+	keys = {
+		qi = 0, karma = 1, shop = 3, pill = 5, -- 4 (disciple): Toy draws the disciple atlas figure gift = 6, tide = 7,
+		hall = 8, goal = 9, x2 = 10, auto = 11, vip = 12, hands = 13, rebirth = 14, like = 15,
+		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
+		sworn = 24, seat = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29,
+		bag = 3, -- the shop's qi pouch
+	},
+}
+Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
 
 -- index of a rarity in RARITIES (1 = Outer Disciple)
 function Config.rarityIndex(name)

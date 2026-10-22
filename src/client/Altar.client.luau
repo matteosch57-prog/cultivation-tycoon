@@ -1,6 +1,9 @@
--- Heavenly Altar on the client (mock A, docs/art/mocks/altar_A_phone.jpg): the claim ring under the
--- qi counter while a round is open, the Palm Strike button above Jump (F on a keyboard) while you
--- stand on the altar, the Spirit Springs that throw you up, the knockback, toasts and sounds.
+-- Heavenly Altar on the client (mock A, docs/art/mocks/altar_A_phone.jpg): while a round is open, a
+-- small altar button in the HUD's right stack (owner 2026-10-22: the ring in the middle was "too
+-- invasive"; docs/art/mocks/fight_options.jpg): beads around it fill as the holder's timer runs, a
+-- tap draws the guide trail to the altar, its X hides it until the next round. The Palm Strike
+-- button above Jump (F on a keyboard) while you stand on the altar, the Spirit Springs that throw
+-- you up, the knockback, toasts and sounds.
 -- The server decides who holds and who wins (src/server/Altar.luau); this only draws and asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -82,8 +85,10 @@ gui.Parent = playerGui
 
 local ui = {}
 local beads = {}
+local dismissed = 0 -- AltarUntil of the round the player closed with the X (hidden until the next)
+local ROW = Color3.fromHex("D9473B") -- red lacquer, so the bronze ding reads
 
--- the qi counter's bottom edge (HUD), so the ring sits right under it
+-- the qi counter's bottom edge (HUD), where altar toasts sit
 local function counterBottom()
 	local hud = playerGui:FindFirstChild("Hud")
 	local c = hud and hud:FindFirstChild("Counter", true)
@@ -94,66 +99,100 @@ local function counterBottom()
 	return px(80)
 end
 
+-- the HUD's right stack (gift, pill, ...): PlayerGui.HudSlots.Right, re-sent by HudSlots.Rebuilt
+-- after every HUD build. Without it the row stands on its own in the top right.
+local function rightStack()
+	local slots = playerGui:FindFirstChild("HudSlots")
+	local right = slots and slots:FindFirstChild("Right")
+	return right and right.Value
+end
+local function placeRow()
+	if not ui.row then
+		return
+	end
+	local stack = rightStack()
+	if stack then
+		ui.row.AnchorPoint = Vector2.new(0, 0)
+		ui.row.Position = UDim2.new()
+		ui.row.LayoutOrder = 3
+		ui.row.Parent = stack
+	else
+		ui.row.AnchorPoint = Vector2.new(1, 0)
+		ui.row.Position = UDim2.new(1, -px(16), 0, px(96))
+		ui.row.Parent = gui
+	end
+end
+
+-- a tap on the altar button: the guide trail to the altar (again = off)
+local function guideToAltar(on)
+	player:SetAttribute("GuideTo", on and workspace:GetAttribute("AltarTop") or nil)
+end
+
 local function build()
+	if ui.row then
+		ui.row:Destroy()
+	end
 	for _, c in gui:GetChildren() do
 		c:Destroy()
 	end
 	table.clear(beads)
 	Toy.S = computeScale()
-	-- the claim ring: ALTAR_HOLD beads around the seconds still needed
-	local panel = frame(gui, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, counterBottom() + px(6)),
-		Size = UDim2.fromOffset(px(220), px(130)),
-		Visible = false,
-	})
-	ui.panel = panel
-	local ring = frame(panel, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0),
-		Size = UDim2.fromOffset(px(76), px(76)),
-	})
-	local disc = frame(ring, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(px(58), px(58)),
-		BackgroundTransparency = 0.35,
-		BackgroundColor3 = Toy.INK,
-	})
-	Toy.corner(disc, UDim.new(1, 0))
-	local n = Config.ALTAR_HOLD
+	-- the altar row: a 46 px toy button with the altar icon, the hold beads around it, the seconds
+	-- under it, an X on its corner
+	local rowSize = px(46)
+	local row = frame(nil, { Size = UDim2.fromOffset(rowSize + px(12), rowSize + px(28)), Visible = false, Name = "AltarRow" })
+	ui.row = row
+	local holder, btn = Toy.button(row, UDim2.fromOffset(rowSize, rowSize), ROW, rowSize / 2)
+	holder.AnchorPoint = Vector2.new(0.5, 0)
+	holder.Position = UDim2.new(0.5, 0, 0, px(6))
+	Toy.icon(btn, "altar", math.floor(rowSize * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	-- one bead per 2 s held (10 for the 20 s claim): fewer, bigger beads read at 46 px
+	local n = math.ceil(Config.ALTAR_HOLD / 2)
 	for i = 1, n do
 		local a = (i - 1) / n * math.pi * 2 - math.pi / 2
-		local r = px(33)
-		local b = frame(ring, {
+		local r = rowSize / 2 + px(6)
+		local b = frame(holder, {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.new(0.5, math.cos(a) * r, 0.5, math.sin(a) * r),
-			Size = UDim2.fromOffset(px(9), px(9)),
+			Size = UDim2.fromOffset(px(7), px(7)),
 			BackgroundTransparency = 0,
 			BackgroundColor3 = BEAD_OFF,
+			ZIndex = 3,
 		})
 		Toy.corner(b, UDim.new(1, 0))
 		local st = Instance.new("UIStroke")
 		st.Color = Toy.INK
-		st.Thickness = px(2)
+		st.Thickness = px(1.5)
 		st.Parent = b
 		beads[i] = b
 	end
-	ui.secs = text(
-		ring,
-		"20s",
-		px(26),
-		Color3.new(1, 1, 1),
-		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) }
-	)
-	local lines = frame(panel, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, px(78)),
-		AutomaticSize = Enum.AutomaticSize.XY,
-	})
-	Toy.list(lines, false, px(1))
-	text(lines, "Heavenly Altar", px(17), GOLD, { LayoutOrder = 1 })
-	ui.status = text(lines, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.secs = text(row, "", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, rowSize + px(12)) })
+	-- the X: hides the row until the next round
+	local x = Instance.new("TextButton")
+	x.Text = ""
+	x.AutoButtonColor = false
+	x.AnchorPoint = Vector2.new(0.5, 0.5)
+	x.Position = UDim2.new(0.5, rowSize / 2 + px(2), 0, px(6) + px(2))
+	x.Size = UDim2.fromOffset(px(20), px(20))
+	x.BackgroundColor3 = Toy.INK
+	x.BackgroundTransparency = 0.2
+	x.ZIndex = 5
+	x.Parent = row
+	Toy.corner(x, UDim.new(1, 0))
+	for _, rot in { 45, -45 } do
+		local bar = frame(x, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(px(10), px(2.5)), Rotation = rot, BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 6 })
+		Toy.corner(bar, UDim.new(1, 0))
+	end
+	x.Activated:Connect(function()
+		Sfx.play("click")
+		dismissed = workspace:GetAttribute("AltarUntil") or 0
+		row.Visible = false
+		guideToAltar(false)
+	end)
+	btn.Activated:Connect(function()
+		guideToAltar(player:GetAttribute("GuideTo") == nil)
+	end)
+	placeRow()
 	-- Palm Strike: above Jump on a phone, bottom right on a computer (key F)
 	local size = px(isPhone() and 74 or 64)
 	local holder, btn = Toy.button(gui, UDim2.fromOffset(size, size), PALM, size / 2)
@@ -173,19 +212,8 @@ local function build()
 	end
 	holder.Visible = false
 	ui.palm, ui.palmBtn = holder, btn
-	-- the palm: four fingers, a thumb, the heel of the hand, and two speed lines
-	local ic = Toy.Icon.new(
-		btn,
-		math.floor(size * 0.62),
-		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.52, 0.5) }
-	)
-	local skin = Color3.fromHex("FFE1C4")
-	for k, h in { 30, 36, 34, 26 } do
-		ic:rect(22 + (k - 1) * 8, 34 - h / 2, 7, h, skin, 3)
-	end
-	ic:rect(13, 40, 7, 18, skin, 3, -40)
-	ic:rect(34, 46, 32, 26, skin, 10)
-	ic:detail(8, 16, 2.5, Color3.new(1, 1, 1), 0.2)
+	-- the palm (the shared icon sheet)
+	Toy.icon(btn, "palm", math.floor(size * 0.66), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.52, 0.5) })
 	ui.cool = frame(btn, {
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
@@ -208,7 +236,7 @@ local function build()
 	-- one toast line under the ring area (altar news only)
 	ui.toast = frame(gui, {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, counterBottom() + px(140)),
+		Position = UDim2.new(0.5, 0, 0, counterBottom() + px(8)),
 		AutomaticSize = Enum.AutomaticSize.XY,
 		Visible = false,
 	})
@@ -392,17 +420,23 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 	acc = 0
-	if not ui.panel then
+	if not ui.row then
 		return
 	end
 	local open = isOpen()
-	ui.panel.Visible = open
-	-- follow the qi counter's real bottom (the HUD lays out after this screen is built)
-	local below = counterBottom()
-	ui.panel.Position = UDim2.new(0.5, 0, 0, below + px(6))
-	ui.toast.Position = UDim2.new(0.5, 0, 0, below + (open and px(140) or px(8)))
+	local untilT = workspace:GetAttribute("AltarUntil") or 0
+	ui.row.Visible = open and dismissed ~= untilT
+	if ui.row.Parent ~= rightStack() and rightStack() then
+		placeRow()
+	end
+	ui.toast.Position = UDim2.new(0.5, 0, 0, counterBottom() + px(8))
 	local out = player:GetAttribute("AltarOut")
-	ui.palm.Visible = open and not out and amOnTop()
+	local onTop = amOnTop()
+	ui.palm.Visible = open and not out and onTop
+	-- the trail stops once you are up there, or when the round ends
+	if player:GetAttribute("GuideTo") and (not open or onTop) then
+		guideToAltar(false)
+	end
 	checkSprings()
 	if not open then
 		lastLit = 0
@@ -411,28 +445,23 @@ RunService.Heartbeat:Connect(function(dt)
 	local hold = workspace:GetAttribute("AltarHold") or 0
 	local holder = workspace:GetAttribute("AltarHolder") or ""
 	local crowd = workspace:GetAttribute("AltarCrowd") or 0
-	local left = math.max(0, Config.ALTAR_HOLD - hold)
 	for i, b in beads do
-		b.BackgroundColor3 = i <= math.floor(hold + 1e-6) and BEAD_ON or BEAD_OFF
+		b.BackgroundColor3 = i <= math.floor(hold / 2 + 1e-6) and BEAD_ON or BEAD_OFF
 	end
-	ui.secs.Text = math.ceil(left) .. "s"
-	local windowLeft =
-		math.max(0, math.ceil((workspace:GetAttribute("AltarUntil") or 0) - workspace:GetServerTimeNow()))
-	local status, color
-	if out then
-		status, color = "You fell: back in next round", PINK
-	elseif crowd >= 2 then
-		status, color = "Contested! Push them off", PINK
+	-- under the button: the seconds the holder still needs, or the window left while it is empty;
+	-- the colour says who: gold = you, pink = contested or you fell, white = someone else, mint = empty
+	local color
+	if out or crowd >= 2 then
+		color = PINK
 	elseif holder ~= "" then
-		status, color =
-			(holder == player.DisplayName and "You hold it! Stay on" or holder .. " holds it"), Color3.new(1, 1, 1)
+		color = holder == player.DisplayName and GOLD or Color3.new(1, 1, 1)
 	else
-		status, color = "Empty: jump on a Spirit Spring! " .. windowLeft .. "s", MINT
+		color = MINT
 	end
-	if ui.status.Text ~= status then
-		ui.status.Text = status
-		ui.status.TextColor3 = color
-	end
+	local secs = holder ~= "" and math.max(0, Config.ALTAR_HOLD - hold)
+		or math.max(0, untilT - workspace:GetServerTimeNow())
+	ui.secs.Text = math.ceil(secs) .. "s"
+	ui.secs.TextColor3 = color
 	-- a soft bell each time another brazier lights, if I'm near the hub
 	local lit = math.floor(hold / Config.ALTAR_HOLD * Config.ALTAR_BRAZIERS + 1e-6)
 	if lit > lastLit then

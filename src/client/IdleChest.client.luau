@@ -160,20 +160,6 @@ local function drawChest(parent, size)
 	end
 end
 
-local function drawDisciple(parent, size, robe)
-	local ic = Toy.Icon.new(
-		parent,
-		size,
-		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), ZIndex = 6 }
-	)
-	ic:rect(32, 52, 38, 22, robe, 9)
-	ic:circle(32, 12, 7, Toy.INK)
-	ic:circle(32, 29, 13, Color3.fromHex("F2CFAE"))
-	ic:rect(32, 21, 24, 7, Toy.INK, 3, 0, false).ZIndex = 8
-	ic:rect(32, 47, 8, 12, Color3.new(1, 1, 1), 2, 0, false).ZIndex = 8
-	return ic.box
-end
-
 -- the qi counter's centre on screen (HUD), where the exploding qi flies to
 local function counterCentre()
 	local hud = playerGui:FindFirstChild("Hud")
@@ -248,7 +234,7 @@ local function openBall(b)
 	b.orb:Destroy()
 	b.face.BackgroundColor3 = r.color
 	b.face.BackgroundTransparency = 0
-	drawDisciple(b.face, math.floor(b.size * 0.7), r.color:Lerp(Color3.new(1, 1, 1), 0.15))
+	Toy.disciple(b.face, math.floor(b.size * 0.8), res.rarity, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), ZIndex = 6 }, true)
 	b.label.Text = res.rarity
 	b.label.TextColor3 = r.color:Lerp(Color3.new(1, 1, 1), 0.35)
 	local sc = b.holder:FindFirstChildOfClass("UIScale")

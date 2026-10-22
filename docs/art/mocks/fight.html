@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- Heavenly Altar on screen, owner feedback 2026-10-22: "Fight in the middle is too invasive on
+screen, but it's nice to show it + a path to go there, but with a HIDE or X button. Crown is ugly,
+add a light aura better." ?opt=A|B|C = where the round shows (phone 844 x 390, background
+fight_bg.jpg = a Play capture with the old ring painted out). ?opt=W1|W2|W3 = the winner's aura
+instead of the crown (aura_bg.jpg = an avatar from a Play capture). Icons come from icons.js. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1B1420; }
+  html, body { margin: 0; width: 844px; height: 390px; overflow: hidden; font-family: Fredoka, sans-serif; background: #000; }
+  .bg { position: absolute; inset: 0; background: url(fight_bg.jpg) center/cover; }
+  .abs { position: absolute; }
+  .big { color: #fff; font-weight: 700; -webkit-text-stroke: 3.5px var(--ink); paint-order: stroke fill; letter-spacing: .3px; line-height: 1.05; white-space: nowrap; }
+  .x { width: 22px; height: 22px; border-radius: 50%; background: rgba(27,20,32,.78); display: flex; align-items: center; justify-content: center; }
+  .x svg { width: 12px; height: 12px; }
+  .lbl { position: absolute; right: 8px; bottom: 44px; max-width: 250px; font: 600 12px "Segoe UI", sans-serif; color: #fff; background: rgba(0,0,0,.62); padding: 3px 10px; border-radius: 6px; }
+  .chev { position: absolute; width: 18px; height: 14px; }
+</style></head><body>
+<div class="bg" id="bg"></div>
+<div id="root"></div>
+<script src="icons.js"></script>
+<script>
+const opt = new URLSearchParams(location.search).get("opt") || "A";
+const ic = (k, s) => newIcon(k, "A").replace("<svg ", `<svg width="${s}" height="${s}" `);
+const X = `<div class="x"><svg viewBox="0 0 12 12"><path d="M2 2L10 10M10 2L2 10" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>`;
+// a small bead ring: n beads, lit = how many are gold
+function ring(size, lit, n = 20) {
+  let s = `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="#1B1420" fill-opacity=".55"/>`;
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2 - Math.PI / 2;
+    s += `<circle cx="${50 + Math.cos(a) * 42}" cy="${50 + Math.sin(a) * 42}" r="5.2" fill="${i < lit ? "#FFD34D" : "#3A2C44"}" stroke="#1B1420" stroke-width="2.4"/>`;
+  }
+  return s + "</svg>";
+}
+// the guide trail toward the altar (the game's own chevrons)
+function trail(points) {
+  return points.map(([x, y, r]) => `<svg class="chev" style="left:${x}px;top:${y}px;transform:rotate(${r}deg)" viewBox="0 0 18 14"><path d="M2 2 L10 7 L2 12 M8 2 L16 7 L8 12" fill="none" stroke="#1B1420" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 2 L10 7 L2 12 M8 2 L16 7 L8 12" fill="none" stroke="#7FF0C8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`).join("");
+}
+const PATH = trail([[640, 330, 205], [610, 318, 207], [580, 306, 210], [552, 292, 215], [526, 276, 220], [502, 258, 225]]);
+let h = "";
+const label = t => `<div class="lbl">${t}</div>`;
+if (opt === "A") {
+  // A: a chip under the next goal (top right), the ring shrunk to a 34 px timer; X hides it
+  h += `<div class="abs" style="right:14px;top:66px;display:flex;align-items:center;gap:6px">
+    <div style="position:relative;width:40px;height:40px">${ring(40, 7)}<span class="big abs" style="inset:0;display:flex;align-items:center;justify-content:center;font-size:14px">13s</span></div>
+    ${ic("altar", 32)}<span class="big" style="font-size:16px;color:#FFE36B">Altar</span>${X}</div>`;
+  h += PATH + label("A: a chip under the next goal, tap = trail to the altar, X = hidden until the next round");
+} else if (opt === "B") {
+  // B: a slim pill under the qi counter; X hides it
+  h += `<div class="abs" style="left:50%;top:58px;transform:translateX(-50%);display:flex;align-items:center;gap:7px;background:rgba(27,20,32,.55);border-radius:20px;padding:4px 6px 4px 8px">
+    ${ic("altar", 28)}<span class="big" style="font-size:15px;color:#FFE36B">Altar</span>
+    <div style="width:70px;height:9px;border-radius:5px;background:#3A2C44;border:2px solid #1B1420;overflow:hidden"><div style="width:35%;height:100%;background:#FFD34D"></div></div>
+    <span class="big" style="font-size:15px">13s</span>${X}</div>`;
+  h += PATH + label("B: a slim bar under the qi counter, tap = trail, X = hidden until the next round");
+} else if (opt === "C") {
+  // C: a side button under Gift, the bead ring around it; tap = trail; X on its corner
+  h += `<div class="abs" style="left:9px;top:246px;width:50px;height:50px">
+      <div style="position:absolute;left:-7px;top:-7px">${ring(64, 7)}</div>
+      <div style="position:absolute;left:12px;top:10px">${ic("altar", 30)}</div>
+      <div style="position:absolute;right:-12px;top:-10px">${X}</div></div>
+    <span class="big abs" style="left:16px;top:304px;font-size:12px">13s</span>`;
+  h += PATH + label("C: a side button under Gift (beads = time held), tap = trail, X = hidden until the next round");
+} else {
+  // the winner's aura on an avatar (instead of the crown)
+  document.getElementById("bg").style.background = "url(aura_bg.jpg) center/cover";
+  const cx = 422, cy = 210;
+  let a = "";
+  if (opt === "W1") { // a soft gold glow around the body + a thin halo ring over the head
+    a = `<radialGradient id="g"><stop offset="0" stop-color="#FFE9A0" stop-opacity=".55"/><stop offset=".6" stop-color="#FFD34D" stop-opacity=".18"/><stop offset="1" stop-color="#FFD34D" stop-opacity="0"/></radialGradient>
+      <ellipse cx="${cx}" cy="${cy}" rx="150" ry="190" fill="url(#g)"/>
+      <ellipse cx="${cx}" cy="${cy - 175}" rx="46" ry="12" fill="none" stroke="#FFE9A0" stroke-width="6" opacity=".95" filter="url(#b)"/>`;
+  } else if (opt === "W2") { // gold motes rising around the body + a lotus ring of light on the ground
+    let m = "";
+    for (let i = 0; i < 26; i++) { const x = cx + Math.sin(i * 2.4) * (60 + (i % 5) * 18), y = cy + 150 - (i * 37) % 330; m += `<circle cx="${x}" cy="${y}" r="${2 + (i % 3)}" fill="#FFF3C4" opacity="${.5 + (i % 4) * .12}" filter="url(#b)"/>`; }
+    a = `<ellipse cx="${cx}" cy="${cy + 175}" rx="120" ry="26" fill="none" stroke="#FFE08A" stroke-width="5" opacity=".9" filter="url(#b)"/>
+      <ellipse cx="${cx}" cy="${cy + 175}" rx="90" ry="18" fill="#FFE08A" opacity=".18" filter="url(#b)"/>${m}`;
+  } else { // a gold rim light hugging the silhouette + a few sparkles
+    a = `<radialGradient id="g"><stop offset=".55" stop-color="#FFD34D" stop-opacity="0"/><stop offset=".8" stop-color="#FFE9A0" stop-opacity=".42"/><stop offset="1" stop-color="#FFD34D" stop-opacity="0"/></radialGradient>
+      <ellipse cx="${cx}" cy="${cy}" rx="120" ry="200" fill="url(#g)"/>` +
+      [[cx - 110, cy - 120], [cx + 120, cy - 40], [cx - 90, cy + 90], [cx + 80, cy + 140], [cx + 30, cy - 190]].map(([x, y]) => `<path d="M${x} ${y - 10} L${x + 3} ${y - 3} L${x + 10} ${y} L${x + 3} ${y + 3} L${x} ${y + 10} L${x - 3} ${y + 3} L${x - 10} ${y} L${x - 3} ${y - 3}Z" fill="#FFF3C4"/>`).join("");
+  }
+  h += `<svg class="abs" style="inset:0;mix-blend-mode:screen" width="844" height="390"><defs><filter id="b"><feGaussianBlur stdDeviation="3"/></filter></defs>${a}</svg>`;
+  h += label({ W1: "W1: soft gold glow + a halo ring", W2: "W2: rising gold motes + a ring of light at the feet", W3: "W3: gold rim light + sparkles" }[opt]);
+}
+document.getElementById("root").innerHTML = h;
+</script></body></html>

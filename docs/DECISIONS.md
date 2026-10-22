@@ -245,3 +245,17 @@ the log as a D-number.
   the hips with a salute. A recruit rebuilds only the seat that changed (seats are kept, so the seat
   order is not the strength order). Why: the owner found the old motion stiff and the full rebuild
   on every recruit weird; joint Transforms are the documented no-upload way.
+- **D51** Icons and the altar on screen (owner 2026-10-22: "lots of icons are looking AI af, the like
+  thumb for example"; "fight in the middle is too invasive on screen, but it's nice to show it + a
+  path to go there, with a HIDE or X button. Crown is ugly, add a light aura better"). Mocks
+  `docs/art/mocks/icons_board.jpg` (now vs 3 finishes), `fight_options.jpg`, `aura_options.jpg`;
+  picks (recommended defaults, owner can swap): icons A "sticker", altar row, aura W1.
+  Icons: the ~30 box-built icons are replaced by one uploaded sheet of real silhouettes with one
+  rule set (ART_BIBLE "Icons"); Robux shows Roblox's own icon. Altar: the ring under the qi counter
+  is gone; while a round is open a 46 px altar button sits in the HUD's right stack (PlayerGui
+  `HudSlots.Right`, LayoutOrder 3; alone in the top right without it), beads around it = time held,
+  seconds under it; a tap points the guide trail at the altar (local attribute `GuideTo`, read by
+  `Guide.client`), its X hides it until the next round. Winner: a gold Highlight, a gold halo behind
+  the head (the disciples' magic circle mesh) and rising motes instead of the part-built crown. Why:
+  the box icons were the "AI look" the owner keeps catching; the centre ring covered the view and
+  overlapped the counter; a light aura matches the disciples' language.
