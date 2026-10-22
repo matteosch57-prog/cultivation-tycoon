@@ -111,6 +111,29 @@ def load(path):
         for r, ids in enumerate(rp, 1):
             for i in ids:
                 env["REALM_OF"][i] = r
+    # Config.STREAK (Daily Blessing, D58): a table of tables the flat parser skips -> the sim's STREAK form
+    if "STREAK" not in env or not isinstance(env.get("STREAK"), list) or (env["STREAK"] and not isinstance(env["STREAK"][0], dict)):
+        st_ = []
+        for line in block("STREAK"):
+            if "{" not in line:
+                continue
+            e = {}
+            q = re.search(r"qiSec = (\d+)", line)
+            if q:
+                e["qi_s"] = int(q.group(1))
+            sm = re.search(r"^\s*\{[^{]*?summons = (\d+)", line)
+            if sm:
+                e["summons"] = int(sm.group(1))
+            r = re.search(r'rarity = "([^"]+)"', line)
+            if r:
+                e["disciple"] = r.group(1)
+                a = re.search(r"again = \{ summons = (\d+)", line)
+                e["else_summons"] = int(a.group(1)) if a else 3
+            st_.append(e)
+        if st_:
+            env["STREAK"] = st_
+    # once-a-day qi: the Shop's free Daily Gift (SHOP_FREE_SECONDS); blessings are added per kind
+    env.setdefault("DAILY_QI_S", env.get("SHOP_FREE_SECONDS", 0))
     if "BREAKTHROUGH_SECONDS" in env:
         env["BT_S"] = env["BREAKTHROUGH_SECONDS"]
     for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
@@ -306,6 +329,18 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 S["dao"][k] = lvl(k) + 1
         life_start_play, life_start_day = played, day
 
+    def rebirths_for(realm):  # Config.rebirthsFor: the table, then +ceil(i/2) every odd realm past it (D66)
+        tab = C.get("REBIRTH_REALMS", {})
+        need = max([n for r, n in tab.items() if realm >= r] or [0])
+        if tab and not C.get("REBIRTH_GATES_END"):
+            last = max(tab)
+            n, i = tab[last], 9
+            for r in range(last + 2, realm + 1, 2):
+                n += -(-i // 2)
+                i += 1
+                need = n
+        return need
+
     def rebirth(day):  # D63: back to realm 1 built, keep disciples, karma = KARMA + STEP x rebirths
         nonlocal life_start_play, life_start_day
         n = S["life"] - 1
@@ -332,6 +367,11 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
 
     if C["WELCOME_QI"]:
         src("welcome", C["WELCOME_QI"])
+    if C.get("CHEST_STARTER_QI"):  # the starter idle chest: qi + free summons on a new save
+        src("starter chest", C["CHEST_STARTER_QI"])
+        for _ in range(int(C.get("CHEST_STARTER_SUMMONS", 0))):
+            S["disciples"].append(roll())
+        S["disciples"].sort(reverse=True)
     session_gap = 24 * 3600 / K["per_day"] - K["session"] * 60
     rar_bonus = {n: b for n, b in zip(C.get("RARITY_NAMES", []), [b for _, b in C["RARITIES"]])}
     streak_once = set()
@@ -423,7 +463,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     choices = []
                 if not choices and "REBIRTH_PRICE" in C:
                     # D63: the next realm needs rebirths (REBIRTH_REALMS); blocked -> rebirth once the qi price is held
-                    need = max([n for r, n in C.get("REBIRTH_REALMS", {}).items() if S["realm"] + 1 >= r] or [0])
+                    need = rebirths_for(S["realm"] + 1)
                     if S["life"] - 1 < need:
                         price = C["REBIRTH_PRICE"] + C["REBIRTH_PRICE_STEP"] * (S["life"] - 1)
                         if S["qi"] >= price:
