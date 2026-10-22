@@ -631,7 +631,7 @@ local function build()
 	ui.recruitBtn = rBtn
 	-- how many one press recruits (owner: after a recruit an x1 / x10 / x50 selector shows for a few
 	-- seconds above the seal; the pick sticks to the seal)
-	local pick = frame(rHolder, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -px(10)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false })
+	local pick = frame(rHolder, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, 0, 0, -px(10)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false }) -- right-aligned: the seal sits at the screen's edge
 	local pl = Instance.new("UIListLayout")
 	pl.FillDirection = Enum.FillDirection.Horizontal
 	pl.Padding = UDim.new(0, px(6))
