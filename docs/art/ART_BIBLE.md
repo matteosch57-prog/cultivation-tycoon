@@ -118,8 +118,10 @@ Captures: [captures/57 to 60](captures/), before/after [63 to 69, 72](captures/)
   ZOffset or the floor hides it; fire wisps and beam ribbons were tried and dropped (hidden, or faint
   white arcs over the bright sky).
 - Phone budget: aura layers switch off beyond 90 studs and motion stops beyond 150 (client).
-- Pose and motion: the server poses the rig cross-legged through its joint graph and anchors it (new
-  rigs have AnimationConstraints, no Motor6D); `CultivatorIdle.client.luau` animates locally within 150
+- Pose and motion (D47): the server bakes the cross-legged pose into the rig's joints and keeps the
+  body live on them, only the root anchored (`Rig.luau`; new rigs have AnimationConstraints, no
+  Motor6D), so robes, hair and props follow every move; `CultivatorIdle.client.luau` animates locally
+  through the joints, each easing at its own pace (head and arms a beat after the chest), within 150
   studs and only on screen: the whole figure floats 0.7 studs over its cushion (legs seated on it in the template; 2 studs read as detached in Play), and bobs (halo and orbs
   float along), the head watches a player within 24 studs (up to 55 degrees) and otherwise glances aside
   now and then, breath (rise and lean), a slow side sway, a head drift on its own rhythm, a sparkle puff

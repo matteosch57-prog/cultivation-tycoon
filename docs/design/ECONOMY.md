@@ -49,7 +49,7 @@ A hire pad (`Hire_<id>`, PadKind `hire`) stands beside each owned building in `W
 and adds `WORKER_BONUS` x that building's income (`data.workers[id]`). A breakthrough or a new life
 sends them home with the buildings. The card shows one dot per worker the building takes; hire pads
 are not `Pad_` so the HUD goal and the guide trail still lead to buildings. Looks, spots and tools:
-`src/server/Workers.luau`; job loops on the client: `WorkerJobs.client.luau` (joints solved by hand,
+`src/server/Workers.luau`; job loops on the client: `WorkerJobs.client.luau` (through the rig's joints with planted feet and both hands on two-handed tools, D47,
 `Rig.luau`, nothing moves off screen). Why: the peak should look worked and alive (research
 2026-10-21_workers, owner picked hire pads and straw hats from mock `docs/art/mocks/workers.html`).
 

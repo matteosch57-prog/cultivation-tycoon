@@ -1,5 +1,5 @@
--- Meditation idle for the seated cultivators (server: Cultivators.luau). The avatars are anchored
--- in a cross-legged pose; here the whole figure floats above its cushion and bobs, the upper body
+-- Meditation idle for the seated cultivators (server: Cultivators.luau). The avatars sit
+-- cross-legged on their own joints, the root anchored; here the whole figure floats above its cushion and bobs, the upper body
 -- rises and leans with each slow breath and sways side to side, and the head lives on its own: it
 -- turns to watch a player who comes close, glances aside now and then, and drifts. The motes puff out
 -- now and then, the face (a dynamic head) meditates with closed eyes, blinks them open now and then
@@ -9,10 +9,18 @@
 -- raised mudra, a qi surge sends the orbs racing and the circles spinning while the figure draws in a
 -- deep breath, and a visitor who comes close gets a small bow. Local only (nothing replicates): the motion stops
 -- beyond FAR studs and the aura layers switch off beyond GLOW studs, which keeps phones cheap.
+-- The figure moves through its own joints (Rig.luau): the float on its anchored root, the breath on
+-- the waist, the look on the neck, the mudra on the shoulder, so the robe, the hair and the props
+-- move with the body (owner 2026-10-22: the robe stayed behind and the hair stayed fixed when every
+-- part was moved on its own). Each joint eases toward its target at its own pace, the head and arms
+-- a beat after the chest, so the motion flows instead of moving as one block.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local PerfMark = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("PerfMark"))
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local PerfMark = require(Shared:WaitForChild("PerfMark"))
+local Rig = require(Shared:WaitForChild("Rig"))
+local POSES = require(Shared:WaitForChild("CultivatorPoses"))
 
 local TAG = "Cultivator"
 local FAR = 150
@@ -25,9 +33,9 @@ local FLOAT = 5.6 -- seconds per bob
 local BREATH = 4.5 -- seconds per breath
 local SWAY = 7.3 -- seconds per side-to-side sway
 local NOD = 9.1 -- seconds per head drift
-local LEGS = { HumanoidRootPart = true, LowerTorso = true, LeftUpperLeg = true, LeftLowerLeg = true, LeftFoot = true, RightUpperLeg = true, RightLowerLeg = true, RightFoot = true }
-local HEADWEAR = { [Enum.AccessoryType.Hair] = true, [Enum.AccessoryType.Face] = true, [Enum.AccessoryType.Hat] = true }
-local RIGHT_ARM = { RightUpperArm = true, RightLowerArm = true, RightHand = true }
+-- how fast each joint catches up with its target (per second): the chest leads, the head and the
+-- arms follow a beat later (overlapping action)
+local FOLLOW = { Waist = 9, Neck = 6, LeftShoulder = 5, RightShoulder = 5, LeftElbow = 4, RightElbow = 4 }
 local TAU = math.pi * 2
 local MUDRA = math.rad(55) -- how far the right arm lifts toward the chest
 local SURGE = 2.5 -- seconds a qi surge lasts
@@ -53,38 +61,20 @@ local function add(m)
 	if not waist or not head or not m.Parent then
 		return
 	end
-	local f = { legs = {}, legsBase = {}, body = {}, bodyBase = {}, head = {}, headBase = {}, orbs = {}, orbBase = {}, circles = {}, swords = {}, swordBase = {}, phase = math.random() * 20 }
-	-- breathe about the bottom of the chest; the head turns about the neck
+	local root = avatar:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local f = { orbs = {}, orbBase = {}, circles = {}, swords = {}, swordBase = {}, phase = math.random() * 20 }
+	f.joints = Rig.joints(avatar)
+	f.now = {} -- the eased joint rotations
+	f.pose = POSES[m:GetAttribute("Pose") or "seated"] or {}
+	f.rootPart = root
+	f.rootBase = root.CFrame
+	-- the body's frame at the bottom of the chest, where the waist joint breathes; the neck above it
 	f.pivot = waist.CFrame * CFrame.new(0, -waist.Size.Y / 2, 0)
 	f.neck = f.pivot:ToObjectSpace(head.CFrame * CFrame.new(0, -head.Size.Y / 2, 0))
-	for _, p in avatar:GetDescendants() do
-		if p:IsA("BasePart") then
-			local acc = p.Parent
-			local rel = f.pivot:ToObjectSpace(p.CFrame)
-			if LEGS[p.Name] then
-				table.insert(f.legs, p)
-				table.insert(f.legsBase, rel)
-			elseif p == head or (acc:IsA("Accessory") and HEADWEAR[acc.AccessoryType]) then
-				table.insert(f.head, p)
-				table.insert(f.headBase, f.neck:ToObjectSpace(rel))
-			else
-				table.insert(f.body, p)
-				table.insert(f.bodyBase, rel)
-			end
-		end
-	end
 	f.centre = f.pivot.Position
-	-- the right arm can lift into a raised mudra: it turns about the shoulder
-	local upper = avatar:FindFirstChild("RightUpperArm")
-	if upper then
-		f.shoulder = f.pivot:ToObjectSpace(upper.CFrame * CFrame.new(0, upper.Size.Y / 2, 0))
-		f.arm = {}
-		for i, p in f.body do
-			if RIGHT_ARM[p.Name] then
-				f.arm[i] = true
-			end
-		end
-	end
 	for _, p in m:GetChildren() do
 		if p.Name == "AuraOrb" then
 			table.insert(f.orbs, p)
@@ -147,6 +137,34 @@ end
 -- procedural one reads stiff, and the default walk is what players know from their own avatar.
 local WALK_ANIM = "rbxassetid://507777826"
 local WALK_SPEED = 5 -- studs per second
+local BOW_TIME = 1.8 -- seconds, down and up
+
+-- the arrival bow at depth k (0..1) as joint rotations (+X swings a limb forward, -X bends the
+-- waist forward), with the stance: hips back and down, the feet where they stood (Rig.leg)
+local function bowPose(k, legs)
+	local A = function(x, y, z)
+		return CFrame.Angles(math.rad(x), math.rad(y or 0), math.rad(z or 0))
+	end
+	local rot = {
+		Waist = A(-34 * k),
+		Neck = A(-14 * k),
+		RightShoulder = A(45 * k, 0, -22 * k),
+		RightElbow = A(75 * k),
+		LeftShoulder = A(45 * k, 0, 22 * k),
+		LeftElbow = A(75 * k),
+	}
+	local dy, dz = -0.12 * k, 0.22 * k
+	rot.Body = CFrame.new(0, dy, dz)
+	for _, side in { "Left", "Right" } do
+		if legs[side] then
+			local hip, knee, ankle = Rig.leg(legs[side], dy, dz, 0)
+			rot[side .. "Hip"] = CFrame.Angles(hip, 0, 0)
+			rot[side .. "Knee"] = CFrame.Angles(knee, 0, 0)
+			rot[side .. "Ankle"] = CFrame.Angles(ankle, 0, 0)
+		end
+	end
+	return rot
+end
 local function arrive(m)
 	local at = m:GetAttribute("ArrivedAt")
 	if not at then
@@ -198,29 +216,42 @@ local function arrive(m)
 	local dir = flat.Unit
 	local baseY = cushion.Position.Y
 	local dist = flat.Magnitude - 0.5
-	local t0 = os.clock()
-	while walker.Parent and m.Parent do
-		local d = math.min(dist, (os.clock() - t0) * WALK_SPEED)
+	-- the walk eases in, then slows over the last steps; the walk cycle slows with it so the feet
+	-- never skate (owner 2026-10-22: the walk and the bow need the whole-body treatment too)
+	local t0, d = os.clock(), 0
+	while walker.Parent and m.Parent and d < dist do
+		local dt = RunService.PreSimulation:Wait()
+		local v = WALK_SPEED * math.min(1, (os.clock() - t0) / 0.4) * math.clamp((dist - d) / 1.6, 0.3, 1)
+		d = math.min(dist, d + v * dt)
+		if ok then
+			track:AdjustSpeed(v / WALK_SPEED)
+		end
 		local x, z = from.X + dir.X * d, from.Z + dir.Z * d
 		local pos = Vector3.new(x, groundY(x, z, baseY) + lift, z)
 		hrp.CFrame = CFrame.lookAt(pos, pos + dir)
-		if d >= dist then
-			break
-		end
-		RunService.RenderStepped:Wait()
 	end
 	if ok then
-		track:Stop(0.25)
+		track:Stop(0.35)
 	end
-	-- a bow to the sect: the whole figure tips forward from the feet and rises again
+	task.wait(0.4) -- arrived: a breath standing still before the bow
+	-- a bow to the sect from the hips: the hips sit back, the knees give, the chest folds forward
+	-- and the hands meet in a salute, then everything rises again
 	local stand = hrp.CFrame
-	local feet = stand * CFrame.new(0, -lift, 0)
+	local joints = Rig.joints(walker)
+	local legs = { Left = Rig.legLengths(joints, "Left"), Right = Rig.legLengths(joints, "Right") }
 	local b0 = os.clock()
-	while walker.Parent and m.Parent and os.clock() - b0 < 1.3 do
-		local k = math.sin(math.pi * math.clamp((os.clock() - b0 - 0.2) / 1.1, 0, 1))
-		hrp.CFrame = feet * CFrame.Angles(-math.rad(28) * k, 0, 0) * feet:ToObjectSpace(stand)
-		RunService.RenderStepped:Wait()
+	while walker.Parent and m.Parent and os.clock() - b0 < BOW_TIME do
+		RunService.PreSimulation:Wait()
+		local u = (os.clock() - b0) / BOW_TIME
+		-- down in the first third, a short hold, up slower
+		local k = u < 0.3 and u / 0.3 or (u < 0.5 and 1 or 1 - (u - 0.5) / 0.5)
+		k = k * k * (3 - 2 * k)
+		local rot = bowPose(k, legs)
+		Rig.apply(joints, rot)
+		hrp.CFrame = stand * rot.Body
 	end
+	Rig.apply(joints, {})
+	hrp.CFrame = stand
 	-- the walker fades out as the seated figure fades in on its cushion, with a puff of qi
 	local aura = m:FindFirstChild("Aura")
 	local motes = aura and aura:FindFirstChild("Motes", true)
@@ -265,7 +296,8 @@ end
 
 local MAX_YAW = math.rad(55)
 
-RunService.RenderStepped:Connect(function(dt)
+-- PreSimulation: the engine applies the joints' Transforms in one batch right after
+RunService.PreSimulation:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	if not cam then
 		return
@@ -313,10 +345,8 @@ RunService.RenderStepped:Connect(function(dt)
 			k = k * k * (3 - 2 * k) -- smooth in and out
 			local up = HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k
 			local lift = f.pivot + Vector3.new(0, up, 0)
-			for i, p in f.legs do
-				table.insert(parts, p)
-				table.insert(cfs, lift * f.legsBase[i])
-			end
+			-- the whole figure floats on its anchored root; the folded legs ride with it
+			f.rootPart.CFrame = f.rootBase + Vector3.new(0, up, 0)
 			-- the raised mudra: the right hand lifts to the chest for a few breaths, then returns
 			local raise = now > f.nextMudra and now < f.nextMudra + 3.5
 			if now > f.nextMudra + 3.5 then
@@ -325,11 +355,20 @@ RunService.RenderStepped:Connect(function(dt)
 			f.mudra += ((raise and 1 or 0) - f.mudra) * math.min(1, dt * 3)
 			-- a small bow to a visitor, once each time someone comes close
 			local bow = math.sin(math.pi * math.clamp((now - f.bowAt) / 1.2, 0, 1)) * math.rad(10)
-			local body = lift * CFrame.new(0, 0.05 * b + 0.06 * k, 0) * CFrame.Angles(math.rad(-1.5 * b) - bow * 0.4 - math.rad(3) * k, 0, math.rad(1.2 * s))
-			local arm = f.shoulder and body * f.shoulder * CFrame.Angles(-MUDRA * f.mudra, 0, 0) * f.shoulder:Inverse()
-			for i, p in f.body do
-				table.insert(parts, p)
-				table.insert(cfs, (arm and f.arm[i] and arm or body) * f.bodyBase[i])
+			-- the chest rises and leans with each breath and sways side to side, on the waist joint
+			local goal = {}
+			goal.Waist = CFrame.new(0, 0.05 * b + 0.06 * k, 0) * CFrame.Angles(math.rad(-1.5 * b) - bow * 0.4 - math.rad(3) * k, 0, math.rad(1.2 * s))
+			-- the shoulders rise a little on the in-breath, and the right hand lifts into the mudra;
+			-- both turn in the body's frame, so the baked pose is undone around them
+			local rise = math.rad(1.5 * b + 2 * k)
+			goal.LeftShoulder = CFrame.Angles(0, 0, -rise)
+			goal.RightShoulder = CFrame.Angles(-MUDRA * f.mudra, 0, rise)
+			goal.RightElbow = CFrame.Angles(math.rad(-15) * f.mudra, 0, 0)
+			for _, name in { "LeftShoulder", "RightShoulder", "RightElbow" } do
+				local p = f.pose[name]
+				if p then
+					goal[name] = p:Inverse() * goal[name] * p
+				end
 			end
 			-- the head watches a player who comes close, otherwise glances aside now and then
 			local yaw, pitch = 0, 0
@@ -373,10 +412,17 @@ RunService.RenderStepped:Connect(function(dt)
 				f.face.LeftLipCornerPuller, f.face.RightLipCornerPuller = f.smile, f.smile
 			end
 			local n = math.sin(t / NOD * TAU)
-			local neck = body * f.neck * CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch - bow + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
-			for i, p in f.head do
-				table.insert(parts, p)
-				table.insert(cfs, neck * f.headBase[i])
+			goal.Neck = CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch - bow + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
+			-- ease each joint toward its goal (the head and arms trail the chest) and write it
+			local cur = f.now
+			for name, rate in FOLLOW do
+				local j = f.joints[name]
+				if j then
+					local g = goal[name] or CFrame.identity
+					local c = (cur[name] or g):Lerp(g, 1 - math.exp(-rate * dt))
+					cur[name] = c
+					j.Transform = c
+				end
 			end
 			if f.halo then
 				f.halo.Position = f.haloBase + Vector3.new(0, up, 0)

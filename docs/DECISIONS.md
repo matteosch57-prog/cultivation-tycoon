@@ -218,3 +218,13 @@ the log as a D-number.
   onto your peak, then the Heavenly Gift as the reward. The first avatar is made on the peak once it
   is built (`CharacterAutoLoads` off), so no hub stop and no teleport. The group card's Join step
   now opens Roblox's own join prompt (replaces D35's "find the group on the game page").
+- **D47** NPCs move through their own joints (owner picked B of the clips
+  `docs/art/mocks/anim_mock_*.mp4`, then asked for both hands on the tools and the walk-in and bow
+  redone; research `docs/research/2026-10-22_npc_animation.md`). Workers and disciples keep only the
+  root anchored; the client writes joint Transforms (`Rig.luau`), so layered robes, hair and props
+  follow (moving each part on its own left sleeves and hair behind). Workers: hips drop into each
+  blow with the feet planted (`Rig.leg`), the left hand holds hoe and pick shafts (`Rig.reach`), joints
+  ease at their own pace so the arms follow through. Recruit walk-in eases in and out, then bows from
+  the hips with a salute. A recruit rebuilds only the seat that changed (seats are kept, so the seat
+  order is not the strength order). Why: the owner found the old motion stiff and the full rebuild
+  on every recruit weird; joint Transforms are the documented no-upload way.
