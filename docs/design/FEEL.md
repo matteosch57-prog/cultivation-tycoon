@@ -28,6 +28,36 @@ small rewards, rewards fly to the counter, the most frequent sound is the quiete
 - Claim: today's tile turns jade, the reward line replaces the "streak waits for you" note, the
   button reads "See you tomorrow!" and closes the card. Studio hooks `StreakOpen`, `StreakClaim`.
 
+## HUD (src/client/Hud.client.luau, D54 D55 D59)
+- Two quiet rails. Left = what you open: Shop (the only gold button), Disciples (count), Karma (opens
+  the Karma Shop page straight away, `ReincOpen:Fire("karma")`), Friends (`Friends.client`, caption =
+  friends bonus). Right edge, under the next goal = what ticks, round chips: gift (its next reward
+  always shown: qi + free summons, then its timer or the time to the daily reset), pill, the altar row
+  (`Altar.client`). Numbers under buttons, no words. Karma counter beside qi once the player has karma
+  or a past life. Mocks `docs/art/mocks/hud_menus_*`, `hud_phone_*`; render `tools/mock_hud_menus.py`.
+- `PlayerGui.HudSlots`: `Left` / `Right` (ObjectValues, the current rails) and `Rebuilt` (fired after
+  every HUD rebuild). Another script's row parents itself to a rail and re-parents on every Rebuilt;
+  before a rebuild clears the HUD, rows without the `HudOwn` attribute step out (else the clear
+  destroyed them: the altar row's "Parent property locked" errors). LayoutOrder: right = gift 1,
+  pill 2, altar 3; left = Shop 0, Disciples 1, Karma 2, Friends 3.
+- Phone fit (layout()): the Recruit seal sits left of the jump button, lifted above the realm bar when
+  it reaches over the bar's end (above the jump button it covered the goal on big touch screens). The
+  right stack is placed from the seal's computed rectangle plus its x10/x50 picker: a column if it
+  ends above them, else one row, else it moves left of the seal. Studio check: HudDevice "phone", the
+  root scaled to 427 px tall, a fake `TouchGui.JumpButton` (70 px at 1,-95 / 1,-90).
+- Red dots (D59): one look, `Toy.dot` (ruby gem: outline, light-to-deep fill, glint, red glow, slow
+  breathing). The server lights them in `Dots.luau` and publishes JSON attribute `Dots`; `MenuOpened`
+  marks one followed (saved in `data.dots`). Every HUD dot leads to a dot inside, drawn from a
+  snapshot taken when the screen opens (the server has already cleared it by then):
+  Disciples (new names since the list was opened) -> each new disciple in the list; Karma (a node
+  newly affordable; lights again only for another node) -> each such tile, the Karma Shop link and
+  bought tiles clear; Rebirth chip (a new life open) -> the Reincarnate button; Friends (Sect Gift
+  unclaimed, at most once a day) -> the card's Claim; Shop -> the Boosts tab -> the free Daily Gift
+  tile. Gift and pill dots come from their own ready attributes; claiming clears them.
+- Daily Gift: first tile of the Shop's Boosts, `SHOP_FREE_SECONDS` of income once per UTC day, first
+  after `DOT_SHOP_FIRST` s of play (`ClaimShopFree`, `data.shopFreeDay`, attribute `ShopFreeIn`).
+  Claiming is the only thing that clears the Shop's dot.
+
 ## Buying (src/client/Build.client.luau)
 - Pads are concept C "Formation" (D27, playable mock `docs/art/mocks/pads_formation_mock.html`). The
   server places an invisible anchor tagged `StepPad` (`PadKind` build / breakthrough / shop); every

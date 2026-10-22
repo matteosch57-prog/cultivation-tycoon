@@ -18,6 +18,8 @@ fling other players. They cannot change server values, other players' data or th
 | UsePill | nothing | furnace owned, pill brewed | Safe |
 | ClaimGift | nothing | server play time, gift index | Safe |
 | ClaimStreak | nothing | server UTC day, `data.streak` (one claim a day) | Safe |
+| ClaimShopFree | nothing | server UTC day, `data.shopFreeDay`, `DOT_SHOP_FIRST` s played | Safe |
+| MenuOpened | menu key | whitelist `MENUS`; only marks a red dot followed (`Dots.seen`), grants nothing | Safe |
 | ClaimWelcome | nothing | `welcomed == false`, once | Safe |
 | ClaimGroup | nothing | fresh `GetGroupsAsync`, 3 s cooldown | Safe |
 | DaoBuy | node key | string, node exists, price, cap | Safe |
