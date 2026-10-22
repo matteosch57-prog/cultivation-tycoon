@@ -294,8 +294,23 @@ local function teleportTo(where)
 	local close = TweenService:Create(disc, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.fromOffset(d, d) })
 	close:Play()
 	close.Completed:Wait()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local from = root and root.Position
 	remotes.Teleport:FireServer(where)
 	task.wait(0.25) -- the move replicates and the camera settles behind the veil
+	if where == "ranks" and root then
+		-- turn the camera level with the ranking wall the server faced you to (owner: boards hard to read)
+		local t = os.clock()
+		while (root.Position - from).Magnitude < 4 and os.clock() - t < 1 do
+			task.wait()
+		end
+		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		if look.Magnitude > 0.5 then
+			look = look.Unit
+			local cam = workspace.CurrentCamera
+			cam.CFrame = CFrame.lookAt(root.Position - look * 12 + Vector3.new(0, 2.2, 0), root.Position + Vector3.new(0, 3.4, 0))
+		end
+	end
 	local open = TweenService:Create(disc, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
 	open:Play()
 	open.Completed:Wait()

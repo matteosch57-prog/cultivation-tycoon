@@ -23,13 +23,20 @@ local MEDAL = { H("FFD34D"), H("E6ECF2"), H("E0A060") }
 local CREAM = H("FFF1D6")
 local JADE = H("9FF5C8")
 local PPS = 45 -- SurfaceGui pixels per stud
+-- board sizes in studs (owner 2026-10-22: "hard to read, could be bigger"): rows and text scale to fill
+-- the face, about 0.7 studs of text, readable on a phone from the RANKINGS teleport spot
+local SECTS_W, SECTS_H, SECTS_Y = 15.6, 14, 11 -- the gate board; Y = its centre above the ground
+local STELE_W, STELE_H, STELE_X = 10, 12.5, 14 -- the side boards; X = each one's centre off the gate's
+local PAD = 16 -- face padding, px
+local TOP = 1.15 -- a top 3 row's height over a plain row's
 
 local guis = {} -- [key] = SurfaceGui
+local sizes = {} -- [key] = the face's size in px
 local heads = {} -- [userId] = head shot content id
 
 local function headOf(userId)
 	if heads[userId] == nil then
-		local ok, img = pcall(Players.GetUserThumbnailAsync, Players, userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+		local ok, img = pcall(Players.GetUserThumbnailAsync, Players, userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
 		heads[userId] = ok and img or ""
 	end
 	return heads[userId]
@@ -86,10 +93,14 @@ local function draw(key, rows)
 			c:Destroy()
 		end
 	end
-	local big = key == "sects"
+	local px = sizes[key]
+	local w = px.X - PAD * 2
+	-- a plain row's height: the face less its title and gaps, shared by RANK_TOP rows (top 3 taller)
+	local unit = math.floor((px.Y - PAD - g.Title.Size.Y.Offset - 2 * Config.RANK_TOP) / (Config.RANK_TOP + 3 * (TOP - 1)))
+	local valueW = math.floor(w * (key == "sects" and 0.42 or 0.3))
 	for i, r in rows do
 		local top = i <= 3
-		local h = top and (big and 36 or 30) or (big and 29 or 24)
+		local h = top and math.floor(unit * TOP) or unit
 		local f = Instance.new("Frame")
 		f.LayoutOrder = i
 		f.Size = UDim2.new(1, 0, 0, h)
@@ -98,15 +109,17 @@ local function draw(key, rows)
 		local c = Instance.new("UICorner")
 		c.CornerRadius = UDim.new(0, 8)
 		c.Parent = f
-		local size = top and (big and 22 or 19) or (big and 18 or 15)
-		label(f, tostring(i), 8, size + 2, top and MEDAL[i] or CREAM, nil, 30)
+		local size = math.floor(h * 0.68)
+		local rankW = math.floor(size * 1.3)
+		label(f, tostring(i), 8, size + 2, top and MEDAL[i] or CREAM, nil, rankW)
 		local img = Instance.new("ImageLabel")
 		img.BackgroundTransparency = 1
 		img.Size = UDim2.fromOffset(h - 6, h - 6)
-		img.Position = UDim2.fromOffset(38, 3)
+		img.Position = UDim2.fromOffset(8 + rankW, 3)
 		img.Image = headOf(r.userId)
 		img.Parent = f
-		label(f, r.name, 38 + h, size, Color3.new(1, 1, 1), nil, big and 250 or 170)
+		local nameX = 8 + rankW + h + 2
+		label(f, r.name, nameX, size, Color3.new(1, 1, 1), nil, w - nameX - valueW - 6)
 		local value
 		if key == "sects" then
 			value = string.format("%d realms · %d %s", r.value, r.extra, r.extra == 1 and "life" or "lives")
@@ -129,13 +142,14 @@ local function draw(key, rows)
 		f.BackgroundTransparency = 1
 		f.Size = UDim2.new(1, 0, 0, 40)
 		f.LayoutOrder = 1
-		label(f, "Be the first sect here", 0, 22, CREAM, Enum.TextXAlignment.Center)
+		label(f, "Be the first sect here", 0, 30, CREAM, Enum.TextXAlignment.Center)
 		f.Parent = g
 	end
 end
 
 -- a slate face with its title; returns the SurfaceGui that holds the rows
-local function face(slab, title, big)
+local function face(key, slab, title, big)
+	sizes[key] = Vector2.new(slab.Size.X, slab.Size.Y) * PPS
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Front
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -155,9 +169,9 @@ local function face(slab, title, big)
 	local t = Instance.new("Frame")
 	t.Name = "Title"
 	t.BackgroundTransparency = 1
-	t.Size = UDim2.new(1, 0, 0, big and 46 or 38)
+	t.Size = UDim2.new(1, 0, 0, big and 70 or 58)
 	t.LayoutOrder = 0
-	label(t, title, 0, big and 38 or 30, MEDAL[1], Enum.TextXAlignment.Center)
+	label(t, title, 0, big and 58 or 46, MEDAL[1], Enum.TextXAlignment.Center)
 	t.Parent = g
 	g.Parent = slab
 	return g
@@ -278,22 +292,24 @@ function RankBoard.build(parent, cf)
 	m.Name = "RankWall"
 	-- the gate with Greatest Sects in its opening
 	mesh(m, Config.RANK_GATE, cf * CFrame.new(0, 0, 0.6) * CFrame.Angles(0, Config.RANK_GATE.yaw or 0, 0), Config.RANK_GATE.height)
-	local slab = P(m, Vector3.new(12, 9.6, 0.8), cf * CFrame.new(0, 8.4, 0), SLATE, Enum.Material.Slate)
+	local slab = P(m, Vector3.new(SECTS_W, SECTS_H, 0.8), cf * CFrame.new(0, SECTS_Y, 0), SLATE, Enum.Material.Slate)
 	slab.Name = "SectsBoard"
-	P(m, Vector3.new(12.8, 0.5, 1.2), cf * CFrame.new(0, 13.45, 0), PAL.gold, Enum.Material.Metal)
-	P(m, Vector3.new(12.8, 0.5, 1.2), cf * CFrame.new(0, 3.35, 0), PAL.gold, Enum.Material.Metal)
-	guis.sects = face(slab, Config.RANKS.sects.title, true)
-	-- the two steles, turned a little toward the plaza
-	for _, side in { { key = "qi", x = -13.5, yaw = 0.35 }, { key = "week", x = 13.5, yaw = -0.35 } } do
-		local s = stele(m, cf * CFrame.new(side.x, 0, -2.5) * CFrame.Angles(0, side.yaw, 0), 9, 8.4)
-		s.Name = side.key .. "Board"
-		guis[side.key] = face(s, Config.RANKS[side.key].title, false)
+	for _, sy in { -1, 1 } do
+		P(m, Vector3.new(SECTS_W + 0.8, 0.5, 1.2), cf * CFrame.new(0, SECTS_Y + sy * (SECTS_H / 2 + 0.25), 0), PAL.gold, Enum.Material.Metal)
 	end
-	-- guardians and fire in front
+	guis.sects = face("sects", slab, Config.RANKS.sects.title, true)
+	-- the two steles, turned a little toward the plaza
+	for _, side in { { key = "qi", x = -STELE_X, yaw = 0.35 }, { key = "week", x = STELE_X, yaw = -0.35 } } do
+		local s = stele(m, cf * CFrame.new(side.x, 0, -2.5) * CFrame.Angles(0, side.yaw, 0), STELE_W, STELE_H)
+		s.Name = side.key .. "Board"
+		guis[side.key] = face(side.key, s, Config.RANKS[side.key].title, false)
+	end
+	-- guardians and fire in front, spaced for the bigger boards: braziers between the boards (their
+	-- flames clear the text from the RANKINGS spot), lanterns behind the steles off the bridge posts
 	for _, sx in { -1, 1 } do
-		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 20, 0, -4) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
-		brazier(m, cf * CFrame.new(sx * 5, 0, -6))
-		lantern(m, cf * CFrame.new(sx * 19.5, 0, 2.5))
+		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 22, 0, -5) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
+		brazier(m, cf * CFrame.new(sx * 6, 0, -6))
+		lantern(m, cf * CFrame.new(sx * 16.5, 0, 4))
 	end
 	m.Parent = parent
 	for key, rows in Ranks.top do
