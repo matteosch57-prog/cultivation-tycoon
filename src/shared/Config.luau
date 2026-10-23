@@ -1147,4 +1147,25 @@ Config.STEPS = {
 	},
 }
 
+-- Day and night (owner 2026-10-23: light C by day, "N2: 10-4m"): DAY_SECONDS of the place's own Lighting
+-- (light C, authored in Edit), then NIGHT_SECONDS of the NIGHT look (blue hour just after sunset, mock
+-- docs/art/mocks/2026-10-23_night_N2_*), each change a NIGHT_FADE s blend. Every client computes the phase
+-- from the server clock, so all players see the same hour with nothing replicated (DayNight.client).
+Config.DAY_SECONDS = 600
+Config.NIGHT_SECONDS = 240
+Config.NIGHT_FADE = 20
+Config.NIGHT = {
+	ClockTime = 18.35,
+	Brightness = 1.8,
+	Ambient = Color3.fromRGB(100, 92, 130),
+	OutdoorAmbient = Color3.fromRGB(140, 125, 170),
+	ColorShift_Top = Color3.fromRGB(255, 165, 135),
+	ExposureCompensation = 0.15,
+	atmosphere = { Color = Color3.fromRGB(205, 150, 165), Decay = Color3.fromRGB(75, 85, 145), Glare = 0.1, Haze = 1.6 },
+	color = { TintColor = Color3.fromRGB(235, 228, 255), Brightness = 0, Saturation = 0.05, Contrast = 0.1 },
+	bloom = { Threshold = 1.3, Intensity = 0.45 },
+	sunRays = { Intensity = 0.1 },
+}
+Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: the birds fade out, the crickets in
+
 return Config

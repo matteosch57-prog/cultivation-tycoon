@@ -10,14 +10,17 @@ pass live in [captures/](captures/); HUD mocks in [mocks/](mocks/).
 3. Few modules reused everywhere (clone, never regenerate): instancing keeps phones fast.
 
 ## Lighting (authored in Edit, saved with the place; the server never overrides it)
+The values below are the DAY look: light C, owner pick 2026-10-23 (captures `2026-10-22_light_*`).
+Night = `Config.NIGHT` (blue hour, mock `docs/art/mocks/2026-10-23_night_N2_*`); `DayNight.client` blends
+from these place values to it and back (`Config.DAY_SECONDS` / `NIGHT_SECONDS` / `NIGHT_FADE`).
 - LightingStyle Realistic, PrioritizeLightingQuality false (the vista needs view distance).
-- ClockTime 16.9, Latitude 35, Brightness 2.5, Exposure -0.15.
+- ClockTime 17.25, Latitude 35, Brightness 2.5, Exposure -0.15.
 - Ambient 105,95,120 · OutdoorAmbient 150,135,165 · ColorShift_Top 255,215,175.
-- EnvDiffuse 0.5 · EnvSpecular 0.25 · ShadowSoftness 0.2.
-- Atmosphere: Density 0.3, Offset 0.2, Color 255,215,175, Decay 125,145,195, Glare 0.18, Haze 1.5.
+- EnvDiffuse 0.5 · EnvSpecular 0.6 · ShadowSoftness 0.35.
+- Atmosphere: Density 0.3, Offset 0.32, Color 255,215,175, Decay 125,145,195, Glare 0.18, Haze 1.8.
 - ColorCorrection: Brightness 0.02, Contrast 0.1, Saturation 0.15, Tint 255,248,238.
 - Bloom: Intensity 0.35, Size 28, Threshold 1.8 (high, so white plaster and clouds never glow).
-- SunRays 0.17 / Spread 0.42 (more, longer rays). Sky SunAngularSize 11. DepthOfField off in gameplay.
+- SunRays 0.22 / Spread 0.42 (more, longer rays). Sky SunAngularSize 11. DepthOfField off in gameplay.
 
 ## Sky and clouds
 - Sky: `Lighting.ActiveSky`, a painted anime-style skybox from the Creator Store (asset 90335763728419).
