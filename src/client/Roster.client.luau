@@ -107,7 +107,10 @@ local function fillSect(body)
 	local layout = Instance.new("UIGridLayout")
 	layout.CellSize = UDim2.fromOffset(px(58), px(92))
 	layout.CellPadding = UDim2.fromOffset(px(6), px(4))
-	layout.FillDirectionMaxCells = PER_ROW
+	-- as many columns as the page holds (10 tiles are wider than a 667 px phone's book: the edges were cut)
+	local room = body.AbsoluteSize.X - px(6) * 2 -- the scroll bar
+	local fit = if room > 0 then (room + px(6)) // (px(58) + px(6)) else PER_ROW
+	layout.FillDirectionMaxCells = math.clamp(fit, 4, PER_ROW)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = grid
 	for i, name in names do

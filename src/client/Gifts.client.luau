@@ -225,7 +225,7 @@ local function show()
 	veil.Parent = gui
 	tween(veil, 0.35, { BackgroundTransparency = 0.35 })
 
-	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(6)), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 2 })
+	local body = frame(gui, { Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(6)), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 2 })
 	local bl = Toy.list(body, true, px(16))
 	bl.VerticalAlignment = Enum.VerticalAlignment.Top
 	local pop = Instance.new("UIScale")

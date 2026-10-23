@@ -86,7 +86,7 @@ local function openCard()
 	veil.Activated:Connect(closeCard)
 	card = veil
 
-	local col = frame(veil, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
+	local col = frame(veil, { Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(col, false, px(14))
 	text(col, "Sect Gift", px(34), GOLD, { LayoutOrder = 1 })
 	local row = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })

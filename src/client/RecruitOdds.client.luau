@@ -166,7 +166,7 @@ local function open()
 	veil.BorderSizePixel = 0
 	veil.Parent = gui
 	veil.Activated:Connect(close)
-	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
+	local body = frame(gui, { Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(6))
 	text(body, "Recruit Odds", px(24), GOLD, { LayoutOrder = 0, Rotation = -2 })
 	refreshNow = fill(body)

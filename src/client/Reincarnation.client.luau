@@ -275,7 +275,7 @@ build = function()
 		close()
 	end)
 
-	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
+	local body = Toy.frame(gui, { Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(8))
 	ui.body = body
 	if page == "karma" then

@@ -4,6 +4,7 @@
 -- "breakthroughAsk", the price); it shows this realm and the next, the income boost, the new
 -- buildings, the rebirth gate when this realm is one, what resets and what is kept, and one button.
 -- Only its Confirm breaks through, and the server checks everything again (R9).
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -155,13 +156,13 @@ local function build()
 
 	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(40), px(40)), Color3.fromHex("FF6B5E"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
-	xHolder.Position = UDim2.new(1, -px(24), 0, px(24))
+	xHolder.Position = UDim2.new(1, -px(24), 0, GuiService.TopbarInset.Max.Y + px(8))
 	text(xBtn, "X", px(22), WHITE, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	xBtn.Activated:Connect(function()
 		close()
 	end)
 
-	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
+	local body = Toy.frame(gui, { Active = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(12))
 	ui.body = body
 	text(body, "Breakthrough", px(34), GOLD, { LayoutOrder = 1 })
