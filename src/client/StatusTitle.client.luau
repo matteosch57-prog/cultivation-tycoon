@@ -14,53 +14,35 @@ local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 
 local CREAM = Color3.fromHex("FFF1D6")
-local VIP_GOLD = Color3.fromHex("FFCD32") -- the arch's VIP gold
-local GLOW = "rbxassetid://" .. Config.AURA_TEX.glow
+-- VIP Sect title (owner pick B 2026-10-23, mock /mnt/project-files/vip/2026-10-23_vip_overhead_mocks.png;
+-- Blox Fruits-style title): the crown before the realm name and the name in gold, a lighter band
+-- sweeping across the letters every few seconds. Gradient offset only: WorldText owns transparency.
+local GOLD_SHINE = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromHex("FFA41C")),
+	ColorSequenceKeypoint.new(0.4, Color3.fromHex("FFD86B")),
+	ColorSequenceKeypoint.new(0.5, Color3.fromHex("FFF8D8")),
+	ColorSequenceKeypoint.new(0.6, Color3.fromHex("FFD86B")),
+	ColorSequenceKeypoint.new(1, Color3.fromHex("FFA41C")),
+})
 
--- The VIP icon with its aura (owner 2026-10-23: "overhead could get some aura"): a gold glow that
--- breathes behind it and a white glint that sweeps across it every few seconds (Pet Simulator 99's
--- tag shine). Sizes and offsets only: WorldText owns every transparency here (its distance fade).
-local function vipBadge(parent)
-	local box = Instance.new("Frame")
-	box.BackgroundTransparency = 1
-	box.Size = UDim2.fromOffset(26, 26)
-	box.LayoutOrder = 1
-	local glow = Instance.new("ImageLabel")
-	glow.Name = "VipGlow"
-	glow.BackgroundTransparency = 1
-	glow.Image = GLOW
-	glow.ImageColor3 = VIP_GOLD
-	glow.ImageTransparency = 0.25
-	glow.AnchorPoint = Vector2.new(0.5, 0.5)
-	glow.Position = UDim2.fromScale(0.5, 0.5)
-	glow.Size = UDim2.fromOffset(46, 46)
-	glow.ZIndex = 1
-	glow.Parent = box
-	local icon = Toy.icon(box, "vip", 26)
-	local glint = icon:Clone()
-	glint.Name = "VipGlint"
-	glint.ImageColor3 = Color3.new(1, 1, 1)
-	glint.ZIndex = 3
-	local band = Instance.new("UIGradient")
-	band.Rotation = 25
-	band.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1),
-		NumberSequenceKeypoint.new(0.42, 1),
-		NumberSequenceKeypoint.new(0.5, 0.15),
-		NumberSequenceKeypoint.new(0.58, 1),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	band.Offset = Vector2.new(-1, 0)
-	band.Parent = glint
-	glint.Parent = box
-	TweenService:Create(glow, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-		Size = UDim2.fromOffset(62, 62),
+local function vipTitle(parent, realm)
+	local row = Instance.new("Frame")
+	row.BackgroundTransparency = 1
+	row.AutomaticSize = Enum.AutomaticSize.XY
+	row.Size = UDim2.new()
+	row.LayoutOrder = 1
+	Toy.list(row, true, 5)
+	Toy.icon(row, "vip", 28, { LayoutOrder = 1 })
+	local t = Toy.text(row, Config.realmName(realm), 22, Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	local g = Instance.new("UIGradient")
+	g.Color = GOLD_SHINE
+	g.Rotation = 10
+	g.Offset = Vector2.new(-0.6, 0)
+	g.Parent = t
+	TweenService:Create(g, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, 1.2), {
+		Offset = Vector2.new(0.6, 0),
 	}):Play()
-	TweenService:Create(band, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, false, 2.3), {
-		Offset = Vector2.new(1, 0),
-	}):Play()
-	box.Parent = parent
-	return box
+	row.Parent = parent
 end
 
 local function draw(plr, gui)
@@ -72,15 +54,7 @@ local function draw(plr, gui)
 	local lives = plr:GetAttribute("Lives") or 1
 	Toy.list(gui, false, 0, { HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Bottom })
 	if plr:GetAttribute("Pass_vip") then
-		local row = Instance.new("Frame")
-		row.BackgroundTransparency = 1
-		row.AutomaticSize = Enum.AutomaticSize.XY
-		row.Size = UDim2.new()
-		row.LayoutOrder = 1
-		Toy.list(row, true, 6)
-		vipBadge(row)
-		Toy.text(row, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 2 })
-		row.Parent = gui
+		vipTitle(gui, realm)
 	else
 		Toy.text(gui, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 1 })
 	end
