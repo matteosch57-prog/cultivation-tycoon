@@ -206,7 +206,9 @@ local function realmAura(folder, hrp, hum, tier, color)
 		b.LightEmission = 1
 		b.LightInfluence = 0
 		b.Brightness = 1.5
-		b.Transparency = NumberSequence.new(0.25)
+		-- fading up its length here (the texture only shapes it across): one way round in Play showed a
+		-- bright top and hard sides
+		b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.6, 0.6), NumberSequenceKeypoint.new(1, 1) })
 		b.Parent = ground
 	end
 	if tier >= 7 then

@@ -1,11 +1,33 @@
 -- Turns the ground glyphs of the player auras (src/server/AuraGlyph.luau): each layer's Motor6D
 -- (tag "AuraSpin") gets a Transform about the vertical by its Spin attribute (degrees a second).
--- Only glyphs near and on screen turn (R16); the rest hold still where they are.
+-- Only glyphs near and on screen turn (R16); the rest hold still where they are. Also preloads the
+-- aura textures (Config.AURA_TEX).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+
+-- the aura textures load up front, so a new realm's glyph does not pop in a second late (Play 2026-10-23)
+task.spawn(function()
+	local ids = {}
+	local function add(id)
+		if id and id ~= 0 then
+			local im = Instance.new("ImageLabel")
+			im.Image = "rbxassetid://" .. id
+			table.insert(ids, im)
+		end
+	end
+	add(Config.AURA_TEX.glow)
+	add(Config.AURA_TEX.column)
+	add(Config.AURA_TEX.runes)
+	for _, pair in Config.AURA_TEX.realms do
+		add(pair[1])
+		add(pair[2])
+	end
+	pcall(game:GetService("ContentProvider").PreloadAsync, game:GetService("ContentProvider"), ids)
+end)
 
 local NEAR = 160 -- studs, the glyph SurfaceGui's MaxDistance
 local GLYPH_R = 8 -- studs, about the largest glyph's radius

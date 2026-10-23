@@ -314,14 +314,14 @@ function AuraGlyph.build(folder, hrp, realm, at, D, color, pale, brightness)
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 		gui.PixelsPerStud = PPS
 		gui.LightInfluence = 0
-		gui.Brightness = brightness
+		gui.Brightness = tex and 1 + brightness * 0.3 or brightness -- the glow is baked into the textures: full brightness washed their lines out to white (Play 2026-10-23)
 		gui.ZOffset = i
 		gui.MaxDistance = 160
 		gui.Parent = p
 		if tex then
 			-- the outer layer in the realm colour over the shared glow, the inner one pale
 			if i == 1 and Config.AURA_TEX.glow ~= 0 then
-				image(gui, Config.AURA_TEX.glow, color, 0.35, 1)
+				image(gui, Config.AURA_TEX.glow, color, 0.7, 1)
 			end
 			image(gui, tex[i], i == 1 and color or pale, 0, 2)
 		else
