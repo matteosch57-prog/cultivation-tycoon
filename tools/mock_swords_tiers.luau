@@ -47,6 +47,7 @@ end
 -- scaled to it) and a name card over each. The player's own avatar is never moved.
 -- FLIP[tier] = true turns a sword whose hilt landed at the nose. Capture: camera (424, 906, 26)
 -- looking at (416, 900, 2) shows all three from the front-side; (416, 920, 0) -> (416, 900, 0) from above.
+-- v4 (owner "could be more premium still, try"): mock-drawn layers per tier on the blade, see premium().
 -- Remove: workspace._SwordMock:Destroy().
 return function()
 	local Players = game:GetService("Players")
@@ -275,6 +276,126 @@ return function()
 		end
 	end
 
+	-- v4 "more premium" (owner 2026-10-23: "could be more premium still, try"): layers drawn on the
+	-- blade by the mock itself, on top of the asset aura, each tier clearly richer than the last:
+	--   1 jade: one jade qi ribbon wound round the blade, a soft under-glow, fine jade motes
+	--   2 gold: two gold ribbons (a double helix), a shimmer running hilt to tip, gold sparkles and a
+	--     second, ember-gold trail layer
+	--   3 celestial: three ribbons (white, sky, gold), a vertical halo ring behind the hilt, orbiting
+	--     star twinkles, a wide soft cloud trail under the bright one, sparks shed into the trail
+	-- Nothing touches the rider: every layer hangs off the blade (owner: "aura only on sword").
+	local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+	local function beam(holder, a0, a1, color, w0, w1, emission, alpha)
+		local b = Instance.new("Beam")
+		b.Attachment0, b.Attachment1 = a0, a1
+		b.FaceCamera = true
+		b.Segments = 4
+		b.Width0, b.Width1 = w0, w1 or w0
+		b.LightEmission = emission or 1
+		b.LightInfluence = 0
+		b.Color = ColorSequence.new(color)
+		b.Transparency = NumberSequence.new(alpha or 0.15)
+		b.Parent = holder
+		return b
+	end
+	-- a ribbon wound `turns` times round the blade from hilt to tip, `steps` straight beams long; it
+	-- thins toward the tip
+	local function ribbon(holder, cf, size, color, turns, phase, radius, width)
+		local steps = 28
+		local prev
+		for k = 0, steps do
+			local f = k / steps
+			local a = phase + f * turns * math.pi * 2
+			local z = size.Z / 2 - f * size.Z
+			local at = attach(holder, cf * CFrame.new(math.cos(a) * radius, size.Y / 2 + math.sin(a) * radius * 0.6 + radius * 0.4, z))
+			if prev then
+				beam(holder, prev, at, color, width * (1 - f * 0.6), width * (1 - (f + 1 / steps) * 0.6), 1, 0.1)
+			end
+			prev = at
+		end
+	end
+	local function motes(att, color, rate, size, speed, life)
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = SPARKLE
+		e.Color = ColorSequence.new(color)
+		e.LightEmission = 1
+		e.LightInfluence = 0
+		e.Rate = rate
+		e.Lifetime = NumberRange.new(life or 0.6, (life or 0.6) * 1.6)
+		e.Speed = NumberRange.new(speed or 0.2, (speed or 0.2) * 2)
+		e.SpreadAngle = Vector2.new(180, 180)
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, size), NumberSequenceKeypoint.new(1, 0) })
+		e.Transparency = NumberSequence.new(0.1)
+		e.RotSpeed = NumberRange.new(-90, 90)
+		e.LockedToPart = true
+		e.Parent = att
+		return e
+	end
+	local function premium(i, cf, size, t)
+		local holder = anchor(cf)
+		local hilt = attach(holder, cf * CFrame.new(0, size.Y / 2, size.Z / 2))
+		local tip = attach(holder, cf * CFrame.new(0, size.Y / 2, -size.Z / 2))
+		-- under-glow: a soft flat band of the tier colour just under the blade
+		local u0 = attach(holder, cf * CFrame.new(0, -size.Y, size.Z / 2))
+		local u1 = attach(holder, cf * CFrame.new(0, -size.Y, -size.Z / 2))
+		local under = beam(holder, u0, u1, t.color, size.X * (1.6 + i * 0.4), size.X * 0.8, 1, 0.55)
+		under.FaceCamera = false
+		-- the ribbons
+		local RIBBONS = {
+			{ { t.color, 1.5, 0 } },
+			{ { Color3.fromHex("FFE9A0"), 2, 0 }, { Color3.fromHex("FFB52E"), 2, math.pi } },
+			{ { Color3.new(1, 1, 1), 2.5, 0 }, { Color3.fromHex("8FD3FF"), 2.5, math.pi * 2 / 3 }, { Color3.fromHex("FFD34D"), 2.5, math.pi * 4 / 3 } },
+		}
+		for _, r in RIBBONS[i] do
+			ribbon(holder, cf, size, r[1], r[2], r[3], math.max(size.X * 0.45, 0.35), 0.12 + i * 0.03)
+		end
+		-- motes along the blade
+		for k = 1, 3 + i do
+			local z = size.Z / 2 - (k - 0.5) / (3 + i) * size.Z
+			local a = attach(holder, cf * CFrame.new(0, size.Y / 2 + 0.2, z))
+			motes(a, i == 3 and Color3.fromHex("DFF3FF") or t.color, 2 + i * 2, 0.18 + i * 0.08)
+		end
+		if i >= 2 then
+			-- a shimmer running hilt to tip over the blade
+			local sh = beam(holder, hilt, tip, Color3.new(1, 1, 1), size.X * 0.9, size.X * 0.3, 1, 0)
+			sh.Texture = "rbxassetid://" .. t.trail
+			sh.TextureMode = Enum.TextureMode.Stretch
+			sh.TextureSpeed = 2.5
+			sh.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.5, 0.25), NumberSequenceKeypoint.new(1, 0.8) })
+			-- a second trail layer, ember gold (2) or a wide soft cloud (3), under the bright one
+			local back = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2 + t.back * 0.85))
+			local base = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2))
+			local soft = beam(holder, base, back, i == 2 and Color3.fromHex("FF9A2E") or Color3.fromHex("CFE9FF"), t.width * (i == 2 and 1.3 or 2), t.width * 0.4, i == 2 and 0.8 or 0.5, 0)
+			soft.FaceCamera = false
+			soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+			-- sparks shed off the hilt into the trail
+			local s = motes(hilt, i == 2 and Color3.fromHex("FFD34D") or Color3.new(1, 1, 1), 10 + i * 6, 0.25, 4, 0.8)
+			s.EmissionDirection = Enum.NormalId.Back
+			s.SpreadAngle = Vector2.new(20, 20)
+			s.LockedToPart = false
+			s.Drag = 2
+		end
+		if i == 3 then
+			-- a vertical halo ring behind the hilt, facing forward
+			local ring, r, n = {}, 1.9, 24
+			local c = cf * CFrame.new(0, size.Y / 2 + 2.6, size.Z / 2 + 0.8)
+			for k = 0, n do
+				local a = k / n * math.pi * 2
+				ring[k] = attach(holder, c * CFrame.new(math.cos(a) * r, math.sin(a) * r, 0))
+				if k > 0 then
+					beam(holder, ring[k - 1], ring[k], Color3.fromHex("FFE38A"), 0.16, 0.16, 1, 0.05)
+				end
+			end
+			motes(attach(holder, c), Color3.fromHex("FFF4C2"), 6, 0.5, 0.4, 1.2)
+			-- star twinkles orbiting the blade (a ring of emitters at the blade's middle)
+			for k = 1, 6 do
+				local a = k / 6 * math.pi * 2
+				local at = attach(holder, cf * CFrame.new(math.cos(a) * size.X * 1.6, size.Y / 2 + math.sin(a) * 0.8, (k - 3.5) * size.Z / 7))
+				motes(at, Color3.fromHex("FFFFFF"), 3, 0.45, 0.1, 1)
+			end
+		end
+	end
+
 	-- a floating name over each sword
 	local function sign(text, cf)
 		local g = Instance.new("BillboardGui")
@@ -315,6 +436,7 @@ return function()
 		else
 			warn("[SwordMock] missing A" .. i)
 		end
+		premium(i, cf, size, t)
 		sign(t.name, cf * CFrame.new(0, 9, 0))
 		print(string.format("[SwordMock] tier %d: blade %.1f x %.2f x %.1f studs", i, size.X, size.Y, size.Z))
 	end
