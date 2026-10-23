@@ -824,7 +824,9 @@ end
 -- drifting off it (built-in texture, low rate: the client's aura range switches emitters off far away)
 -- Shiny in the 3D world (owner pick C "Glint ring", mock tools/mock_shiny.luau, made bolder and gold
 -- after the Studio captures 2026-10-23 so it beats every rarity's own aura): gold glints rise from a
--- ring around the cushion, and a gold star bursts over the head every 2 s
+-- ring around the cushion, and a gold star bursts over the head every 2 s. Live check 10:00: the
+-- additive glow washed the gold out over purple auras, so the glints blend mostly normally (low
+-- LightEmission keeps them gold), draw in front (ZOffset), are bigger, and a warm light marks the seat
 local SHINY_GOLD = Color3.fromHex("FFD34D")
 local SHINY_WARM = Color3.fromRGB(255, 244, 196)
 local function shinySparkle(m)
@@ -846,9 +848,10 @@ local function shinySparkle(m)
 	local function emitter(parent, props)
 		local e = Instance.new("ParticleEmitter")
 		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-		e.LightEmission = 1
+		e.LightEmission = 0.25
 		e.LightInfluence = 0
-		e.Brightness = 2
+		e.Brightness = 3
+		e.ZOffset = 1.5
 		for k, v in props do
 			e[k] = v
 		end
@@ -860,12 +863,12 @@ local function shinySparkle(m)
 		Shape = Enum.ParticleEmitterShape.Cylinder,
 		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
 		EmissionDirection = Enum.NormalId.Top,
-		Rate = 22,
-		Lifetime = NumberRange.new(1, 1.4),
-		Speed = NumberRange.new(1.4, 2.2),
+		Rate = 34,
+		Lifetime = NumberRange.new(1.3, 1.8),
+		Speed = NumberRange.new(2, 3),
 		SpreadAngle = Vector2.new(0, 0),
 		Rotation = NumberRange.new(0, 360),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(0.7, 0.6), NumberSequenceKeypoint.new(1, 0) }),
 		Color = ColorSequence.new(SHINY_GOLD),
 	})
 	local top = Instance.new("Attachment")
@@ -874,17 +877,23 @@ local function shinySparkle(m)
 	local burst = emitter(top, {
 		Name = "ShinyBurst",
 		Rate = 0,
-		Lifetime = NumberRange.new(0.5, 0.8),
-		Speed = NumberRange.new(2.5, 4),
+		Lifetime = NumberRange.new(0.6, 1),
+		Speed = NumberRange.new(3, 5),
 		SpreadAngle = Vector2.new(180, 180),
 		Rotation = NumberRange.new(0, 360),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.8), NumberSequenceKeypoint.new(1, 0) }),
 		Color = ColorSequence.new(SHINY_WARM, SHINY_GOLD),
 	})
+	local light = Instance.new("PointLight")
+	light.Name = "ShinyLight"
+	light.Color = SHINY_GOLD
+	light.Brightness = 3
+	light.Range = 9
+	light.Parent = top
 	task.spawn(function()
 		task.wait(math.random() * 2) -- Shiny neighbours don't burst in step
 		while burst.Parent and m.Parent do
-			burst:Emit(9)
+			burst:Emit(16)
 			task.wait(2)
 		end
 	end)
