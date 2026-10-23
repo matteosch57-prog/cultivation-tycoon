@@ -1,6 +1,6 @@
--- Shop screen (mock B, docs/art/mocks/shop_B_phone.jpg, D24): no board, toy tiles floating over a
--- dark veil, one row per page: Boosts (passes + Instant Pill), Qi packs, Disciples, picked with
--- toy tabs (with their icons) under the title. Opened by the HUD's Shop button and by the Get Qi
+-- Shop screen (layout A, owner pick 2026-10-23, docs/art/mocks/2026-10-23_shop_layout_A2_featured.jpg):
+-- one dark panel, round tabs down its left (Featured, Passes, Qi, Disciples), the page's cards in a
+-- grid that scrolls down. Opened by the HUD's Shop button and by the Get Qi
 -- offer (Player.ShopOpen, a BindableEvent fired with the source and an optional page key). The
 -- server prompts and grants (R9): a tap only sends the item key. Also draws the cards over the world
 -- shop's purple pads (D33) and the quiet Get Qi offer on a build pad the player cannot afford.
@@ -26,7 +26,7 @@ local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
-local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B", starter = "FFB3A8", tidebell = "9FD0FF", swordJade = "B9F5DC", swordHeavenly = "FFE29A", swordCelestial = "BFE4FF" }
+local TILE = { gift = "FFD36B", x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B", starter = "FFB3A8", tidebell = "9FD0FF", swordJade = "B9F5DC", swordHeavenly = "FFE29A", swordCelestial = "BFE4FF" }
 -- a disciple sold on its own (the Welcome Pouch and the Starter Pack also hold one, inside a bundle)
 local function soldDisciple(it)
 	return it ~= nil and it.rarity ~= nil and not it.qiBonus and not it.seconds
@@ -39,7 +39,6 @@ local function tileColor(key)
 	end
 	return Color3.fromHex(TILE[key] or "C9FFE4")
 end
-local TILT = { -2, 1.5, -1, 2 }
 
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "ShopOpen"
@@ -96,55 +95,64 @@ gui.Enabled = false
 gui.Parent = playerGui
 
 local ui = {}
-local page = "boosts"
+local page = "featured"
 -- where Roblox restricts paid random items the server sells no qi (QiSaleOff, Shop.luau): the Qi
--- page, the Get Qi offer and the Starter Pack tile are not drawn
+-- packs, the Get Qi offer and the Starter Pack are not drawn
 local function qiSaleOff()
 	return player:GetAttribute("QiSaleOff") == true
+end
+local function sellsQi(it)
+	return it.seconds ~= nil
+end
+local function onSale(it)
+	return not (sellsQi(it) and qiSaleOff())
+end
+-- the once-per-player bundles show until they are bought
+local function bundleShown(key)
+	local it = Config.shopItem(key)
+	return it ~= nil and not player:GetAttribute("Limit_" .. key) and onSale(it)
+end
+local function keys(list)
+	local out = {}
+	for _, k in list do
+		local it = Config.shopItem(k)
+		if it and onSale(it) then
+			table.insert(out, it)
+		end
+	end
+	return out
 end
 local function products(pick)
 	return function()
 		local list = {}
 		for _, it in Config.SHOP_PRODUCTS do
-			if pick(it) then
+			if pick(it) and onSale(it) then
 				table.insert(list, it)
 			end
 		end
 		return list
 	end
 end
+-- Layout A (owner pick 2026-10-23, docs/art/mocks/2026-10-23_shop_layout_A2_featured.jpg, copying
+-- Pet Simulator 99's store): round category tabs down the left of one panel, the page's cards in a
+-- grid that scrolls down. Featured leads with the two once-only bundles as big cards, then the
+-- free Daily Gift and the owner's picks.
+local FEATURED_BIG = { "starter", "welcome" }
+local FEATURED = { "swordCelestial", "tidebell", "primordial", "emperor", "auto" }
 local PAGES = {
-	{
-		key = "boosts",
-		name = "Boosts",
-		icon = "x2",
-		items = function()
-			local list = table.clone(Config.SHOP_PASSES)
-			table.insert(list, (Config.shopItem("pill")))
-			table.insert(list, 1, (Config.shopItem("tidebell")))
-			-- the once-per-player bundles lead the row until they are bought: the Starter Pack, then
-			-- the Welcome Pouch
-			if not player:GetAttribute("Limit_welcome") then
-				table.insert(list, 1, (Config.shopItem("welcome")))
-			end
-			if not player:GetAttribute("Limit_starter") and not qiSaleOff() then
-				table.insert(list, 1, (Config.shopItem("starter")))
-			end
-			return list
-		end,
-	},
-	{ key = "qi", name = "Qi", icon = "pack2", items = products(function(it) return it.seconds ~= nil end) },
-	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(soldDisciple) },
+	{ key = "featured", name = "Featured", icon = "gift", items = function() return keys(FEATURED) end },
+	{ key = "passes", name = "Passes", icon = "x2", items = function() return table.clone(Config.SHOP_PASSES) end },
+	{ key = "qi", name = "Qi", icon = "qi", items = function() return keys({ "pill", "tidebell", "pack1", "pack2", "pack3" }) end },
+	{ key = "disciples", name = "Disciples", icon = "elder", items = products(soldDisciple) },
 }
-local function pageShown(pg)
-	return not (pg.key == "qi" and qiSaleOff())
-end
 
+local function isTouch()
+	local forced = player:GetAttribute("HudDevice") -- "phone" / "pc" forces a layout (testing)
+	return if forced then forced == "phone" else (playerGui:FindFirstChild("TouchGui") ~= nil or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled))
+end
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
-	local forced = player:GetAttribute("HudDevice") -- "phone" / "pc" forces a layout (testing)
-	local touch = if forced then forced == "phone" else (playerGui:FindFirstChild("TouchGui") ~= nil or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled))
-	if touch then
+	if isTouch() then
 		return math.clamp(vp.Y / 390, 0.78, 1.1)
 	end
 	return math.clamp(vp.Y / 554, 1, 1.7)
@@ -153,54 +161,98 @@ end
 local close -- forward
 
 local BEST = "pack3" -- the one "Best value" ribbon (the most qi per Robux)
-local NEW = { tidebell = true, swordJade = true, swordHeavenly = true, swordCelestial = true } -- tiles wearing the "New" tag (drop a key once the item is not new)
+local NEW = { tidebell = true, swordJade = true, swordHeavenly = true, swordCelestial = true } -- cards wearing the "New" tag (drop a key once the item is not new)
+local ONCE = { welcome = true, starter = true }
 
-local function tile(parent, key, order, name, line)
-	local col = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, Rotation = TILT[(order - 1) % #TILT + 1] })
-	Toy.list(col, false, px(2))
-	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
-	holder.LayoutOrder = 1
-	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	local ribbon = (key == BEST and "Best value") or ((key == "welcome" or key == "starter") and "Once") or nil
-	-- a new item wears a blue "New" tag on the other corner (mock 2026-10-23 tiles)
-	local isNew = NEW[key]
-	if ribbon or isNew then
-		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(isNew and 0 or 1, 0), Position = isNew and UDim2.new(0, -px(10), 0, -px(4)) or UDim2.new(1, px(12), 0, -px(2)), Rotation = isNew and -10 or 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex(isNew and "4FD7FF" or "FF6B5E"), ZIndex = 5 })
-		Toy.corner(rib, UDim.new(0, px(8)))
-		local st = Instance.new("UIStroke")
-		st.Color = Toy.INK
-		st.Thickness = px(2)
-		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		st.Parent = rib
-		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(7)), UDim.new(0, px(7))
-		pad.Parent = rib
-		text(rib, ribbon or "New", px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
-	end
-	local sc = Instance.new("UIScale")
-	sc.Name = "Pop"
-	sc.Parent = col
-	-- a disciple's name in its rarity colour (the Index and recruit language)
-	local it = Config.shopItem(key)
-	local nameColor = soldDisciple(it) and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
-	text(col, name, px(17), nameColor, { LayoutOrder = 2 })
-	local lineLabel
-	if key ~= "more" and Config.shopItem(key) and Config.shopItem(key).seconds then
-		-- a Qi pack's amount, after the qi icon
-		local _, l = Toy.amount(col, "qi", px(12), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
-		lineLabel = l
-	elseif line then
-		lineLabel = text(col, line, px(12), Color3.fromHex("C9FFE4"), { LayoutOrder = 3 })
-	end
-	return col, btn, lineLabel
+local function stroke(parent, color, thick, transp)
+	local st = Instance.new("UIStroke")
+	st.Color = color
+	st.Thickness = thick
+	st.Transparency = transp or 0
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = parent
+	return st
+end
+-- top-lit face: the colour at the top, a little darker at the bottom
+local function faceShade(face, dark)
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(dark, dark, dark))
+	g.Parent = face
 end
 
-local function itemTile(parent, it, order)
-	local col, btn, lineLabel = tile(parent, it.key, order, it.short or it.name, it.line)
+-- the tilted tag on a card corner: blue "New" on the left, red "Once" / "Best value" on the right
+local function ribbon(holder, key)
+	local label = (key == BEST and "Best value") or (ONCE[key] and "Once") or nil
+	local isNew = NEW[key] and not label
+	if not (label or isNew) then
+		return
+	end
+	local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(isNew and 0 or 1, 0), Position = isNew and UDim2.new(0, -px(8), 0, -px(8)) or UDim2.new(1, px(8), 0, -px(8)), Rotation = isNew and -10 or 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex(isNew and "4FD7FF" or "FF6B5E"), ZIndex = 6 })
+	Toy.corner(rib, UDim.new(0, px(8)))
+	stroke(rib, Toy.INK, px(2))
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(6)), UDim.new(0, px(6))
+	pad.Parent = rib
+	text(rib, label or "New", px(12), Color3.new(1, 1, 1), { ZIndex = 7 })
+end
+
+-- the round green price button (D73) with the Robux icon; returns holder, button, label, icon
+local function priceButton(parent, w, h, order)
+	local holder, btn = Toy.button(parent, UDim2.fromOffset(w, h), BUY, math.floor(h / 2))
+	holder.LayoutOrder = order or 0
+	local row, label = Toy.amount(btn, "robux", h - px(10), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	return holder, btn, label, row:FindFirstChild("Currency")
+end
+
+-- the one short value line under a card's name, with its icon: a disciple's bonus, a pack's qi,
+-- a sword's tier stars; nil for the rest (owner: less text)
+local function valueLine(col, it, size)
+	if soldDisciple(it) then
+		local _, l = Toy.amount(col, "qi", size, Color3.fromHex("E6FFF4"), { LayoutOrder = 3 })
+		l.Text = string.match(it.line, "^(%+[%d,]+%%)") or ""
+		return nil
+	elseif it.seconds then
+		local _, l = Toy.amount(col, "qi", size, Color3.fromHex("E6FFF4"), { LayoutOrder = 3 })
+		return l -- refresh writes the pack's qi (it follows the income)
+	elseif it.ride then
+		local row = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+		Toy.list(row, true, 0)
+		for i = 1, it.ride do
+			Toy.starGem(row, GOLD, { TextSize = size + px(2), LayoutOrder = i, ZIndex = 3 })
+		end
+	end
+	return nil
+end
+
+-- one item card: a toy face of the item's colour, its icon, name, value line and price
+local function card(parent, it, order, w, h, isGift)
+	local key = isGift and "gift" or it.key
+	local holder, btn = Toy.button(parent, UDim2.fromOffset(w, h), tileColor(key), px(18))
+	holder.LayoutOrder = order
+	faceShade(btn, 0.8)
+	local sc = Instance.new("UIScale")
+	sc.Name = "Pop"
+	sc.Parent = holder
+	ribbon(holder, key)
+	local bh = math.clamp(math.floor(h * 0.17), px(22), px(28))
+	local nameSize = math.clamp(math.floor(w / 8.4), px(11), px(15))
+	local hasLine = not isGift and (soldDisciple(it) or it.seconds ~= nil or it.ride ~= nil)
+	local isz = math.floor(math.min(w * 0.7, h - (nameSize + px(4)) - (hasLine and px(14) or 0) - (bh + px(11)) - h * 0.06 - px(4)))
+	Toy.icon(btn, key, isz, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, math.floor(h * 0.06)), ZIndex = 3 })
+	local col = Toy.frame(btn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(7)), ZIndex = 3 })
+	Toy.list(col, false, px(1))
+	local name = isGift and "Daily Gift" or (it.short or it.name)
+	local nameColor = (not isGift and soldDisciple(it)) and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
+	text(col, name, #name > 12 and nameSize - px(2) or nameSize, nameColor, { LayoutOrder = 2, ZIndex = 3 })
+	local lineLabel = (not isGift) and valueLine(col, it, px(11)) or nil
 	Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 4 })
-	local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(96), px(32)), BUY, px(10))
-	pHolder.LayoutOrder = 5
-	local priceRow, label = Toy.amount(pBtn, "robux", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local _, pBtn, label, icon = priceButton(col, math.floor(w * 0.8), bh, 5)
+	return btn, pBtn, label, icon, lineLabel
+end
+
+local function itemCard(parent, it, order, w, h)
+	local btn, pBtn, label, icon, lineLabel = card(parent, it, order, w, h, false)
 	local function buy()
 		local _, canBuy = priceText(it.key)
 		if canBuy then
@@ -211,19 +263,16 @@ local function itemTile(parent, it, order)
 	end
 	btn.Activated:Connect(buy)
 	pBtn.Activated:Connect(buy)
-	table.insert(ui.items, { it = it, label = label, icon = priceRow:FindFirstChild("Currency"), button = pBtn, line = lineLabel })
-	return col
+	table.insert(ui.items, { it = it, label = label, icon = icon, button = pBtn, line = lineLabel })
 end
 
 -- the free daily gift (owner: "give a small free daily gift"): the Shop's red dot leads here, and
 -- claiming it is what clears that dot. ShopFreeIn = 0 when ready, else the seconds to wait.
-local function freeTile(parent)
-	local col, btn = tile(parent, "gift", 0, "Daily Gift", "Free every day")
-	Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 4 })
-	local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(96), px(32)), BUY, px(10))
-	pHolder.LayoutOrder = 5
-	local label = text(pBtn, "Free", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	local dot = Toy.dot(btn, px(22), { Visible = false })
+local function freeCard(parent, w, h)
+	local btn, pBtn, label, icon = card(parent, nil, 0, w, h, true)
+	icon:Destroy()
+	label.Text = "Free"
+	local dot = Toy.dot(btn, px(18), { Visible = false })
 	local busy = false
 	local function claim()
 		if busy or (player:GetAttribute("ShopFreeIn") or 1) ~= 0 then
@@ -244,40 +293,56 @@ local function freeTile(parent)
 	btn.Activated:Connect(claim)
 	pBtn.Activated:Connect(claim)
 	ui.free = { label = label, button = pBtn, dot = dot }
-	return col
 end
 
-local function row(parent, order)
-	local r = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
-	Toy.list(r, true, px(16), { VerticalAlignment = Enum.VerticalAlignment.Top })
-	return r
-end
-
--- A row wider than the screen (Boosts with both once-only bundles on a phone) scrolls sideways
--- inside a strip as wide as the screen allows; the tiles keep their size and nothing is cut.
-local function fitRow(r)
-	local vpW = gui.AbsoluteSize.X
-	local room = vpW - px(24)
-	if r.AbsoluteSize.X <= room then
-		return
+-- a featured bundle: a wide card with its big icon, name, what is inside and its price
+local BIG = {
+	starter = { color = "1FB98A", parts = { { "disciple", "Immortal" }, { "icon", "pack2" }, { "icon", "pill" } } },
+	welcome = { color = "F0A532", parts = { { "disciple", "Elder" }, { "qi", "+10%" } } },
+}
+local function bigCard(parent, key, order, w, h)
+	local it = Config.shopItem(key)
+	local look = BIG[key]
+	local holder, btn = Toy.button(parent, UDim2.fromOffset(w, h), Color3.fromHex(look.color), px(22))
+	holder.LayoutOrder = order
+	faceShade(btn, 0.72)
+	local sc = Instance.new("UIScale")
+	sc.Name = "Pop"
+	sc.Parent = holder
+	ribbon(holder, key)
+	local row = Toy.frame(btn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	Toy.list(row, true, px(10), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	local big = math.floor(h * 0.66)
+	Toy.icon(row, key, big, { LayoutOrder = 1, ZIndex = 3 })
+	local col = Toy.frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2, ZIndex = 3 })
+	Toy.list(col, false, px(4), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	text(col, it.name, w > px(330) and px(22) or px(18), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 3 })
+	local parts = Toy.frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2, ZIndex = 3 })
+	Toy.list(parts, true, px(4), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	local s = px(30)
+	for i, p in look.parts do
+		if i > 1 then
+			text(parts, "+", px(16), Color3.new(1, 1, 1), { LayoutOrder = i * 2 - 1, ZIndex = 3 })
+		end
+		if p[1] == "disciple" then
+			Toy.disciple(parts, s, p[2], { LayoutOrder = i * 2, ZIndex = 3 })
+		elseif p[1] == "icon" then
+			Toy.icon(parts, p[2], s, { LayoutOrder = i * 2, ZIndex = 3 })
+		else
+			local _, l = Toy.amount(parts, "qi", px(16), Color3.new(1, 1, 1), { LayoutOrder = i * 2, ZIndex = 3 })
+			l.Text = p[2]
+		end
 	end
-	local h = r.AbsoluteSize.Y
-	local strip = Instance.new("ScrollingFrame")
-	strip.Name = "Scroll"
-	strip.BackgroundTransparency = 1
-	strip.BorderSizePixel = 0
-	strip.LayoutOrder = r.LayoutOrder
-	strip.Visible = r.Visible
-	strip.Size = UDim2.fromOffset(room, h + px(18))
-	strip.CanvasSize = UDim2.fromOffset(r.AbsoluteSize.X + px(28), 0)
-	strip.ScrollingDirection = Enum.ScrollingDirection.X
-	strip.ScrollBarThickness = px(5)
-	strip.ScrollBarImageColor3 = Color3.fromHex("FFD36B")
-	strip.ElasticBehavior = Enum.ElasticBehavior.Always
-	strip.Parent = r.Parent
-	r.Position = UDim2.fromOffset(px(14), px(10)) -- room for the tilted tags
-	r.Parent = strip
-	return strip
+	local _, pBtn, label, icon = priceButton(col, px(104), px(34), 3)
+	local function buy()
+		local _, canBuy = priceText(key)
+		if canBuy then
+			remotes.ShopBuy:FireServer(key)
+		end
+	end
+	btn.Activated:Connect(buy)
+	pBtn.Activated:Connect(buy)
+	table.insert(ui.items, { it = it, label = label, icon = icon, button = pBtn })
 end
 
 local function refresh()
@@ -293,123 +358,199 @@ local function refresh()
 			rec.line.Text = packQi(rec.it)
 		end
 	end
-	for key, r in ui.rows or {} do
-		r.Visible = key == page
-		if r.Parent and r.Parent:IsA("ScrollingFrame") then
-			r.Parent.Visible = key == page
-		end
-		ui.tabs[key].BackgroundColor3 = key == page and Color3.fromHex("FFD36B") or GREY
+	local wait = player:GetAttribute("ShopFreeIn") or 1
+	for key, b in ui.tabs or {} do
+		b.BackgroundColor3 = key == page and Color3.fromHex("FFD36B") or GREY
+		ui.tabLabels[key].TextColor3 = key == page and GOLD or Color3.new(1, 1, 1)
+	end
+	if ui.tabDot then
+		ui.tabDot.Visible = wait == 0 and page ~= "featured"
 	end
 	if ui.free then
-		local wait = player:GetAttribute("ShopFreeIn") or 1
 		ui.free.dot.Visible = wait == 0
-		ui.tabDot.Visible = wait == 0 and page ~= "boosts"
 		ui.free.button.BackgroundColor3 = wait == 0 and BUY or GREY
 		ui.free.label.Text = wait == 0 and "Free" or (wait >= 3600 and string.format("%dh%02d", wait // 3600, wait % 3600 // 60) or string.format("%d:%02d", wait // 60, wait % 60))
 	end
 end
 
 local function pop()
-	-- tiles spring in one after another
+	-- cards spring in one after another
 	local i = 0
-	for _, d in gui:GetDescendants() do
-		if d:IsA("UIScale") and d.Name == "Pop" and d.Parent.Visible ~= false and d.Parent.Parent.Visible then
+	for _, d in (ui.grid or gui):GetDescendants() do
+		if d:IsA("UIScale") and d.Name == "Pop" then
 			i += 1
 			d.Scale = 0.3
-			TweenService:Create(d, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, i * 0.035), { Scale = 1 }):Play()
+			TweenService:Create(d, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, math.min(i, 12) * 0.03), { Scale = 1 }):Play()
 		end
 	end
+end
+
+-- the open page's cards, into the scrolling grid (rebuilt on every tab change)
+local function fillPage()
+	local scroll = ui.grid
+	scroll:ClearAllChildren()
+	scroll.CanvasPosition = Vector2.zero
+	ui.items, ui.free = {}, nil
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(10)), UDim.new(0, px(16))
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(8)), UDim.new(0, px(8))
+	pad.Parent = scroll
+	Toy.list(scroll, false, px(14), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	local inner = ui.gridWidth - px(16)
+	local g = px(12)
+	if page == "featured" then
+		local big = {}
+		for _, k in FEATURED_BIG do
+			if bundleShown(k) then
+				table.insert(big, k)
+			end
+		end
+		if #big > 0 then
+			local r = Toy.frame(scroll, { Size = UDim2.fromOffset(inner, ui.bigH), LayoutOrder = 1 })
+			Toy.list(r, true, g)
+			local w = math.floor((inner - g * (#FEATURED_BIG - 1)) / #FEATURED_BIG)
+			for i, k in big do
+				bigCard(r, k, i, #big == 1 and inner or w, ui.bigH)
+			end
+		end
+	end
+	local grid = Toy.frame(scroll, { Size = UDim2.fromOffset(inner, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2 })
+	local layout = Instance.new("UIGridLayout")
+	layout.CellSize = UDim2.fromOffset(ui.cardW, ui.cardH)
+	layout.CellPadding = UDim2.fromOffset(g, g)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = grid
+	local n = 0
+	if page == "featured" then
+		freeCard(grid, ui.cardW, ui.cardH)
+	end
+	for _, pg in PAGES do
+		if pg.key == page then
+			for _, it in pg.items() do
+				n += 1
+				itemCard(grid, it, n, ui.cardW, ui.cardH)
+			end
+		end
+	end
+	refresh()
 end
 
 local function build()
 	gui:ClearAllChildren()
 	Toy.S = computeScale()
-	ui = { items = {} }
+	local touch = isTouch()
+	ui = { items = {}, tabs = {}, tabLabels = {} }
+	local vp = workspace.CurrentCamera.ViewportSize
+	local W, H = vp.X / Toy.S, vp.Y / Toy.S -- in px() units
 
 	local veil = Instance.new("TextButton")
 	veil.Text = ""
 	veil.AutoButtonColor = false
 	veil.Size = UDim2.fromScale(1, 1)
 	veil.BackgroundColor3 = Color3.fromHex("140E1E")
-	veil.BackgroundTransparency = 0.32
+	veil.BackgroundTransparency = 0.4
 	veil.BorderSizePixel = 0
 	veil.Parent = gui
 	veil.Activated:Connect(function()
 		close()
 	end)
 
-	local body = Toy.frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
-	Toy.list(body, false, px(14))
-	text(body, "Shop", px(34), GOLD, { LayoutOrder = 1, Rotation = -2 })
-	-- close: a big X in the screen's top right corner (where a thumb looks for it), inside the safe area
-	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
-	xHolder.AnchorPoint = Vector2.new(1, 0)
-	xHolder.Position = UDim2.new(1, -px(22), 0, px(16) + game:GetService("GuiService"):GetGuiInset().Y)
-	xHolder.ZIndex = 2 -- over the veil
-	text(xBtn, "X", px(24), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	-- the panel: dark glass with an ink rim and a thin gold line inside, clear of a phone's notch
+	local side = touch and 44 or 0
+	local pw = math.min(W - side * 2 - 30, 820)
+	local ph = H - (touch and 52 or 84)
+	local panelHolder = Toy.frame(gui, { Size = UDim2.fromOffset(px(pw), px(ph)), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, px(touch and 40 or 52)), ZIndex = 2 })
+	local shadow = Toy.frame(panelHolder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(6)), BackgroundTransparency = 0, BackgroundColor3 = Toy.INK })
+	Toy.corner(shadow, UDim.new(0, px(26)))
+	local panel = Instance.new("TextButton") -- swallows taps so they do not close the shop
+	panel.Text = ""
+	panel.AutoButtonColor = false
+	panel.Size = UDim2.fromScale(1, 1)
+	panel.BackgroundColor3 = Color3.new(1, 1, 1)
+	panel.BorderSizePixel = 0
+	panel.Parent = panelHolder
+	Toy.corner(panel, UDim.new(0, px(26)))
+	local pg = Instance.new("UIGradient")
+	pg.Rotation = 90
+	pg.Color = ColorSequence.new(Color3.fromHex("2E2246"), Color3.fromHex("1A1328"))
+	pg.Parent = panel
+	stroke(panel, Toy.INK, px(4))
+	local gold = Toy.frame(panel, { Size = UDim2.new(1, -px(6), 1, -px(6)), Position = UDim2.fromOffset(px(3), px(3)) })
+	Toy.corner(gold, UDim.new(0, px(23)))
+	stroke(gold, Color3.fromHex("FFD66B"), px(2), 0.5)
+
+	text(gui, "Shop", px(34), GOLD, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0.5, -px(pw / 2 - 14), 0, px(touch and 40 or 52) + px(14)), Rotation = -2, ZIndex = 4 })
+	-- close: a round red X on the panel's top right corner (D73)
+	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(22))
+	xHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	xHolder.Position = UDim2.new(0.5, px(pw / 2 - 8), 0, px(touch and 40 or 52) + px(6))
+	xHolder.ZIndex = 4
+	text(xBtn, "X", px(24), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 5 })
 	xBtn.Activated:Connect(function()
 		close()
 	end)
 
-	-- three pages, one row each (six tiles fit a phone at px(16) gaps), picked by toy tabs
-	local tabs = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
-	Toy.list(tabs, true, px(10))
-	ui.rows, ui.tabs = {}, {}
-	for i, pg in PAGES do
-		if not pageShown(pg) then
-			continue
-		end
-		local r = row(body, 2 + i)
-		ui.rows[pg.key] = r
-		local n = 0
-		if pg.key == "boosts" then
-			freeTile(r)
-		end
-		for _, it in pg.items() do
-			n += 1
-			itemTile(r, it, n)
-		end
-		local tHolder, tBtn = Toy.button(tabs, UDim2.fromOffset(px(132), px(36)), GREY, px(12))
-		tHolder.LayoutOrder = i
-		local tRow = Toy.frame(tBtn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		Toy.list(tRow, true, px(5), { VerticalAlignment = Enum.VerticalAlignment.Center })
-		Toy.icon(tRow, pg.icon, px(26), { LayoutOrder = 1 })
-		text(tRow, pg.name, px(16), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
-		ui.tabs[pg.key] = tBtn
-		if pg.key == "boosts" then
-			ui.tabDot = Toy.dot(tBtn, px(18), { Visible = false }) -- the free gift is waiting on Boosts
+	-- the rail: one round tab per page, its name under it
+	local railW = 86
+	local ts = touch and 44 or 52
+	local rail = Toy.frame(panel, { Size = UDim2.new(0, px(railW), 1, -px(24)), Position = UDim2.fromOffset(0, px(touch and 14 or 22)), ZIndex = 3 })
+	Toy.list(rail, false, px(touch and 6 or 12), { HorizontalAlignment = Enum.HorizontalAlignment.Center })
+	Toy.frame(panel, { Size = UDim2.new(0, px(3), 1, -px(28)), Position = UDim2.fromOffset(px(railW), px(14)), BackgroundTransparency = 0.75, BackgroundColor3 = Color3.fromHex("FFD66B") })
+	for i, p in PAGES do
+		local col = Toy.frame(rail, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, ZIndex = 3 })
+		Toy.list(col, false, px(2))
+		local tHolder, tBtn = Toy.button(col, UDim2.fromOffset(px(ts), px(ts)), GREY, px(ts / 2))
+		tHolder.LayoutOrder = 1
+		Toy.icon(tBtn, p.icon, px(ts * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		ui.tabs[p.key] = tBtn
+		ui.tabLabels[p.key] = text(col, p.name, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
+		if p.key == "featured" then
+			ui.tabDot = Toy.dot(tBtn, px(16), { Visible = false }) -- the free gift is waiting on Featured
 		end
 		tBtn.Activated:Connect(function()
-			if page ~= pg.key then
-				page = pg.key
-				refresh()
+			if page ~= p.key then
+				page = p.key
+				fillPage()
 				pop()
 			end
 		end)
 	end
-	refresh()
-	-- measured once the rows are laid out: a row too wide for the screen scrolls (fitRow)
-	local rows = ui.rows
-	task.spawn(function()
-		RunService.Heartbeat:Wait()
-		if ui.rows ~= rows then
-			return -- rebuilt meanwhile
-		end
-		for _, r in rows do
-			fitRow(r)
-		end
-		refresh()
-	end)
+
+	-- the page: a grid that scrolls down, a gold bar on the right
+	local gx = railW + 14
+	local gw = pw - gx - 22
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "Grid"
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.Position = UDim2.fromOffset(px(gx), px(touch and 8 or 14))
+	scroll.Size = UDim2.new(0, px(gw + 14), 1, -px(touch and 16 or 28))
+	scroll.CanvasSize = UDim2.new()
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	scroll.ScrollBarThickness = px(6)
+	scroll.ScrollBarImageColor3 = Color3.fromHex("FFD34D")
+	scroll.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+	scroll.ElasticBehavior = Enum.ElasticBehavior.Always
+	scroll.ZIndex = 3
+	scroll.Parent = panel
+	ui.grid = scroll
+	ui.gridWidth = px(gw)
+	local cols = touch and 5 or 6
+	ui.cardW = math.floor((px(gw) - px(16) - px(12) * (cols - 1)) / cols)
+	ui.cardH = math.floor(ui.cardW * 1.3)
+	ui.bigH = px(touch and 128 or 150)
+	fillPage()
 end
 
--- `tab` = the page to land on (the Get Qi offer opens Qi); the HUD button opens Boosts
+-- `tab` = the page to land on (the Get Qi offer opens Qi); the HUD button opens Featured
 local function open(source, tab)
 	if gui.Enabled then
 		return
 	end
-	page = "boosts"
+	page = "featured"
 	for _, pg in PAGES do
-		if pg.key == tab and pageShown(pg) then
+		if pg.key == tab then
 			page = tab
 		end
 	end
@@ -449,10 +590,7 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(functio
 end)
 player:GetAttributeChangedSignal("QiSaleOff"):Connect(function()
 	if gui.Enabled then
-		if qiSaleOff() and page == "qi" then
-			page = "boosts"
-		end
-		build() -- the Qi tab comes or goes
+		build() -- the Qi packs and the Starter Pack come or go
 	end
 end)
 

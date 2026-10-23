@@ -1,0 +1,242 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:F;src:url(fredoka.woff2)}
+*{box-sizing:border-box}
+html,body{margin:0;background:#111;overflow:hidden}
+#v{position:relative;overflow:hidden;font-family:F;color:#fff}
+.bg{position:absolute;inset:-8px;background:url(bg.jpg) center/cover;filter:blur(3px)}
+.veil{position:absolute;inset:0;background:rgba(14,10,24,.55)}
+.o{paint-order:stroke fill;-webkit-text-stroke:5px #1b1420}
+.o3{paint-order:stroke fill;-webkit-text-stroke:3.5px #1b1420}
+.abs{position:absolute}
+.panel{position:absolute;border-radius:26px;border:4px solid #1b1420;box-shadow:0 6px 0 #1b1420,inset 0 0 0 2px rgba(255,214,107,.55);
+  background:linear-gradient(180deg,rgba(46,34,70,.94),rgba(26,19,40,.94))}
+.title{font-size:34px;color:#ffd34d;transform:rotate(-2deg);white-space:nowrap}
+/* round buttons (D73): circle face, ink rim, drop shadow, dome light */
+.round{position:relative;border-radius:50%;border:3px solid #1b1420;box-shadow:0 4px 0 #1b1420;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.round::before{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.34) 0,rgba(255,255,255,0) 51%,rgba(0,0,0,.2) 53%,rgba(0,0,0,.12) 100%)}
+.round img,.round span{position:relative}
+.x{background:#ff6b5e;font-size:24px}
+.tabcol{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tab{background:#c9c2d3}
+.tab.on{background:#ffd34d;box-shadow:0 4px 0 #1b1420,0 0 0 4px rgba(255,211,77,.35)}
+.tlabel{font-size:12px;white-space:nowrap}
+.tlabel.on{color:#ffd34d}
+.pill{border-radius:999px;border:3px solid #1b1420;box-shadow:0 3px 0 #1b1420;display:flex;align-items:center;justify-content:center;gap:4px;position:relative;overflow:visible;white-space:nowrap}
+.pill::before{content:"";position:absolute;left:10%;right:10%;top:2px;height:38%;border-radius:999px;background:rgba(255,255,255,.35)}
+.pill>*{position:relative}
+.buy{background:#47d16c}
+.grey{background:#8d8599}
+/* item card */
+.card{position:absolute;border-radius:18px;border:3px solid #1b1420;box-shadow:0 4px 0 #1b1420;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:visible}
+.card .shine{position:absolute;left:12%;right:12%;top:5px;height:14%;border-radius:999px;background:rgba(255,255,255,.28)}
+.card img.ic{position:absolute;left:50%;transform:translateX(-50%);filter:drop-shadow(0 3px 0 rgba(27,20,32,.6))}
+.card .nm{white-space:nowrap;text-align:center}
+.card .ln{display:flex;align-items:center;gap:2px;white-space:nowrap}
+.rib{position:absolute;z-index:3;border:2.5px solid #1b1420;border-radius:9px;padding:0 6px;font-size:12px;white-space:nowrap}
+.rib.new{background:#4fd7ff;left:-8px;top:-8px;transform:rotate(-10deg)}
+.rib.once{background:#ff6b5e;right:-8px;top:-8px;transform:rotate(8deg)}
+.rib.best{background:#ff6b5e;right:-8px;top:-8px;transform:rotate(8deg)}
+.dot{position:absolute;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9d9d,#e52a3a 60%);border:2.5px solid #1b1420;z-index:4}
+.star{color:#ffd34d}
+.sec{font-size:18px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sbar{position:absolute;width:6px;border-radius:3px;background:rgba(255,255,255,.12)}
+.sbar i{position:absolute;left:0;right:0;border-radius:3px;background:#ffd34d}
+.fade{position:absolute;pointer-events:none}
+.hero{position:absolute;border-radius:22px;border:4px solid #1b1420;box-shadow:0 5px 0 #1b1420;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 30%,#3ee0b0 0,#14a37b 55%,#0b6b55 100%)}
+.rays{position:absolute;inset:-60%;background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.14) 0 8deg,transparent 8deg 20deg)}
+.hero>*{position:relative}
+.arrow{background:#ffd34d;font-size:22px}
+.pg{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);border:2px solid #1b1420}
+.pg.on{background:#ffd34d}
+.timer{font-size:12px;color:#ffe9a8}
+</style></head><body><div id="v"><div class="bg"></div><div class="veil"></div></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="rbx" viewBox="0 0 64 64"><path d="M32 4l24 14v28L32 60 8 46V18z" fill="#fff" stroke="#1b1420" stroke-width="7" stroke-linejoin="round"/><path d="M32 20l11 6.5v13L32 46l-11-6.5v-13z" fill="#1b1420"/></symbol>
+</defs></svg>
+<script>
+const Q=new URLSearchParams(location.search), OPT=Q.get('opt')||'A', DEV=Q.get('dev')||'pc';
+const W=DEV==='pc'?985:844, H=DEV==='pc'?554:390;
+const SAFE_L=DEV==='pc'?0:44, TOP=DEV==='pc'?0:0;
+const v=document.getElementById('v'); v.style.width=W+'px'; v.style.height=H+'px';
+function el(tag,cls,css,parent,html){const e=document.createElement(tag);if(cls)e.className=cls;if(css)Object.assign(e.style,css);if(html!=null)e.innerHTML=html;(parent||v).appendChild(e);return e}
+const rbx=s=>`<svg width="${s}" height="${s}"><use href="#rbx"/></svg>`;
+const qi=s=>`<img src="a_qi.png" width="${s}" height="${s}">`;
+const RC={Elder:'#be64ff',Immortal:'#ffc83c',Celestial:'#4fd7ff',Dao:'#ff7b5c',Emperor:'#ff4fa0',Primordial:'#fff28a'};
+// every item in the game's shop today (Config.SHOP_PASSES / SHOP_PRODUCTS), prices = the live ones
+const I={
+ gift:{n:'Daily Gift',ic:'a_gift.png',c:'#ffd36b',free:true,dot:true},
+ starter:{n:'Starter Pack',ic:'starter.png',c:'#ffb3a8',p:75,rib:'once'},
+ welcome:{n:'Welcome Pouch',ic:'welcome.png',c:'#ffd36b',p:5,rib:'once'},
+ tidebell:{n:'Tide Bell',ic:'tidebell.png',c:'#9fd0ff',p:79,rib:'new'},
+ x2:{n:'2x Qi',ic:'x2.png',c:'#9ff5c8',owned:true},
+ auto:{n:'Auto Orbs',ic:'auto.png',c:'#9fd0ff',p:249},
+ vip:{n:'VIP Sect',ic:'vip.png',c:'#ffd36b',p:399},
+ swordJade:{n:'Jade Jian',ic:'swordJade.png',c:'#b9f5dc',p:199,rib:'new',stars:1},
+ swordHeavenly:{n:'Heavenly Sword',ic:'swordHeavenly.png',c:'#ffe29a',p:399,rib:'new',stars:2},
+ swordCelestial:{n:'Celestial Sword',ic:'swordCelestial.png',c:'#bfe4ff',p:1199,rib:'new',stars:3},
+ pill:{n:'Instant Pill',ic:'pill.png',c:'#ffb3a8',p:25},
+ pack1:{n:'Qi Pouch',ic:'pack1.png',c:'#c9ffe4',p:29,qi:'+42K'},
+ pack2:{n:'Qi Chest',ic:'pack2.png',c:'#b9f0d6',p:79,qi:'+252K'},
+ pack3:{n:'Qi Vault',ic:'pack3.png',c:'#a6e8c8',p:299,qi:'+1.5M',rib:'best'},
+ elder:{n:'Elder',ic:'elder.png',r:'Elder',p:49,pct:'+150%'},
+ immortal:{n:'Immortal',ic:'immortal.png',r:'Immortal',p:99,pct:'+400%'},
+ celestial:{n:'Celestial',ic:'celestial.png',r:'Celestial',p:249,pct:'+900%'},
+ dao:{n:'Dao Ancestor',ic:'dao.png',r:'Dao',p:599,pct:'+2,000%'},
+ emperor:{n:'Heavenly Emperor',ic:'emperor.png',r:'Emperor',p:1299,pct:'+4,500%'},
+ primordial:{n:'Primordial',ic:'primordial.png',r:'Primordial',p:2999,pct:'+10,000%'},
+};
+const TABS=[
+ {k:'featured',n:'Featured',ic:'a_gift.png',items:['gift','swordCelestial','tidebell','primordial','emperor','auto'],dot:true},
+ {k:'passes',n:'Passes',ic:'x2.png',items:['x2','auto','vip','swordJade','swordHeavenly','swordCelestial']},
+ {k:'qi',n:'Qi',ic:'a_qi.png',items:['pill','tidebell','pack1','pack2','pack3']},
+ {k:'disciples',n:'Disciples',ic:'elder.png',items:['elder','immortal','celestial','dao','emperor','primordial']},
+];
+function lighten(h,a){const n=parseInt(h.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;r+=(255-r)*a;g+=(255-g)*a;b+=(255-b)*a;return `rgb(${r|0},${g|0},${b|0})`}
+function darken(h,a){const n=parseInt(h.slice(1),16);return `rgb(${(n>>16)*(1-a)|0},${(n>>8&255)*(1-a)|0},${(n&255)*(1-a)|0})`}
+// one item card: icon, name (rarity colour for disciples), one short value line with its icon, round price pill
+function card(parent,key,x,y,w,h){
+ const it=I[key]; const base=it.r?RC[it.r]:it.c;
+ const top=it.r?lighten(base,.55):lighten(base,.25), bot=it.r?darken(base,.15):darken(base,.18);
+ const c=el('div','card',{left:x+'px',top:y+'px',width:w+'px',height:h+'px',background:`linear-gradient(180deg,${top},${bot})`},parent);
+ el('div','shine',null,c);
+ const fs0=Math.max(11,Math.min(15,Math.round(w/8.4))), bh0=Math.round(Math.max(22,Math.min(28,h*.17)));
+ const hasLine=!!(it.pct||it.qi||it.stars), reserved=fs0+4+(hasLine?14:0)+bh0+11;
+ const isz=Math.round(Math.min(w*.7,h-reserved-Math.round(h*.06)-4));
+ el('img','ic',{width:isz+'px',height:isz+'px',top:Math.round(h*.06)+'px'},c).src=it.ic;
+ if(it.rib)el('div','rib o3 '+it.rib,null,c,it.rib==='new'?'New':it.rib==='once'?'Once':'Best');
+ if(it.dot)el('div','dot',{right:'-6px',top:'-6px'},c);
+ const fs=Math.max(11,Math.min(15,Math.round(w/8.4)));
+ const nm=el('div','nm o3',{fontSize:(it.n.length>12?fs-2:fs)+'px',color:it.r?RC[it.r]:'#fff',lineHeight:'1.05'},c,it.n);
+ let line='';
+ if(it.pct)line=`${qi(12)}<span>${it.pct}</span>`;
+ else if(it.qi)line=`${qi(12)}<span>${it.qi}</span>`;
+ else if(it.stars)line=`<span class="star">${'★'.repeat(it.stars)}</span>`;
+ if(line)el('div','ln o3',{fontSize:'11px',color:'#e6fff4',marginTop:'1px'},c,line);
+ const bw=Math.round(w*.8), bh=Math.round(Math.max(22,Math.min(28,h*.17)));
+ const b=el('div','pill o3 '+(it.owned?'grey':'buy'),{width:bw+'px',height:bh+'px',fontSize:(bh-9)+'px',margin:'4px 0 7px'},c);
+ b.innerHTML=it.owned?'<span>Owned</span>':it.free?'<span>Free</span>':`${rbx(bh-9)}<span>${it.p.toLocaleString()}</span>`;
+ return c;
+}
+function roundBtn(parent,cls,x,y,s,inner){const b=el('div','round '+cls,{position:'absolute',left:x+'px',top:y+'px',width:s+'px',height:s+'px'},parent,inner);return b}
+function tabBtn(parent,t,on,s,x,y,label){
+ const col=el('div','tabcol',{position:'absolute',left:x+'px',top:y+'px',width:(s+20)+'px'},parent);
+ const b=el('div','round tab'+(on?' on':''),{width:s+'px',height:s+'px'},col,`<img src="${t.ic}" width="${s*.8}" height="${s*.8}">`);
+ if(t.dot)el('div','dot',{right:'4px',top:'-2px'},col);
+ if(label!==false)el('div','tlabel o3'+(on?' on':''),null,col,t.n);
+ return col;
+}
+function scrollbar(parent,x,y,h,frac,pos){const s=el('div','sbar',{left:x+'px',top:y+'px',height:h+'px'},parent);el('i',null,{top:(pos*h*(1-frac))+'px',height:(h*frac)+'px'},s)}
+const PAGE=Q.get('page')||(DEV==='pc'?'featured':'passes'); // PC shot shows Featured, phone shot shows Passes
+const tab=TABS.find(t=>t.k===PAGE);
+
+if(OPT==='A'){
+ // A: Pet Simulator 99 store: round category rail on the left, a grid that scrolls down
+ const pw=Math.min(W-SAFE_L-30,820), ph=H-(DEV==='pc'?70:52), px0=Math.round(SAFE_L+(W-SAFE_L-pw)/2), py0=DEV==='pc'?44:40;
+ const p=el('div','panel',{left:px0+'px',top:py0+'px',width:pw+'px',height:ph+'px'});
+ el('div','title o abs',{left:(px0+14)+'px',top:(py0-30)+'px'},v,'Shop');
+ roundBtn(v,'x o',px0+pw-30,py0-16,44,'<span>✕</span>');
+ const ts=DEV==='pc'?52:44, gap=DEV==='pc'?82:68;
+ el('div',null,{position:'absolute',left:'84px',top:'14px',bottom:'14px',width:'3px',borderRadius:'2px',background:'rgba(255,214,107,.25)'},p);
+ TABS.forEach((t,i)=>tabBtn(p,t,t.k===PAGE,ts,10+(52-ts)/2,(DEV==='pc'?26:16)+i*gap));
+ const gx=100, gy=DEV==='pc'?22:14, cw=pw-gx-22, chh=ph-gy*2;
+ const area=el('div',null,{position:'absolute',left:gx+'px',top:gy+'px',width:cw+'px',height:chh+'px',overflow:'hidden'},p);
+ const cols=DEV==='pc'?6:5, g=12, w=Math.floor((cw-8-(cols-1)*g)/cols), h=Math.round(w*1.3);
+ let items=tab.items, ix=0, y=10;
+ if(PAGE==='featured'){
+  // owner 2026-10-23: two big featured bundles side by side on top, the picks below
+  const hw=Math.floor((cw-14-12)/2), hh=DEV==='pc'?150:128, big=DEV==='pc'?96:72;
+  const H2=[{n:'Sect Starter Pack',ic:'starter.png',p:75,bg:'radial-gradient(ellipse at 50% 30%,#3ee0b0 0,#14a37b 55%,#0b6b55 100%)',parts:`<img src="immortal.png" width="34"><span class="o3">+</span><img src="pack2.png" width="34"><span class="o3">+</span><img src="pill.png" width="34">`},
+   {n:'Welcome Pouch',ic:'welcome.png',p:5,bg:'radial-gradient(ellipse at 50% 30%,#ffd86b 0,#e89a2a 55%,#b4641a 100%)',parts:`<img src="elder.png" width="34"><span class="o3">+</span>${qi(26)}<span class="o3" style="font-size:18px">+10%</span>`}];
+  H2.forEach((f,i)=>{
+   const hero=el('div','hero',{left:(i*(hw+12))+'px',top:'8px',width:hw+'px',height:hh+'px',display:'flex',alignItems:'center',gap:'10px',padding:'0 12px',background:f.bg},area);
+   el('div','rays',null,hero);
+   el('img',null,{width:big+'px',height:big+'px',filter:'drop-shadow(0 4px 0 rgba(27,20,32,.6))'},hero).src=f.ic;
+   const col=el('div',null,{display:'flex',flexDirection:'column',gap:'5px',alignItems:'flex-start'},hero);
+   el('div','o',{fontSize:(DEV==='pc'?22:18)+'px',whiteSpace:'nowrap'},col,f.n);
+   el('div',null,{display:'flex',gap:'4px',alignItems:'center'},col,f.parts);
+   el('div','pill buy o3',{width:(DEV==='pc'?110:96)+'px',height:'34px',fontSize:'20px'},col,`${rbx(20)}<span>${f.p}</span>`);
+   el('div','rib once o3',{left:(i*(hw+12)+hw-44)+'px',right:'auto',top:'0px'},area,'Once');
+  });
+  y=hh+22;
+ }
+ items.forEach((k,i)=>card(area,k,(i%cols)*(w+g),y+Math.floor(i/cols)*(h+g),w,h));
+ const total=y+Math.ceil(items.length/cols)*(h+g);
+ el('div','fade',{left:'0',right:'0',bottom:'0',height:'26px',background:'linear-gradient(rgba(26,19,40,0),rgba(26,19,40,.95))'},area);
+ scrollbar(p,pw-16,gy+6,chh-12,Math.min(1,chh/(total+40)),0);
+}
+
+if(OPT==='B'){
+ // B: Anime Defenders store: tabs across the top, a big featured card that stays on the left,
+ // the tab's items in a two-row grid that pages sideways (round arrows + dots)
+ const top=DEV==='pc'?20:14;
+ el('div','title o abs',{left:(SAFE_L+24)+'px',top:top+'px'},v,'Shop');
+ roundBtn(v,'x o',W-62,top,44,'<span>✕</span>');
+ const ts=DEV==='pc'?44:38;
+ const tabs=el('div',null,{position:'absolute',left:'0',right:'0',top:(top-2)+'px',display:'flex',justifyContent:'center',gap:'8px'});
+ TABS.forEach(t=>{const on=t.k===PAGE;const b=el('div','pill o3',{height:ts+'px',padding:'0 14px 0 6px',fontSize:(DEV==='pc'?18:15)+'px',background:on?'#ffd34d':'#c9c2d3',gap:'6px'},tabs,`<img src="${t.ic}" width="${ts-10}" height="${ts-10}"><span>${t.n}</span>`);if(t.dot)el('div','dot',{right:'-4px',top:'-6px',position:'absolute'},b)});
+ const py0=top+ts+16, ph=H-py0-(DEV==='pc'?22:10);
+ const L=SAFE_L+(DEV==='pc'?28:6), R=W-(DEV==='pc'?28:12);
+ const hw=DEV==='pc'?260:196;
+ const hero=el('div','hero',{left:L+'px',top:py0+'px',width:hw+'px',height:ph+'px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:(DEV==='pc'?16:8)+'px 10px'});
+ el('div','rays',null,hero);
+ el('div','o',{fontSize:(DEV==='pc'?24:19)+'px',textAlign:'center',lineHeight:'1'},hero,'Sect Starter Pack');
+ const isz=DEV==='pc'?150:96;
+ el('img',null,{width:isz+'px',height:isz+'px',filter:'drop-shadow(0 4px 0 rgba(27,20,32,.6))'},hero).src='starter.png';
+ const s=DEV==='pc'?40:28;
+ el('div',null,{display:'flex',gap:'4px',alignItems:'center'},hero,`<img src="immortal.png" width="${s}"><span class="o3">+</span><img src="pack2.png" width="${s}"><span class="o3">+</span><img src="pill.png" width="${s}">`);
+ el('div','pill buy o3',{width:'78%',height:(DEV==='pc'?44:32)+'px',fontSize:(DEV==='pc'?24:18)+'px'},hero,`${rbx(DEV==='pc'?24:18)}<span>75</span>`);
+ el('div','rib once o3',{position:'absolute',right:'8px',top:'8px'},hero,'Once');
+ const gx=L+hw+16, gw=R-gx;
+ const p=el('div','panel',{left:gx+'px',top:py0+'px',width:gw+'px',height:ph+'px'});
+ const rows=2, g=10, pad=14, aw=DEV==='pc'?0:0;
+ const h=Math.floor((ph-pad*2-24-g)/rows), w=Math.round(h*.78);
+ const cols=Math.max(1,Math.floor((gw-pad*2+g)/(w+g)));
+ const gridW=cols*w+(cols-1)*g, ox=Math.round((gw-gridW)/2);
+ const items=tab.items.filter(k=>k!=='starter').slice(0,cols*rows);
+ items.forEach((k,i)=>card(p,k,ox+(i%cols)*(w+g),pad+Math.floor(i/cols)*(h+g),w,h));
+ const pages=Math.ceil(tab.items.length/(cols*rows));
+ const dots=el('div',null,{position:'absolute',left:'0',right:'0',bottom:'8px',display:'flex',justifyContent:'center',gap:'6px'},p);
+ for(let i=0;i<Math.max(pages,1);i++)el('div','pg'+(i===0?' on':''),null,dots);
+ if(pages>1)roundBtn(v,'arrow o',R-20,py0+ph/2-20,40,'<span>›</span>');
+}
+
+if(OPT==='C'){
+ // C: one long store page with sections, a round jump bar that also marks where you are
+ // (Toilet Tower Defense / Anime Vanguards store); the featured banner leads
+ const top=DEV==='pc'?16:10;
+ el('div','title o abs',{left:(SAFE_L+24)+'px',top:top+'px'},v,'Shop');
+ roundBtn(v,'x o',W-62,top+2,44,'<span>✕</span>');
+ const ts=DEV==='pc'?40:34;
+ const bar=el('div',null,{position:'absolute',left:'0',right:'0',top:(top+4)+'px',display:'flex',justifyContent:'center',gap:'10px'});
+ TABS.forEach(t=>{const on=t.k===PAGE;const w=el('div',null,{position:'relative'},bar);el('div','round tab'+(on?' on':''),{width:ts+'px',height:ts+'px'},w,`<img src="${t.ic}" width="${ts*.8}" height="${ts*.8}">`);if(t.dot)el('div','dot',{right:'-4px',top:'-4px'},w)});
+ const py0=top+ts+16, L=SAFE_L+(DEV==='pc'?60:8), R=W-(DEV==='pc'?60:12), pw=R-L, ph=H-py0-(DEV==='pc'?20:8);
+ const p=el('div','panel',{left:L+'px',top:py0+'px',width:pw+'px',height:ph+'px'});
+ const area=el('div',null,{position:'absolute',left:'14px',top:'10px',right:'24px',bottom:'10px',overflow:'hidden'},p);
+ const cw=pw-44, g=10;
+ const cols=DEV==='pc'?6:6, w=Math.floor((cw-(cols-1)*g)/cols), h=Math.round(w*1.28);
+ // the phone shot is scrolled down to Passes
+ let y=DEV==='pc'?0:-208;
+ // banner: the featured bundle, wide and short
+ const bh=110;
+ const hero=el('div','hero',{left:'0px',top:y+'px',width:cw+'px',height:bh+'px',display:'flex',alignItems:'center',gap:'14px',padding:'0 18px'},area);
+ el('div','rays',null,hero);
+ el('img',null,{width:'92px',filter:'drop-shadow(0 4px 0 rgba(27,20,32,.6))'},hero).src='starter.png';
+ el('div','o',{fontSize:'24px'},hero,'Sect Starter Pack');
+ el('div',null,{display:'flex',gap:'6px',alignItems:'center'},hero,`<img src="immortal.png" width="36"><span class="o3">+</span><img src="pack2.png" width="36"><span class="o3">+</span><img src="pill.png" width="36">`);
+ el('div','pill buy o3',{width:'110px',height:'36px',fontSize:'20px',marginLeft:'auto'},hero,`${rbx(20)}<span>75</span>`);
+ el('div','rib once o3',{right:'12px',top:'8px'},hero,'Once');
+ y+=bh+14;
+ for(const t of TABS){
+  const items=t.k==='featured'?['gift','welcome','tidebell']:t.items;
+  el('div','sec o3',{position:'absolute',left:'2px',top:y+'px'},area,`<img src="${t.ic}" width="24" height="24"><span>${t.n}</span>`);
+  y+=30;
+  items.forEach((k,i)=>card(area,k,(i%cols)*(w+g),y+Math.floor(i/cols)*(h+g),w,h));
+  y+=Math.ceil(items.length/cols)*(h+g)+8;
+ }
+ const total=y+(DEV==='pc'?0:208);
+ el('div','fade',{left:'0',right:'0',bottom:'0',height:'24px',background:'linear-gradient(rgba(26,19,40,0),rgba(26,19,40,.95))'},area);
+ scrollbar(p,pw-16,14,ph-28,Math.min(1,(ph-20)/total),DEV==='pc'?0:208/(total-ph+20));
+}
+</script></body></html>
