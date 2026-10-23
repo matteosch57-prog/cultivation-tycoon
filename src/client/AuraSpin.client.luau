@@ -2,7 +2,7 @@
 -- (tag "AuraSpin") gets a Transform about the vertical by its Spin attribute (degrees a second).
 -- Only glyphs near and on screen turn (R16); the rest hold still where they are. Also preloads the
 -- aura textures (Config.AURA_TEX), and blends emitters tagged "AuraDaylight" (the light column) from their
--- night look to their DayBrightness / DayTransparency attributes by day (DayNight.client's NightWeight).
+-- night look to their DayBrightness / DayTransparency / DayLightEmission attributes by day (DayNight.client's NightWeight).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
@@ -84,6 +84,7 @@ end
 local function apply(pe, d, k)
 	pe.Brightness = d.dayB + (d.nightB - d.dayB) * k
 	pe.Transparency = mix(d.nightT, d.dayT, k)
+	pe.LightEmission = d.dayE + (d.nightE - d.dayE) * k
 end
 local function addLit(pe)
 	if not pe:IsA("ParticleEmitter") or daylit[pe] then
@@ -94,6 +95,8 @@ local function addLit(pe)
 		nightT = pe.Transparency,
 		dayB = pe:GetAttribute("DayBrightness") or pe.Brightness,
 		dayT = pe:GetAttribute("DayTransparency") or pe.Transparency,
+		nightE = pe.LightEmission,
+		dayE = pe:GetAttribute("DayLightEmission") or pe.LightEmission,
 	}
 	daylit[pe] = d
 	apply(pe, d, nightWeight())

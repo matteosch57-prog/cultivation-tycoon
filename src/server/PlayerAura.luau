@@ -203,6 +203,9 @@ local function realmAura(folder, hrp, hum, tier, color)
 		-- the values above read well at night but vanish in daylight (Play v9): AuraSpin.client blends to these by day
 		streaks:SetAttribute("DayBrightness", 5.5)
 		streaks:SetAttribute("DayTransparency", seq(0.3, 0.05, 1))
+		-- additive light (LightEmission 1) adds nothing over a sunlit scene (Play v10: no column by day at
+		-- brightness 5.5), so by day the column is drawn half as plain colour
+		streaks:SetAttribute("DayLightEmission", 0.35)
 		CollectionService:AddTag(streaks, "AuraDaylight")
 		local core = emitter(shaft, {
 			Name = "Core",
@@ -220,6 +223,7 @@ local function realmAura(folder, hrp, hum, tier, color)
 		})
 		core:SetAttribute("DayBrightness", 3.5)
 		core:SetAttribute("DayTransparency", seq(1, 0.45, 1))
+		core:SetAttribute("DayLightEmission", 0.2)
 		CollectionService:AddTag(core, "AuraDaylight")
 	end
 	if tier >= 7 then
