@@ -13,6 +13,8 @@ local Guard = require(script.Parent:WaitForChild("Guard"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 
+local PolicyService = game:GetService("PolicyService")
+
 local Shop = {}
 
 local STUDIO = RunService:IsStudio()
@@ -42,9 +44,42 @@ local function setPass(player, s, key)
 	api.passChanged(player, s, key)
 end
 
+-- Paid random items (Roblox policy, owner pick 2026-10-23): qi buys random recruits and qi is sold
+-- for Robux, so where Roblox restricts paid random items the items that sell qi (`seconds`: the Qi
+-- packs and the Starter Pack) are not sold. Qi there is only earned and recruits stay legal; nothing
+-- else changes. Unknown = restricted (fail closed: never sell where it may be illegal); a failed check
+-- is asked again. Player attribute QiSaleOff (Shop.client hides the Qi page, the Get Qi offer and the
+-- Starter Pack tile).
+local POLICY_RETRY = 30
+local function checkPolicy(player, s)
+	for _ = 1, 3 do
+		if not player.Parent or api.sessions[player] ~= s then
+			return
+		end
+		local ok, info = pcall(PolicyService.GetPolicyInfoForPlayerAsync, PolicyService, player)
+		if ok and type(info) == "table" then
+			s.qiSaleOff = info.ArePaidRandomItemsRestricted == true
+			player:SetAttribute("QiSaleOff", s.qiSaleOff)
+			if s.qiSaleOff then
+				print(string.format("[Tycoon][shop] paid random items restricted for %d: no qi sold", player.UserId))
+			end
+			return
+		end
+		warn("[Tycoon][shop] policy check failed") -- constant text (Error Report); qi stays off sale
+		task.wait(POLICY_RETRY)
+	end
+end
+
+local function sellsQi(it)
+	return it.seconds ~= nil
+end
+
 -- Yields: called on join before the offline qi, so the 2x pass counts on it.
 function Shop.onJoin(player, s)
 	s.passes = {}
+	s.qiSaleOff = true -- until PolicyService answers
+	player:SetAttribute("QiSaleOff", true)
+	task.spawn(checkPolicy, player, s)
 	for _, it in Config.SHOP_PRODUCTS do
 		if it.limit and ((s.data.shopBought or {})[it.key] or 0) >= it.limit then
 			player:SetAttribute("Limit_" .. it.key, true)
@@ -226,7 +261,7 @@ end
 function Shop.maybeStarter(player, s, pad)
 	local d = s.data
 	local it = Config.shopItem("starter")
-	if not it or d.starterOffered or not pad.feature or (it.id == 0 and not STUDIO) then
+	if not it or d.starterOffered or not pad.feature or (it.id == 0 and not STUDIO) or s.qiSaleOff then
 		return
 	end
 	local bought = d.shopBought or {}
@@ -270,6 +305,10 @@ local function mayBuy(player, s, it)
 	end
 	if it.limit and ((s.data.shopBought or {})[key] or 0) >= it.limit then
 		api.notify:FireClient(player, "shopLimit", it.name)
+		return false
+	end
+	if sellsQi(it) and s.qiSaleOff then
+		api.notify:FireClient(player, "shopRegion", it.name)
 		return false
 	end
 	if key == "tidebell" then

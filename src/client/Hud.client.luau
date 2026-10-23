@@ -1643,6 +1643,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "shopLimit" then
 		toast("Already yours", Color3.fromHex("9FF5C8"), 2)
 		return
+	elseif kind == "shopRegion" then -- Qi is not sold where Roblox restricts paid random items (Shop.luau)
+		toast("Not sold in your region", PINK, 2.5)
+		return
 	elseif kind == "shopFull" then
 		toast("Sect full", PINK, 2)
 		return

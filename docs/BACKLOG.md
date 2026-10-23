@@ -19,6 +19,8 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 - Inner and Core ground sigils are faint at some angles over the light floor.
 
 ## Feel
+- A full settings page (music, sounds, ambience volumes and more; owner 2026-10-23: "full setting page
+  is missing, todo"). Mock first (R4). Today only Roblox's own menu volume.
 - The music bed is not picked yet (DECISIONS Q1).
 - HUD gift button: the prize picture on its corner (`ui.giftBadge`, 22 px) is hard to read; the name under it carries the prize. Try a bigger figure without the aura.
 

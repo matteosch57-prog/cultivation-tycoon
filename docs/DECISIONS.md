@@ -491,3 +491,9 @@ the log as a D-number.
   flight copied: camera-relative, rise / sink keys and a phone down arrow, hover when idle, jump
   rises. Progression kept server side: a ceiling, the map bound, the rider's closed islets; pads and
   the altar still land it. Design: MONETIZATION "Flying Swords".
+- **D77** Paid random items (owner pick 2026-10-23, pre-launch audit): qi is sold for Robux and buys
+  random recruits, so Roblox counts qi recruits as paid random items. Where
+  `ArePaidRandomItemsRestricted` is true (or the check fails: fail closed) the items that sell qi (Qi
+  packs, Starter Pack) are not sold; recruits, free summons and every other item stay. Rejected:
+  locking qi recruits there (cuts the core loop) and launching without a check. Design: MONETIZATION
+  "Rules for any new product".

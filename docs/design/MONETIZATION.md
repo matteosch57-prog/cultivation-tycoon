@@ -17,6 +17,11 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   returning `PurchaseGranted`).
 - Show recruit odds in the game even though recruits cost qi only.
 - Anything random bought with Robux needs `PolicyService` paid-random-item checks: avoid it.
+- Qi is sold for Robux and buys random recruits, so qi recruits count as paid random items (D77):
+  where `ArePaidRandomItemsRestricted` is true (or unknown) the items that sell qi (`seconds`: the Qi
+  packs and the Starter Pack) are not offered or prompted (`Shop.luau` `checkPolicy`, player
+  attribute `QiSaleOff`); qi there is only earned. A new product that grants qi must carry `seconds`
+  or be added to `sellsQi`. Store questionnaire: paid random items = yes, respects the restriction = yes.
 
 ## How the shop works (built 2026-10-21, D24)
 - **Screen = mock B** (`docs/art/mocks/shop_B_phone.jpg`): no board, toy tiles over a dark veil.

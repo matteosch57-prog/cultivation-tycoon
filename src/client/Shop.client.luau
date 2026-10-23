@@ -97,6 +97,11 @@ gui.Parent = playerGui
 
 local ui = {}
 local page = "boosts"
+-- where Roblox restricts paid random items the server sells no qi (QiSaleOff, Shop.luau): the Qi
+-- page, the Get Qi offer and the Starter Pack tile are not drawn
+local function qiSaleOff()
+	return player:GetAttribute("QiSaleOff") == true
+end
 local function products(pick)
 	return function()
 		local list = {}
@@ -122,7 +127,7 @@ local PAGES = {
 			if not player:GetAttribute("Limit_welcome") then
 				table.insert(list, 1, (Config.shopItem("welcome")))
 			end
-			if not player:GetAttribute("Limit_starter") then
+			if not player:GetAttribute("Limit_starter") and not qiSaleOff() then
 				table.insert(list, 1, (Config.shopItem("starter")))
 			end
 			return list
@@ -131,6 +136,9 @@ local PAGES = {
 	{ key = "qi", name = "Qi", icon = "pack2", items = products(function(it) return it.seconds ~= nil end) },
 	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(soldDisciple) },
 }
+local function pageShown(pg)
+	return not (pg.key == "qi" and qiSaleOff())
+end
 
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
@@ -348,6 +356,9 @@ local function build()
 	Toy.list(tabs, true, px(10))
 	ui.rows, ui.tabs = {}, {}
 	for i, pg in PAGES do
+		if not pageShown(pg) then
+			continue
+		end
 		local r = row(body, 2 + i)
 		ui.rows[pg.key] = r
 		local n = 0
@@ -398,7 +409,7 @@ local function open(source, tab)
 	end
 	page = "boosts"
 	for _, pg in PAGES do
-		if pg.key == tab then
+		if pg.key == tab and pageShown(pg) then
 			page = tab
 		end
 	end
@@ -434,6 +445,14 @@ end
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
 	if gui.Enabled then
 		build()
+	end
+end)
+player:GetAttributeChangedSignal("QiSaleOff"):Connect(function()
+	if gui.Enabled then
+		if qiSaleOff() and page == "qi" then
+			page = "boosts"
+		end
+		build() -- the Qi tab comes or goes
 	end
 end)
 
@@ -558,6 +577,9 @@ nudgeGui.Parent = playerGui
 local nudgeShown = 0
 
 local function packOnSale()
+	if qiSaleOff() then
+		return false
+	end
 	for _, it in Config.SHOP_PRODUCTS do
 		if it.seconds and it.id ~= 0 then
 			return true
