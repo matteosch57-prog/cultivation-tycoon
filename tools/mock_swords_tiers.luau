@@ -340,9 +340,9 @@ return function()
 		local u0 = attach(holder, cf * CFrame.new(0, -size.Y, size.Z / 2))
 		local u1 = attach(holder, cf * CFrame.new(0, -size.Y, -size.Z / 2))
 		-- v6: a narrow camera-facing glow (the wide flat one showed straight edges up close)
-		local under = beam(holder, u0, u1, t.color, 0.9, 0.4, 1, 0.55)
-		under.Texture = GLOW
-		under.TextureMode = Enum.TextureMode.Stretch
+		-- v9: dropped (it sat size.Y under the blade, 1.8 studs on the crystal sword, and read as a
+		-- separate glassy line); the Highlight and shimmer carry the blade glow
+		local _ = u0, u1
 		-- the ribbons
 		local RIBBONS = {
 			{ { t.color, 1.5, 0 } },
