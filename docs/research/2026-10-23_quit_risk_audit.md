@@ -24,16 +24,19 @@ Not testable in Studio: a real rejoin on a stored save (Studio Play is the mock 
 | 12 | Disciples book: 10 tiles per row is wider than a 667 px phone page, edge columns cut | columns = what the page holds (4 to 10) |
 | 13 | Breakthrough X inside the phone top bar | below `TopbarInset` like the other screens |
 
-## Open: design calls for the owner
+## Owner's calls (2026-10-23, built in 8475884, checked in Studio Play where marked)
 
-1. **Over-limit grants:** a second Welcome Pouch receipt (two prompts, or two servers) stacks +10% qi forever; a Tide Bell receipt during an altar round starts a tide anyway. Grant as is, or turn the extra into a Qi pack? (Shop.luau processReceipt; both ids still 0 for the Tide Bell / Starter Pack.)
-2. **Once-only offers saved when fired, not when seen:** a player who leaves before the Welcome / Starter card draws never sees it. Stamp when the client shows it?
-3. **Lock wait after a crash:** the save lease is 150 s but a join waits ~30 s, so a player rejoining right after a server crash is kicked "still open on another server" 2 to 4 times. Wait the whole lease behind the loading screen, or shorten the lease?
-4. **HUD under some screens:** the HUD stays visible under Disciples, Gifts, Daily Blessing, Breakthrough, Odds, the return chest and the Friends card. Hide it there too?
-5. **Intro has no exit** except GO; after repeated ClaimWelcome errors the player is stuck. Close after 2 failures (it is offered again next session)?
-6. **Altar knock check** (1.2 s) flags a laggy phone player "You fell!" when the knock arrives late. Scale by ping?
-7. **Peak count:** 6 peaks; a 7th player has no peak, no save. Is the place's Max Players 6?
-8. **Daily Blessing pops over** Gifts / Shop / Breakthrough. Wait until no screen is open?
+1. A second Welcome Pouch / Starter Pack pays a Qi pack (`overLimit` in SHOP_PRODUCTS), never a second +10%.
+2. Welcome / Starter offers count as made only when the card draws (`OfferShown`). Play: offer drew, stamped once.
+3. A rejoin after a crash waits out the save lock behind the loading screen (SAVE_LOCK_WAITS 33 x 5 s > SAVE_LEASE; `SaveWait` attribute, Launch says why).
+4. The HUD hides under every full screen (Disciples, Gifts, Daily Blessing, Breakthrough, Odds, return chest, Friends card). Play: hidden under Streak, Gifts, Welcome offer; back after closing.
+5. A small X on the Heavenly Gift intro; the gift stays for next session. Play: X closes it, the HUD and the rest stop waiting.
+6. The Altar knock check adds twice the player's ping (capped 1.5 s).
+7. A Tide Bell rung during (or just before) an Altar round rings after it closes. Play: bell outside a round starts the tide.
+8. The Daily Blessing waits until no other screen is open.
+9. Peaks: the live place is already Max Players 6 (owner).
+
+Not covered by Play: the receipt paths (Studio cannot buy), the crash-rejoin wait (mock save), a laggy phone at the altar.
 
 ## Open: smaller bugs, not fixed (need a Studio look or are low risk)
 
