@@ -971,13 +971,25 @@ end
 -- An offer card waits until nothing covers it: the launch screen's tap (LaunchDone), the Heavenly Gift
 -- intro (WelcomeQi back to 0, its Intro gui closed), the Shop screen and the other offer card. The
 -- server sends each offer once, so it is queued here, never dropped.
+-- The Intro, the Daily Blessing (Streak), the Free Gifts and the idle chest screens stay Enabled and
+-- empty their children when closed, so "up" = Enabled AND drawing something; a missing gui is clear.
+local COVERS = { "Intro", "Streak", "Gifts", "IdleChest" }
+local function coverUp()
+	for _, name in COVERS do
+		local g = playerGui:FindFirstChild(name)
+		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 local function whenClear(show)
 	task.spawn(function()
 		while true do
-			local intro = playerGui:FindFirstChild("Intro")
 			local covered = not player:GetAttribute("LaunchDone")
 				or (player:GetAttribute("WelcomeQi") or 0) > 0
-				or (intro and intro:IsA("ScreenGui") and intro.Enabled)
+				or coverUp()
 				or gui.Enabled
 				or offerGui.Enabled
 				or starterGui.Enabled
