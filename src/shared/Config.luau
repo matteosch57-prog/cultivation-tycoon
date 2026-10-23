@@ -822,6 +822,12 @@ function Config.realmColor(realm)
 	return Config.realmTint(realm)
 end
 Config.TITLE_SEE = 110 -- studs: farther titles are hidden
+-- The player's own aura (src/server/PlayerAura.luau, owner pick B: realm aura + life beads). One
+-- bead per rebirth on a halo of AURA_BEAD_BAND slots; each full band the beads take the next colour
+-- (owner: "like 20 yellow then 20 red then 20 blue and with more aura each time... easily to 100").
+-- After the last band the halo stays full.
+Config.AURA_BEAD_BAND = 20
+Config.AURA_BEAD_COLORS = { Color3.fromHex("FFD36A"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF"), Color3.fromHex("B46BFF"), Color3.fromHex("BFF2E0") } -- rebirths 1-20, 21-40, 41-60, 61-80, 81-100
 function Config.ordinal(n)
 	local t = n % 100
 	local suffix = (t >= 11 and t <= 13) and "th" or ({ "st", "nd", "rd" })[n % 10] or "th"
