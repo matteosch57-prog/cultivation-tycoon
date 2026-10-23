@@ -762,8 +762,9 @@ function Toy.stars(parent, stars, size, props)
 		row[k] = v
 	end
 	Toy.list(row, true, 0)
-	for i, color in Config.starRow(stars) do
-		Toy.starGem(row, color, { TextSize = size, LayoutOrder = i, ZIndex = row.ZIndex })
+	local colors = Config.starRow(stars)
+	for i = 1, Config.STAR_ROW do -- not ipairs: an empty slot is a nil colour
+		Toy.starGem(row, colors[i], { TextSize = size, LayoutOrder = i, ZIndex = row.ZIndex })
 	end
 	return row
 end
