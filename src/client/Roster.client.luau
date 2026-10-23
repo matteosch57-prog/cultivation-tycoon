@@ -147,7 +147,7 @@ local function fillSect(body)
 	if #names > max then
 		text(body, string.format("Benched: %d · build more Lotus Isles for seats", #names - max), px(13), Color3.fromHex("C8C0D0"), { LayoutOrder = 3 })
 	end
-	ui.nameLine = text(body, "Tap a disciple to see its name", px(13), MINT, { LayoutOrder = 4 })
+	ui.nameLine = text(body, #names == 0 and "Recruit at the seal to fill your sect" or "Tap a disciple to see its name", px(13), MINT, { LayoutOrder = 4 })
 end
 
 local function showTab(key)

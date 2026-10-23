@@ -222,10 +222,10 @@ local function slider(col, order, name, key)
 	local row = rowFrame(col, order)
 	text(row, name, px(19), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0) })
 	local pct = text(row, "", px(16), MUTED, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
-	local barW = px(132)
+	local barW = px(124)
 	local bar = frame(row, {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -px(48), 0.5, 0),
+		Position = UDim2.new(1, -px(62), 0.5, 0), -- room for "100%" past the knob
 		Size = UDim2.fromOffset(barW, px(12)),
 		BackgroundTransparency = 0,
 		BackgroundColor3 = TRACK,
