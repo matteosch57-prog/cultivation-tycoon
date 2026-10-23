@@ -1056,9 +1056,8 @@ Config.DISCIPLE_ATLAS = {
 
 -- The named disciples' faces (2026-10-23): one 1024 x 1024 sheet of 160 px portraits drawn by
 -- docs/art/mocks/2026-10-23_disciple_roster.html?view=atlas (art/ui/disciple_faces.png), 6 a row,
--- cell = (tier - 1) x 4 + look - 1 in DISCIPLE_LOOKS order. "" until the owner uploads it (R11): the
--- old per-rarity figure shows until then.
-Config.DISCIPLE_FACES = { image = "", cell = 160, cols = 6 }
+-- cell = (tier - 1) x 4 + look - 1 in DISCIPLE_LOOKS order. "" falls back to the old per-rarity figure.
+Config.DISCIPLE_FACES = { image = "rbxassetid://101021423288352", cell = 160, cols = 6 } -- uploaded 2026-10-23
 -- the { x, y } px offset of a rarity and look's face in DISCIPLE_FACES
 function Config.faceCell(rarityName, look)
 	local li = table.find(Config.DISCIPLE_LOOKS, look) or 1
