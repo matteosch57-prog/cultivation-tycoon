@@ -32,6 +32,9 @@ local GOALS = {
 	realm8 = function(s)
 		return (s.data.best or 1) >= 8
 	end,
+	realm10 = function(s)
+		return (s.data.best or 1) >= 10
+	end,
 	streak7 = function(s)
 		return ((s.data.streak or {}).total or 0) >= 7
 	end,

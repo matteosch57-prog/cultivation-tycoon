@@ -573,7 +573,10 @@ Config.BADGES = {
 	friends = 0, -- Sect of Friends: a friend on the server
 	realm8 = 0, -- Mahayana
 	reborn = 0, -- Reborn: first reincarnation
+	realm10 = 0, -- True Immortal: reach realm 10 (the hard one)
 }
+-- Launch set (owner 2026-10-23: "only 5 free, 2 easy, 2 medium and 1 super hard"): founder, disciple,
+-- realm3, streak7, realm10. The others stay 0 until they are created.
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end
