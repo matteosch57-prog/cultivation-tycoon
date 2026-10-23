@@ -802,59 +802,70 @@ local function buildDisciples(s, newcomer)
 	end
 	local ctx = ctxFor(s)
 	ctx.folder = folder
-	-- the working disciples (strongest first), counted by rarity and look ("Elder|lotus", D60)
-	local want = {}
+	-- the Floating Lotus Isles' seats are the last ones (4 each, in pad order): the strongest always
+	-- sit on the platform (owner 2026-10-23: "the stronger disciples should be on bottom always"),
+	-- the rest on the isles; slot > onPlatform sits on isle (slot - onPlatform - 1) // 4 + 1
 	local max = maxDisciples(s)
+	local onPlatform = max
+	for _, pad in Config.PADS do
+		if pad.kind == "isle" and s.data.owned[pad.id] then
+			onPlatform -= (pad.seats or 4)
+		end
+	end
+	local function onIsle(slot)
+		return slot > onPlatform
+	end
+	-- the working disciples (strongest first), counted by rarity and look ("Elder|lotus", D60) and by
+	-- where they sit: the top onPlatform on the platform, the others on the isles
+	local want = { [false] = {}, [true] = {} }
 	local looks = discLooks(s.data)
 	for slot, name in s.data.disciples do
 		if slot > max then
 			break -- benched
 		end
 		local key = Config.indexKey(name, looks[slot])
-		want[key] = (want[key] or 0) + 1
+		local w = want[onIsle(slot)]
+		w[key] = (w[key] or 0) + 1
 	end
-	-- keep every seated figure whose disciple still works; clear the rest
+	-- keep every seated figure whose disciple still works in the same place (platform or isles); clear
+	-- the rest: a newcomer stronger than the platform's weakest swaps the two, nobody else moves
 	local taken = {}
 	for _, m in folder:GetChildren() do
 		local slot = tonumber(m.Name:match("^Disciple(%d+)$"))
 		local key = m:GetAttribute("Disciple")
-		if slot and slot <= max and key and (want[key] or 0) > 0 and not taken[slot] then
-			want[key] -= 1
+		local w = slot and want[onIsle(slot)]
+		if slot and slot <= max and key and (w[key] or 0) > 0 and not taken[slot] then
+			w[key] -= 1
 			taken[slot] = true
 		else
 			m:Destroy()
 		end
 	end
-	-- the last seats are the Floating Lotus Isles' (4 each, lotus1..3 in order): slot > onPlatform sits
-	-- on isle ceil((slot - onPlatform) / 4)
-	local onPlatform = max
-	for i = 1, 3 do
-		if s.data.owned["lotus" .. i] then
-			onPlatform -= (Config.padById("lotus" .. i).seats or 4)
-		end
-	end
 	local function seatAt(slot, rarity, arrive, look)
-		if slot > onPlatform then
+		if onIsle(slot) then
 			local n = slot - onPlatform - 1
 			return Builders.disciple(ctx, slot, rarity, arrive, look, n // 4 + 1, n % 4 + 1)
 		end
 		return Builders.disciple(ctx, slot, rarity, arrive, look)
 	end
-	-- the others take the free seats, strongest first; `newcomer` is a rarity|look key
-	local slot = 1
-	for i, name in s.data.disciples do
-		local key = Config.indexKey(name, looks[i])
-		if (want[key] or 0) > 0 then
-			while taken[slot] do
-				slot += 1
+	-- the others take the free seats of their place, strongest first; `newcomer` is a rarity|look key
+	for _, isle in { false, true } do
+		local w = want[isle]
+		local slot = isle and onPlatform + 1 or 1
+		for i, name in s.data.disciples do
+			local key = Config.indexKey(name, looks[i])
+			if (w[key] or 0) > 0 then
+				while taken[slot] do
+					slot += 1
+				end
+				w[key] -= 1
+				taken[slot] = true
+				local arrive = key == newcomer
+				if arrive then
+					newcomer = nil -- only one seat walks in, the first with that key
+				end
+				seatAt(slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
 			end
-			want[key] -= 1
-			taken[slot] = true
-			local arrive = key == newcomer
-			if arrive then
-				newcomer = nil -- only one seat walks in, the first with that key
-			end
-			seatAt(slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
 		end
 	end
 	if fresh then
@@ -1040,7 +1051,7 @@ refreshPads = function(player, s)
 	end
 	for _, pad in Config.PADS do
 		-- a Lotus Isle pad waits for its karma node (Config.DAO "isles")
-		local locked = pad.kind == "isle" and dao(s.data, "isles") < 1
+		local locked = pad.kind == "isle" and dao(s.data, "isles") < (pad.karma or 1)
 		if not s.data.owned[pad.id] and Config.padOpen(pad, s.data.realm) and not locked then -- D48: the island opens with the realms
 			if Config.neededForBreakthrough(pad) then -- paths and groves are optional (DECOR_OPTIONAL)
 				all = false

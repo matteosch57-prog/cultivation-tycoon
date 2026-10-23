@@ -78,10 +78,11 @@ def load(path):
             isl = re.search(r'islet = "(\w+)"', line)
             kd = re.search(r'kind = "(\w+)"', line)
             st = re.search(r'seats = (\d+)', line)  # a slot pad's seats (Config.maxDisciples)
+            kl = re.search(r'karma = (\d+)', line)  # the karma node level an isle pad needs
             pads.append(dict(id=m.group(1), cost=int(m.group(2)), income=int(m.group(3)), unlock=int(m.group(4)),
                              req=re.findall(r'"(\w+)"', m.group(5)), district=d.group(1) if d else None,
                              islet=isl.group(1) if isl else None, kind=kd.group(1) if kd else None,
-                             seats=int(st.group(1)) if st else 1))
+                             seats=int(st.group(1)) if st else 1, karma=int(kl.group(1)) if kl else 1))
     # Sky Islets (D42): a pad on an islet needs that islet's bridge (Config.isletOf / isletOpen)
     islets = {}
     for line in block("ISLETS"):
@@ -307,7 +308,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def open_pads():
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and in_realm(p)
-                and all(r in S["owned"] for r in p["req"]) and (p.get("kind") != "isle" or lvl("isles") > 0)]
+                and all(r in S["owned"] for r in p["req"]) and (p.get("kind") != "isle" or lvl("isles") >= p.get("karma", 1))]
 
     def needed(p):  # Config.neededForBreakthrough: paths and groves are optional when DECOR_OPTIONAL
         return p.get("kind") != "isle" and not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))

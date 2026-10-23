@@ -147,7 +147,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     def open_pads():
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and RO[p["id"]] <= S["realm"]
-                and n >= p["unlock"] and all(r in S["owned"] for r in p["req"]) and (p["kind"] != "isle" or lvl("isles") > 0)]
+                and n >= p["unlock"] and all(r in S["owned"] for r in p["req"]) and (p["kind"] != "isle" or lvl("isles") >= p.get("karma", 1))]
 
     def all_built():
         return not any(needed(p) and RO[p["id"]] <= S["realm"] and p["id"] not in S["owned"] for p in C["PADS"])

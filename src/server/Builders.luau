@@ -340,6 +340,13 @@ local ISLES = { -- centre of the deck's top, peak frame space (the platform is a
 	{ x = -30, y = 18, z = 8 },
 	{ x = 30, y = 22, z = 8 },
 	{ x = 32, y = 30, z = -26 },
+	-- isles 4 to 8 (karma level 2) climb on round the peak: behind the Main Hall, high, then the
+	-- left side and over the front corners, each higher than the last
+	{ x = 14, y = 37, z = -56 },
+	{ x = -14, y = 44, z = -56 },
+	{ x = -38, y = 50, z = -24 },
+	{ x = -44, y = 56, z = 26 },
+	{ x = 44, y = 62, z = 30 },
 }
 -- owner 2026-10-22 ("the stone looks a bit cheap; more space for each disciple, bigger aura"): the
 -- isles are small floating islands in the peaks' own look (Style.island: lawn, dirt band, a light
@@ -506,6 +513,11 @@ Builders.lotus2 = function(ctx)
 end
 Builders.lotus3 = function(ctx)
 	Builders.lotusIsle(ctx, 3)
+end
+for i = 4, 8 do
+	Builders["lotus" .. i] = function(ctx)
+		Builders.lotusIsle(ctx, i)
+	end
 end
 
 -- A seated cultivator on the meditation platform (slot 1..). `look` is the disciple's own look (D60;

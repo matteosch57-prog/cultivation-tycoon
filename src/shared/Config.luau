@@ -167,7 +167,7 @@ Config.DAO = {
 	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
 	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
 	-- "isle") are offered every life from then on, and are built with qi like any pad
-	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12 } },
+	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
@@ -241,6 +241,13 @@ Config.PADS = {
 	{ id = "lotus1", name = "Floating Lotus Isle", cost = 9000, income = 20, unlock = 12, req = { "platform", "expand1" }, x = -24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
 	{ id = "lotus2", name = "Twin Lotus Isle", cost = 19000, income = 40, unlock = 16, req = { "lotus1", "expand2" }, x = 24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
 	{ id = "lotus3", name = "Heavenly Lotus Isle", cost = 31000, income = 60, unlock = 21, req = { "lotus2" }, x = 0, z = -19, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
+	-- five more (owner 2026-10-23: "add like 5 more, the easy to spot strong player thing"): the
+	-- second level of the Floating Isles karma node (`karma` = the node level a pad needs)
+	{ id = "lotus4", name = "Cloud Lotus Isle", cost = 40000, income = 70, unlock = 22, req = { "lotus3" }, x = 34, z = -40, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus5", name = "Moon Lotus Isle", cost = 52000, income = 80, unlock = 23, req = { "lotus4" }, x = -34, z = -40, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus6", name = "Star Lotus Isle", cost = 66000, income = 90, unlock = 24, req = { "lotus5" }, x = -40, z = -14, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus7", name = "Sun Lotus Isle", cost = 82000, income = 100, unlock = 25, req = { "lotus6" }, x = -40, z = 24, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus8", name = "Immortal Lotus Isle", cost = 100000, income = 110, unlock = 26, req = { "lotus7" }, x = 32, z = 34, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
 	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Hall level 5", district = "heart" },
 	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
 	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
@@ -550,7 +557,7 @@ Config.BADGES = {
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end
-Config.SLOT_PADS = { "quarters1", "quarters2", "lotus1", "lotus2", "lotus3" } -- each owned one adds its pad's `seats` (1 when missing)
+Config.SLOT_PADS = { "quarters1", "quarters2", "lotus1", "lotus2", "lotus3", "lotus4", "lotus5", "lotus6", "lotus7", "lotus8" } -- each owned one adds its pad's `seats` (1 when missing)
 
 -- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
 function Config.maxDisciples(owned, vip)
@@ -616,7 +623,7 @@ Config.INDEX_STEP_STARS = 10
 -- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
 Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
-Config.DISCIPLE_CAP = 21 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
+Config.DISCIPLE_CAP = 41 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
 -- item stands where it acts, on the owner's peak. `x` = across the peak; `z` = along it, or
@@ -1107,7 +1114,7 @@ Config.REALM_PADS = {
 	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
 	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training", "lotus1" },
 	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2", "lotus2" },
-	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3" },
+	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3", "lotus4", "lotus5", "lotus6", "lotus7", "lotus8" },
 }
 local padRealm = {}
 for r, ids in Config.REALM_PADS do
