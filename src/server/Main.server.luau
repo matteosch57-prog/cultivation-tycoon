@@ -89,7 +89,7 @@ local welcomeFn = Instance.new("RemoteFunction")
 welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
 welcomeFn.Parent = remotes
 local teleportEv = Instance.new("RemoteEvent")
-teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks") and the portals ("isle<i>", "hub")
+teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks"), the altar "!" ("altar") and the portals ("isle<i>", "hub")
 teleportEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
@@ -2111,6 +2111,14 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 	elseif where == "ranks" and rankStand then
 		s.teleportAt = os.clock()
 		char:PivotTo(rankStand)
+	elseif where == "altar" and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
+		-- the altar "!" (Altar.client, last 30 s of a round): beside the Spirit Spring on your side
+		-- of the plaza, facing it, so one step forward throws you up
+		s.teleportAt = os.clock()
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local sx = root and root.Position.X < 0 and -1 or 1
+		local at = Vector3.new(sx * 18, BASE_Y + 3, -2)
+		char:PivotTo(CFrame.lookAt(at, Vector3.new(0, BASE_Y + 3, -2)))
 	elseif type(where) == "string" then
 		-- a portal (Portals.luau): only from where you stand on it, to a claimed island or the hub
 		local root = char:FindFirstChild("HumanoidRootPart")

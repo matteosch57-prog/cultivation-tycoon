@@ -3,7 +3,8 @@
 -- invasive"; docs/art/mocks/fight_options.jpg): beads around it fill as the holder's timer runs, a
 -- tap draws the guide trail to the altar, its X hides it until the next round. The Palm Strike
 -- button above Jump (F on a keyboard) while you stand on the altar, the Spirit Springs that throw
--- you up, the knockback, toasts and sounds.
+-- you up, the knockback, toasts and sounds. In the last ALERT_SECS of a round a bouncing "!" sits on the
+-- button's other corner (owner 2026-10-23): a tap teleports you beside a Spirit Spring at the hub.
 -- The server decides who holds and who wins (src/server/Altar.luau); this only draws and asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -87,6 +88,8 @@ local ui = {}
 local beads = {}
 local dismissed = 0 -- AltarUntil of the round the player closed with the X (hidden until the next)
 local ROW = Color3.fromHex("D9473B") -- red lacquer, so the bronze ding reads
+local ALERT_SECS = 30 -- the "!" shows once the counter reads this or less
+local ALERT_NEAR = 40 -- studs from the altar: already there, no "!"
 
 -- the qi counter's bottom edge (HUD), where altar toasts sit
 local function counterBottom()
@@ -191,6 +194,37 @@ local function build()
 	end)
 	btn.Activated:Connect(function()
 		guideToAltar(player:GetAttribute("GuideTo") == nil)
+	end)
+	-- the "!": gold, on the top-left corner (the X has the right one); it bounces and rocks per frame
+	local alert = Instance.new("TextButton")
+	alert.Text = "!"
+	alert.FontFace = Toy.FONT
+	alert.TextSize = px(18)
+	alert.TextColor3 = Toy.INK
+	alert.AutoButtonColor = false
+	alert.AnchorPoint = Vector2.new(0.5, 0.5)
+	alert.Size = UDim2.fromOffset(px(24), px(24))
+	alert.BackgroundColor3 = GOLD
+	alert.ZIndex = 7
+	alert.Visible = false
+	alert.Parent = row
+	Toy.corner(alert, UDim.new(1, 0))
+	local ast = Instance.new("UIStroke")
+	ast.Color = Toy.INK
+	ast.Thickness = px(2)
+	ast.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	ast.Parent = alert
+	ui.alert, ui.alertX, ui.alertY = alert, -rowSize / 2 - px(2), px(6) + px(2)
+	Toy.feel(alert)
+	alert.Activated:Connect(function()
+		local slots = player:FindFirstChild("HudSlots")
+		local travel = slots and slots:FindFirstChild("Travel")
+		if travel then
+			travel:Fire("altar") -- the HUD's jade wipe (Base / Ranks chips)
+		else
+			remotes.Teleport:FireServer("altar")
+		end
+		guideToAltar(true) -- the trail from the spring up
 	end)
 	placeRow()
 	-- Palm Strike: above Jump on a phone, bottom right on a computer (key F)
@@ -433,6 +467,7 @@ RunService.Heartbeat:Connect(function(dt)
 	local out = player:GetAttribute("AltarOut")
 	local onTop = amOnTop()
 	ui.palm.Visible = open and not out and onTop
+	ui.alert.Visible = false
 	-- the trail stops once you are up there, or when the round ends
 	if player:GetAttribute("GuideTo") and (not open or onTop) then
 		guideToAltar(false)
@@ -462,6 +497,14 @@ RunService.Heartbeat:Connect(function(dt)
 		or math.max(0, untilT - workspace:GetServerTimeNow())
 	ui.secs.Text = math.ceil(secs) .. "s"
 	ui.secs.TextColor3 = color
+	-- the "!" (last ALERT_SECS, not out, not already at the hub)
+	local me = root()
+	local at = altarTop()
+	ui.alert.Visible = secs <= ALERT_SECS
+		and not out
+		and me ~= nil
+		and at ~= nil
+		and Vector2.new(me.Position.X - at.X, me.Position.Z - at.Z).Magnitude > ALERT_NEAR
 	-- a soft bell each time another brazier lights, if I'm near the hub
 	local lit = math.floor(hold / Config.ALTAR_HOLD * Config.ALTAR_BRAZIERS + 1e-6)
 	if lit > lastLit then
@@ -472,6 +515,18 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 	lastLit = lit
+end)
+
+-- the "!" bounces and rocks every frame (the 0.1 s tick above only shows or hides it)
+RunService.RenderStepped:Connect(function()
+	local a = ui.alert
+	if not a or not a.Visible then
+		return
+	end
+	local t = os.clock()
+	local hop = math.abs(math.sin(t * 6)) * px(5)
+	a.Position = UDim2.new(0.5, ui.alertX, 0, ui.alertY - hop)
+	a.Rotation = math.sin(t * 12) * 12
 end)
 
 ---------------------------------------------------------------------------------------------

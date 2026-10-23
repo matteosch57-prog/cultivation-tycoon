@@ -1189,7 +1189,7 @@ refreshStatic = function()
 end
 
 -- Player.HudSlots: other scripts add a row to the right stack (the altar chip) or the left rail
--- (the Friends button). The HUD rebuilds itself on a viewport change, so it points `Right` / `Left`
+-- (the Friends button), and Travel teleports like the Base / Ranks chips. The HUD rebuilds itself on a viewport change, so it points `Right` / `Left`
 -- at the current rails and fires `Rebuilt`: a row re-parents itself there on every Rebuilt
 -- (LayoutOrder: right = gift 1, pill 2, then yours; left = Shop 0, Disciples 1, Karma 2, then yours).
 local slots = Instance.new("Folder")
@@ -1203,6 +1203,10 @@ slotLeft.Parent = slots
 local slotRebuilt = Instance.new("BindableEvent")
 slotRebuilt.Name = "Rebuilt"
 slotRebuilt.Parent = slots
+local slotTravel = Instance.new("BindableEvent") -- Travel:Fire(where): the jade-wipe teleport (the altar "!" uses it)
+slotTravel.Name = "Travel"
+slotTravel.Event:Connect(function(where) task.spawn(teleportTo, where) end)
+slotTravel.Parent = slots
 slots.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
 rebuildAll = function()
