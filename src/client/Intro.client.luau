@@ -4,11 +4,14 @@
 -- title, "+200 [qi]" and a jade GO. GO asks the server (ClaimWelcome, paid once per save, R9); the
 -- drop bursts, qi drops explode across the screen, float, then fly one by one into the HUD's qi
 -- counter, each with a ding that climbs in pitch. Shown only while the player attribute
--- WelcomeQi > 0.
+-- WelcomeQi > 0. Owner 2026-10-23: the rays were cut by a straight line on top (they ran past the
+-- screen's top edge), so the aura shrinks to fit the room above the drop; and "quick bouncy collect
+-- is enough": the whole collect now takes under half the old 5.7 s.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -16,6 +19,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Haptic = require(Shared:WaitForChild("Haptic"))
 
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 -- the qi drop's own colours (Toy Icon:qi)
@@ -24,13 +28,17 @@ local QI_LIGHT = Color3.fromHex("9FF5C8")
 local QI_PALE = Color3.fromHex("E8FFF4")
 local VEIL = Color3.fromHex("0B1F1A")
 
-local DROPS = 36 -- qi drops in the burst
-local COLLECT_GAP = 0.08 -- s between two drops flying in (the slow collect)
+local DROPS = 30 -- qi drops in the burst
+local COLLECT_GAP = 0.03 -- s between two drops flying in (a quick, bouncy collect)
+local COLLECT_FLY = 0.32 -- s for one drop's flight into the counter
+local RAY_REACH = 200 -- longest ray's half length (px before Toy.S): the aura's top
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Intro"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
+gui.ScreenInsets = Enum.ScreenInsets.None -- the whole screen: no inset strip cuts the rays
+gui.ClipToDeviceSafeArea = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 20 -- over the HUD and the friends card
 gui.Parent = playerGui
@@ -111,8 +119,12 @@ local function show(amount)
 		})
 		g.Parent = f
 	end
+	-- the rays and sparkles share one holder, shrunk after layout so the aura never runs off the top
+	local aura = frame(stage, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1, 1) })
+	local auraFit = Instance.new("UIScale")
+	auraFit.Parent = aura
 	local function raySet(count, width, length, core, offset)
-		local set = frame(stage, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1, 1) })
+		local set = frame(aura, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1, 1) })
 		for i = 1, count do -- each bar crosses the centre: two rays (a GuiObject turns about its own centre)
 			local bar = frame(set, {
 				AnchorPoint = Vector2.new(0.5, 0.5),
@@ -127,7 +139,7 @@ local function show(amount)
 		end
 		return set
 	end
-	local soft = raySet(8, px(46), px(400), 0.55, 0)
+	local soft = raySet(8, px(46), px(RAY_REACH * 2), 0.55, 0)
 	local sharp = raySet(6, px(8), px(330), 0.1, 15)
 	tween(soft, 24, { Rotation = 360 }, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
 	tween(sharp, 16, { Rotation = -360 }, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
@@ -135,7 +147,7 @@ local function show(amount)
 		local a = i / 10 * math.pi * 2
 		local r = px(i % 2 == 0 and 112 or 136)
 		local s = px(i % 3 == 0 and 12 or 8)
-		local sp = frame(stage, {
+		local sp = frame(aura, {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.new(0.5, math.cos(a) * r, 0.5, math.sin(a) * r),
 			Size = UDim2.fromOffset(s, s),
@@ -160,6 +172,17 @@ local function show(amount)
 	local dropScale = Instance.new("UIScale")
 	dropScale.Parent = drop
 	tween(dropScale, 0.8, { Scale = 1.08 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+	-- fit the aura once laid out: the drop's centre at full size (the pop scales col about its centre)
+	task.defer(function()
+		RunService.Heartbeat:Wait()
+		if not stage.Parent or pop.Scale <= 0 then
+			return
+		end
+		local cc = col.AbsolutePosition.Y + col.AbsoluteSize.Y / 2
+		local sc = stage.AbsolutePosition.Y + stage.AbsoluteSize.Y / 2
+		local cy = cc + (sc - cc) / pop.Scale + gui.AbsolutePosition.Y
+		auraFit.Scale = math.clamp((cy - px(8)) / px(RAY_REACH), 0.45, 1)
+	end)
 
 	local title = text(col, "HEAVENLY GIFT", px(52), QI_PALE, { LayoutOrder = 2 })
 	local grad = Instance.new("UIGradient")
@@ -210,14 +233,14 @@ local function show(amount)
 		local target = counterCentre()
 		local vp = workspace.CurrentCamera.ViewportSize
 		-- the drop swells and bursts; the screen around it goes
-		tween(dropScale, 0.18, { Scale = 1.4 })
-		task.delay(0.15, function()
-			tween(pop, 0.3, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		tween(dropScale, 0.12, { Scale = 1.4 })
+		task.delay(0.1, function()
+			tween(pop, 0.22, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		end)
 		local flash = disc(gui, px(60), QI_PALE, 0.1, 5)
 		flash.Position = UDim2.fromOffset(from.X, from.Y)
 		flash.AnchorPoint = Vector2.new(0.5, 0.5)
-		tween(flash, 0.5, { Size = UDim2.fromOffset(px(420), px(420)), BackgroundTransparency = 1 })
+		tween(flash, 0.35, { Size = UDim2.fromOffset(px(420), px(420)), BackgroundTransparency = 1 })
 		-- qi explodes out across the screen, then floats
 		local drops = {}
 		local rng = Random.new()
@@ -239,32 +262,51 @@ local function show(amount)
 				out = Vector2.new(out.X, px(110) + rng:NextNumber(0, px(140))) -- scatter, never a row on the edge
 			end
 			out = Vector2.new(math.clamp(out.X, px(40), vp.X - px(40)), math.min(out.Y, vp.Y - px(60)))
-			tween(d, rng:NextNumber(0.45, 0.7), { Position = UDim2.fromOffset(out.X, out.Y), Rotation = rng:NextNumber(-25, 25) }, Enum.EasingStyle.Back)
+			tween(d, rng:NextNumber(0.3, 0.42), { Position = UDim2.fromOffset(out.X, out.Y), Rotation = rng:NextNumber(-25, 25) }, Enum.EasingStyle.Back)
 			table.insert(drops, { d = d, at = out })
 		end
-		task.delay(0.6, function()
-			for _, it in drops do -- a gentle float while they wait
-				tween(it.d, rng:NextNumber(0.6, 0.9), { Position = UDim2.fromOffset(it.at.X, it.at.Y - px(10)) }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		tween(veil, 0.6, { BackgroundTransparency = 0.6 }, nil, nil, nil, nil, 0.1)
+		-- the counter bounces as the drops land (the HUD's own Bump scale: one UIScale per object counts)
+		local hud = playerGui:FindFirstChild("Hud")
+		local counter = hud and hud:FindFirstChild("Counter", true)
+		local bump = counter and counter:FindFirstChild("Bump")
+		if counter and not bump and not counter:FindFirstChildOfClass("UIScale") then
+			bump = Instance.new("UIScale")
+			bump.Name = "Bump"
+			bump.Parent = counter
+		end
+		local function bounce(peak)
+			if bump and bump.Parent then
+				bump.Scale = peak
+				tween(bump, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 			end
-		end)
-		tween(veil, 1.4, { BackgroundTransparency = 0.6 }, nil, nil, nil, nil, 0.3)
-		-- the slow collect: nearest to the counter first, one by one, each with a climbing ding
+		end
+		-- the quick collect: nearest to the counter first, a fast stream with a climbing ding
 		table.sort(drops, function(x, y)
 			return (x.at - target).Magnitude < (y.at - target).Magnitude
 		end)
-		task.delay(1.1, function()
+		task.delay(0.5, function()
 			for k, it in drops do
-				local fly = tween(it.d, 0.55, { Position = UDim2.fromOffset(target.X, target.Y), Size = UDim2.fromOffset(px(14), px(14)), Rotation = 0 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-				fly.Completed:Connect(function()
-					it.d:Destroy()
-					Sfx.play("orb", { volume = 0.35, pitch = 0.85 + 0.75 * k / #drops })
+				-- a little hop up first, then a dive into the counter: bouncy, not floaty
+				local hop = tween(it.d, 0.1, { Position = UDim2.fromOffset(it.at.X, it.at.Y - px(14)), Rotation = 0 }, Enum.EasingStyle.Quad)
+				hop.Completed:Once(function()
+					local fly = tween(it.d, COLLECT_FLY, { Position = UDim2.fromOffset(target.X, target.Y), Size = UDim2.fromOffset(px(14), px(14)) }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+					fly.Completed:Once(function()
+						it.d:Destroy()
+						if k % 2 == 1 or k == #drops then
+							Sfx.play("orb", { volume = 0.35, pitch = 0.85 + 0.75 * k / #drops })
+							bounce(1.12)
+						end
+					end)
 				end)
 				task.wait(COLLECT_GAP)
 			end
-			task.wait(0.6)
+			task.wait(0.1 + COLLECT_FLY)
 			Sfx.play("buy")
-			tween(veil, 0.5, { BackgroundTransparency = 1 })
-			task.wait(0.6)
+			Haptic.play("reward")
+			bounce(1.3)
+			tween(veil, 0.3, { BackgroundTransparency = 1 })
+			task.wait(0.32)
 			gui:ClearAllChildren()
 			open = false
 		end)
