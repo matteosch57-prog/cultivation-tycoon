@@ -4,7 +4,7 @@ local Config = {}
 Config.PLOT_COUNT = 6
 Config.PLOT_RADIUS = 280 -- distance from the hub to each peak centre (room for the sky islets, Config.ISLETS)
 Config.ISLAND_RADIUS = 72 -- the home island (the heart islet); expansions add lobes to islets (ISLAND_LOBES). 66 until 2026-10-23 (owner: "more space, slightly bigger", room for the Floating Lotus Isles at its sides)
-Config.HUB_RADIUS = 44 -- owner 2026-10-22: "central space can be slightly bigger" (was 36)
+Config.HUB_RADIUS = 60 -- owner 2026-10-22: "central space can be slightly bigger" (was 36); 2026-10-23: "ranking panels are blocking some bridges, make the central a bit bigger" (was 44)
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
 Config.OFFLINE_CAP = 4 * 3600 -- seconds of offline qi kept
@@ -881,7 +881,7 @@ Config.RANK_TOP = 10 -- rows on the hub wall
 Config.RANK_READ = 100 -- rows read per board and listed on the Rankings screen (GetSortedAsync max)
 Config.RANK_FRIENDS = 50 -- friends looked up for the Friends tab (one GetAsync each, cached RANK_REFRESH s)
 Config.RANK_WALL_GAP = 5 -- the hub gap (between bridges 5 and 6) where the wall stands
-Config.RANK_WALL_R = 25 -- studs from the hub centre
+Config.RANK_WALL_R = 54 -- studs from the hub centre: far enough out that the wall (lions at its ends) clears both bridge walks by 5 studs (25 on the 44 hub stood on them)
 -- HUD teleports (owner 2026-10-22: "MY BASE" and "RANKINGS" at the top of the HUD): seconds between two
 -- jumps, and how far in front of the ranking wall you land (facing it)
 Config.TELEPORT_COOLDOWN = 3
@@ -939,9 +939,9 @@ Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.38
 -- "a podium of top 3 with their aura and beads", "a bit larger", "on the opposite border"), each its own
 -- avatar (GetHumanoidDescriptionFromUserId, rebuilt only when a place changes hands) playing the idle,
 -- in its realm aura and life beads (PlayerAura); an away player's realm is read from its save once per
--- RANK_REFRESH. r = studs from the hub centre; width, depth = a plinth's; scale = the avatars';
+-- RANK_REFRESH. r = studs from the hub centre (the dais clears both bridge walks by 5+); width, depth = a plinth's; scale = the avatars';
 -- glyph = the ground glyph's size over a player's
-Config.RANK_PODIUM = { r = 24, width = 7, depth = 5, scale = 1.4, glyph = 0.45 }
+Config.RANK_PODIUM = { r = 40, width = 7, depth = 5, scale = 1.4, glyph = 0.45 }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds
 Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)
