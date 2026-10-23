@@ -188,7 +188,7 @@ local function ribbon(holder, key)
 	if not (label or isNew) then
 		return
 	end
-	local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(isNew and 0 or 1, 0), Position = isNew and UDim2.new(0, -px(8), 0, -px(8)) or UDim2.new(1, px(8), 0, -px(8)), Rotation = isNew and -10 or 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex(isNew and "4FD7FF" or "FF6B5E"), ZIndex = 6 })
+	local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(isNew and 0 or 1, 0), Position = isNew and UDim2.new(0, -px(8), 0, -px(8)) or UDim2.new(1, px(2), 0, -px(8)), Rotation = isNew and -10 or 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex(isNew and "4FD7FF" or "FF6B5E"), ZIndex = 6 })
 	Toy.corner(rib, UDim.new(0, px(8)))
 	stroke(rib, Toy.INK, px(2))
 	local pad = Instance.new("UIPadding")
@@ -201,8 +201,10 @@ end
 local function priceButton(parent, w, h, order)
 	local holder, btn = Toy.button(parent, UDim2.fromOffset(w, h), BUY, math.floor(h / 2))
 	holder.LayoutOrder = order or 0
-	local row, label = Toy.amount(btn, "robux", h - px(10), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	return holder, btn, label, row:FindFirstChild("Currency")
+	local row, label = Toy.amount(btn, "robux", h - px(11), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local icon = row:FindFirstChild("Currency")
+	icon.Size = UDim2.fromOffset(h - px(6), h - px(6)) -- a big Robux mark: small it read faint on the green (Play check 2026-10-23)
+	return holder, btn, label, icon
 end
 
 -- the one short value line under a card's name, with its icon: a disciple's bonus, a pack's qi,
@@ -235,7 +237,7 @@ local function card(parent, it, order, w, h, isGift)
 	sc.Name = "Pop"
 	sc.Parent = holder
 	ribbon(holder, key)
-	local bh = math.clamp(math.floor(h * 0.17), px(22), px(28))
+	local bh = math.clamp(math.floor(h * 0.19), px(26), px(30))
 	local nameSize = math.clamp(math.floor(w / 8.4), px(11), px(15))
 	local hasLine = not isGift and (soldDisciple(it) or it.seconds ~= nil or it.ride ~= nil)
 	local isz = math.floor(math.min(w * 0.7, h - (nameSize + px(4)) - (hasLine and px(14) or 0) - (bh + px(11)) - h * 0.06 - px(4)))
@@ -272,7 +274,7 @@ local function freeCard(parent, w, h)
 	local btn, pBtn, label, icon = card(parent, nil, 0, w, h, true)
 	icon:Destroy()
 	label.Text = "Free"
-	local dot = Toy.dot(btn, px(18), { Visible = false })
+	local dot = Toy.dot(btn, px(18), { Visible = false, Position = UDim2.new(1, -px(12), 0, px(12)) }) -- inside the corner: the next card's "New" tag sits just right of it
 	local busy = false
 	local function claim()
 		if busy or (player:GetAttribute("ShopFreeIn") or 1) ~= 0 then
@@ -392,7 +394,7 @@ local function fillPage()
 	scroll.CanvasPosition = Vector2.zero
 	ui.items, ui.free = {}, nil
 	local pad = Instance.new("UIPadding")
-	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(10)), UDim.new(0, px(16))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(16)), UDim.new(0, px(16)) -- room for the tilted tags over the first row
 	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(8)), UDim.new(0, px(8))
 	pad.Parent = scroll
 	Toy.list(scroll, false, px(14), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
