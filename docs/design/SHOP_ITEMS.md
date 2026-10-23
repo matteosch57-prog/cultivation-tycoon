@@ -11,9 +11,9 @@ game reads the real price from Roblox. Icons: `art/shop_icons/<key>.png` (512 x 
 | x2 | Game pass | 2x Qi | Double all the Qi your sect earns, forever. Counts while you are away and on gifts too. | 299 | x2.png |
 | auto | Game pass | Auto Orbs | Qi orbs on your peak fly to you on their own. No more chasing them. | 249 | auto.png |
 | vip | Game pass | VIP Sect | One extra disciple seat, and your sect's name shines in gold on your gate. | 399 | vip.png |
-| swordJade | Game pass | Jade Jian | Ride a jade sword: hover over the ground at 1.5x speed, with a jade trail. Yours forever. | 199 | swordJade.png |
-| swordHeavenly | Game pass | Heavenly Sword | Ride a golden sword: hover at 1.75x speed, with gold ribbons and an ember trail. Yours forever. | 399 | swordHeavenly.png |
-| swordCelestial | Game pass | Celestial Crystal Sword | Ride the crystal sword: hover at 2x speed under a golden halo, with a starlit trail. Yours forever. | 1,199 | swordCelestial.png |
+| swordJade | Game pass | Jade Jian | Fly a jade sword anywhere in the sky at 1.5x speed, with a jade trail. Yours forever. | 199 | swordJade.png |
+| swordHeavenly | Game pass | Heavenly Sword | Fly a golden sword at 1.75x speed, with gold ribbons and an ember trail. Yours forever. | 399 | swordHeavenly.png |
+| swordCelestial | Game pass | Celestial Crystal Sword | Fly the crystal sword at 2x speed under a golden halo, with a starlit trail. Yours forever. | 1,199 | swordCelestial.png |
 
 ## Developer products (Monetization > Developer Products)
 | Key | Type | Name | Description | Price (R$) | Icon |
