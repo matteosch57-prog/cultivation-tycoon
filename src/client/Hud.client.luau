@@ -932,17 +932,22 @@ end
 
 -- The Tide Bell banner (mock docs/art/mocks/tide_bell_banner.jpg, owner pick 2026-10-23): a blue toy
 -- plate under the counter, the bell, "<name> rang the Tide Bell!" and a live countdown of the tide.
--- Shown BANNER_HOLD s on everyone's screen; the HUD's tide row keeps the countdown after that.
-local BANNER_HOLD = 8
+-- Shown BANNER_HOLD s on everyone's screen (the buyer too), then it shrinks into the HUD's tide row,
+-- which keeps the countdown. Its own ScreenGui over everything (the launch screen, a menu, the HUD
+-- stepping aside), kept across spawns (R19).
+local BANNER_HOLD = 4
+local bannerGui = Instance.new("ScreenGui")
+bannerGui.Name = "TideBanner"
+bannerGui.ResetOnSpawn = false
+bannerGui.DisplayOrder = 110 -- over the launch screen (100)
+bannerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+bannerGui.Parent = playerGui
 local banner
 local function tideBanner(name)
-	if not toastLayer then
-		return
-	end
 	if banner then
 		banner:Destroy()
 	end
-	local plate = frame(toastLayer, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("4C9BFF"), ZIndex = 21 })
+	local plate = frame(bannerGui, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("4C9BFF"), ZIndex = 21 })
 	banner = plate
 	Toy.corner(plate, UDim.new(0, px(16)))
 	local st = Instance.new("UIStroke")
@@ -982,7 +987,15 @@ local function tideBanner(name)
 			task.wait(0.25)
 		end
 		if plate.Parent then
-			TweenService:Create(plate, TweenInfo.new(0.5), { Position = UDim2.fromScale(0.5, 0.27) }):Play()
+			-- settle into the tide row (its countdown carries on there), or rise and fade
+			local row = ui.tideRow
+			local goal = UDim2.fromScale(0.5, 0.27)
+			if row and row.Visible and row.AbsoluteSize.X > 0 then
+				local c = row.AbsolutePosition + row.AbsoluteSize / 2 - bannerGui.AbsolutePosition
+				goal = UDim2.fromOffset(c.X, c.Y)
+			end
+			TweenService:Create(plate, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = goal }):Play()
+			TweenService:Create(sc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.25 }):Play()
 			fadeOut(plate, 0.5)
 			task.wait(0.55)
 			plate:Destroy()
