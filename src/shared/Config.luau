@@ -894,7 +894,7 @@ Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.38
 -- in its realm aura and life beads (PlayerAura); an away player's realm is read from its save once per
 -- RANK_REFRESH. r = studs from the hub centre; width, depth = a plinth's; scale = the avatars';
 -- glyph = the ground glyph's size over a player's
-Config.RANK_PODIUM = { r = 24, width = 5.2, depth = 5, scale = 1.4, glyph = 0.45 }
+Config.RANK_PODIUM = { r = 24, width = 7, depth = 5, scale = 1.4, glyph = 0.45 }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds
 Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)
