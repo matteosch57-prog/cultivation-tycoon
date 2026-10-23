@@ -172,30 +172,214 @@ def runes_sheet():
     return g.finish(0.8)
 
 
-def tint(img, rgb):
-    """the texture tinted and laid on black, as additive light reads in game"""
-    r, gc, b = rgb
-    a = np.asarray(img, dtype=np.float32)[..., 3:] / 255
-    core = np.clip(a * 2.2 - 1.6, 0, 1)  # the crisp line goes to white, the glow keeps the colour
-    col = np.array([r, gc, b], dtype=np.float32)
-    out = np.minimum(a * 1.5, 1) * col * (1 - core) + core * 255
+# --- the premium set: two layers a realm (A outer turning one way, B inner the other), as WC3 aura
+# models split one aura into parts on flat planes, plus shared glow, rune sprites and a light column --
+def petals(g, n, r, ln, wd, t):
+    for i in range(n):
+        a = i / n * math.tau
+        x, y = pol(r, a)
+        # an oval pointing out: drawn as a rotated polygon of 24 points
+        pts = []
+        for k in range(24):
+            u = k / 24 * math.tau
+            px, py = math.sin(u) * wd * S / 2, -math.cos(u) * ln * S / 2
+            pts.append((x + px * math.cos(a) - py * math.sin(a), y + px * math.sin(a) + py * math.cos(a)))
+        g.poly(pts, t)
+
+
+def thorns(g, n, r, h, t):
+    half = math.pi / n * 0.55
+    for i in range(n):
+        a = (i + 0.5) / n * math.tau
+        g.line(pol(r, a - half), pol(r + h, a), t)
+        g.line(pol(r + h, a), pol(r, a + half), t)
+
+
+REALMS = {}
+
+
+def realm(n):
+    def deco(f):
+        REALMS[n] = f
+        return f
+    return deco
+
+
+@realm(2)
+def r2():  # Qi Condensation: the neon rings (reference middle)
+    a, b = Art(), Art()
+    for r, t in ((0.47, 16), (0.43, 6), (0.39, 10)):
+        a.ring(r, t)
+    for r, t in ((0.28, 7), (0.23, 12), (0.16, 6)):
+        b.ring(r, t)
+    return a, b
+
+
+@realm(3)
+def r3():  # Foundation: the square held by four seals
+    a, b = Art(), Art()
+    a.ring(0.47, 14); a.ring(0.43, 5); a.star(4, 1, 0.43, 10); a.circles(4, 0.43, 0.04, 7)
+    b.ring(0.24, 8); b.star(4, 1, 0.24, 7, 1 / 8); b.ring(0.1, 8)
+    return a, b
+
+
+@realm(4)
+def r4():  # Core Formation: the hexagram in a rune band
+    a, b = Art(), Art()
+    a.ring(0.47, 14); a.ring(0.39, 7); a.rune_ring(18, 0.43, 0.04, 5, seed=4)
+    b.star(6, 2, 0.36, 11); b.ring(0.36, 6); b.circles(6, 0.36, 0.03, 6); b.ring(0.15, 8)
+    return a, b
+
+
+@realm(5)
+def r5():  # Nascent Soul: the lotus round the pentagram
+    a, b = Art(), Art()
+    a.ring(0.48, 12); petals(a, 12, 0.39, 0.16, 0.07, 7); a.ring(0.3, 6)
+    b.star(5, 2, 0.27, 11); b.ring(0.27, 6); b.circles(5, 0.27, 0.035, 6); b.ring(0.1, 8)
+    return a, b
+
+
+@realm(6)
+def r6():  # Soul Transformation: the circle chain round runes (reference left)
+    a, b = Art(), Art()
+    a.ring(0.47, 12); a.ring(0.38, 8); a.circles(12, 0.425, 0.045, 6, 0.5 / 12)
+    b.rune_ring(20, 0.33, 0.035, 5, seed=6); b.ring(0.29, 6); b.star(8, 3, 0.27, 7); b.ring(0.11, 8)
+    return a, b
+
+
+@realm(7)
+def r7():  # Void Refinement: thorns round two squares turning apart
+    a, b = Art(), Art()
+    a.ring(0.4, 12); thorns(a, 16, 0.4, 0.08, 8); a.star(4, 1, 0.4, 9); a.rune_ring(16, 0.34, 0.03, 4, seed=7)
+    b.star(4, 1, 0.4, 9, 1 / 8); b.ring(0.18, 8); b.circles(8, 0.18, 0.025, 5)
+    return a, b
+
+
+@realm(8)
+def r8():  # Body Integration: the star with rune tablets (reference right)
+    a, b = Art(), Art()
+    rng = random.Random(8)
+    for i in range(4):
+        a.tablet(i / 4 * math.tau, 0.24, 0.4, 0.08, 7, rng)
+    a.ring(0.47, 6); a.rune_ring(16, 0.44, 0.03, 4, seed=81)
+    b.star(8, 3, 0.3, 9, 1 / 16); b.star(4, 1, 0.2, 7); b.star(4, 1, 0.2, 7, 1 / 8); b.ring(0.11, 8)
+    return a, b
+
+
+@realm(9)
+def r9():  # Mahayana: eight tablets, the great lotus
+    a, b = Art(), Art()
+    rng = random.Random(9)
+    for i in range(8):
+        a.tablet(i / 8 * math.tau, 0.3, 0.42, 0.06, 6, rng)
+    a.ring(0.3, 9); a.ring(0.47, 5)
+    petals(b, 16, 0.2, 0.12, 0.05, 6); b.star(8, 3, 0.25, 7, 1 / 16); b.ring(0.1, 9)
+    return a, b
+
+
+@realm(10)
+def r10():  # True Immortal and up: everything, doubled rune bands
+    a, b = Art(), Art()
+    rng = random.Random(10)
+    a.ring(0.48, 14); a.rune_ring(24, 0.445, 0.032, 4, seed=10); a.ring(0.41, 6)
+    a.circles(16, 0.375, 0.03, 5, 0.5 / 16)
+    for i in range(4):
+        a.tablet((i + 0.5) / 4 * math.tau, 0.2, 0.34, 0.07, 6, rng)
+    b.star(12, 5, 0.28, 8); b.ring(0.28, 6); b.rune_ring(12, 0.2, 0.035, 4, seed=101); b.ring(0.12, 9); b.star(6, 2, 0.11, 6)
+    return a, b
+
+
+def glow_tex():
+    """the light a glyph throws: a soft disc brightest at the rim, as WC3's aura base plane"""
+    yy, xx = np.mgrid[0:N, 0:N].astype(np.float32)
+    r = np.hypot(xx - N / 2, yy - N / 2) / (N / 2)
+    rim = np.exp(-((r - 0.9) / 0.08) ** 2)
+    body = np.clip(1 - r, 0, 1) ** 1.5 * 0.45
+    a = np.clip(rim * 0.8 + body, 0, 1) * (r < 1)
+    img = np.zeros((N, N, 4), dtype=np.uint8)
+    img[..., :3] = 255
+    img[..., 3] = (a * 255).astype(np.uint8)
+    return Image.fromarray(img, "RGBA")
+
+
+def column_tex():
+    """a vertical light column (realm 9 and up): bright at the base, fading up, soft edges"""
+    w, h = 256, 512
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    across = np.exp(-((xx - w / 2) / (w * 0.22)) ** 2)
+    up = (yy / h) ** 1.8
+    streaks = 0.75 + 0.25 * np.sin(xx / w * math.tau * 5) ** 2
+    a = np.clip(across * up * streaks, 0, 1)
+    img = np.zeros((h, w, 4), dtype=np.uint8)
+    img[..., :3] = 255
+    img[..., 3] = (a * 255).astype(np.uint8)
+    return Image.fromarray(img, "RGBA")
+
+
+def add_light(base, img, rgb, angle=0.0, squash=1.0, scale=1.0, strength=1.0):
+    """additive composite of a white texture tinted `rgb` (crisp core to white) onto `base`"""
+    t = img.rotate(angle, resample=Image.BICUBIC)
+    size = int(base.size[0] * scale)
+    t = t.resize((size, max(1, int(size * squash))), Image.LANCZOS)
+    a = np.asarray(t, dtype=np.float32)[..., 3] / 255 * strength
+    core = np.clip(a * 2.2 - 1.6, 0, 1)
+    col = np.array(rgb, dtype=np.float32)
+    light = np.minimum(a * 1.5, 1)[..., None] * col * (1 - core[..., None]) + core[..., None] * 255
+    out = np.asarray(base, dtype=np.float32).copy()
+    h, w = light.shape[:2]
+    oy, ox = (out.shape[0] - h) // 2, (out.shape[1] - w) // 2
+    out[oy:oy + h, ox:ox + w] += light
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB")
+
+
+COLORS = {  # Config.realmColor 2..10 (rarity colours, then the realm tints): approximations for the board
+    2: (90, 200, 120), 3: (80, 150, 255), 4: (190, 100, 255), 5: (255, 200, 60), 6: (110, 225, 235),
+    7: (180, 120, 255), 8: (255, 150, 90), 9: (255, 215, 120), 10: (255, 120, 200),
+}
+
+
+def frame(n, a_img, b_img, glow, t, size=420, squash=1.0):
+    base = Image.new("RGB", (size, size), (8, 8, 14))
+    c = COLORS[n]
+    pale = tuple(int(v + (255 - v) * 0.5) for v in c)
+    pulse = 0.75 + 0.25 * math.sin(t * math.tau)
+    base = add_light(base, glow, c, 0, squash, 1.0, 0.55 * pulse)
+    base = add_light(base, a_img, c, -14 * t * 6, squash, 1.0)
+    base = add_light(base, b_img, pale, 22 * t * 6, squash, 1.0)
+    return base
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    pieces = [
-        ("glyph_2_rings", glyph_rings(), (60, 120, 255)),
-        ("glyph_6_circles", glyph_circle_chain(), (230, 235, 60)),
-        ("glyph_10_tablets", glyph_star_tablets(), (90, 170, 255)),
-        ("runes_2x2", runes_sheet(), (240, 240, 255)),
-    ]
-    tile = 560
-    board = Image.new("RGB", (tile * len(pieces), tile), (0, 0, 0))
-    for i, (name, img, rgb) in enumerate(pieces):
-        img.save(os.path.join(OUT, name + ".png"))
-        board.paste(tint(img, rgb).resize((tile, tile), Image.LANCZOS), (i * tile, 0))
-    board.save(os.path.join(OUT, "board_wc3_style.png"))
+    glow, col, runes = glow_tex(), column_tex(), runes_sheet()
+    glow.save(os.path.join(OUT, "aura_glow.png"))
+    col.save(os.path.join(OUT, "aura_column.png"))
+    runes.save(os.path.join(OUT, "aura_runes_2x2.png"))
+    tiles = []
+    gifs = {}
+    for n, f in sorted(REALMS.items()):
+        a, b = f()
+        ai, bi = a.finish(), b.finish()
+        ai.save(os.path.join(OUT, f"aura_r{n}_a.png"))
+        bi.save(os.path.join(OUT, f"aura_r{n}_b.png"))
+        tiles.append(frame(n, ai, bi, glow, 0.15))
+        if n in (4, 6, 8, 10):
+            gifs[n] = (ai, bi)
+    # the board: 9 realms top view, 3 x 3
+    T = 420
+    board = Image.new("RGB", (T * 3, T * 3), (8, 8, 14))
+    for i, t in enumerate(tiles):
+        board.paste(t, ((i % 3) * T, (i // 3) * T))
+    board.save(os.path.join(OUT, "board_premium_top.png"))
+    # a moving preview: 4 realms seen from a player's camera height (squashed), turning and pulsing
+    frames = []
+    for k in range(24):
+        row = Image.new("RGB", (T * 4, int(T * 0.55)), (8, 8, 14))
+        for j, (n, (ai, bi)) in enumerate(gifs.items()):
+            fr = frame(n, ai, bi, glow, k / 24, T, 0.45)
+            row.paste(fr.crop((0, (T - int(T * 0.55)) // 2, T, (T + int(T * 0.55)) // 2)), (j * T, 0))
+        frames.append(row)
+    frames[0].save(os.path.join(OUT, "preview_premium.gif"), save_all=True, append_images=frames[1:], duration=80, loop=0)
     print("wrote", OUT)
 
 
