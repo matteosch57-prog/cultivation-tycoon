@@ -844,19 +844,19 @@ Config.TITLE_SEE = 110 -- studs: farther titles are hidden
 -- whose two ids are 0 keeps the UI-drawn glyph (AuraGlyph RECIPES); runes from realm 6 and the light
 -- column from realm 9 need their own ids.
 Config.AURA_TEX = {
-	glow = 0, -- aura_glow.png
-	column = 0, -- aura_column.png
-	runes = 0, -- aura_runes_2x2.png (a 2 x 2 flipbook)
+	glow = 97261261909185, -- aura_glow.png
+	column = 136175245864583, -- aura_column.png
+	runes = 105666316409518, -- aura_runes_2x2.png (a 2 x 2 flipbook)
 	realms = { -- realm = { aura_r<n>_a.png, aura_r<n>_b.png }
-		[2] = { 0, 0 },
-		[3] = { 0, 0 },
-		[4] = { 0, 0 },
-		[5] = { 0, 0 },
-		[6] = { 0, 0 },
-		[7] = { 0, 0 },
-		[8] = { 0, 0 },
-		[9] = { 0, 0 },
-		[10] = { 0, 0 },
+		[2] = { 101462076907885, 116445156630131 },
+		[3] = { 78351354918107, 139521718891710 },
+		[4] = { 82692031342257, 102753656570417 },
+		[5] = { 136482327832298, 112348904539057 },
+		[6] = { 131839890508081, 71277369931412 },
+		[7] = { 127679238936600, 78699647461511 },
+		[8] = { 82830787818404, 139794889534766 },
+		[9] = { 106824336271041, 110215277572986 },
+		[10] = { 135856301285308, 117237264599559 },
 	},
 }
 Config.AURA_BEAD_BAND = 20
