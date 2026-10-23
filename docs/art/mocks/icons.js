@@ -121,10 +121,16 @@ NEW.echo = [{ d: circ(22, 40, 15), c: C.karma }, { d: circ(42, 25, 18), c: C.kar
 NEW.trophy = [{ d: "M19 14 C8 13 7 30 21 33", c: C.gold, k: "line", w: 5, ol: true }, { d: "M45 14 C56 13 57 30 43 33", c: C.gold, k: "line", w: 5, ol: true },
   { d: rr(20, 49, 24, 10, 2), c: C.goldDk }, { d: rr(28, 38, 8, 13, 1), c: C.gold }, { d: "M15 9 H49 V22 C49 34 42 41 32 41 C22 41 15 34 15 22 Z", c: C.gold }, { d: circ(24, 17, 3), c: "#fff", k: "flat" }];
 
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy"];
+// Tide Bell (Shop, owner 2026-10-23, mock docs/art/mocks/shop_new_tiles_banner.html): a bronze-gold bell
+// over a tide wave, a jade clapper. Cell 31 of the sheet
+NEW.bell = [{ d: "M6 57 C14 53 18 61 26 57 C34 53 38 61 46 57 C52 54 56 59 58 57", c: C.tide, k: "line", w: 4.5, ol: true },
+  { d: rr(28, 3, 8, 8, 2), c: C.gold }, { d: "M32 9 C20 9 16 17 16 27 V37 C16 40 13 41 11 42 V47 H53 V42 C51 41 48 40 48 37 V27 C48 17 44 9 32 9 Z", c: C.gold },
+  { d: circ(32, 50, 4.5), c: C.jade }, { d: "M21 19 C20 24 20 31 21 37", c: "#FFF3C4", k: "line", w: 3 }];
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell"];
 const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
+LABEL.bell = "Bell";
 let uid = 0;
 function shade(c, f) { // f < 1 darker, > 1 lighter
   const n = parseInt(c.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;

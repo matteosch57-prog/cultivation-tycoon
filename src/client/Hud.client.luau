@@ -943,6 +943,66 @@ toast = function(pieces, color, hold)
 	end)
 end
 
+-- The Tide Bell banner (mock docs/art/mocks/tide_bell_banner.jpg, owner pick 2026-10-23): a blue toy
+-- plate under the counter, the bell, "<name> rang the Tide Bell!" and a live countdown of the tide.
+-- Shown BANNER_HOLD s on everyone's screen; the HUD's tide row keeps the countdown after that.
+local BANNER_HOLD = 8
+local banner
+local function tideBanner(name)
+	if not toastLayer then
+		return
+	end
+	if banner then
+		banner:Destroy()
+	end
+	local plate = frame(toastLayer, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("4C9BFF"), ZIndex = 21 })
+	banner = plate
+	Toy.corner(plate, UDim.new(0, px(16)))
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = px(3)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = plate
+	local grad = Instance.new("UIGradient") -- light from the top, like the toy buttons
+	grad.Rotation = 90
+	grad.Color = ColorSequence.new(Color3.fromHex("8FC8FF"), Color3.fromHex("3E86F0"))
+	grad.Parent = plate
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(12)), UDim.new(0, px(18))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(6)), UDim.new(0, px(7))
+	pad.Parent = plate
+	local row = frame(plate, { AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 22 })
+	Toy.list(row, true, px(10), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	Toy.icon(row, "tidebell", px(46), { LayoutOrder = 1, ZIndex = 22 })
+	local words = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2, ZIndex = 22 })
+	Toy.list(words, false, 0)
+	text(words, name .. " rang the Tide Bell!", px(22), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 22 })
+	local sub = text(words, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 22 })
+	local function tick()
+		local left = math.max(0, (workspace:GetAttribute("TideUntil") or 0) - workspace:GetServerTimeNow())
+		sub.Text = string.format("Spirit Tide x2 Qi for everyone · %d:%02d", left // 60, math.floor(left % 60))
+	end
+	tick()
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.4
+	sc.Parent = plate
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	Sfx.play("toast")
+	task.spawn(function()
+		local t0 = os.clock()
+		while plate.Parent and os.clock() - t0 < BANNER_HOLD do
+			tick()
+			task.wait(0.25)
+		end
+		if plate.Parent then
+			TweenService:Create(plate, TweenInfo.new(0.5), { Position = UDim2.fromScale(0.5, 0.27) }):Play()
+			fadeOut(plate, 0.5)
+			task.wait(0.55)
+			plate:Destroy()
+		end
+	end)
+end
+
 popGain = function(amount, big)
 	if not ui.counter or amount <= 0 then
 		return
@@ -972,7 +1032,7 @@ end
 -- layout: place things around Roblox's own controls (called on any change)
 -- a full-screen screen (Shop, Reincarnation) is open: the HUD steps aside (toasts stay), so nothing
 -- peeks out from under that screen's veil or under its title on a phone (phone check 2026-10-21)
-local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "Index" }
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index" }
 local function modalOpen()
 	for _, name in MODALS do
 		local g = playerGui:FindFirstChild(name)
@@ -1500,7 +1560,7 @@ RunService.RenderStepped:Connect(function(dt)
 	PerfMark.finish("hud", t0)
 end)
 
-remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
+remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "orb" then
 		popGain(a, true)
 		toast({ amt("qi", a, "+") }, Color3.fromHex("9FF5D0"), 1.2)
@@ -1555,7 +1615,21 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c)
 		toast(a, GOLD, 4) -- what this realm changed on the peak (Config.realmLookLine)
 		return
 	elseif kind == "tide" then
-		toast("Spirit Tide! 2x Qi", Color3.fromHex("9FD0FF"), 4)
+		if b then
+			tideBanner(b) -- `b` = who rang the Tide Bell
+		else
+			toast("Spirit Tide! 2x Qi", Color3.fromHex("9FD0FF"), 4)
+		end
+		return
+	elseif kind == "tideBellNo" then -- the Tide Bell was refused: `a` = "tide" | "altar"
+		toast(a == "tide" and "The Spirit Tide is already here" or "The Heavenly Altar is opening", PINK, 2.5)
+		return
+	elseif kind == "shopStarter" then
+		-- after the recruit reveal of its Immortal: the qi (`c`) and the 2x (`d` s)
+		task.delay(Config.revealBurst(a) + Config.REVEAL.hold + 1, function()
+			popGain(c or 0, true)
+			toast({ amt("qi", c or 0, "+"), "and 2x Qi for " .. math.floor((d or 0) / 60) .. " min" }, GOLD, 3.5)
+		end)
 		return
 	elseif kind == "blessed" then -- a visitor blessed this sect (Bless.luau); b = qi gained (0: none)
 		if b and b > 0 then
