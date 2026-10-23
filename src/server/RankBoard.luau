@@ -554,7 +554,7 @@ function RankBoard.build(parent, cf)
 	-- guardians and fire in front, spaced for the bigger boards: braziers between the boards (their
 	-- flames clear the text from the RANKINGS spot), lanterns behind the steles off the bridge posts
 	for _, sx in { -1, 1 } do
-		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 18, 0, -7) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
+		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 17, 0, -7) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
 		brazier(m, cf * CFrame.new(sx * 6, 0, -6))
 		lantern(m, cf * CFrame.new(sx * 16.5, 0, 3))
 	end
