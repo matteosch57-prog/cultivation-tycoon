@@ -192,13 +192,13 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Orientation = Enum.ParticleOrientation.VelocityParallel,
 			Shape = Enum.ParticleEmitterShape.Cylinder,
 			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
-			Squash = NumberSequence.new(-2.5), -- tall and thin
-			Size = seq(0.5, 0.9, 0.3),
-			Transparency = seq(0.6, 0.15, 1),
-			Brightness = 3,
+			Squash = NumberSequence.new(-1.6), -- tall and thin (-2.5 thinned them to nothing in daylight)
+			Size = seq(1.2, 1.8, 0.8),
+			Transparency = seq(0.3, 0, 1),
+			Brightness = 6,
 			Lifetime = NumberRange.new(1, 1.5),
 			Speed = NumberRange.new(7, 11),
-			Rate = 18 + 8 * (tier - 8),
+			Rate = 30 + 12 * (tier - 8),
 		})
 		emitter(shaft, {
 			Name = "Core",
@@ -206,13 +206,13 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Color = ColorSequence.new(pale, color),
 			Orientation = Enum.ParticleOrientation.VelocityParallel,
 			Shape = Enum.ParticleEmitterShape.Box,
-			Squash = NumberSequence.new(-1.5),
-			Size = seq(2.2, 3, 2),
-			Transparency = seq(1, 0.72, 1),
-			Brightness = 2,
+			Squash = NumberSequence.new(-1.2),
+			Size = seq(3, 3.6, 2.6),
+			Transparency = seq(1, 0.4, 1),
+			Brightness = 4,
 			Lifetime = NumberRange.new(1.6, 2),
 			Speed = NumberRange.new(4, 5),
-			Rate = 4,
+			Rate = 7,
 		})
 	end
 	if tier >= 7 then
