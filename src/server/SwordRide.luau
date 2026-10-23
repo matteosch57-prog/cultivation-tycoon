@@ -116,7 +116,9 @@ local function start(player, key)
 	-- the feet stay at hrp - (half its height + HipHeight) while the lift raises the root: the blade
 	-- top goes there, so the rider stands on the sword and its underside floats `lift - 2*top` up
 	local feet = -(hrp.Size.Y / 2 + hip)
-	core.CFrame = hrp.CFrame * CFrame.new(0, feet - top, 0)
+	-- the whole model moves before it is parented: its WeldConstraints lock each part where it is
+	-- when it enters the workspace (moving only the core would leave the blade at the template's spot)
+	sword:PivotTo(hrp.CFrame * CFrame.new(0, feet - top, 0))
 	local weld = Instance.new("Weld")
 	weld.Part0, weld.Part1 = hrp, core
 	weld.C0 = CFrame.new(0, feet - top, 0)
