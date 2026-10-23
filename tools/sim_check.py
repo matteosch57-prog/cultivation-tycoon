@@ -107,7 +107,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 pick = t
             if pick >= t:
                 pity[t] = 0
-        return pick, rng.random() < C.get("SHINY_CHANCE", 0)
+        return pick, C.get("SHINY_CHANCE", 0) > 0 and rng.random() < C["SHINY_CHANCE"]
 
     def seat(i, shiny=False):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
         if isinstance(i, tuple):
