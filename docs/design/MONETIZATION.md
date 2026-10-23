@@ -160,12 +160,15 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
 - Three game passes (`SHOP_PASSES` keys `swordJade` / `swordHeavenly` / `swordCelestial`, field
   `ride` = tier; suggested 199 / 399 / 1,199): each is a sword to ride, kept forever; owning a higher
   one keeps the lower ones. Three "New" tiles in the Boosts tab (icons: cells 32 to 34 of the next
-  icon sheet, the palm strike until it is uploaded).
+  icon sheet; until it is uploaded Toy.icon draws a toy sword glyph in the tier colours).
 - **A hover ride, not flight** (`Config.SWORD_RIDE`, `src/server/SwordRide.luau`): the server welds
-  the tier's sword under the feet, raises HipHeight by `lift` and sets WalkSpeed to `MOVE.walk` x
-  1.5 / 1.75 / 2; the Humanoid keeps walking, so stairs, slopes and walls work as on foot and the
-  light stairs and locked isles stay closed. The rider leans forward (the root joint). Everyone
-  sees it. No qi, so the economy does not move.
+  the tier's sword under the feet and sets WalkSpeed to `MOVE.walk` x 1.5 / 1.75 / 2 (back to
+  `MOVE.walk` on every stop). HipHeight is untouched, so the step height stays the walker's and a
+  2.5-stud ledge blocks as on foot (a +1.2 HipHeight let riders climb 3.5-stud ledges in Play); the
+  hover is drawn: the root joint lifts the body `lift` studs and leans it `lean` degrees (the waist
+  `waistLean` more), the sword is welded under the lifted feet. Stairs, slopes and walls work as on
+  foot; the light stairs and locked isles stay closed. Everyone sees it. No qi, so the economy does
+  not move.
 - HUD: a sword button on the left rail (after Friends) once one is owned: tap = ride the last one
   (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker.
 - Off by itself near any pad (`padRadius`; a pad also ignores a rider, so a ride never buys), on the
