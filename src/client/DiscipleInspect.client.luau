@@ -201,18 +201,10 @@ local function refreshCrowns()
 			end
 			if stars >= Config.STAR_ROW then
 				-- a full row: a twinkle over the crown
-				local tw = Instance.new("TextLabel")
-				tw.BackgroundTransparency = 1
-				tw.AnchorPoint = Vector2.new(0.5, 0.5)
-				tw.Position = UDim2.fromScale(0.62, 0.12)
-				tw.Size = UDim2.fromScale(0.16, 0.26)
-				tw.FontFace = Toy.FONT
-				tw.Text = "✦"
-				tw.TextScaled = true
-				tw.TextColor3 = Color3.new(1, 1, 1)
-				tw.ZIndex = 3
-				tw.Parent = t
-				game:GetService("TweenService"):Create(tw, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { TextTransparency = 1 }):Play()
+				-- the atlas sparkle (the font has no ✦) in the top full row's colour
+				local color = Config.starColor(stars - stars % Config.STAR_ROW):Lerp(Color3.new(1, 1, 1), 0.3)
+				local tw = Toy.atlasPiece(t, "sparkle", 0, 0, color, 0, { Position = UDim2.fromScale(0.62, 0.12), Size = UDim2.fromScale(0.2, 0.36), ZIndex = 3 })
+				game:GetService("TweenService"):Create(tw, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { ImageTransparency = 1 }):Play()
 			end
 			crowns[m] = t
 		end
