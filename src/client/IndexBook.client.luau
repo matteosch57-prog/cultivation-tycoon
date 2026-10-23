@@ -71,7 +71,7 @@ end
 
 local seen = {} -- stars per entry at the last close: a tile with more since says NEW
 local close
-local nameLine -- the line under the grid: the tapped disciple's name (named disciples, 2026-10-23)
+local nameLine -- the foot line: the star rule, then the tapped disciple's name (named disciples, 2026-10-23)
 local shinyFound = {}
 
 -- One entry: the shared disciple tile (Toy.discipleTile, the same card as My Sect and the recruit
@@ -91,6 +91,7 @@ local function tile(parent, rarity, look, pulls, order)
 		if nameLine and pulls > 0 then
 			nameLine.Text = (shinyFound[key] and "Shiny " or "") .. Config.discipleName(rarity.name, look) .. " · " .. rarity.name
 			nameLine.TextColor3 = rarity.color:Lerp(Color3.new(1, 1, 1), 0.25)
+			nameLine.TextSize = px(15)
 		end
 	end)
 end
@@ -138,7 +139,6 @@ local function fill(body)
 		end
 	end
 
-	nameLine = text(body, "Tap a disciple", px(15), GREY, { LayoutOrder = 4 })
 	-- the foot: progress to the next summons step
 	local step = Config.INDEX_STEP_STARS
 	local nextAt = (total // step + 1) * step
@@ -166,7 +166,8 @@ local function fill(body)
 	if #later > 0 then
 		line ..= ", then " .. table.concat(later, ", ")
 	end
-	text(body, line, px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 6 })
+	-- one line for both (a phone has no height to spare): the rule until a tile is tapped
+	nameLine = text(body, line, px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 6 })
 end
 
 -- the window (until the Disciples book replaces it): veil, title, the page, the X

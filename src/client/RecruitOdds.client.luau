@@ -50,24 +50,32 @@ local function commas(n)
 	return s
 end
 
--- the page into `body` (a vertical list)
+-- the page into `body`: two columns side by side so it fits a phone's height (Play check 2026-10-23:
+-- one column ran off a 749 x 381 screen): the odds on the left, pity and Shiny on the right
 local bars = {} -- [rarity] = { fill, label, at }: refreshed when the Pity attribute changes
-local function fill(body)
+local function fill(page)
 	table.clear(bars)
+	local cols = frame(page, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	Toy.list(cols, true, px(18), { VerticalAlignment = Enum.VerticalAlignment.Top })
+	local body = frame(cols, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	Toy.list(body, false, px(4))
+	local right = frame(cols, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	Toy.list(right, false, px(8))
 	local rows = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	Toy.list(rows, false, px(3), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
 	for i, r in Config.RARITIES do
-		local row = frame(rows, { Size = UDim2.fromOffset(px(250), px(26)), LayoutOrder = i })
+		local row = frame(rows, { Size = UDim2.fromOffset(px(250), px(24)), LayoutOrder = i })
 		Toy.disciple(row, px(26), r.name, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) }, true, Config.DISCIPLE_LOOKS[1])
 		text(row, r.name, px(15), r.color, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(32), 0.5, 0) })
 		text(row, pct(r.weight), px(15), WHITE, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
 	end
 	text(body, "Each is one of 4 disciples of that rarity, equally likely.", px(11), SOFT, { LayoutOrder = 2 })
+	body = right
 	-- pity: one bar per guarantee
 	local counts = readPity()
 	for i, p in Config.PITY do
 		local r = Config.rarity(p.rarity)
-		local box = frame(body, { Size = UDim2.fromOffset(px(250), px(40)), LayoutOrder = 2 + i })
+		local box = frame(body, { Size = UDim2.fromOffset(px(230), px(40)), LayoutOrder = i })
 		text(box, p.rarity .. " or better by " .. commas(p.at), px(13), r.color, { Position = UDim2.fromOffset(0, 0) })
 		local label = text(box, "", px(13), WHITE, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0) })
 		local bar = frame(box, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, px(14)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("110C18"), ClipsDescendants = true })
@@ -92,7 +100,7 @@ local function fill(body)
 	refresh()
 	-- Shiny (Pet Simulator 99): on top of any rarity
 	local shiny = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 10 })
-	Toy.list(shiny, true, px(6))
+	Toy.list(shiny, false, px(1))
 	text(shiny, "✦ Shiny", px(14), GOLD, { LayoutOrder = 1 })
 	text(shiny, string.format("%s of every recruit, x%s qi", pct(Config.SHINY_CHANCE * 100), tostring(Config.SHINY_MULT)), px(13), WHITE, { LayoutOrder = 2 })
 	return refresh
@@ -157,7 +165,7 @@ local function open()
 	veil.Activated:Connect(close)
 	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(body, false, px(6))
-	text(body, "Recruit Odds", px(26), GOLD, { LayoutOrder = 0, Rotation = -2 })
+	text(body, "Recruit Odds", px(24), GOLD, { LayoutOrder = 0, Rotation = -2 })
 	refreshNow = fill(body)
 	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
