@@ -19,15 +19,13 @@ local Altar = {}
 
 local ctx -- from Main: sessions, rate, publish, notify, telemetry, style, baseY
 local top -- world position of the altar's top centre
-local braziers = {} -- { flame = Part, fire = Fire, light = PointLight }
+local braziers = {} -- { flame = Part, fire = Fire, light = PointLight } (none since the deck braziers went, D79)
+local winGlow -- PointLight over the deck while a win is fresh
 local springs = {} -- Parts on the plaza (clients launch themselves from them)
 local round = nil -- { untilT, holder, hold, joined = {[player]=true}, out = {[player]=true} }
 local crowned = nil -- the winner wearing the light aura until the next round
 local lastPush = {}
 
-local GOLD = Color3.fromHex("D4A445")
-local BRONZE = Color3.fromHex("7A5A3A")
-local FLAME = Color3.fromRGB(255, 190, 110)
 
 ---------------------------------------------------------------------------------------------
 -- The altar (owner 2026-10-23, picked A of docs/art/mocks/altar_store_arenas.jpg on the lotus isles'
@@ -36,8 +34,8 @@ local FLAME = Color3.fromRGB(255, 190, 110)
 -- disciples' lotus isles float on (Config.SKY_MESH islet + its grass top, vines, spirit crystals,
 -- clouds trailing under it), its deck ALTAR_HEIGHT over the plaza. The meshes only draw: an invisible
 -- slab is the deck players stand on (every edge open for ring-outs) and the grass top catches whoever
--- falls short. Eight bronze braziers on the deck's edge stay dark until a holder's timer lights them
--- (real fire, R3). Two Spirit Springs on the plaza throw you up while it is open.
+-- falls short. A gold light warms the deck when someone wins. Two Spirit Springs on the plaza throw you
+-- up while it is open.
 local function lightBrazier(b, on)
 	b.flame.Transparency = on and 0 or 1
 	b.fire.Enabled = on
@@ -145,72 +143,26 @@ local function build(parent)
 	local R = Config.ALTAR_RADIUS
 	local y = ctx.baseY + Config.ALTAR_HEIGHT
 	top = Vector3.new(0, y, 0)
-	local props = {} -- parts that must not collide
-	local function prop(p)
-		table.insert(props, p)
-		return p
-	end
 	-- the deck players stand on: invisible, the arena mesh draws it
 	local floor = P(m, Vector3.new(R * 2, 1, R * 2), CFrame.new(0, y - 0.5, 0), Color3.new(1, 1, 1))
 	floor.Name = "Floor"
 	floor.Transparency = 1
 	floor.CastShadow = false
 	task.spawn(dress, m, y, R)
-	-- braziers: two on each edge of the deck
-	for k = 0, Config.ALTAR_BRAZIERS - 1 do
-		local side, slot = k % 4, k // 4
-		local face = CFrame.Angles(0, side * math.pi / 2, 0)
-		local c = (face * CFrame.new((slot == 0 and -1 or 1) * R * 0.5, y, R - 1)).Position
-		for _, t in { 0, 2.1, 4.2 } do
-			prop(P(
-				m,
-				Vector3.new(0.25, 1.6, 0.25),
-				CFrame.new(c + Vector3.new(math.cos(t) * 0.55, 0.8, math.sin(t) * 0.55))
-					* CFrame.Angles(math.cos(t) * 0.25, 0, -math.sin(t) * 0.25),
-				BRONZE,
-				Enum.Material.Metal
-			))
-		end
-		prop(P(
-			m,
-			Vector3.new(0.5, 1.5, 1.5),
-			CFrame.new(c + Vector3.new(0, 1.75, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-			BRONZE,
-			Enum.Material.Metal,
-			Enum.PartType.Cylinder
-		))
-		prop(P(
-			m,
-			Vector3.new(0.2, 1.7, 1.7),
-			CFrame.new(c + Vector3.new(0, 2.05, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-			GOLD,
-			Enum.Material.Metal,
-			Enum.PartType.Cylinder
-		))
-		local flame =
-			prop(P(m, Vector3.new(0.8, 0.9, 0.8), CFrame.new(c + Vector3.new(0, 2.4, 0)), FLAME, Enum.Material.Neon))
-		local fire = Instance.new("Fire")
-		fire.Size = 2.2
-		fire.Heat = 7
-		fire.Color = Color3.fromRGB(255, 160, 70)
-		fire.SecondaryColor = Color3.fromRGB(255, 80, 30)
-		fire.Parent = flame
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 175, 95)
-		light.Range = 12
-		light.Brightness = 1.4
-		light.Shadows = false
-		light.Parent = flame
-		local b = { flame = flame, fire = fire, light = light }
-		lightBrazier(b, false)
-		table.insert(braziers, b)
-	end
-	for _, p in props do
-		p.CanCollide = false
-		p.CanQuery = false
-	end
+	-- a winner's glow: a warm gold light over the deck for a few seconds (owner 2026-10-23 removed the
+	-- deck braziers, "they read like stools": the hold timer lives in the HUD beads; real light, R3)
+	winGlow = Instance.new("PointLight")
+	winGlow.Color = Color3.fromRGB(255, 205, 110)
+	winGlow.Range = 24
+	winGlow.Brightness = 2.5
+	winGlow.Shadows = false
+	winGlow.Enabled = false
+	local glowAt = Instance.new("Attachment")
+	glowAt.Position = Vector3.new(0, 4, 0) -- over the deck, not inside the arena mesh
+	glowAt.Parent = floor
+	winGlow.Parent = glowAt
 	-- Spirit Springs on the plaza, either side of the cauldron (clear of the spawn at z = 9 and out
-	-- past the deck, so the arc clears the apron)
+	-- past the islet, so the arc clears its rim)
 	for _, sx in { -1, 1 } do
 		local c = Vector3.new(sx * Config.ALTAR_SPRING_X, ctx.baseY + 0.45, -2)
 		local ring = P(
@@ -407,6 +359,10 @@ local function closeRound(winner)
 		local contested = joined > 1 -- an empty-server claim pays less: the prize is for a fight
 		local gain = reward(winner, contested and Config.ALTAR_WIN_SECONDS or Config.ALTAR_SOLO_SECONDS, "altarWin")
 		giveCrown(winner)
+		winGlow.Enabled = true
+		task.delay(6, function()
+			winGlow.Enabled = false
+		end)
 		ctx.notify:FireAllClients("altarWon", winner.DisplayName, gain, winner.UserId)
 		for _, b in braziers do
 			lightBrazier(b, true)

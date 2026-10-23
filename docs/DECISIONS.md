@@ -516,4 +516,6 @@ the log as a D-number.
   docs/art/mocks/altar_arena_isle_preview.jpg. The mesh is rebuilt by id (`Config.ALTAR_ARENA`, no
   inserted scripts) and only draws; an invisible slab is the deck, so props, stairs and poles never
   block a push. Stepping off the deck onto the islet's grass counts as out. Springs moved to
-  `ALTAR_SPRING_X` 24, clear of the islet. D78's push, Palm spot and sword rule stay.
+  `ALTAR_SPRING_X` 24, clear of the islet. D78's push, Palm spot and sword rule stay. The deck braziers
+  went (owner: they read like stools); the hold timer is the HUD beads, a gold light warms the deck
+  for 6 s on a win.
