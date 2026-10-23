@@ -71,8 +71,10 @@ local function ride(key)
 	remotes.SwordRide:FireServer(key)
 end
 
--- the picker: one toy tile per owned sword beside the button, the last ridden first and gold-rimmed
-local function openPicker(list)
+-- the picker: one toy tile per owned sword beside the button, the last ridden first and gold-rimmed.
+-- It floats in this script's own gui at the button's right (Studio 2026-10-23: inside the rail it
+-- widened the row and pushed the HUD's other buttons 160 px over)
+local function openPicker(list, anchor)
 	closePicker()
 	local pick = player:GetAttribute("SwordPick")
 	table.sort(list, function(a, b)
@@ -81,7 +83,13 @@ local function openPicker(list)
 		end
 		return a < b
 	end)
-	picker = frame(root, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, px(10), 0, px(21)), ZIndex = 5 })
+	local at = anchor.AbsolutePosition - gui.AbsolutePosition
+	picker = frame(gui, {
+		AutomaticSize = Enum.AutomaticSize.XY,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.fromOffset(at.X + anchor.AbsoluteSize.X + px(12), at.Y + anchor.AbsoluteSize.Y / 2),
+		ZIndex = 5,
+	})
 	Toy.list(picker, true, px(8))
 	for i, key in list do
 		local col = frame(picker, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, ZIndex = 5 })
@@ -131,7 +139,7 @@ local function draw()
 		elseif picker then
 			closePicker()
 		else
-			openPicker(table.clone(list))
+			openPicker(table.clone(list), btn)
 		end
 	end)
 	placeRow()
@@ -164,6 +172,7 @@ task.spawn(function()
 	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
+			closePicker() -- it floats beside a button that is about to move
 			task.defer(placeRow)
 		end)
 	end

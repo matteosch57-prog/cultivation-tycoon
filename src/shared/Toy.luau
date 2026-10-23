@@ -975,6 +975,46 @@ local function atlasIcon(parent, key, size, props)
 	return img
 end
 
+-- A Flying Sword (D76) before the icon sheet with its cells is uploaded: a toy jian drawn from frames
+-- in the sheet's sticker language (ink outline, one light), nose to the top right, in the tier's
+-- colours (1 jade, 2 gold, 3 celestial)
+local SWORD_GLYPH = {
+	{ blade = "CFF7E6", guard = "5FD39B" },
+	{ blade = "FFC93C", guard = "E5483F" },
+	{ blade = "9FD8FF", guard = "FFC93C" },
+}
+local function swordGlyph(parent, size, tier, props)
+	local box = Toy.frame(parent, { Size = UDim2.fromOffset(size, size) })
+	for k, v in props or {} do
+		box[k] = v
+	end
+	local c = SWORD_GLYPH[tier] or SWORD_GLYPH[1]
+	local z = box.ZIndex
+	local rot = Toy.frame(box, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), Rotation = 45, ZIndex = z })
+	local function piece(x, y, w, h, color, round)
+		local f = Toy.frame(rot, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(x, y),
+			Size = UDim2.fromScale(w, h),
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Color3.fromHex(color),
+			ZIndex = z,
+		})
+		Toy.corner(f, UDim.new(round or 0.3, 0))
+		local st = Instance.new("UIStroke")
+		st.Color = Toy.INK
+		st.Thickness = math.max(1.5, size * 0.06)
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		st.Parent = f
+		return f
+	end
+	piece(0.5, 0.36, 0.13, 0.6, c.blade, 0.35) -- the blade, its tip up (turned 45 degrees: top right)
+	piece(0.5, 0.67, 0.4, 0.09, c.guard, 0.5)
+	piece(0.5, 0.79, 0.09, 0.17, "E5483F", 0.4) -- the grip
+	piece(0.5, 0.92, 0.1, 0.1, c.guard, 1) -- the pommel
+	return box
+end
+
 -- Draws icon `key` in a size x size box; returns the box. A shop item with a `rarity` draws that
 -- rarity's disciple with its moving aura.
 function Toy.icon(parent, key, size, props)
@@ -991,6 +1031,8 @@ function Toy.icon(parent, key, size, props)
 		return box
 	elseif item and item.rarity then
 		return well(parent, size, Config.rarityIndex(item.rarity), props)
+	elseif item and item.ride and not ICON_ATLAS.keys[key] then
+		return swordGlyph(parent, size, item.ride, props)
 	elseif key == "robux" then
 		return Toy.robuxIcon(parent, size, props)
 	elseif key == "disciple" then
