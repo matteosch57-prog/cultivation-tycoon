@@ -832,6 +832,26 @@ Config.TITLE_SEE = 110 -- studs: farther titles are hidden
 -- bead per rebirth on a halo of AURA_BEAD_BAND slots; each full band the beads take the next colour
 -- (owner: "like 20 yellow then 20 red then 20 blue and with more aura each time... easily to 100").
 -- After the last band the halo stays full.
+-- The ground glyph textures (owner pick 2026-10-23: our WC3-style set, tools/aura_textures.py; the
+-- owner uploads upload/auras/*.png and pastes the image ids here). White art tinted per realm. A realm
+-- whose two ids are 0 keeps the UI-drawn glyph (AuraGlyph RECIPES); runes from realm 6 and the light
+-- column from realm 9 need their own ids.
+Config.AURA_TEX = {
+	glow = 0, -- aura_glow.png
+	column = 0, -- aura_column.png
+	runes = 0, -- aura_runes_2x2.png (a 2 x 2 flipbook)
+	realms = { -- realm = { aura_r<n>_a.png, aura_r<n>_b.png }
+		[2] = { 0, 0 },
+		[3] = { 0, 0 },
+		[4] = { 0, 0 },
+		[5] = { 0, 0 },
+		[6] = { 0, 0 },
+		[7] = { 0, 0 },
+		[8] = { 0, 0 },
+		[9] = { 0, 0 },
+		[10] = { 0, 0 },
+	},
+}
 Config.AURA_BEAD_BAND = 20
 Config.AURA_BEAD_COLORS = { Color3.fromHex("FFD36A"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF"), Color3.fromHex("B46BFF"), Color3.fromHex("BFF2E0") } -- rebirths 1-20, 21-40, 41-60, 61-80, 81-100
 function Config.ordinal(n)

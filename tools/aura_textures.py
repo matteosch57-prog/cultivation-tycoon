@@ -303,12 +303,13 @@ def glow_tex():
 
 
 def column_tex():
-    """a vertical light column (realm 9 and up): bright at the base, fading up, soft edges"""
-    w, h = 256, 512
+    """the light column (realm 9 and up) for a Beam: a Beam lays its texture's width along its length,
+    so the base is the left edge, fading to the right (the top), soft across, a few streaks"""
+    w, h = 512, 256
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    across = np.exp(-((xx - w / 2) / (w * 0.22)) ** 2)
-    up = (yy / h) ** 1.8
-    streaks = 0.75 + 0.25 * np.sin(xx / w * math.tau * 5) ** 2
+    across = np.exp(-((yy - h / 2) / (h * 0.22)) ** 2)
+    up = (1 - xx / w) ** 1.8
+    streaks = 0.75 + 0.25 * np.sin(yy / h * math.tau * 5) ** 2
     a = np.clip(across * up * streaks, 0, 1)
     img = np.zeros((h, w, 4), dtype=np.uint8)
     img[..., :3] = 255
@@ -380,7 +381,13 @@ def main():
             row.paste(fr.crop((0, (T - int(T * 0.55)) // 2, T, (T + int(T * 0.55)) // 2)), (j * T, 0))
         frames.append(row)
     frames[0].save(os.path.join(OUT, "preview_premium.gif"), save_all=True, append_images=frames[1:], duration=80, loop=0)
-    print("wrote", OUT)
+    # the files the owner uploads (R5): upload/auras/, ids go to Config.AURA_TEX
+    up = os.path.join(ROOT, "upload", "auras")
+    os.makedirs(up, exist_ok=True)
+    for f in os.listdir(OUT):
+        if f.startswith("aura_") and f.endswith(".png"):
+            Image.open(os.path.join(OUT, f)).save(os.path.join(up, f))
+    print("wrote", OUT, "and", up)
 
 
 if __name__ == "__main__":

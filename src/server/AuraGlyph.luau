@@ -4,6 +4,9 @@
 -- pentagram, lotus petals, the eight trigrams), sharper and fuller with each realm. Two layers turn
 -- opposite ways: each lies on its own flat part on a Motor6D from the root (tag "AuraSpin", attribute
 -- Spin in degrees a second) whose Transform the client turns (AuraSpin.client): no server motion.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+
 local AuraGlyph = {}
 
 local PPS = 48 -- SurfaceGui pixels per stud
@@ -273,9 +276,29 @@ local RECIPES = {
 local SPIN = { 14, -22 } -- degrees a second, outer and inner
 
 -- builds the two layers for `realm` (2 and up) under `hrp` at the root-space offset `at`, diameter `D`
+-- the uploaded WC3-style textures for `realm` (owner pick 2026-10-23, tools/aura_textures.py), or nil
+-- while they are not uploaded yet (Config.AURA_TEX ids 0): then the UI-drawn RECIPES stand in
+local function textures(realm)
+	local t = Config.AURA_TEX.realms[math.clamp(realm, 2, 10)]
+	return t and t[1] ~= 0 and t[2] ~= 0 and t or nil
+end
+
+local function image(gui, id, color, transparency, z)
+	local im = Instance.new("ImageLabel")
+	im.Size = UDim2.fromScale(1, 1)
+	im.BackgroundTransparency = 1
+	im.Image = "rbxassetid://" .. id
+	im.ImageColor3 = color
+	im.ImageTransparency = transparency
+	im.ZIndex = z
+	im.Parent = gui
+end
+
+-- builds the two layers for `realm` (2 and up) under `hrp` at the root-space offset `at`, diameter `D`
 function AuraGlyph.build(folder, hrp, realm, at, D, color, pale, brightness)
+	local tex = textures(realm)
 	local recipe = RECIPES[math.clamp(realm, 2, 10)]
-	for i, draw in recipe do
+	for i = 1, 2 do
 		local p = Instance.new("Part")
 		p.Name = "AuraGlyph" .. i
 		p.Size = Vector3.new(D, 0.05, D)
@@ -295,7 +318,15 @@ function AuraGlyph.build(folder, hrp, realm, at, D, color, pale, brightness)
 		gui.ZOffset = i
 		gui.MaxDistance = 160
 		gui.Parent = p
-		draw(Draw.new(gui, D * PPS, color, pale))
+		if tex then
+			-- the outer layer in the realm colour over the shared glow, the inner one pale
+			if i == 1 and Config.AURA_TEX.glow ~= 0 then
+				image(gui, Config.AURA_TEX.glow, color, 0.35, 1)
+			end
+			image(gui, tex[i], i == 1 and color or pale, 0, 2)
+		else
+			recipe[i](Draw.new(gui, D * PPS, color, pale))
+		end
 		local m = Instance.new("Motor6D")
 		m.Name = "AuraSpin"
 		m.Part0 = hrp

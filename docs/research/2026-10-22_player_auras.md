@@ -74,3 +74,14 @@ round the pentagram (5), trigrams round a taiji with seal script (6), thorns rou
 28 mansions round trigrams (8), lotus in a crown of rays (9), the full array (10+). Lines are 1.4x
 bolder, a soft disc of the realm colour lights the ground under them, SurfaceGui brightness 3 to 4.5,
 and the v2 particle glow, counter ring and pulse are back under the lines. The beads lost their chain.
+
+## v5 (owner pick 2026-10-23 07:49: "Our premium WC3-style set")
+
+How WC3 aura packs are built (Hive Workshop: Blood Raven's and Selection aura packs): one aura is a
+texture on flat planes, split into parts (Devotion in 2, Unholy and Trueshot in more) that turn and
+are recoloured per aura. Ours copies that: `tools/aura_textures.py` draws two white glow layers per
+realm (A outer, B inner, turning opposite ways), a shared glow disc, a 2x2 rune flipbook (runes float
+up from realm 6) and a Beam light column (realm 9 and up). Files for upload: `upload/auras/` (21 PNGs);
+ids go in `Config.AURA_TEX`. Until they are in, each realm keeps the UI-drawn glyph.
+The Creator Store search (129 hits, board in project files) was passed over: mixed styles, mostly
+0-vote uploads of unknown origin, not cleanly recolourable.
