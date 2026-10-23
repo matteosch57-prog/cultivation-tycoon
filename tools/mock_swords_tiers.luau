@@ -285,6 +285,7 @@ return function()
 	--     star twinkles, a wide soft cloud trail under the bright one, sparks shed into the trail
 	-- Nothing touches the rider: every layer hangs off the blade (owner: "aura only on sword").
 	local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
+	local GLOW = "rbxassetid://97261261909185" -- Config.AURA_TEX.glow, our soft radial glow (v4 wide beams had no texture and drew as hard slabs)
 	local function beam(holder, a0, a1, color, w0, w1, emission, alpha)
 		local b = Instance.new("Beam")
 		b.Attachment0, b.Attachment1 = a0, a1
@@ -307,7 +308,7 @@ return function()
 			local f = k / steps
 			local a = phase + f * turns * math.pi * 2
 			local z = size.Z / 2 - f * size.Z
-			local at = attach(holder, cf * CFrame.new(math.cos(a) * radius, size.Y / 2 + math.sin(a) * radius * 0.6 + radius * 0.4, z))
+			local at = attach(holder, cf * CFrame.new(math.cos(a) * radius, math.sin(a) * math.max(size.Y * 1.5, 0.3), z)) -- hugs the blade: just past the edge, just over the flat
 			if prev then
 				beam(holder, prev, at, color, width * (1 - f * 0.6), width * (1 - (f + 1 / steps) * 0.6), 1, 0.1)
 			end
@@ -338,8 +339,10 @@ return function()
 		-- under-glow: a soft flat band of the tier colour just under the blade
 		local u0 = attach(holder, cf * CFrame.new(0, -size.Y, size.Z / 2))
 		local u1 = attach(holder, cf * CFrame.new(0, -size.Y, -size.Z / 2))
-		local under = beam(holder, u0, u1, t.color, size.X * (1.6 + i * 0.4), size.X * 0.8, 1, 0.55)
+		local under = beam(holder, u0, u1, t.color, size.X * (1.6 + i * 0.4), size.X * 0.8, 1, 0.3)
 		under.FaceCamera = false
+		under.Texture = GLOW
+		under.TextureMode = Enum.TextureMode.Stretch
 		-- the ribbons
 		local RIBBONS = {
 			{ { t.color, 1.5, 0 } },
@@ -347,7 +350,7 @@ return function()
 			{ { Color3.new(1, 1, 1), 2.5, 0 }, { Color3.fromHex("8FD3FF"), 2.5, math.pi * 2 / 3 }, { Color3.fromHex("FFD34D"), 2.5, math.pi * 4 / 3 } },
 		}
 		for _, r in RIBBONS[i] do
-			ribbon(holder, cf, size, r[1], r[2], r[3], math.max(size.X * 0.45, 0.35), 0.12 + i * 0.03)
+			ribbon(holder, cf, size, r[1], r[2], r[3], size.X * 0.55 + 0.12, 0.1 + i * 0.03)
 		end
 		-- motes along the blade
 		for k = 1, 3 + i do
@@ -367,6 +370,8 @@ return function()
 			local base = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2))
 			local soft = beam(holder, base, back, i == 2 and Color3.fromHex("FF9A2E") or Color3.fromHex("CFE9FF"), t.width * (i == 2 and 1.3 or 2), t.width * 0.4, i == 2 and 0.8 or 0.5, 0)
 			soft.FaceCamera = false
+			soft.Texture = GLOW
+			soft.TextureMode = Enum.TextureMode.Stretch
 			soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
 			-- sparks shed off the hilt into the trail
 			local s = motes(hilt, i == 2 and Color3.fromHex("FFD34D") or Color3.new(1, 1, 1), 10 + i * 6, 0.25, 4, 0.8)
@@ -377,15 +382,24 @@ return function()
 		end
 		if i == 3 then
 			-- a vertical halo ring behind the hilt, facing forward
-			local ring, r, n = {}, 1.9, 24
-			local c = cf * CFrame.new(0, size.Y / 2 + 2.6, size.Z / 2 + 0.8)
-			for k = 0, n do
-				local a = k / n * math.pi * 2
-				ring[k] = attach(holder, c * CFrame.new(math.cos(a) * r, math.sin(a) * r, 0))
-				if k > 0 then
-					beam(holder, ring[k - 1], ring[k], Color3.fromHex("FFE38A"), 0.16, 0.16, 1, 0.05)
+			-- tilted back 35 degrees so it reads from the side and from above; two rings and a soft fill
+			local c = cf * CFrame.new(0, size.Y / 2 + 2.6, size.Z / 2 + 0.8) * CFrame.Angles(math.rad(-35), 0, 0)
+			for _, ringDef in { { 1.9, 0.34, "FFD34D", 0 }, { 1.45, 0.14, "FFFFFF", 0.1 } } do
+				local ring, r, n = {}, ringDef[1], 32
+				for k = 0, n do
+					local a = k / n * math.pi * 2
+					ring[k] = attach(holder, c * CFrame.new(math.cos(a) * r, math.sin(a) * r, 0))
+					if k > 0 then
+						local b = beam(holder, ring[k - 1], ring[k], Color3.fromHex(ringDef[3]), ringDef[2], ringDef[2], 1, ringDef[4])
+						b.Brightness = 3
+					end
 				end
 			end
+			local f0 = attach(holder, c * CFrame.new(0, -2.4, 0))
+			local f1 = attach(holder, c * CFrame.new(0, 2.4, 0))
+			local fill = beam(holder, f0, f1, Color3.fromHex("FFE9A8"), 4.8, 4.8, 1, 0.45)
+			fill.Texture = GLOW
+			fill.TextureMode = Enum.TextureMode.Stretch
 			motes(attach(holder, c), Color3.fromHex("FFF4C2"), 6, 0.5, 0.4, 1.2)
 			-- star twinkles orbiting the blade (a ring of emitters at the blade's middle)
 			for k = 1, 6 do
