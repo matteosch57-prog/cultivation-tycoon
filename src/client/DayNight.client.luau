@@ -17,6 +17,14 @@ local PerfMark = require(Shared:WaitForChild("PerfMark"))
 Sfx.init()
 
 local N = Config.NIGHT
+-- the sky-all-round haze (Config.SKY) is also set by the server at boot; set it here too so the day values read
+-- below never catch the place's originals if this script runs first
+local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+if atmosphere then
+	for prop, v in Config.SKY.atmosphere do
+		atmosphere[prop] = v
+	end
+end
 -- each blended target: { instance, property, day value (read from the place), night value }
 local targets = {}
 local function add(inst, prop, night)
@@ -28,7 +36,7 @@ for _, prop in { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "ColorS
 	add(Lighting, prop, N[prop])
 end
 local groups = {
-	{ Lighting:FindFirstChildOfClass("Atmosphere"), N.atmosphere },
+	{ atmosphere, N.atmosphere },
 	{ Lighting:FindFirstChildOfClass("ColorCorrectionEffect"), N.color },
 	{ Lighting:FindFirstChildOfClass("BloomEffect"), N.bloom },
 	{ Lighting:FindFirstChildOfClass("SunRaysEffect"), N.sunRays },

@@ -459,7 +459,21 @@ local function buildPlots()
 end
 
 local function setupLighting()
-	-- Lighting itself is authored in Edit (saved with the place); only the cloud sea is built here.
+	-- Lighting itself is authored in Edit (saved with the place); only the cloud sea is built here, plus the
+	-- sky-all-round faces and haze (Config.SKY), set before any client reads the day values (DayNight.client).
+	local Lighting = game:GetService("Lighting")
+	local sky = Lighting:FindFirstChildOfClass("Sky")
+	if sky and Config.SKY.faces then
+		for face, id in Config.SKY.faces do
+			sky["Skybox" .. face] = "rbxassetid://" .. id
+		end
+	end
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmosphere then
+		for prop, v in Config.SKY.atmosphere do
+			atmosphere[prop] = v
+		end
+	end
 	-- Terrain grass: a soft stylised green, with Roblox's animated grass blades on
 	workspace.Terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("7DAA5C")) -- the island lawn
 	workspace.Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromHex("86B35E")) -- meadow patches (tall blades)

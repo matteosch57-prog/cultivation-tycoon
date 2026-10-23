@@ -1368,10 +1368,20 @@ Config.NIGHT = {
 	OutdoorAmbient = Color3.fromRGB(140, 125, 170),
 	ColorShift_Top = Color3.fromRGB(255, 165, 135),
 	ExposureCompensation = 0.15,
-	atmosphere = { Color = Color3.fromRGB(205, 150, 165), Decay = Color3.fromRGB(75, 85, 145), Glare = 0.1, Haze = 1.6 },
+	atmosphere = { Color = Color3.fromRGB(205, 150, 165), Decay = Color3.fromRGB(75, 85, 145), Glare = 0.1, Haze = 0 },
 	color = { TintColor = Color3.fromRGB(235, 228, 255), Brightness = 0, Saturation = 0.05, Contrast = 0.1 },
 	bloom = { Threshold = 1.3, Intensity = 0.45 },
 	sunRays = { Intensity = 0.1 },
+}
+-- Sky all round (owner pick A 2026-10-23, mocks docs/art/mocks/2026-10-23_skybox_*): the painted sky pack is flat
+-- blue below the horizon, so the side faces are re-authored with their painted top half mirrored underneath and Dn
+-- is the Up face mirrored: the sky reads like a still lake reflecting it. Any Atmosphere Haze above 0 paints the
+-- whole skybox below the horizon flat teal (blue at night) and hides the mirror, so Haze is 0 by day and night;
+-- Density still fades far parts. Main.server sets these at boot (the place keeps the originals, as does
+-- ServerStorage.Sky_Original). Faces were cut from the original pack (top halves kept, Up flipped for Dn).
+Config.SKY = {
+	faces = { Bk = 122552090947091, Dn = 74440462776208, Ft = 74166367579610, Lf = 74262479252409, Rt = 116565553366584 },
+	atmosphere = { Density = 0.12, Offset = 0, Haze = 0 },
 }
 Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: the birds fade out, the crickets in
 

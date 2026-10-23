@@ -27,6 +27,10 @@ from these place values to it and back (`Config.DAY_SECONDS` / `NIGHT_SECONDS` /
   The uploader looks like a re-upload account; its hidden scripts were deleted on insert. If Roblox
   moderates it the sky falls back to default; the original is parked as `ServerStorage.Sky_Original`.
   MoonAngularSize 0. Long term: commission or paint our own six faces.
+- Sky all round (owner pick A 2026-10-23, mocks `docs/art/mocks/2026-10-23_skybox_*`): the pack is flat blue
+  below the horizon, so `Config.SKY` swaps in re-authored faces (each side's painted top half mirrored under the
+  horizon, Dn = Up flipped) and sets Atmosphere Density 0.12 / Offset 0 / Haze 0 at boot. Any Haze above 0 paints
+  the whole lower skybox flat teal and hides the mirror, so night Haze is 0 too. The place keeps the originals.
 - Cloud sea: `Style.softCloud`, big slow particles with the built-in smoke texture
   (`rbxasset://textures/particles/smoke_main.dds`, no upload): blue-shaded base, white body, crown.
   Solid-ball cumulus read as plastic next to the painted sky; mist on balls did not fix it (D9).
