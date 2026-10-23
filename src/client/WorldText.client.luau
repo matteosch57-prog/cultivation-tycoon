@@ -3,14 +3,13 @@
 -- floats in the world: the pad price cards, the shop cards, the disciples' star crowns, the players'
 -- titles, the idle chest's label and the name boards. Each is full strength near the avatar and
 -- fades out farther away (the DevForum "Billboards getting dimmer" pattern: transparency from the
--- distance, clamped between a near and a far radius). Pads can also follow Pet Simulator 99's eggs:
--- only the nearest one shows its full card (MODE "B"/"C", mock only until the owner picks).
+-- distance, clamped between a near and a far radius). Pad cards follow Pet Simulator 99's eggs: only
+-- the nearest pad shows its card, the rest hide (owner pick B, 2026-10-23).
 -- The owning scripts stay as they are: this only scales the transparencies they set, and leaves
 -- alone any property another script animates (the crown twinkle).
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PerfMark = require(Shared:WaitForChild("PerfMark"))
 
 local player = Players.LocalPlayer
@@ -24,8 +23,7 @@ local RANGE = {
 	chest = { 18, 45 },
 	sign = { 40, 100 },
 }
-local NEAREST_R = 26 -- studs: the one pad card that stays full in modes B and C
-local REST = 0.3 -- mode C: how strong the other near pad cards stay
+local NEAREST_R = 26 -- studs: the one pad card that shows
 local STEP = 0.1 -- strengths snap to tenths, so a drifting avatar does not redraw every label
 
 local PROPS = {
@@ -131,10 +129,6 @@ end
 watch(playerGui)
 watch(workspace)
 
-local function mode()
-	return ReplicatedStorage:GetAttribute("WorldTextMode") or "A"
-end
-
 local function fade(kind, d)
 	local r = RANGE[kind]
 	return 1 - math.clamp((d - r[1]) / (r[2] - r[1]), 0, 1)
@@ -151,8 +145,7 @@ RunService.Heartbeat:Connect(function(dt)
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
 	local from = hrp and hrp.Position or workspace.CurrentCamera.CFrame.Position
-	local m = mode()
-	-- the nearest pad card (modes B and C)
+	-- the nearest pad card
 	local best, bestD = nil, NEAREST_R
 	local dist = {}
 	for g, rec in tracked do
@@ -171,14 +164,8 @@ RunService.Heartbeat:Connect(function(dt)
 	for g, rec in tracked do
 		local d = dist[g]
 		local vis = fade(rec.kind, d)
-		if rec.kind == "pad" and m ~= "A" then
-			if g == best then
-				vis = 1
-			elseif m == "B" then
-				vis = 0
-			else
-				vis *= REST
-			end
+		if rec.kind == "pad" then
+			vis = g == best and 1 or 0
 		end
 		vis = math.floor(vis / STEP + 0.5) * STEP
 		if vis ~= rec.vis then
