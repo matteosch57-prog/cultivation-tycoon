@@ -1039,7 +1039,9 @@ refreshPads = function(player, s)
 		ownedCount += 1
 	end
 	for _, pad in Config.PADS do
-		if not s.data.owned[pad.id] and Config.padOpen(pad, s.data.realm) then -- D48: the island opens with the realms
+		-- a Lotus Isle pad waits for its karma node (Config.DAO "isles")
+		local locked = pad.kind == "isle" and dao(s.data, "isles") < 1
+		if not s.data.owned[pad.id] and Config.padOpen(pad, s.data.realm) and not locked then -- D48: the island opens with the realms
 			if Config.neededForBreakthrough(pad) then -- paths and groves are optional (DECOR_OPTIONAL)
 				all = false
 			end
@@ -2085,6 +2087,8 @@ daoFn.OnServerInvoke = function(player, key)
 	d.dao[key] = lv + 1
 	if key == "seat" then
 		buildDisciples(s) -- a benched disciple takes the new seat
+	elseif key == "isles" then
+		refreshPads(player, s) -- the Lotus Isle pads open now
 	end
 	publish(player)
 	Telemetry.custom(player, "KarmaShop", key, lv + 1, Telemetry.lifeBucket(d.lives or 1))

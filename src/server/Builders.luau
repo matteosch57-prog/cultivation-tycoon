@@ -335,10 +335,11 @@ end
 -- the platform (isle 1) or the isle before (owner: "make sure we can jump on them one per one"):
 -- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
 -- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
-local ISLES = { -- centre of the lawn's top, peak frame space (the platform is at 0, 0)
-	{ x = -24, y = 14, z = 8 }, -- out past the platform: its stones start in the seat-free arc
-	{ x = 17, y = 17, z = -3 },
-	{ x = 0, y = 25, z = -14 },
+local ISLES = { -- centre of the deck's top, peak frame space (the platform is at 0, 0). Out to the
+	-- sides of the platform, clear of the Main Hall (0, -30) as seen from the gate (owner 2026-10-23)
+	{ x = -30, y = 18, z = 8 },
+	{ x = 30, y = 22, z = 8 },
+	{ x = 32, y = 30, z = -26 },
 }
 -- owner 2026-10-22 ("the stone looks a bit cheap; more space for each disciple, bigger aura"): the
 -- isles are small floating islands in the peaks' own look (Style.island: lawn, dirt band, a light

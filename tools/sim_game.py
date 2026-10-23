@@ -159,7 +159,7 @@ KINDS = {
     "regular+passes": dict(play="active", session=30, per_day=2, passes=("2x", "vip", "orbs")),
     "regular+social": dict(play="active", session=30, per_day=2, friends=2, altar=0.25),
 }
-DAO_ORDER = ["hands", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
+DAO_ORDER = ["hands", "isles", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
 
 
 def simulate(C, kind, seed, days, lives=99, trace=False):
@@ -307,10 +307,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def open_pads():
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and in_realm(p)
-                and all(r in S["owned"] for r in p["req"])]
+                and all(r in S["owned"] for r in p["req"]) and (p.get("kind") != "isle" or lvl("isles") > 0)]
 
     def needed(p):  # Config.neededForBreakthrough: paths and groves are optional when DECOR_OPTIONAL
-        return not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
+        return p.get("kind") != "isle" and not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
 
     def hires():
         if not st["workers"]:
