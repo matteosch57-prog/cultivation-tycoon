@@ -375,7 +375,7 @@ local function prompt(player, key)
 	end
 end
 
-local OPEN_SOURCES = { hud = true, pad = true, pill = true, short = true } -- short = the Get Qi offer on a pad out of reach
+local OPEN_SOURCES = { hud = true, pad = true, pill = true, short = true, disciples = true } -- short = the Get Qi offer on a pad out of reach; disciples = "Buy more" in the disciples card / book
 local lastOpen = {}
 local MENUS = { disciples = true, reinc = true, karma = true, group = true, index = true, ranks = true, settings = true } -- MenuOpened keys
 local lastMenu = {} -- [player] = { [menu] = os.clock() }

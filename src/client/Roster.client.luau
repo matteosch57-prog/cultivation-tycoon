@@ -224,6 +224,17 @@ local function open(tab)
 		end)
 		ui.tabs[t.key] = { holder = holder, btn = btn }
 	end
+	-- Buy more (owner 2026-10-23): the Shop's Disciples page, the book closes behind it
+	local bHolder, bBtn = Toy.button(strip, UDim2.fromOffset(px(118), px(38)), Color3.fromHex("47D16C"), px(19))
+	bHolder.LayoutOrder = #TABS + 1
+	text(bBtn, "+ Buy more", px(16), WHITE, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	bBtn.Activated:Connect(function()
+		local shop = player:FindFirstChild("ShopOpen")
+		if shop then
+			close()
+			shop:Fire("disciples", "disciples")
+		end
+	end)
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Position = UDim2.fromOffset(0, px(56))
 	scroll.Size = UDim2.new(1, 0, 1, -px(56))

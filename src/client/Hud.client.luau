@@ -1322,6 +1322,19 @@ refreshStatic = function()
 			ev:Fire(book and "index" or nil)
 		end
 	end)
+	-- Buy more (owner 2026-10-23): straight to the Shop's Disciples page
+	local bHolder, bBtn = toy(ui.card, UDim2.fromOffset(px(48), px(48)), Color3.fromHex("47D16C"), px(24))
+	bHolder.LayoutOrder = 101
+	local bCol = frame(bBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 3 })
+	Toy.list(bCol, false, 0)
+	text(bCol, "+", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 3 })
+	text(bCol, "Buy", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
+	bBtn.Activated:Connect(function()
+		local shop = player:FindFirstChild("ShopOpen")
+		if shop then
+			shop:Fire("disciples", "disciples")
+		end
+	end)
 	-- realm progress = buildings owned this realm (published by the server)
 	local owned = player:GetAttribute("Built") or 0
 	local total = Config.requiredPads(player:GetAttribute("Realm") or 1) -- this realm's island (D48); paths and groves optional
