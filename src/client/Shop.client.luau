@@ -968,6 +968,28 @@ local function showStarter()
 	end)
 end
 
+-- An offer card waits until nothing covers it: the launch screen's tap (LaunchDone), the Heavenly Gift
+-- intro (WelcomeQi back to 0, its Intro gui closed), the Shop screen and the other offer card. The
+-- server sends each offer once, so it is queued here, never dropped.
+local function whenClear(show)
+	task.spawn(function()
+		while true do
+			local intro = playerGui:FindFirstChild("Intro")
+			local covered = not player:GetAttribute("LaunchDone")
+				or (player:GetAttribute("WelcomeQi") or 0) > 0
+				or (intro and intro:IsA("ScreenGui") and intro.Enabled)
+				or gui.Enabled
+				or offerGui.Enabled
+				or starterGui.Enabled
+			if not covered then
+				show()
+				return
+			end
+			task.wait(0.5)
+		end
+	end)
+end
+
 -- Studio test hook: local player attribute StarterCard = true draws the card (no offer, no purchase)
 player:GetAttributeChangedSignal("StarterCard"):Connect(function()
 	if player:GetAttribute("StarterCard") then
@@ -977,13 +999,9 @@ end)
 
 remotes.Notify.OnClientEvent:Connect(function(kind, rarity, kept)
 	if kind == "welcomeOffer" then
-		if not gui.Enabled then
-			showOffer()
-		end
+		whenClear(showOffer)
 	elseif kind == "starterOffer" then
-		if not gui.Enabled and not offerGui.Enabled then
-			showStarter()
-		end
+		whenClear(showStarter)
 	elseif kind == "shopWelcome" or kind == "shopDisciple" or kind == "shopStarter" then
 		-- bought: close the card and the shop, and let the recruit reveal show the disciple arrive
 		-- (owner 2026-10-22: every Robux disciple plays the recruit reveal)
