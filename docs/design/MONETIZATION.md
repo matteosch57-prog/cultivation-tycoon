@@ -172,6 +172,10 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   over the last 8 studs under the ceiling. Stepping off in the air glides down (fall capped at 25
   studs/s, Adopt Me's glide); over the void (no ground within 200 studs) the server refuses: "Fly over
   land to step off".
+- The rider plays their OWN avatar's idle on the sword (and its fall in a fast dive), from their
+  character's Animate values, Action priority, 0.2 s fades (PlatformStand stops the default
+  Animate's tracks); the stock idle and fall when an avatar has none (owner: "ON SWORD I SHOULD HAVE my
+  animations too").
 - The rider stands on the blade: `SwordPose.client` (every client, in each joint's Transform after
   the Animator, Motor6D and AnimationConstraint rigs alike) lifts the body `lift` studs and leans it
   `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at the real

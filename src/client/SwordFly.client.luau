@@ -145,12 +145,64 @@ local function padDown(button)
 	return ok and down
 end
 
+-- The rider's OWN animations on the sword (owner 2026-10-23: "ON SWORD I SHOULD HAVE my animations
+-- too"): PlatformStand makes the default Animate script stop its tracks, so the flight plays the
+-- character's own idle (Animate.idle, its heaviest Animation, the one Animate plays most) and, in a
+-- fast dive, its fall, looped at Action priority with 0.2 s cross-fades. Animator tracks replicate,
+-- so everyone sees them; SwordPose adds the lift and lean on top. The stock ones when the avatar has
+-- no Animate values.
+local STOCK = {
+	[Enum.HumanoidRigType.R15] = { idle = "rbxassetid://507766666", fall = "rbxassetid://507767968" },
+	[Enum.HumanoidRigType.R6] = { idle = "rbxassetid://180435571", fall = "rbxassetid://180436148" },
+}
+local DIVE = -20 -- studs/s down: the fall plays below this
+
+local function ownAnimation(char, slot)
+	local animate = char:FindFirstChild("Animate")
+	local holder = animate and animate:FindFirstChild(slot)
+	local best, weight = nil, -1
+	for _, a in holder and holder:GetChildren() or {} do
+		if a:IsA("Animation") and a.AnimationId ~= "" then
+			local w = a:FindFirstChild("Weight")
+			local v = w and w:IsA("NumberValue") and w.Value or 1
+			if v > weight then
+				best, weight = a, v
+			end
+		end
+	end
+	return best
+end
+
+local function loadTrack(animator, char, hum, slot)
+	local anim = ownAnimation(char, slot)
+	if not anim then
+		anim = Instance.new("Animation")
+		anim.AnimationId = (STOCK[hum.RigType] or STOCK[Enum.HumanoidRigType.R15])[slot]
+	end
+	local ok, track = pcall(animator.LoadAnimation, animator, anim)
+	if not ok or not track then
+		return nil
+	end
+	track.Priority = Enum.AnimationPriority.Action
+	track.Looped = true
+	return track
+end
+
+local function stopAnims(f)
+	for _, t in { f.idle, f.fall } do
+		if t then
+			t:Stop(0.2)
+		end
+	end
+end
+
 local function stop()
 	if not fly then
 		return
 	end
 	local f = fly
 	fly = nil
+	stopAnims(f)
 	gui.Enabled = false
 	sinkHeld = false
 	for _, x in { f.lv, f.ao, f.att } do
@@ -207,6 +259,14 @@ local function start()
 	hum.PlatformStand = true
 	local look = root.CFrame.LookVector
 	fly = { char = char, hum = hum, root = root, att = att, lv = lv, ao = ao, speed = tierSpeed(key), vel = root.AssemblyLinearVelocity, heading = Vector3.new(look.X, 0, look.Z).Unit, bank = 0 }
+	local animator = hum:FindFirstChildOfClass("Animator")
+	if animator then
+		fly.idle = loadTrack(animator, char, hum, "idle")
+		fly.fall = loadTrack(animator, char, hum, "fall")
+		if fly.idle then
+			fly.idle:Play(0.2)
+		end
+	end
 	gui.Enabled = true
 	placeSink()
 end
@@ -294,6 +354,22 @@ RunService.PreSimulation:Connect(function(dt)
 		f.vel = Vector3.new(f.vel.X, math.min(f.vel.Y, math.max(0, room) / CEIL_EASE * f.speed * RISE), f.vel.Z) -- no momentum past it
 	end
 	f.lv.VectorVelocity = f.vel
+	-- the dive plays the fall, anything else the idle (cross-faded)
+	local diving = f.vel.Y < DIVE
+	if f.fall and diving ~= f.diving then
+		f.diving = diving
+		if diving then
+			f.fall:Play(0.2)
+			if f.idle then
+				f.idle:Stop(0.2)
+			end
+		else
+			f.fall:Stop(0.2)
+			if f.idle then
+				f.idle:Play(0.2)
+			end
+		end
+	end
 	-- facing: the way you fly (or the last way), banked into turns, pitched into climbs and dives
 	local hv = Vector3.new(f.vel.X, 0, f.vel.Z)
 	local heading = f.heading
