@@ -2,8 +2,8 @@
 -- the pill and the altar row; the left rail wraps at 4 rows on a 749 x 381 phone, Studio 2026-10-23),
 -- shown once the player owns a sword pass. Tap: ride the last sword (SwordPick); tap again to step
 -- off. Owning several: the first tap opens a small picker of the owned swords (the last one ridden
--- first, in gold). Jumping also steps off. The server mounts, checks and switches it off (R9,
--- src/server/SwordRide.luau); this only asks.
+-- first, in gold). Jumping does NOT step off (it rises: SwordFly.client flies). The server mounts,
+-- checks and switches it off (R9, src/server/SwordRide.luau); this only asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
@@ -193,10 +193,3 @@ player:GetAttributeChangedSignal("SwordPick"):Connect(draw)
 player:GetAttributeChangedSignal("HudDevice"):Connect(rescale)
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
 rescale()
-
--- a jump steps off the sword (keys, gamepad and the phone's jump button all raise JumpRequest)
-UserInputService.JumpRequest:Connect(function()
-	if player:GetAttribute("Riding") then
-		remotes.SwordRide:FireServer(false)
-	end
-end)

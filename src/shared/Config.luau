@@ -600,18 +600,24 @@ Config.SHOP_PASSES = {
 	{ key = "swordHeavenly", id = 0, name = "Heavenly Sword", line = "Ride a sword, x1.75 speed", ride = 2 },
 	{ key = "swordCelestial", id = 0, name = "Celestial Crystal Sword", line = "Ride a sword, x2 speed", ride = 3 },
 }
--- The sword ride (D76): a hover ride, NOT flight. The sword is welded under the feet and the body is
--- drawn `lift` studs up through the root joint (HipHeight untouched: the step height stays the
--- walker's, so ledges, stairs, slopes and walls work as on foot and the light stairs and the locked
--- isles stay closed), WalkSpeed = MOVE.walk x the tier's `speed`. Jump or the button again steps off. It switches itself off within `padRadius` studs of
--- any pad (it never buys anything), on the Heavenly Altar while a round runs, on death or reset, and
--- when the server sees a speed over `speedSlack` x the tier's for `speedStrikes` checks. No qi.
+-- The sword ride (D76; v2 2026-10-23, owner after trying the hover ride: "i cant fly with them? When i
+-- jump they got removed? this is bad"): real flight, Adopt Me's flying pets copied. The sword is welded
+-- under the feet (the body drawn `lift` studs up by SwordPose.client); SwordFly.client flies it where
+-- the camera looks at MOVE.walk x the tier's `speed` (rise and sink at `rise` of that), hovering when
+-- idle. Jump rises, it never steps off; only the button, death / reset and the auto-off zones do: within
+-- `padRadius` studs of any pad (it never buys anything) and the Heavenly Altar while a round runs.
+-- The server keeps a flyer under `ceiling` (world Y: the highest Lotus Isle deck, ~64, + 60), inside
+-- `bound` studs of the hub and out of the closed islets of their own peak, and snaps back anyone who
+-- moves more than `speedSlack` x the tier's speed for `speedStrikes` checks. No qi.
 Config.SWORD_RIDE = {
 	lift = 1.2, -- studs the body is drawn over its walking height (the blade's own thickness included)
 	length = 9, -- studs, every blade under the rider
 	lean = 8, -- degrees the rider leans forward at the root joint
 	waistLean = 6, -- and more at the waist (R15): the root lean alone measured ~1.4 degrees in Play
 	padRadius = 7,
+	rise = 0.6, -- share of the tier speed when rising or sinking
+	ceiling = 126, -- world Y
+	bound = 540, -- studs from the hub (the peaks sit PLOT_RADIUS 280 out, their islets up to ~230 more)
 	speedSlack = 1.5,
 	speedStrikes = 3,
 	tiers = {

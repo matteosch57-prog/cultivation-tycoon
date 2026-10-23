@@ -485,3 +485,9 @@ the log as a D-number.
   physics, off near pads (never buys), on the altar, on death and on a speed check. Looks = the
   Studio mock v9 on the sword only; the Creator Store blades ship as dumped data, not as place edits
   (Ctrl+S is Matteo's). Design: MONETIZATION "Flying Swords"; list: SHOP_ITEMS.
+- **D76 v2** The Flying Swords fly (owner 2026-10-23 after trying the hover ride: "i cant fly with
+  them? When i jump they got removed? this is bad, study similar games?"; the Roblox cultivation games
+  fly on a key, Adopt Me's flying pets fly with the move keys, none drops you on a jump). Adopt Me's
+  flight copied: camera-relative, rise / sink keys and a phone down arrow, hover when idle, jump
+  rises. Progression kept server side: a ceiling, the map bound, the rider's closed islets; pads and
+  the altar still land it. Design: MONETIZATION "Flying Swords".

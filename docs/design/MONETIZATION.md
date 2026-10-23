@@ -156,28 +156,35 @@ BillboardGuis), a real purchase (ids still 0), tab taps (no mouse input through 
 Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.jpg`,
 `shop_disciples_tab_play.jpg`.
 
-## Flying Swords (D76, owner pick "Hover ride, faster each level", 2026-10-23; PS99's hoverboards)
+## Flying Swords (D76, owner 2026-10-23; v2 real flight, Adopt Me's flying pets)
 - Three game passes (`SHOP_PASSES` keys `swordJade` / `swordHeavenly` / `swordCelestial`, field
   `ride` = tier; suggested 199 / 399 / 1,199): each is a sword to ride, kept forever; owning a higher
-  one keeps the lower ones. Three "New" tiles in the Boosts tab (icons: cells 32 to 34 of the next
-  icon sheet; until it is uploaded Toy.icon draws a toy sword glyph in the tier colours).
-- **A hover ride, not flight** (`Config.SWORD_RIDE`, `src/server/SwordRide.luau`): the server welds
-  the tier's sword under the feet and sets WalkSpeed to `MOVE.walk` x 1.5 / 1.75 / 2 (back to
-  `MOVE.walk` on every stop). HipHeight is untouched, so the step height stays the walker's and a
-  2.5-stud ledge blocks as on foot (a +1.2 HipHeight let riders climb 3.5-stud ledges in Play); the
-  hover is drawn on every client (`SwordPose.client`, in each joint's Transform after the Animator:
-  Motor6D and the new AnimationConstraint rigs alike): the root joint lifts the body `lift` studs and
-  leans it `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at
-  the real feet when a rig has no root joint, so the blade never cuts the legs). Stairs, slopes and walls work as on
-  foot; the light stairs and locked isles stay closed. Everyone sees it. No qi, so the economy does
-  not move.
-- HUD: a sword button in the right stack (after the gift, the pill and the altar row; the left rail
-  wraps at 4 rows on a 749 x 381 phone) once one is owned: tap = ride the last one
-  (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker that
-  floats beside the button (outside the rail, so it never shoves the other buttons).
+  one keeps the lower ones. Three "New" tiles in the Boosts tab (icons: cells 32 to 34 of the icon
+  sheet).
+- **Real flight** (owner after trying the first build, a hover ride: "i cant fly with them? When i
+  jump they got removed? this is bad"; Adopt Me's flying pets and the cultivation games' Fly key
+  copied). `SwordFly.client` flies the own character (the client owns its physics: PlatformStand, a
+  LinearVelocity eased toward the input, an AlignOrientation facing the way you go, banked ~15
+  degrees into turns, pitched into climbs and dives): WASD / the thumbstick where the camera looks,
+  Space / held Jump / gamepad A rises, Ctrl or Q / the phone's down arrow / B sinks, no input
+  hovers with a bob. Speed `MOVE.walk` x 1.5 / 1.75 / 2 (42 / 49 / 56), rising and sinking at
+  `rise` of it. Near the ground it hovers a little over it. Jump never steps off.
+- The rider stands on the blade: `SwordPose.client` (every client, in each joint's Transform after
+  the Animator, Motor6D and AnimationConstraint rigs alike) lifts the body `lift` studs and leans it
+  `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at the real
+  feet when a rig has no root joint). Everyone sees it. No qi, so the economy does not move.
+- Progression and limits (server, R9, `SwordRide.luau`): under `ceiling` (world Y, the highest Lotus
+  Isle deck + 60), inside `bound` studs of the hub, and out of the closed islets of the rider's own
+  peak (bridge not built: "Open its bridge first"; their pads need the bridge anyway). The server
+  snaps back anyone over those or faster than `speedSlack` x the tier allows for `speedStrikes`
+  checks (a server teleport restarts the check). Lotus Isles do not exist until built (their pads
+  need the karma node), so flight reaches nothing early.
+- HUD: a sword button in the right stack (after the gift, the pill and the altar row) once one is
+  owned: tap = fly the last one (`data.swordPick`), tap again = land; several owned = the first tap
+  opens a picker that floats beside the button.
 - Off by itself near any pad (`padRadius`; a pad also ignores a rider, so a ride never buys), on the
-  Heavenly Altar while a round runs (the platform and the plaza ring under it), on death or reset, and when the server sees the root faster than
-  the tier allows (`speedSlack`, `speedStrikes`). A short line says why.
+  Heavenly Altar while a round runs (the platform and the plaza ring under it), and on death or
+  reset; the rider then drops softly (Movement.client). A short line says why.
 - The look (`src/server/SwordLook.luau`) is the owner-reviewed Studio mock v9
   (`tools/mock_swords_tiers.luau`, mock branch): the Creator Store blades 74897223654299 /
   13467141475 / 5131677948 with a Highlight in the tier colour, wound ribbons (1 / 2 / 3), motes, a
@@ -186,5 +193,5 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   half of the tier 3 blade (moved off the rider's legs), real Trails off the hilt. Effects hang on
   the sword only. The blades and aura emitters ship as data (`src/server/SwordData.luau`, dumped in
   Studio by `tools/dump_swords.luau`, dumped 2026-10-23).
-- Studio test: `DebugSet "pass", "swordJade"` then `DebugSet "ride", "swordJade"` (false steps off).
+- Studio test: `DebugSet "pass", "swordJade"` then `DebugSet "ride", "swordJade"` (false lands).
   Telemetry `Sword` "ride" with the key.

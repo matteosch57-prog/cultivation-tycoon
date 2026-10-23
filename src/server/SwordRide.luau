@@ -12,6 +12,7 @@
 -- Player attributes: Riding = the sword key while riding, SwordPick = the last sword ridden (saved).
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
@@ -83,6 +84,23 @@ local function blocked(hrp)
 	return nil
 end
 
+-- the islets of the rider's own peak whose bridge is not built yet: a flyer stays out of them (they
+-- open by their bridge pad, D42), in world studs
+local function closedIslets(s)
+	local out = {}
+	local plot, owned = s.plot, s.data.owned or {}
+	if not (plot and plot.frame) then
+		return out
+	end
+	for name, i in Config.ISLETS do
+		if i.bridge and not Config.isletOpen(owned, name) then
+			local c = plot.frame * Vector3.new(i.x, 0, i.z)
+			table.insert(out, { x = math.floor(c.X), z = math.floor(c.Z), r = math.floor(i.r * 1.05 + 4) })
+		end
+	end
+	return out
+end
+
 local function start(player, key)
 	local s = api.sessions[player]
 	local tier, def = tierOf(key)
@@ -119,8 +137,15 @@ local function start(player, key)
 	weld.C0 = CFrame.new(0, feet - top, 0)
 	weld.Parent = core
 	sword.Parent = char
-	local r = { key = key, tier = tier, sword = sword, hum = hum, strikes = 0, conns = {} }
+	local r = { key = key, tier = tier, sword = sword, hum = hum, strikes = 0, conns = {}, blocks = closedIslets(s) }
+	player:SetAttribute("FlyBlocks", HttpService:JSONEncode(r.blocks))
 	hum.WalkSpeed = Config.MOVE.walk * def.speed
+	-- a server move (the Base / Ranks chips, portals, the altar) restarts the speed check: on the
+	-- server CFrame changes only when a script writes it, never from the client's physics
+	table.insert(r.conns, hrp:GetPropertyChangedSignal("CFrame"):Connect(function()
+		r.last = nil
+		r.strikes = 0
+	end))
 	table.insert(r.conns, hum.Died:Connect(function()
 		SwordRide.stop(player, "gone")
 	end))
@@ -161,10 +186,16 @@ function SwordRide.init(a)
 	Players.PlayerRemoving:Connect(function(player)
 		SwordRide.stop(player, "gone")
 	end)
-	-- the checks: every 0.2 s for each rider (pads, the altar, the speed cap)
+	-- where a flyer may go (SwordFly.client keeps inside these; the loop below puts anyone back who
+	-- did not): under the ceiling, inside the map
+	workspace:SetAttribute("FlyCeiling", RIDE.ceiling)
+	workspace:SetAttribute("FlyBound", RIDE.bound)
+	-- the checks: every 0.2 s for each rider (pads and the altar switch it off; the speed cap, the
+	-- ceiling, the map edge and the rider's own closed islets put them back)
+	local CHECK = 0.2
 	task.spawn(function()
 		while true do
-			task.wait(0.2)
+			task.wait(CHECK)
 			for player, r in rides do
 				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 				if not hrp then
@@ -176,16 +207,48 @@ function SwordRide.init(a)
 					SwordRide.stop(player, why)
 					continue
 				end
-				local v = hrp.AssemblyLinearVelocity
+				local pos = hrp.Position
+				-- the speed cap: farther than the tier allows since the last good spot, a few checks
+				-- running, goes back there
 				local cap = Config.MOVE.walk * RIDE.tiers[r.tier].speed * RIDE.speedSlack
-				if Vector2.new(v.X, v.Z).Magnitude > cap then
+				r.last = r.last or pos
+				if (pos - r.last).Magnitude > cap * CHECK + 4 then
 					r.strikes += 1
 					if r.strikes >= RIDE.speedStrikes then
-						SwordRide.stop(player, "speed")
+						r.strikes = 0
+						hrp.CFrame = CFrame.new(r.last) * hrp.CFrame.Rotation
+						hrp.AssemblyLinearVelocity = Vector3.zero
+						api.notify:FireClient(player, "swordNo", "speed")
 					end
-				else
-					r.strikes = 0
+					continue
 				end
+				r.strikes = 0
+				local back = nil
+				if pos.Y > RIDE.ceiling + 8 then
+					back = Vector3.new(pos.X, RIDE.ceiling, pos.Z)
+				end
+				local flat = Vector3.new(pos.X, 0, pos.Z)
+				if flat.Magnitude > RIDE.bound + 10 then
+					local edge = flat.Unit * RIDE.bound
+					back = Vector3.new(edge.X, (back or pos).Y, edge.Z)
+				end
+				for _, z in r.blocks do
+					local d = Vector3.new(pos.X - z.x, 0, pos.Z - z.z)
+					if d.Magnitude < z.r and d.Magnitude > 0 then
+						local edge = Vector3.new(z.x, 0, z.z) + d.Unit * (z.r + 3)
+						back = Vector3.new(edge.X, pos.Y, edge.Z)
+						if os.clock() - (r.blockToast or 0) > 3 then
+							r.blockToast = os.clock()
+							api.notify:FireClient(player, "swordNo", "bridge")
+						end
+					end
+				end
+				if back then
+					hrp.CFrame = CFrame.new(back) * hrp.CFrame.Rotation
+					hrp.AssemblyLinearVelocity = Vector3.zero
+					pos = back
+				end
+				r.last = pos
 			end
 		end
 	end)

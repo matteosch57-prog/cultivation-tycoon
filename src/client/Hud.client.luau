@@ -1660,7 +1660,7 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 		end
 		return
 	elseif kind == "swordOff" or kind == "swordNo" then -- the sword ride stopped or was refused (D76): `a` = why
-		local why = { pad = "Swords rest near pads", altar = "No swords on the Altar", speed = "Too fast for this sword" }
+		local why = { pad = "Swords rest near pads", altar = "No swords on the Altar", speed = "Too fast for this sword", bridge = "Open its bridge first" }
 		toast(why[a] or "Off the sword", PINK, 2)
 		return
 	elseif kind == "tideBellNo" then -- the Tide Bell was refused: `a` = "tide" | "altar"
