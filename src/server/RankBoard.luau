@@ -511,9 +511,10 @@ function RankBoard.podium(parent, cf)
 		P(m, Vector3.new(W + 0.3, 0.25, D + 0.3), cf * CFrame.new(x, 0.825, 0), MEDAL[i], Enum.Material.Metal)
 		podium[i] = { at = cf * CFrame.new(x, 1 + d.h, 0), scale = def.scale, plaque = plaque(block), gen = 0, parent = m }
 	end
-	-- a brazier at each end (R3: a visible lamp)
+	-- a brazier behind each side plinth (R3: a visible lamp); at the dais's ends they stood on the
+	-- walk in from both bridge mouths (Play check 2026-10-23)
 	for _, sx in { -1, 1 } do
-		brazier(m, cf * CFrame.new(sx * (step * 1.5 + 2.4), 0, 0))
+		brazier(m, cf * CFrame.new(sx * step, 0, D / 2 + 2.6))
 	end
 	m.Parent = parent
 	-- follows Greatest Sects; between changes it checks the realms and lives of its three
