@@ -81,8 +81,12 @@ Telemetry.EVENTS = {
 		question = "Where do players open the shop, which items get a prompt, and how many prompts end in a buy?",
 	},
 	Sword = {
-		fields = { "ride (a mount from the HUD button)", "sword key (Config.SWORD_RIDE tiers)", "realm (realmBucket)" },
-		question = "Do sword owners actually ride, and which sword do they pick (D76)?",
+		fields = {
+			"ride (a mount from the HUD button) | snap (the server put a flyer back, once per 10 s per rider)",
+			"ride: sword key (Config.SWORD_RIDE tiers); snap: speed | ceiling | bound | islet",
+			"realm (realmBucket)",
+		},
+		question = "Do sword owners actually ride, which sword do they pick (D76), and how often does the flight check snap riders back (false positives on laggy phones)?",
 	},
 	Build = {
 		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
@@ -383,6 +387,26 @@ function Telemetry.iapSource(player, d, amount, sku)
 			math.floor(amount),
 			math.floor(d.qi),
 			Enum.AnalyticsEconomyTransactionType.IAP.Name,
+			sku
+		)
+	end
+end
+
+-- Karma (earned at a rebirth, spent in the Karma Shop): its own currency on the economy dashboard,
+-- so the rebirth loop's flow can be read next to Qi's. No journal line: Reincarnate and KarmaShop
+-- already note the action.
+function Telemetry.karma(player, d, source, amount, sku)
+	if amount >= 1 and spend(player) then
+		send(
+			(source and "source karma " or "sink karma ") .. sku,
+			AnalyticsService.LogEconomyEvent,
+			AnalyticsService,
+			player,
+			source and Enum.AnalyticsEconomyFlowType.Source or Enum.AnalyticsEconomyFlowType.Sink,
+			"Karma",
+			math.floor(amount),
+			math.floor(d.karma or 0),
+			Enum.AnalyticsEconomyTransactionType.Gameplay.Name,
 			sku
 		)
 	end

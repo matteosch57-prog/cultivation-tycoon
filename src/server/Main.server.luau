@@ -2274,6 +2274,7 @@ local function reincarnate(player, s)
 	Telemetry.custom(player, "Reincarnate", Telemetry.lifeBucket(d.lives or 1), Telemetry.deepBucket(d.realm), Telemetry.hourBucket(lifeSec))
 	print(string.format("[Tycoon] %d rebirth: life %d ended at realm %d, +%d karma", player.UserId, d.lives or 1, d.realm, gained))
 	d.karma = (d.karma or 0) + gained
+	Telemetry.karma(player, d, true, gained, "rebirth")
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm) -- kept for the record only (nothing reads it for power)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
@@ -2322,6 +2323,7 @@ daoFn.OnServerInvoke = function(player, key)
 	end
 	d.karma -= cost
 	d.dao[key] = lv + 1
+	Telemetry.karma(player, d, false, cost, key)
 	if key == "seat" then
 		buildDisciples(s) -- a benched disciple takes the new seat
 	elseif key == "isles" then
@@ -2658,6 +2660,9 @@ Bless.init({
 setupLighting()
 buildPlots()
 
+-- which build this server runs: a bug report or an Error Report spike is matched to a publish by
+-- this line (the [SRVHEALTH] lines carry the same job prefix)
+print(string.format("[Tycoon] server start: place version %d, job %s", game.PlaceVersion, string.sub(tostring(game.JobId), 1, 8)))
 ServerHealth.start()
 Players.PlayerAdded:Connect(onJoin)
 Players.PlayerRemoving:Connect(onLeave)

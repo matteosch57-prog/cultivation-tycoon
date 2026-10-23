@@ -102,6 +102,20 @@ local function closedIslets(s)
 	return out
 end
 
+-- the server put a flyer back (speed cap, ceiling, map edge, a closed islet): counted per reason so
+-- false positives on laggy phones show in the dashboard (event Sword, "snap"), at most one event per
+-- rider per SNAP_LOG s; the print (same pace) has the user and the ride's snap count for the server log
+local SNAP_LOG = 10
+local function snapped(player, r, why)
+	r.snaps = (r.snaps or 0) + 1
+	if os.clock() - (r.snapLog or -SNAP_LOG) >= SNAP_LOG then
+		r.snapLog = os.clock()
+		print(string.format("[Tycoon][sword] snap user=%d why=%s tier=%s snaps=%d", player.UserId, why, r.key, r.snaps))
+		local s = api.sessions[player]
+		Telemetry.custom(player, "Sword", "snap", why, Telemetry.realmBucket(s and s.data.realm or 1))
+	end
+end
+
 local function start(player, key)
 	local s = api.sessions[player]
 	local tier, def = tierOf(key)
@@ -232,24 +246,25 @@ function SwordRide.init(a)
 						hrp.CFrame = CFrame.new(r.last) * hrp.CFrame.Rotation
 						hrp.AssemblyLinearVelocity = Vector3.zero
 						api.notify:FireClient(player, "swordNo", "speed")
+						snapped(player, r, "speed")
 					end
 					continue
 				end
 				r.strikes = 0
-				local back = nil
+				local back, why = nil, nil
 				if pos.Y > RIDE.ceiling + 8 then
-					back = Vector3.new(pos.X, RIDE.ceiling, pos.Z)
+					back, why = Vector3.new(pos.X, RIDE.ceiling, pos.Z), "ceiling"
 				end
 				local flat = Vector3.new(pos.X, 0, pos.Z)
 				if flat.Magnitude > RIDE.bound + 10 then
 					local edge = flat.Unit * RIDE.bound
-					back = Vector3.new(edge.X, (back or pos).Y, edge.Z)
+					back, why = Vector3.new(edge.X, (back or pos).Y, edge.Z), "bound"
 				end
 				for _, z in r.blocks do
 					local d = Vector3.new(pos.X - z.x, 0, pos.Z - z.z)
 					if d.Magnitude < z.r and d.Magnitude > 0 then
 						local edge = Vector3.new(z.x, 0, z.z) + d.Unit * (z.r + 3)
-						back = Vector3.new(edge.X, pos.Y, edge.Z)
+						back, why = Vector3.new(edge.X, pos.Y, edge.Z), "islet"
 						if os.clock() - (r.blockToast or 0) > 3 then
 							r.blockToast = os.clock()
 							api.notify:FireClient(player, "swordNo", "bridge")
@@ -260,6 +275,7 @@ function SwordRide.init(a)
 					hrp.CFrame = CFrame.new(back) * hrp.CFrame.Rotation
 					hrp.AssemblyLinearVelocity = Vector3.zero
 					pos = back
+					snapped(player, r, why)
 				end
 				r.last = pos
 			end

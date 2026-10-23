@@ -37,6 +37,11 @@ question each event answers. Onboarding funnel (`Telemetry.FUNNEL`), economy sou
 item, realm progression, and these custom events: FunnelTime, SessionEnd, LeaveState, Build, Recruit,
 Feature (pill, orb, gift, hands), IdleChest, Shop, DiscipleBought, KarmaShop, Reincarnate, AltarRound,
 Social, ServerHealth, DataStorePressure, SaveIssue.
+- **Karma** (2026-10-23): economy sources (`rebirth`) and sinks (the Karma Shop node key) as their own
+  currency, beside Qi. **Sword** `snap`: the flight check put a rider back (speed, ceiling, bound,
+  islet), at most once per 10 s per rider: a spike means false positives on laggy phones.
+- Every server prints `[Tycoon] server start: place version N, job xxxxxxxx` at boot: match an Error
+  Report spike or a bug report to a publish.
 - **Build** (2026-10-22): which building, realm, minutes played. Shows build order and skipped buildings.
 - **Menu** (2026-10-22): which HUD menu or panel opened (disciples row, Reincarnation screen, Karma
   Shop, group gift card) and the realm. Client remote `MenuOpened` (Guard budget, a fixed key list,
