@@ -78,11 +78,11 @@ local function flat(parent, props)
 end
 
 -- the realm aura: tier 0 (realm 1) none, up to MAX_TIER
-local function realmAura(folder, hrp, hum, tier, color)
+local function realmAura(folder, hrp, hum, tier, color, scale)
 	local feet = hrp.CFrame * CFrame.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.15, 0)
 	local k = (tier - 1) / (MAX_TIER - 1) -- 0 at realm 2, 1 at realm 10
 	local pale = color:Lerp(WHITE, 0.55)
-	local R = 8 + 0.25 * (tier - 1) -- glyph diameter, studs: 8 to 10 (12.8 covered the floor round a crowd)
+	local R = (8 + 0.25 * (tier - 1)) * (scale or 1) -- glyph diameter, studs: 8 to 10 (12.8 covered the floor round a crowd)
 	-- the glyph (AuraGlyph): a crisp array of this realm's own figure, two layers turning apart
 	AuraGlyph.build(folder, hrp, tier + 1, hrp.CFrame:ToObjectSpace(feet), R, color, pale, 3 + 1.5 * k)
 	-- under the crisp lines, the soft light of v2 (owner: "keep some of the aura we add before"): a
@@ -342,8 +342,9 @@ function PlayerAura.clear(char)
 	end
 end
 
--- builds the aura on `char` for a player at `realm` with `rebirths` rebirths
-function PlayerAura.build(char, realm, rebirths)
+-- builds the aura on `char` for a player at `realm` with `rebirths` rebirths; `scale` (optional) sizes
+-- the ground glyph (the ranking podium's figures stand on small plinths)
+function PlayerAura.build(char, realm, rebirths, scale)
 	PlayerAura.clear(char)
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	local hum = char:FindFirstChildOfClass("Humanoid")
@@ -355,7 +356,7 @@ function PlayerAura.build(char, realm, rebirths)
 	folder.Name = "PlayerAura"
 	local tier = math.min(realm or 1, MAX_TIER + 1) - 1
 	if tier >= 1 then
-		realmAura(folder, hrp, hum, tier, Config.realmColor(realm))
+		realmAura(folder, hrp, hum, tier, Config.realmColor(realm), scale)
 	end
 	halo(folder, head, rebirths)
 	if #folder:GetChildren() == 0 then

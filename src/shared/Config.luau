@@ -888,6 +888,12 @@ Config.RANK_LANTERN = { name = "Lantern", height = 7, glowAt = 0.52, size = Vect
 Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.386, 28.575), parts = {
 	{ mesh = "rbxassetid://7280531958", texture = "rbxassetid://7280532422", size = Vector3.new(38.665, 48.388, 28.576), at = CFrame.new(0, 24.1921, 0) },
 } }
+-- The top 3 of Greatest Sects as avatars in front of the ranking wall (owner 2026-10-23: "a podium of top 3
+-- with their aura and beads"), each in its own realm aura and life beads (PlayerAura). Avatars come from
+-- GetHumanoidDescriptionFromUserId, rebuilt only when a place changes hands; an offline player's realm
+-- is read from its save once per RANK_REFRESH. style: "steps" (stone dais, own avatar colours),
+-- "statue" (the dais, avatars cast in gold / silver / bronze), "roof" (standing on the boards' roofs)
+Config.RANK_PODIUM = { style = "steps", glyph = 0.5, roofScale = 1.3 }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds
 Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)

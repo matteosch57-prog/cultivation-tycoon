@@ -5,6 +5,8 @@
 -- the top RANK_TOP with head shots, the top 3 in gold, silver and bronze. Redrawn only when a board's
 -- rows change (Ranks.changed), never per frame (R16).
 local AssetService = game:GetService("AssetService")
+local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -12,6 +14,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Style = require(script.Parent:WaitForChild("Style"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
+local PlayerAura = require(script.Parent:WaitForChild("PlayerAura"))
 
 local RankBoard = {}
 
@@ -295,6 +298,250 @@ local function stele(parent, cf, w, h)
 	return slab
 end
 
+-- The podium: the top 3 of Greatest Sects as avatars in their own aura and beads (Config.RANK_PODIUM).
+-- The standard of simulator leaderboards (statues of the top players by the board): the avatar from
+-- GetHumanoidDescriptionFromUserId, built once when a place changes hands; the aura follows the realm
+-- (a player here: its attribute; away: its save, read once per RANK_REFRESH) and the lives on the board.
+local IDLE = "rbxassetid://507766666" -- the R15 idle
+local saves = nil -- the game's save store (none in the Studio mock)
+if not (Config.MOCK_DATASTORE and RunService:IsStudio()) then
+	local ok, result = pcall(DataStoreService.GetDataStore, DataStoreService, Config.DATASTORE .. (RunService:IsStudio() and "_studio" or ""))
+	saves = ok and result or nil
+end
+local realms = {} -- [userId] = { realm, at } read from an away player's save
+local looks = {} -- [userId] = HumanoidDescription
+
+-- the realm `r`'s player is in now (1 when unknown: no realm aura, beads only)
+local function realmOf(r)
+	if r.realm then -- Studio debug rows (Ranks.debugRows) carry their own
+		return r.realm
+	end
+	local plr = Players:GetPlayerByUserId(r.userId)
+	if plr and plr:GetAttribute("Realm") then
+		return plr:GetAttribute("Realm")
+	end
+	local c = realms[r.userId]
+	if c and os.clock() - c.at < Config.RANK_REFRESH then
+		return c.realm
+	end
+	if not saves or DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.GetAsync) < Config.RANK_MIN_BUDGET then
+		return c and c.realm or 1
+	end
+	local ok, rec = pcall(saves.GetAsync, saves, "u" .. r.userId)
+	local d = ok and type(rec) == "table" and (rec.data or (rec.v == nil and rec)) or nil
+	local realm = type(d) == "table" and tonumber(d.realm) or (c and c.realm) or 1
+	realms[r.userId] = { realm = realm, at = os.clock() }
+	return realm
+end
+
+local function livesOf(r)
+	local plr = Players:GetPlayerByUserId(r.userId)
+	return plr and plr:GetAttribute("Lives") or r.extra or 1
+end
+
+-- `userId`'s avatar as a still R15 model, feet at the origin, facing -Z
+local function avatar(userId)
+	if not looks[userId] then
+		local ok, desc = pcall(Players.GetHumanoidDescriptionFromUserId, Players, userId)
+		looks[userId] = ok and desc or nil
+	end
+	local desc = looks[userId] or Instance.new("HumanoidDescription")
+	local ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, desc, Enum.HumanoidRigType.R15)
+	if not ok then
+		ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, Instance.new("HumanoidDescription"), Enum.HumanoidRigType.R15)
+		if not ok then
+			return nil
+		end
+	end
+	local hum = m:FindFirstChildOfClass("Humanoid")
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.RequiresNeck = false
+	hum.BreakJointsOnDeath = false
+	hum.EvaluateStateMachine = false
+	for _, p in m:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanTouch = false
+			p.CanQuery = false
+		end
+	end
+	m.PrimaryPart.Anchored = true
+	return m
+end
+
+-- cast `m` in metal of `color`: no clothes, face or textures (style "statue")
+local function cast(m, color)
+	for _, d in m:GetDescendants() do
+		if d:IsA("Clothing") or d:IsA("ShirtGraphic") or d:IsA("Decal") then
+			d:Destroy()
+		elseif d:IsA("MeshPart") then
+			d.TextureID = ""
+			d.Color = color
+			d.Material = Enum.Material.Foil
+		elseif d:IsA("BasePart") then
+			d.Color = color
+			d.Material = Enum.Material.Foil
+		elseif d:IsA("SpecialMesh") then
+			d.TextureId = ""
+		end
+	end
+	local bc = m:FindFirstChildOfClass("BodyColors")
+	if bc then
+		bc:Destroy()
+	end
+end
+
+-- the plaque on a plinth's front: rank, name, realms and lives
+local function plaque(part)
+	local g = Instance.new("SurfaceGui")
+	g.Name = "Plaque"
+	g.Face = Enum.NormalId.Front
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = PPS
+	g.LightInfluence = 0.2
+	g.MaxDistance = Config.RANK_SEE
+	local h = part.Size.Y * PPS
+	local name = Instance.new("Frame")
+	name.Name = "Line1"
+	name.BackgroundTransparency = 1
+	name.Size = UDim2.new(1, 0, 0, math.floor(h * 0.42))
+	name.Position = UDim2.fromOffset(0, math.floor(h * 0.12))
+	name.Parent = g
+	local sub = name:Clone()
+	sub.Name = "Line2"
+	sub.Size = UDim2.new(1, 0, 0, math.floor(h * 0.3))
+	sub.Position = UDim2.fromOffset(0, math.floor(h * 0.56))
+	sub.Parent = g
+	g.Parent = part
+	return g
+end
+
+local function setPlaque(g, i, r)
+	if not g then
+		return
+	end
+	local line1, line2 = g:FindFirstChild("Line1"), g:FindFirstChild("Line2")
+	line1:ClearAllChildren()
+	line2:ClearAllChildren()
+	local size = math.min(48, math.floor(line1.Size.Y.Offset * 0.8))
+	label(line1, r and (i .. "  " .. r.name) or tostring(i), 0, size, MEDAL[i], Enum.TextXAlignment.Center)
+	if r then
+		local n = r.extra or 1
+		label(line2, string.format("%d realms · %d %s", r.value or 0, n, n == 1 and "life" or "lives"), 0, math.floor(size * 0.7), JADE, Enum.TextXAlignment.Center)
+	end
+end
+
+local podium = {} -- [i] = { at = CFrame of the feet, scale, plaque, userId, realm, lives, model, gen }
+
+local function place(i, r)
+	local slot = podium[i]
+	if not slot then
+		return
+	end
+	setPlaque(slot.plaque, i, r)
+	local id = r and r.userId or nil
+	if id == slot.userId and slot.model then
+		local realm, lives = realmOf(r), livesOf(r)
+		if realm ~= slot.realm or lives ~= slot.lives then
+			slot.realm, slot.lives = realm, lives
+			PlayerAura.build(slot.model, realm, lives - 1, Config.RANK_PODIUM.glyph * slot.scale)
+		end
+		return
+	end
+	slot.gen += 1
+	local gen = slot.gen
+	slot.userId = id
+	if slot.model then
+		slot.model:Destroy()
+		slot.model = nil
+	end
+	if not r then
+		return
+	end
+	local m = avatar(id)
+	local realm, lives = realmOf(r), livesOf(r)
+	if not m or slot.gen ~= gen then
+		if m then
+			m:Destroy()
+		end
+		return
+	end
+	m.Name = "Top" .. i
+	if slot.scale ~= 1 then
+		m:ScaleTo(slot.scale)
+	end
+	local hrp, hum = m.PrimaryPart, m:FindFirstChildOfClass("Humanoid")
+	m:PivotTo(slot.at * CFrame.new(0, hrp.Size.Y / 2 + hum.HipHeight, 0))
+	if Config.RANK_PODIUM.style == "statue" then
+		cast(m, MEDAL[i])
+	end
+	m.Parent = slot.parent
+	if Config.RANK_PODIUM.style ~= "statue" then
+		local animator = hum:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = hum
+		end
+		local a = Instance.new("Animation")
+		a.AnimationId = IDLE
+		local ok, track = pcall(animator.LoadAnimation, animator, a)
+		if ok then
+			track.Looped = true
+			track:Play()
+		end
+	end
+	slot.model, slot.realm, slot.lives = m, realm, lives
+	PlayerAura.build(m, realm, lives - 1, Config.RANK_PODIUM.glyph * slot.scale)
+end
+
+-- one pass at a time (avatars yield); a change during a pass is placed right after it
+local placing, want = false, nil
+local function placeAll(rows)
+	want = rows
+	if placing then
+		return
+	end
+	placing = true
+	while want do
+		local list = want
+		want = nil
+		for i = 1, 3 do
+			local ok, err = pcall(place, i, list[i])
+			if not ok then
+				warn("[Tycoon][ranks] event=podium_failed", err)
+			end
+		end
+	end
+	placing = false
+end
+
+-- a stone dais in front of the gate (styles "steps" and "statue"): 2-1-3, the winner highest
+local DAIS = { { x = 0, h = 2.1 }, { x = -3.7, h = 1.5 }, { x = 3.7, h = 1 } }
+local DAIS_Z, DAIS_W, DAIS_D = -4.8, 3.4, 3.2
+local function dais(parent, cf)
+	local base = cf * CFrame.new(0, 0, DAIS_Z)
+	P(parent, Vector3.new(DAIS_W * 3 + 1.4, 0.3, DAIS_D + 1), base * CFrame.new(0, 0.15, 0), PAL.stone)
+	for i, d in DAIS do
+		local block = P(parent, Vector3.new(DAIS_W, d.h, DAIS_D), base * CFrame.new(d.x, 0.3 + d.h / 2, 0), PAL.stoneLight)
+		block.Name = "Place" .. i
+		P(parent, Vector3.new(DAIS_W + 0.2, 0.2, DAIS_D + 0.2), base * CFrame.new(d.x, 0.3 + d.h + 0.1, 0), MEDAL[i], Enum.Material.Metal)
+		podium[i] = { at = base * CFrame.new(d.x, 0.5 + d.h, 0), scale = 1, plaque = plaque(block), gen = 0, parent = parent }
+	end
+end
+
+-- the winner on the gate's board, second and third on the steles' roofs (style "roof")
+local function roofs(parent, cf, steles)
+	local k = Config.RANK_PODIUM.roofScale
+	local top = cf * CFrame.new(0, SECTS_Y + SECTS_H / 2 + 0.5, -0.9)
+	P(parent, Vector3.new(0.4, 2.8, 2.8), top * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.pi / 2), MEDAL[1], Enum.Material.Metal, Enum.PartType.Cylinder)
+	podium[1] = { at = top * CFrame.new(0, 0.4, 0), scale = k, gen = 0, parent = parent }
+	for i, s in { [2] = steles.qi, [3] = steles.week } do
+		local at = s * CFrame.new(0, 3.65 + STELE_H, 0)
+		P(parent, Vector3.new(0.4, 2.8, 2.8), at * CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, math.pi / 2), MEDAL[i], Enum.Material.Metal, Enum.PartType.Cylinder)
+		podium[i] = { at = at * CFrame.new(0, 0.4, 0), scale = k, gen = 0, parent = parent }
+	end
+end
+
 -- `cf` = the wall's centre on the ground, its -Z (the boards' Front face) toward the plaza
 function RankBoard.build(parent, cf)
 	local m = Instance.new("Model")
@@ -308,16 +555,25 @@ function RankBoard.build(parent, cf)
 	end
 	guis.sects = face("sects", slab, Config.RANKS.sects.title, true)
 	-- the two steles, turned a little toward the plaza
+	local steles = {}
 	for _, side in { { key = "qi", x = -STELE_X, yaw = 0.35 }, { key = "week", x = STELE_X, yaw = -0.35 } } do
-		local s = stele(m, cf * CFrame.new(side.x, 0, -2.5) * CFrame.Angles(0, side.yaw, 0), STELE_W, STELE_H)
+		steles[side.key] = cf * CFrame.new(side.x, 0, -2.5) * CFrame.Angles(0, side.yaw, 0)
+		local s = stele(m, steles[side.key], STELE_W, STELE_H)
 		s.Name = side.key .. "Board"
 		guis[side.key] = face(side.key, s, Config.RANKS[side.key].title, false)
 	end
 	-- guardians and fire in front, spaced for the bigger boards: braziers between the boards (their
 	-- flames clear the text from the RANKINGS spot), lanterns behind the steles off the bridge posts
+	-- (a dais in front of the gate pushes them out to its sides)
+	local onDais = Config.RANK_PODIUM.style ~= "roof"
+	if onDais then
+		dais(m, cf)
+	else
+		roofs(m, cf, steles)
+	end
 	for _, sx in { -1, 1 } do
 		mesh(m, Config.RANK_LION, cf * CFrame.new(sx * 22, 0, -5) * CFrame.Angles(0, (Config.RANK_LION.yaw or 0) + sx * 0.4, 0), Config.RANK_LION.height)
-		brazier(m, cf * CFrame.new(sx * 6, 0, -6))
+		brazier(m, cf * CFrame.new(sx * (onDais and 8.4 or 6), 0, -6))
 		lantern(m, cf * CFrame.new(sx * 16.5, 0, 4))
 	end
 	m.Parent = parent
@@ -330,6 +586,19 @@ function RankBoard.build(parent, cf)
 		end
 	end
 	Ranks.changed:Connect(draw)
+	-- the podium follows Greatest Sects; between changes it checks the realms and lives of its three
+	Ranks.changed:Connect(function(key, rows)
+		if key == "sects" then
+			task.spawn(placeAll, rows)
+		end
+	end)
+	task.spawn(function()
+		placeAll(Ranks.top.sects or {})
+		while m.Parent do
+			task.wait(Config.RANK_TICK)
+			placeAll(Ranks.top.sects or {})
+		end
+	end)
 	return m
 end
 
