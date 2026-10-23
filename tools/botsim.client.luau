@@ -15,6 +15,7 @@
 --   2. target = the cheapest building pad; recruit x10 when that batch costs no more than the target
 --   3. a hire cheaper than the target: hire when affordable, else wait for it
 --   4. the target once affordable, after WALK seconds (the sim's walk)
+--   (with the Heavenly Hands karma node every build goes through HandsBuild, no walk, like the sim)
 -- "Waiting" = a second where qi holds less than the cheapest thing on offer (any pad, hire, recruit
 -- x10, breakthrough, rebirth): the frustration the owner asked about.
 
@@ -73,6 +74,15 @@ local function goHome()
 	end
 end
 
+local function invoke(name, ...)
+	local f = R:FindFirstChild(name)
+	if not f then
+		return nil
+	end
+	local ok, res = pcall(f.InvokeServer, f, ...)
+	return ok and res or nil
+end
+
 -- my pads by kind: build pads, hires, the breakthrough pad, the idle chest
 local function pads()
 	local build, hires, bt, chest = {}, {}, nil, nil
@@ -103,8 +113,20 @@ local function cheapest(list)
 	return best, cost
 end
 
+-- Heavenly Hands (karma node): the HUD's gold hand builds a pad from anywhere (remote HandsBuild),
+-- so from then on the bot walks nowhere, like the sim (walk 0 with hands)
+local function hands()
+	return (player:GetAttribute("Dao_hands") or 0) > 0
+end
+
 local function standOn(p, what)
 	local cost = p:GetAttribute("Cost")
+	if hands() and p:GetAttribute("PadId") then
+		local ok = invoke("HandsBuild", p:GetAttribute("PadId"))
+		task.wait(Config.HANDS_COOLDOWN)
+		note("buy", what, ok and cost or "refused")
+		return
+	end
 	goTo(p.Position)
 	local t = os.clock()
 	while p.Parent and p:GetAttribute("OwnerId") == me and os.clock() - t < 2 do
@@ -121,15 +143,6 @@ R:WaitForChild("Notify").OnClientEvent:Connect(function(kind)
 		btAsk = true
 	end
 end)
-
-local function invoke(name, ...)
-	local f = R:FindFirstChild(name)
-	if not f then
-		return nil
-	end
-	local ok, res = pcall(f.InvokeServer, f, ...)
-	return ok and res or nil
-end
 
 local function daoBuys()
 	for _, key in DAO_ORDER do
@@ -203,14 +216,22 @@ local function run()
 		end
 		if t - lastOrb >= ORB_EVERY then
 			lastOrb = t
+			local any = false
 			for _, o in workspace:GetDescendants() do
 				if o.Name == "QiOrb" and o:IsA("BasePart") then
+					any = true
+					local before = A("Qi") or 0
 					goTo(o.Position - Vector3.new(0, 3, 0))
-					task.wait(0.3)
-					note("orb", "")
+					local w = os.clock()
+					while o.Parent and os.clock() - w < 1.5 do
+						task.wait(0.1)
+					end
+					note("orb", o.Parent and "missed" or "got", (A("Qi") or 0) - before)
 				end
 			end
-			goHome()
+			if any then
+				goHome()
+			end
 		end
 
 		-- 1. everything built: the next realm waits for a rebirth (no breakthrough pad then: the server
@@ -227,7 +248,11 @@ local function run()
 			walkUntil = nil
 			if qi >= (bt:GetAttribute("Cost") or math.huge) then
 				btAsk = false
-				goTo(bt.Position)
+				if hands() then
+					invoke("HandsBuild", "breakthrough")
+				else
+					goTo(bt.Position)
+				end
 				local w = os.clock()
 				while not btAsk and os.clock() - w < 2 do
 					task.wait(0.1)
@@ -246,7 +271,7 @@ local function run()
 					standOn(hire, hire.Name)
 				end
 			elseif qi >= tcost then -- 4. the cheapest building, after the walk
-				walkUntil = walkUntil or t + WALK
+				walkUntil = walkUntil or t + (hands() and 0 or WALK)
 				if t >= walkUntil then
 					walkUntil = nil
 					standOn(target, target.Name)

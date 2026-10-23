@@ -1,6 +1,6 @@
 """Line the Studio bot (tools/botsim.client.luau) up against tools/sim_check.py, minute by minute.
 
-    python tools/botsim_compare.py BOTLOG.txt [--minutes 35] [--seeds 10]
+    python tools/botsim_compare.py BOTLOG.txt [--minutes 35] [--seeds 10] [--buy x2,vip,auto]
 
 BOTLOG.txt = the bot's _G.BOT.log lines ("t|kind|what|cost|q=..|r=..|R<realm>|L<life>"), one per line,
 plus a last line "WAIT <seconds> <longest>". The sim plays the same player: one session of --minutes,
@@ -17,13 +17,13 @@ import sim_check  # noqa: E402
 from sim_game import load, DEFAULT_CONFIG  # noqa: E402
 
 
-def sim_runs(minutes, seeds):
+def sim_runs(minutes, seeds, buy=()):
     sim_check.KINDS["bot"] = dict(session=minutes, per_day=1, walk=6, orb_every=30)
     C = load(str(DEFAULT_CONFIG))
     runs = []
     for seed in range(1, seeds + 1):
         ev = []
-        sim_check.sim(C, "bot", "gated", 1, seed, (), bless=0, events=ev)
+        sim_check.sim(C, "bot", "gated", 1, seed, buy, bless=0, events=ev)
         runs.append(ev)
     return runs
 
@@ -70,6 +70,16 @@ def bot_milestones(lines):
     return first, bts, rbs, int(waits or 0), int(longest or 0), buys
 
 
+def state_at(ev, t):
+    """(life, realm) after the last event at or before t"""
+    life, realm = 1, 1
+    for e in ev:
+        if e[0] > t:
+            break
+        realm, life = e[3], e[4]
+    return life, realm
+
+
 def mmss(s):
     return "-" if s is None else "%d:%02d" % (s // 60, s % 60)
 
@@ -79,9 +89,17 @@ def main():
     ap.add_argument("botlog")
     ap.add_argument("--minutes", type=int, default=35)
     ap.add_argument("--seeds", type=int, default=10)
+    ap.add_argument("--buy", default="", help="passes the bot had (DebugSet pass): x2,vip,auto")
     a = ap.parse_args()
-    bot = bot_milestones(Path(a.botlog).read_text().splitlines())
-    sims = [milestones(ev) for ev in sim_runs(a.minutes, a.seeds)]
+    lines = Path(a.botlog).read_text().splitlines()
+    bot = bot_milestones(lines)
+    bot_events = []  # (t, kind, 0, realm, life) from the bot's own R/L fields
+    for ln in lines:
+        f = ln.split("|")
+        if len(f) >= 8 and f[6][:1] == "R" and f[7][:1] == "L":
+            bot_events.append((int(f[0]), f[1], 0, int(f[6][1:]), int(f[7][1:])))
+    sim_evs = sim_runs(a.minutes, a.seeds, tuple(x for x in a.buy.split(",") if x))
+    sims = [milestones(ev) for ev in sim_evs]
     total = a.minutes * 60
     print("%-28s %-12s %s" % ("", "Studio bot", "sim_check (median of %d seeds, min-max)" % a.seeds))
 
@@ -91,8 +109,15 @@ def main():
         print("%-28s %-12s %s" % (name, f(b) if b is not None else "-", s))
 
     row("first building", bot[0], [s[0] for s in sims])
-    for i in range(max(len(bot[1]), max(len(s[1]) for s in sims))):
-        row("breakthrough %d" % (i + 1), bot[1][i] if i < len(bot[1]) else None, [s[1][i] if i < len(s[1]) else None for s in sims])
+    if a.minutes <= 40:
+        for i in range(max(len(bot[1]), max(len(s[1]) for s in sims))):
+            row("breakthrough %d" % (i + 1), bot[1][i] if i < len(bot[1]) else None, [s[1][i] if i < len(s[1]) else None for s in sims])
+    else:  # long runs: where each one stands every 15 minutes, then the rebirths
+        for m in range(15, a.minutes + 1, 15):
+            b = state_at(bot_events, m * 60)
+            ss = [state_at(ev, m * 60) for ev in sim_evs]
+            print("%-28s %-12s L%d R%d" % ("at %d min (life, realm)" % m, "L%d R%d" % b,
+                                            statistics.median(x[0] for x in ss), statistics.median(x[1] for x in ss)))
     for i in range(max(len(bot[2]), max(len(s[2]) for s in sims))):
         row("rebirth %d" % (i + 1), bot[2][i] if i < len(bot[2]) else None, [s[2][i] if i < len(s[2]) else None for s in sims])
     pct = lambda w: "%d%%" % round(100 * w / total)  # noqa: E731
