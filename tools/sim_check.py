@@ -91,18 +91,30 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         per = 0 if price else C.get("DISCIPLE_STAR_BONUS", 0)
         return 1 + sum(d * (1 + per * sum(1 for at in C["INDEX_STARS"] if S["index"].get(getattr(d, "key", None), 0) >= at)) for d in seated)
 
-    def roll():
+    pity = {}
+
+    def roll():  # Main roll: weights, then Config.PITY, then Shiny; returns (rarity index, shiny)
         x = rng.uniform(0, wsum)
+        pick = 0
         for i, (w, b) in enumerate(rar):
             x -= w
             if x <= 0:
-                return i
-        return 0
+                pick = i
+                break
+        for t, n in C.get("PITY", {}).items():
+            pity[t] = pity.get(t, 0) + 1
+            if pick < t and pity[t] >= n:
+                pick = t
+            if pick >= t:
+                pity[t] = 0
+        return pick, C.get("SHINY_CHANCE", 0) > 0 and rng.random() < C["SHINY_CHANCE"]
 
-    def seat(i):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+    def seat(i, shiny=False):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+        if isinstance(i, tuple):
+            i, shiny = i
         # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
         key = (i, rng.randrange(4))
-        d = Disc(rar[i][1])
+        d = Disc(rar[i][1] * (C.get("SHINY_MULT", 1) if shiny else 1))  # Config.discBonus
         d.key = key
         S["disc"].append(d)
         S["disc"].sort(reverse=True)

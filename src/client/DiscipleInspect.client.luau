@@ -74,11 +74,13 @@ local function infoOf(m)
 	local pulls = owner and readIndex(owner)[key] or 0
 	local stars = Config.indexStars(pulls)
 	local r = Config.rarity(name)
+	local shiny = m:GetAttribute("Shiny") == true
 	return {
 		rarity = r,
-		look = Config.LOOK_NAMES[look] or look,
+		name = Config.discipleName(name, look),
+		shiny = shiny,
 		stars = stars,
-		bonus = r.bonus * Config.discipleStarMult(pulls),
+		bonus = Config.discBonus(name, shiny) * Config.discipleStarMult(pulls),
 		nextAt = Config.INDEX_STARS[stars + 1],
 		pulls = pulls,
 	}
@@ -108,7 +110,7 @@ local function billboard(m, size, offset)
 	return b
 end
 
--- the card: rarity + look, stars, the qi it adds (with the qi icon), and the next star
+-- the card: name, rarity, stars, the qi it adds (with the qi icon), and the next star
 local function card(m)
 	local info = infoOf(m)
 	local b = billboard(m, UDim2.fromOffset(220, 120), Vector3.new(0, 7.5, 0))
@@ -123,7 +125,9 @@ local function card(m)
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 8)
 	pad.Parent = box
 	Toy.list(box, false, 2)
-	Toy.text(box, info.rarity.name .. " · " .. info.look, 17, info.rarity.color, { LayoutOrder = 1 })
+	-- its name (named disciples, 2026-10-23), then its rarity in the rarity's colour (Shiny first)
+	Toy.text(box, info.name, 18, Color3.new(1, 1, 1), { LayoutOrder = 0 })
+	Toy.text(box, (info.shiny and "Shiny " or "") .. info.rarity.name, 14, info.rarity.color, { LayoutOrder = 1 })
 	Toy.stars(box, info.stars, 22, { LayoutOrder = 2 })
 	local _, label = Toy.amount(box, "qi", 18, Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	label.Text = string.format("+%d%% qi", math.floor(info.bonus * 100 + 0.5))

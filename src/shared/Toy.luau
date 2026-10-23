@@ -697,10 +697,40 @@ local function figureImage(parent, size, idx, props)
 	return img
 end
 
+-- a named disciple's face (Config.DISCIPLE_FACES, 2026-10-23), `size` px, nil until the sheet is uploaded
+local function faceImage(parent, size, rarityName, look, props)
+	local f = Config.DISCIPLE_FACES
+	if f.image == "" or not look then
+		return nil
+	end
+	local img = Instance.new("ImageLabel")
+	img.BackgroundTransparency = 1
+	img.Image = f.image
+	img.ImageRectOffset = Config.faceCell(rarityName, look)
+	img.ImageRectSize = Vector2.new(f.cell, f.cell)
+	img.Size = UDim2.fromOffset(size, size)
+	for k, v in props or {} do
+		img[k] = v
+	end
+	img.Parent = parent
+	return img
+end
+
+-- Shiny (Pet Simulator 99's sparkle): four white sparkles round `box` (`size` px) that twinkle in turn
+local function shinyMarks(box, size)
+	for i, at in { { 0.12, 0.14, 0.24 }, { 0.88, 0.2, 0.18 }, { 0.9, 0.82, 0.22 }, { 0.1, 0.78, 0.16 } } do
+		local sp = Toy.atlasPiece(box, "sparkle", size * at[3], size * at[3], WHITE, 0, { Position = UDim2.fromScale(at[1], at[2]), ZIndex = 8 })
+		local sc = Instance.new("UIScale")
+		sc.Scale = 0.55
+		sc.Parent = sp
+		TweenService:Create(sc, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, i * 0.35), { Scale = 1.15 }):Play()
+	end
+end
+
 -- A disciple of rarity `rarityName` exactly as the mock draws it: the moving aura and the disciple,
 -- straight on whatever is behind (no backdrop disc; owner 2026-10-21: "why a background anyway").
 -- Every aura piece stays inside the box. `noAura` draws the bare disciple filling the box.
-local function well(parent, size, idx, props)
+local function well(parent, size, idx, props, rarityName, look)
 	local cg = Instance.new("Frame")
 	cg.Size = UDim2.fromOffset(size, size)
 	cg.BackgroundTransparency = 1
@@ -713,16 +743,28 @@ local function well(parent, size, idx, props)
 	Toy.aura(cg, idx, size)
 	-- the atlas cell spans 72 units around the figure; drawn at 86 of the well's 120 so the disciple
 	-- fills the well like the HUD row of the mock
-	figureImage(cg, math.floor(size * 86 / 120 + 0.5), idx, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -math.floor(size * 2 / 120)), ZIndex = 2 })
+	local centre = { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, -math.floor(size * 2 / 120)), ZIndex = 2 }
+	if not faceImage(cg, math.floor(size * 92 / 120 + 0.5), rarityName, look, centre) then
+		figureImage(cg, math.floor(size * 86 / 120 + 0.5), idx, centre)
+	end
 	return cg
 end
 
-function Toy.disciple(parent, size, rarityName, props, noAura)
+-- `look` (a DISCIPLE_LOOKS key) draws that named disciple's face once the face sheet is uploaded (the
+-- rarity's figure until then, and wherever the look is unknown: the Shop, gifts); `shiny` adds the
+-- sparkles.
+function Toy.disciple(parent, size, rarityName, props, noAura, look, shiny)
 	local idx = Config.rarityIndex(rarityName)
+	local out
 	if noAura then
-		return figureImage(parent, size, idx, props)
+		out = faceImage(parent, size, rarityName, look, props) or figureImage(parent, size, idx, props)
+	else
+		out = well(parent, size, idx, props, rarityName, look)
 	end
-	return well(parent, size, idx, props)
+	if shiny then
+		shinyMarks(out, size)
+	end
+	return out
 end
 
 -- One index star, the same gem everywhere (the crowns over the disciples, their cards, the index book,
@@ -766,6 +808,110 @@ function Toy.stars(parent, stars, size, props)
 		Toy.starGem(row, color, { TextSize = size, LayoutOrder = i, ZIndex = row.ZIndex })
 	end
 	return row
+end
+
+-- a small dark pill (a count, a tag, the stars)
+local function darkPill(parent, props)
+	local f = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = Color3.fromHex("1E1726") })
+	for k, v in props or {} do
+		f[k] = v
+	end
+	corner(f, UDim.new(1, 0))
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, Toy.px(4)), UDim.new(0, Toy.px(4))
+	pad.Parent = f
+	Toy.list(f, true, 0)
+	return f
+end
+Toy.darkPill = darkPill
+
+-- One disciple as a toy card, the same everywhere a disciple is listed (2026-10-23, owner: "normalize
+-- how we show them"): the Disciples book's My Sect and Index tabs, the recruit reveal. A solid shadow,
+-- a face lit from the top in the rarity's colours, an ink rim, an inner rim in the rarity's colour
+-- (the star colour of each full row of five), the glass cap, the named disciple's face in its moving
+-- rarity aura, Shiny sparkles. Not found: a slate card, a dark shape and a "?".
+-- `w` = the card's width in px (height 0.89 of it). opts (all optional):
+--   found (default true), shiny, stars (a star row under the card; nil = none), count (a "xN" pill,
+--   top left), tag (a text pill at the foot, e.g. "Isle 2"), new (a red NEW tag), name (its name
+--   under the card, shrunk to fit), order (LayoutOrder).
+-- Returns the cell (the card + its lines) and a transparent TextButton over the card for a tap.
+local SHAPE = Color3.fromHex("241C2C")
+function Toy.discipleTile(parent, w, rarityName, look, opts)
+	opts = opts or {}
+	local px = Toy.px
+	local r = Config.rarity(rarityName)
+	local found = opts.found ~= false
+	local stars = opts.stars or 0
+	local full = Config.STAR_COLORS[math.min(stars // Config.STAR_ROW, #Config.STAR_COLORS)] -- a full row's colour
+	local h, rad = math.floor(w * 0.89 + 0.5), math.floor(w * 0.19 + 0.5)
+	local cell = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = opts.order or 0 })
+	local cl = Toy.list(cell, false, px(2))
+	cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	local holder = frame(cell, { Size = UDim2.fromOffset(w, h), LayoutOrder = 1 })
+	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(3)), BackgroundTransparency = 0, BackgroundColor3 = Toy.INK })
+	corner(shadow, UDim.new(0, rad))
+	local face = frame(holder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = WHITE, ClipsDescendants = true })
+	corner(face, UDim.new(0, rad))
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = found and ColorSequence.new(r.color:Lerp(WHITE, 0.62), r.color:Lerp(Toy.INK, 0.12)) or ColorSequence.new(Color3.fromHex("4A3F57"), Color3.fromHex("2A2232"))
+	grad.Parent = face
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = px(3)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = face
+	Toy.glass(face, rad)
+	local faced = Config.DISCIPLE_FACES.image ~= "" and look ~= nil
+	if found then
+		Toy.disciple(face, w, rarityName, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, faced and px(1) or math.floor(w * 0.075)), ZIndex = 2 }, false, look, opts.shiny)
+	else
+		local fig = Toy.disciple(face, math.floor(w * (faced and 0.85 or 0.7)), rarityName, faced and { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 2 } or { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, px(4)), ZIndex = 2 }, true, look)
+		fig.ImageColor3 = SHAPE -- never pulled: a dark shape
+		Toy.text(face, "?", math.floor(w * 0.31), Color3.fromHex("A89BBB"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), ZIndex = 3 })
+	end
+	-- the inner rim: the rarity's colour, the star colour once a row of five is full
+	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
+	corner(rim, UDim.new(0, rad - px(3)))
+	local rs = Instance.new("UIStroke")
+	rs.Color = full or (found and r.color:Lerp(WHITE, 0.35) or Color3.fromHex("5E5270"))
+	rs.Thickness = full and px(3) or px(2)
+	rs.Parent = rim
+	if found and opts.count then
+		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 }), "x" .. opts.count, px(9), WHITE, { ZIndex = 7 })
+	end
+	if opts.tag then
+		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(9), WHITE, { ZIndex = 7 })
+	end
+	if opts.new then
+		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
+		corner(tag, UDim.new(0, px(4)))
+		local ts = Instance.new("UIStroke")
+		ts.Color = Toy.INK
+		ts.Thickness = px(2)
+		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		ts.Parent = tag
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(3)), UDim.new(0, px(3))
+		pad.Parent = tag
+		Toy.text(tag, "NEW", px(9), WHITE, { ZIndex = 9 })
+	end
+	if opts.stars then -- on a dark pill (Toy.stars: gold, then red, then blue)
+		Toy.stars(darkPill(cell, { LayoutOrder = 2 }), stars, math.max(px(9), math.floor(w * 0.2)))
+	end
+	if opts.name and look then -- shrunk to the card's width, never cut (R4)
+		local n = Toy.text(cell, Config.discipleName(rarityName, look), px(11), WHITE, { LayoutOrder = 3, AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.fromOffset(w + px(8), px(12)), TextScaled = true })
+		local lim = Instance.new("UITextSizeConstraint")
+		lim.MaxTextSize = px(11)
+		lim.Parent = n
+	end
+	local tap = Instance.new("TextButton")
+	tap.Text = ""
+	tap.BackgroundTransparency = 1
+	tap.Size = UDim2.fromScale(1, 1)
+	tap.ZIndex = 9
+	tap.Parent = holder
+	return cell, tap
 end
 
 -- Currency marks (owner rule: every price or amount shows its currency's icon)

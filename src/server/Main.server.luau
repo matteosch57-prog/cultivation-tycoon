@@ -502,6 +502,19 @@ local function discLooks(d)
 	return d.discLooks
 end
 
+-- Shiny (2026-10-23, Pet Simulator 99's Shiny pets): data.discShiny[i] = true when data.disciples[i]
+-- is Shiny (another parallel list like discLooks; an old save has none: all false)
+local function discShiny(d)
+	d.discShiny = d.discShiny or {}
+	for i = #d.discShiny + 1, #d.disciples do
+		d.discShiny[i] = false
+	end
+	for i = #d.discShiny, #d.disciples + 1, -1 do
+		d.discShiny[i] = nil
+	end
+	return d.discShiny
+end
+
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
 -- benched, e.g. after a breakthrough resets the Quarters). `s.passes` = game passes owned (Shop).
 -- Karma Shop node level (0 = not bought)
@@ -531,11 +544,12 @@ local function discipleMult(s, price)
 	local m = 1
 	local max = maxDisciples(s)
 	local looks = discLooks(data)
+	local shiny = discShiny(data)
 	for i, name in data.disciples do
 		if i > max then
 			break
 		end
-		local bonus = Config.rarity(name).bonus
+		local bonus = Config.discBonus(name, shiny[i])
 		if not price then
 			bonus *= Config.discipleStarMult((data.index or {})[Config.indexKey(name, looks[i])])
 		end
@@ -658,6 +672,22 @@ local function publish(player)
 	end
 	player:SetAttribute("Index", table.concat(idx, ";"))
 	player:SetAttribute("DiscLooks", table.concat(discLooks(d), ","))
+	-- Shiny: each seated disciple's mark ("1" / "0") and the index entries found Shiny ("key;key")
+	local shinyMarks, shinyKeys = {}, {}
+	for i, on in discShiny(d) do
+		shinyMarks[i] = on and "1" or "0"
+	end
+	for key in d.shinyIndex or {} do
+		table.insert(shinyKeys, key)
+	end
+	player:SetAttribute("DiscShiny", table.concat(shinyMarks, ","))
+	player:SetAttribute("ShinyIndex", table.concat(shinyKeys, ";"))
+	-- pity: recruits since each guarantee's rarity or better ("Celestial=812;Dao Ancestor=2140")
+	local pity = {}
+	for _, p in Config.PITY do
+		table.insert(pity, p.rarity .. "=" .. ((d.pity or {})[p.rarity] or 0))
+	end
+	player:SetAttribute("Pity", table.concat(pity, ";"))
 	player:SetAttribute("MaxDisciples", maxDisciples(s))
 	player:SetAttribute("HasFurnace", d.owned.furnace == true)
 	player:SetAttribute("PillReady", d.pillReady == true)
@@ -790,6 +820,27 @@ end
 -- whose disciple changed are rebuilt (owner 2026-10-22: a recruit rebuilt the whole platform and
 -- every figure popped out and back in). So the seat order is not the strength order: a newcomer
 -- takes a free seat, or the seat of the one it pushed to the bench.
+-- a Shiny disciple's seat: the Shiny attribute (DiscipleInspect's card) and a few white sparkles
+-- drifting off it (built-in texture, low rate: the client's aura range switches emitters off far away)
+local function shinySparkle(m)
+	m:SetAttribute("Shiny", true)
+	local at = m:FindFirstChild("Cushion") or m.PrimaryPart
+	if not at then
+		return
+	end
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "ShinySparkle"
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Rate = 4
+	e.Lifetime = NumberRange.new(0.8, 1.4)
+	e.Speed = NumberRange.new(1, 2)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.45), NumberSequenceKeypoint.new(1, 0) })
+	e.LightEmission = 1
+	e.Color = ColorSequence.new(Color3.fromRGB(255, 250, 220))
+	e.Parent = at
+end
+
 local function buildDisciples(s, newcomer)
 	local folder = s.plot.built:FindFirstChild("Disciples")
 	if not s.data.owned.platform then
@@ -820,13 +871,18 @@ local function buildDisciples(s, newcomer)
 	end
 	-- the working disciples (strongest first), counted by rarity and look ("Elder|lotus", D60) and by
 	-- where they sit: the top onPlatform on the platform, the others on the isles
+	-- (a Shiny one counts apart, "Elder|lotus#s": its seat carries the Shiny attribute and sparkles)
 	local want = { [false] = {}, [true] = {} }
 	local looks = discLooks(s.data)
-	for slot, name in s.data.disciples do
+	local shinies = discShiny(s.data)
+	local function seatKey(i)
+		return Config.indexKey(s.data.disciples[i], looks[i]) .. (shinies[i] and "#s" or "")
+	end
+	for slot in s.data.disciples do
 		if slot > max then
 			break -- benched
 		end
-		local key = Config.indexKey(name, looks[slot])
+		local key = seatKey(slot)
 		local w = want[onIsle(slot)]
 		w[key] = (w[key] or 0) + 1
 	end
@@ -835,7 +891,7 @@ local function buildDisciples(s, newcomer)
 	local taken = {}
 	for _, m in folder:GetChildren() do
 		local slot = tonumber(m.Name:match("^Disciple(%d+)$"))
-		local key = m:GetAttribute("Disciple")
+		local key = m:GetAttribute("Disciple") and m:GetAttribute("Disciple") .. (m:GetAttribute("Shiny") and "#s" or "")
 		local w = slot and want[onIsle(slot)]
 		if slot and slot <= max and key and (w[key] or 0) > 0 and not taken[slot] then
 			w[key] -= 1
@@ -856,18 +912,23 @@ local function buildDisciples(s, newcomer)
 		local w = want[isle]
 		local slot = isle and onPlatform + 1 or 1
 		for i, name in s.data.disciples do
-			local key = Config.indexKey(name, looks[i])
+			local key = seatKey(i)
 			if (w[key] or 0) > 0 then
 				while taken[slot] do
 					slot += 1
 				end
 				w[key] -= 1
 				taken[slot] = true
-				local arrive = key == newcomer
+				local base = Config.indexKey(name, looks[i])
+				local arrive = base == newcomer
 				if arrive then
 					newcomer = nil -- only one seat walks in, the first with that key
 				end
-				seatAt(slot, Config.rarity(name), arrive, looks[i]):SetAttribute("Disciple", key)
+				local m = seatAt(slot, Config.rarity(name), arrive, looks[i])
+				m:SetAttribute("Disciple", base)
+				if shinies[i] then
+					shinySparkle(m)
+				end
 			end
 		end
 	end
@@ -1621,23 +1682,42 @@ local function onLeave(player)
 end
 
 -- Recruit ----------------------------------------------------------------------------
-local function roll()
+local rng = Random.new()
+
+-- one roll for `d` (a save): the weights (the shown odds, R8), then pity (Config.PITY: `at` rolls in a
+-- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE). Returns the rarity
+-- and whether it is Shiny.
+local function roll(d)
 	local total = 0
 	for _, r in Config.RARITIES do
 		total += r.weight
 	end
-	local x = Random.new():NextNumber(0, total)
-	for _, r in Config.RARITIES do
+	local x = rng:NextNumber(0, total)
+	local pick = 1
+	for i, r in Config.RARITIES do
 		x -= r.weight
 		if x <= 0 then
-			return r
+			pick = i
+			break
 		end
 	end
-	return Config.RARITIES[1]
+	d.pity = d.pity or {}
+	for _, p in Config.PITY do
+		local tier = Config.rarityIndex(p.rarity)
+		d.pity[p.rarity] = (d.pity[p.rarity] or 0) + 1
+		if pick < tier and d.pity[p.rarity] >= p.at then
+			pick = tier
+		end
+		if pick >= tier then
+			d.pity[p.rarity] = 0
+		end
+	end
+	return Config.RARITIES[pick], rng:NextNumber() < Config.SHINY_CHANCE
 end
 
+-- strongest first: { name, look, shiny } entries by their bonus (Shiny counts)
 local function byBonus(a, b)
-	return Config.rarity(a[1]).bonus > Config.rarity(b[1]).bonus
+	return Config.discBonus(a[1], a[3]) > Config.discBonus(b[1], b[3])
 end
 
 -- The disciple index (D60): one more pull of `name` in `look`; a new star can reach a summons step
@@ -1665,20 +1745,22 @@ end
 -- it in the index. Returns kept (true when it works a seat; false = the sect is full of stronger ones
 -- and it left, `force` keeps it on the bench instead), its look, its index stars after, and whether
 -- this pull lit a new star.
-local function addDisciple(s, name, force, noBuild, look)
+local function addDisciple(s, name, force, noBuild, look, shiny)
 	local d = s.data
 	look = look or Config.DISCIPLE_LOOKS[math.random(#Config.DISCIPLE_LOOKS)]
+	shiny = shiny == true
 	local looks = discLooks(d)
+	local shinies = discShiny(d)
 	local list = {}
 	for i, n in d.disciples do
-		list[i] = { n, looks[i] }
+		list[i] = { n, looks[i], shinies[i] }
 	end
 	local max = maxDisciples(s)
 	table.sort(list, byBonus)
-	local kept = #list < max or Config.rarity(name).bonus > Config.rarity(list[max][1]).bonus
+	local kept = #list < max or Config.discBonus(name, shiny) > Config.discBonus(list[max][1], list[max][3])
 	if kept or force then
 		-- full: the newcomer takes the weakest working seat (it joins and the list re-sorts)
-		table.insert(list, { name, look })
+		table.insert(list, { name, look, shiny })
 	end
 	table.sort(list, byBonus)
 	-- keep at most as many as the largest possible sect (benched ones beyond the slots), dropping
@@ -1686,10 +1768,12 @@ local function addDisciple(s, name, force, noBuild, look)
 	-- even if that leaves the list over the cap
 	local paid = table.clone(d.boughtDisciples or {})
 	local keep = {}
-	for i, e in list do -- strongest first: the bought copies are the strongest of their name
-		if (paid[e[1]] or 0) > 0 then
-			paid[e[1]] -= 1
-			keep[i] = true
+	for pass = 1, 2 do -- a bought one is never Shiny: mark plain copies first, then any (old saves)
+		for i, e in list do -- strongest first: the bought copies are the strongest plain ones of their name
+			if not keep[i] and (paid[e[1]] or 0) > 0 and (pass == 2 or not e[3]) then
+				paid[e[1]] -= 1
+				keep[i] = true
+			end
 		end
 	end
 	for i = #list, 1, -1 do
@@ -1702,10 +1786,15 @@ local function addDisciple(s, name, force, noBuild, look)
 	end
 	table.clear(d.disciples)
 	table.clear(looks)
+	table.clear(shinies)
 	for i, e in list do
-		d.disciples[i], looks[i] = e[1], e[2]
+		d.disciples[i], looks[i], shinies[i] = e[1], e[2], e[3] == true
 	end
 	local starsBefore, stars = indexAdd(s, name, look)
+	if shiny then
+		d.shinyIndex = d.shinyIndex or {}
+		d.shinyIndex[Config.indexKey(name, look)] = true
+	end
 	if not noBuild then -- a multi-recruit rebuilds once at the end
 		buildDisciples(s, kept and Config.indexKey(name, look) or nil)
 	end
@@ -1754,13 +1843,14 @@ chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	s.data.pulled = s.data.pulled or {}
 	local results, rolled, bestKey, bestBonus = {}, {}, nil, -1
 	for _ = 1, want do
-		local r = roll()
-		local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
-		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
+		local r, shiny = roll(s.data)
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny })
 		-- a rolled rarity keeps its "first pulled" mark, as with a recruit
 		s.data.pulled[r.name] = true
-		if kept and r.bonus > bestBonus then
-			bestKey, bestBonus = Config.indexKey(r.name, look), r.bonus
+		local bonus = Config.discBonus(r.name, shiny)
+		if kept and bonus > bestBonus then
+			bestKey, bestBonus = Config.indexKey(r.name, look), bonus
 		end
 		local key = r.name .. "|" .. (kept and "kept" or "benched")
 		rolled[key] = (rolled[key] or 0) + 1
@@ -1803,19 +1893,20 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	s.data.recruited += want -- lifetime (telemetry)
 	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
 	Telemetry.sink(player, s.data, cost, "recruit")
-	local results, best, bestLook, bestKept, bestKeptName, bestKeptKey = {}, nil, nil, false, nil, nil
+	local results, best, bestLook, bestShiny, bestKept, bestKeptBonus, bestKeptKey = {}, nil, nil, false, false, -1, nil
 	local rolled = {} -- ["rarity|kept"] = count: one Recruit event per outcome, not one per roll (an
 	-- x50 alone was a quarter of the server's minute analytics budget, Telemetry `spend`)
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
-		local r = roll()
-		local kept, look, stars, newStar = addDisciple(s, r.name, false, true)
-		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar })
-		if not best or r.bonus > Config.rarity(best).bonus then
-			best, bestLook = r.name, look
+		local r, shiny = roll(s.data)
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny })
+		local bonus = Config.discBonus(r.name, shiny)
+		if not best or bonus > Config.discBonus(best, bestShiny) then
+			best, bestLook, bestShiny = r.name, look, shiny
 		end
-		if kept and (not bestKeptName or r.bonus > Config.rarity(bestKeptName).bonus) then
-			bestKept, bestKeptName, bestKeptKey = true, r.name, Config.indexKey(r.name, look)
+		if kept and bonus > bestKeptBonus then
+			bestKept, bestKeptBonus, bestKeptKey = true, bonus, Config.indexKey(r.name, look)
 		end
 		local key = r.name .. "|" .. (kept and "kept" or "benched")
 		rolled[key] = (rolled[key] or 0) + 1
@@ -1830,7 +1921,7 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
-	return { ok = true, rarity = best, look = bestLook, kept = bestKept, results = results }
+	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, kept = bestKept, results = results }
 end)
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.

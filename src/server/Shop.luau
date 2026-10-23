@@ -190,7 +190,7 @@ local function prompt(player, key)
 	if it.rarity then
 		-- never sell a disciple that could not stay: a full list of stronger ones
 		local list = s.data.disciples
-		local weakest = list[#list] and Config.rarity(list[#list]).bonus or 0
+		local weakest = list[#list] and Config.discBonus(list[#list], (s.data.discShiny or {})[#list]) or 0
 		if #list >= Config.DISCIPLE_CAP and weakest >= Config.rarity(it.rarity).bonus then
 			api.notify:FireClient(player, "shopFull", it.name)
 			return

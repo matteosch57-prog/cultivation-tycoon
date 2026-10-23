@@ -1,0 +1,184 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Disciple odds, names and icons (2026-10-23, owner: "Because we put disciples in front so much, we
+     should review odds, names, and icons, have something better than the classic we have").
+     Research: Bee Swarm Simulator and Anime Vanguards / Anime Defenders / Anime Last Stand name every
+     unit and draw its own face; the rarity is only its frame and colour. Pet Simulator 99 adds a
+     Shiny variant (about 1 in 50-100). Anime Defenders / Vanguards add pity (Legendary 50, Mythic 400).
+     ?view=names  A: 36 named disciples (rarity x look = the index), drawn busts, odds sheet
+     ?view=pity   B: A + pity (Celestial guaranteed by 1,000 recruits, Dao Ancestor by 5,000)
+     ?view=shiny  C: A + Shiny (1 in 100 recruits, x1.5 that disciple's bonus)
+     ?view=atlas  the upload sheet art/ui/disciple_faces.png (1024 x 1024, render with a transparent background)
+     Rendered at 1300 x 760. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html{background:#120e1c}
+body{width:1300px;height:760px;font-family:Fredoka,sans-serif;background:url('../captures/2026-10-22_lotus_isles_ingame_front.jpg') center/cover;position:relative;overflow:hidden;color:#fff}
+body::before{content:"";position:absolute;inset:0;background:rgba(18,14,28,.62)}
+.wrap{position:relative;padding:16px 26px;height:100%}
+.big{font-weight:700;-webkit-text-stroke:var(--sw,4px) #1b1420;paint-order:stroke fill;white-space:nowrap}
+h1{font-size:28px;color:#ffe36b;--sw:5px}
+.sub{font-size:14px;color:#e8e0f0;--sw:3px;margin:2px 0 12px}
+.panel{background:linear-gradient(#2b2238,#1d1726);border:3px solid #1b1420;border-radius:18px;box-shadow:inset 0 2px 0 #ffffff22,0 6px 0 #0006;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(9,74px);gap:8px 6px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:1px}
+.cell .n{font-size:10.5px;--sw:3px;text-align:center;line-height:1.05;height:22px;display:flex;align-items:center;white-space:normal;width:76px;justify-content:center}
+.colh{font-size:12px;--sw:3px;text-align:center}
+.row{display:flex;gap:18px;align-items:flex-start}
+.card{width:250px;text-align:center;padding:14px 12px 16px;position:relative}
+.card .nm{font-size:26px;--sw:5px;margin-top:4px}
+.pill{display:inline-block;font-size:14px;font-weight:700;padding:2px 12px;border-radius:99px;border:2.5px solid #1b1420;color:#1b1420;margin-top:4px}
+.amt{display:flex;gap:6px;justify-content:center;align-items:center;font-size:22px;margin-top:8px;--sw:4px}
+.odds{width:220px}
+.orow{display:flex;align-items:center;gap:8px;height:27px;font-size:15px}
+.orow .p{margin-left:auto;font-size:15px;--sw:3px}
+.note{font-size:12.5px;color:#d9d0e6;--sw:3px;margin-top:6px;white-space:normal}
+.bar{height:14px;border-radius:99px;background:#110c18;border:2.5px solid #1b1420;overflow:hidden;margin:4px 0 2px}
+.bar i{display:block;height:100%;border-radius:99px}
+.seal{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#7be38f,#2f9c55);border:4px solid #1b1420;box-shadow:inset 0 4px 0 #ffffff55,0 6px 0 #0007;display:flex;align-items:center;justify-content:center;font-size:20px}
+.tag{font-size:12px;--sw:3px;color:#ffe36b}
+</style></head>
+<body><div class="wrap" id="w"></div>
+<script>
+const INK='#1b1420', SKIN='#f2cfae', GOLD='#ffd34d';
+// rarity: name, colour, odds % (sums to exactly 100: Outer takes the 0.16 the old weights added)
+const R=[
+ ['Outer','#c8c8c8',59.84],['Inner','#5ac878',28],['Core','#5096ff',9],['Elder','#be64ff',2.5],
+ ['Immortal','#ffc83c',0.5],['Celestial','#6ee1eb',0.12],['Dao Ancestor','#e6323c',0.03],['Heavenly Emperor','#ff8c28',0.008],['Primordial','#ff6edc',0.002]];
+const BONUS=[10,25,60,150,400,900,2000,4500,10000];
+const LOOKS=['sword','lotus','monk','sage'];
+// one name per index entry (rarity x look); plain names low, titles high, myth at the top
+const NAMES={
+ sword:['Ah Fan','Shen Yi','Zhao Feng','Swift Blade Han','Azure Sword Lan','Starfall Chen','Sword Ancestor','Dragon Emperor','Pangu'],
+ lotus:['Xiao Mei','Lin Er','Su Qing','Moon Lotus Yue','Jade Fairy Ling','Cloud Weaver Xi','Lotus Mother','Phoenix Empress','Nuwa'],
+ monk:['Little Bao','Brother Tie','Monk Kong','Iron Bell Ming','Golden Bell Bo','Thunder Monk Lei','Furnace Patriarch','Sun King','Hundun'],
+ sage:['Old Wu','Uncle Gu','Master Lu','Old Pine Song','Crane Immortal He','Moon Sage Yin','Yin-Yang Patriarch','Star Emperor','Hongjun']};
+let uid=0;
+// frame behind the bust: climbs with the tier (1-3 plain disc, 4 notched jade ring, 5 gold rays,
+// 6 clouds, 7 yin-yang ring, 8 sun crown, 9 rainbow rays)
+function frame(t,c){
+  const id='g'+(++uid);
+  let s=`<defs><radialGradient id="${id}" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="${c}" stop-opacity=".95"/><stop offset="1" stop-color="${c}" stop-opacity=".45"/></radialGradient>
+  <linearGradient id="${id}r" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ff6e6e"/><stop offset=".25" stop-color="#ffd34d"/><stop offset=".5" stop-color="#6ee1a0"/><stop offset=".75" stop-color="#6eaaff"/><stop offset="1" stop-color="#d06eff"/></linearGradient></defs>`;
+  const fill=t===9?`url(#${id}r)`:`url(#${id})`;
+  if(t>=5){ // rays
+    const n=t>=8?16:12; let p='';
+    for(let i=0;i<n;i++){const a=i*2*Math.PI/n, b=a+Math.PI/n*.55, r1=36, r2=t>=8?44:41;
+      p+=`M${32+Math.cos(a-.12)*r1} ${32+Math.sin(a-.12)*r1}L${32+Math.cos(a+.06)*r2} ${32+Math.sin(a+.06)*r2}L${32+Math.cos(b)*r1} ${32+Math.sin(b)*r1}Z`;}
+    s+=`<path d="${p}" fill="${t===9?`url(#${id}r)`:(t>=8?GOLD:c)}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+  }
+  if(t===6) s+=`<path d="M2 46c-3-8 6-12 10-8 1-7 11-7 12 0 3-3 9-1 8 5z M62 46c3-8-6-12-10-8-1-7-11-7-12 0-3-3-9-1-8 5z" fill="#f4ffff" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  s+=`<circle cx="32" cy="32" r="31" fill="${fill}" stroke="${INK}" stroke-width="3.5"/>`;
+  if(t===4){let p='';for(let i=0;i<8;i++){const a=i*Math.PI/4;p+=`<circle cx="${32+Math.cos(a)*31}" cy="${32+Math.sin(a)*31}" r="3.2" fill="#e9d3ff" stroke="${INK}" stroke-width="1.8"/>`;}s+=p;}
+  if(t===7) s+=`<circle cx="32" cy="32" r="31" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="48 49"/><circle cx="32" cy="32" r="31" fill="none" stroke="${INK}" stroke-width="3" stroke-dasharray="48 49" stroke-dashoffset="48"/>`;
+  return s;
+}
+// a drawn bust per look; tier pieces join like the old A icons (pin, trim, crown, halo, ...)
+function bust(look,t,size,shiny){
+  const c=R[t-1][1], robe=t===9?'url(#rb'+uid+')':c;
+  let s=frame(t,c);
+  s+=`<defs><linearGradient id="rb${uid}" x1="0" x2="1"><stop offset="0" stop-color="#ff6e6e"/><stop offset=".3" stop-color="#ffd34d"/><stop offset=".55" stop-color="#6ee1a0"/><stop offset=".8" stop-color="#6eaaff"/><stop offset="1" stop-color="#d06eff"/></linearGradient><clipPath id="cl${uid}"><circle cx="32" cy="32" r="29.5"/></clipPath></defs><g clip-path="url(#cl${uid})">`;
+  // prop behind the shoulder
+  if(look==='sword') s+=`<path d="M46 20l9-13" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><path d="M46 20l9-13" stroke="#cfd8e6" stroke-width="3" stroke-linecap="round"/><path d="M42 27l5-8" stroke="${INK}" stroke-width="5"/><path d="M41 22l8 5" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M41 22l8 5" stroke="${GOLD}" stroke-width="2.5" stroke-linecap="round"/>`;
+  if(look==='lotus') s+=`<path d="M8 30l10 12 2-18z" fill="#fff4f8" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/><path d="M11 30l7 9M14 27l4 12M17 25l1 14" stroke="#f08cb4" stroke-width="1.4"/>`;
+  if(look==='monk') s+=`<path d="M10 22l14 22" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><path d="M10 22l14 22" stroke="#7a9a4a" stroke-width="3" stroke-linecap="round"/>`;
+  if(look==='sage') s+=`<rect x="42" y="16" width="9" height="30" rx="3" transform="rotate(18 46 30)" fill="#a8743f" stroke="${INK}" stroke-width="2.2"/>`;
+  // shoulders + collar
+  s+=`<path d="M6 66c1-14 11-21 26-21s25 7 26 21z" fill="${robe}" stroke="${INK}" stroke-width="3.2" stroke-linejoin="round"/>
+      <path d="M24 46l8 11 8-11" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/>`;
+  if(t>=3) s+=`<path d="M22 47l10 13 10-13" fill="none" stroke="${t>=5?GOLD:'#ffffffaa'}" stroke-width="2"/>`;
+  if(look==='monk') { let p=''; for(let i=0;i<9;i++){const a=Math.PI*(.15+i*.0875); p+=`<circle cx="${32+Math.cos(a)*13}" cy="${40+Math.sin(a)*9}" r="2.1" fill="#8a4b2a" stroke="${INK}" stroke-width="1"/>`;} s+=p; }
+  // neck + head
+  s+=`<rect x="28" y="38" width="8" height="8" fill="${SKIN}" stroke="${INK}" stroke-width="2.4"/>`;
+  const hair=look==='sage'?'#f2f2f6':INK;
+  if(look==='sword') s+=`<path d="M20 30c-3 10-2 16 1 18" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="32" cy="9" r="5.5" fill="${INK}"/>`;
+  if(look==='lotus') s+=`<circle cx="21" cy="13" r="6" fill="${INK}"/><circle cx="43" cy="13" r="6" fill="${INK}"/><path d="M17 31c-2 7 0 12 2 14M47 31c2 7 0 12-2 14" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  if(look==='sage') s+=`<circle cx="32" cy="9" r="5" fill="${hair}" stroke="${INK}" stroke-width="2"/>`;
+  s+=`<circle cx="32" cy="27" r="13" fill="${SKIN}" stroke="${INK}" stroke-width="3.2"/>`;
+  if(look==='sword') s+=`<path d="M19 26c1-11 25-11 26 0-4-4-9-5-13-2-4-3-9-2-13 2z" fill="${INK}"/>`;
+  if(look==='lotus') s+=`<path d="M19 27c0-12 26-12 26 0-3-2-6-6-8-6-3 3-9 4-14 2-2 1-3 3-4 4z" fill="${INK}"/><circle cx="44" cy="11" r="2.6" fill="#f08cb4" stroke="${INK}" stroke-width="1.3"/>`;
+  if(look==='monk') s+=`<path d="M20 22c3-8 21-8 24 0" fill="none" stroke="#d8b493" stroke-width="2"/><circle cx="32" cy="18" r="1.6" fill="#c0392b"/>`;
+  if(look==='sage') s+=`<path d="M19 26c1-11 25-11 26 0-5-3-21-3-26 0z" fill="${hair}" stroke="${INK}" stroke-width="2"/><path d="M24 33c0 10 4 16 8 18 4-2 8-8 8-18-3 3-13 3-16 0z" fill="${hair}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/><path d="M25 24h5M34 24h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`;
+  // eyes: closed arcs; Celestial up open, Primordial glowing
+  if(t>=6){ const e=t===9?'#fff':INK; s+=`<ellipse cx="27" cy="28" rx="1.9" ry="2.4" fill="${e}"/><ellipse cx="37" cy="28" rx="1.9" ry="2.4" fill="${e}"/>`; if(t===9) s+=`<ellipse cx="27" cy="28" rx="3.6" ry="4" fill="#ffe8fb" opacity=".45"/><ellipse cx="37" cy="28" rx="3.6" ry="4" fill="#ffe8fb" opacity=".45"/>`; }
+  else s+=`<path d="M25 28q2 2 4 0M35 28q2 2 4 0" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>`;
+  if(look!=='sage') s+=`<path d="M30 33q2 1.4 4 0" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>`;
+  // tier pieces
+  if(t===2) s+=`<rect x="38" y="6" width="10" height="3" rx="1.5" transform="rotate(-20 43 7)" fill="#5ac878" stroke="${INK}" stroke-width="1.4"/>`;
+  if(t===4) s+=`<path d="M26 7l3-5 3 4 3-4 3 5z" fill="#d9b8ff" stroke="${INK}" stroke-width="1.8"/>`;
+  if(t===7) s+=`<g transform="translate(32 17)"><circle r="3.4" fill="#fff" stroke="${INK}" stroke-width="1.4"/><path d="M0-3.4a1.7 1.7 0 0 1 0 3.4a1.7 1.7 0 0 0 0 3.4a3.4 3.4 0 0 1 0-6.8z" fill="${INK}"/></g>`;
+  if(t===8) s+=`<path d="M21 9l3-7 4 5 4-6 4 6 4-5 3 7z" fill="${GOLD}" stroke="${INK}" stroke-width="2"/><circle cx="32" cy="5" r="1.8" fill="#e6323c"/>`;
+  if(t===9) s+=`<path d="M32 14l2 3-2 3-2-3z" fill="#fff" stroke="${INK}" stroke-width="1"/>`;
+  s+=`</g>`;
+  // halo over the frame (Immortal) and Celestial cloud ribbon
+  if(t===5) s+=`<ellipse cx="32" cy="5" rx="12" ry="3.6" fill="none" stroke="${INK}" stroke-width="5"/><ellipse cx="32" cy="5" rx="12" ry="3.6" fill="none" stroke="${GOLD}" stroke-width="2.6"/>`;
+  if(shiny){ s+=`<circle cx="32" cy="32" r="31" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 5" opacity=".9"/>`;
+    for(const [x,y,r] of [[8,10,6],[56,14,4.5],[57,52,5.5],[6,50,4]]) s+=`<path d="M${x} ${y-r}Q${x} ${y} ${x+r} ${y}Q${x} ${y} ${x} ${y+r}Q${x} ${y} ${x-r} ${y}Q${x} ${y} ${x} ${y-r}z" fill="#fff" stroke="${INK}" stroke-width="1.2"/>`; }
+  return `<svg width="${size}" height="${size}" viewBox="-6 -6 76 76" overflow="visible">${s}</svg>`;
+}
+const qi=(s)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#6ee1eb" stroke="${INK}" stroke-width="2.4"/><path d="M12 5c3 3 3 5 0 7s-3 4 0 7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`;
+const pct=(p)=>p>=1?p.toFixed(2).replace(/\.?0+$/,'')+'%':p+'%';
+const fmt=(n)=>n.toLocaleString('en-US');
+
+function card(look,t,shiny){
+  const [rn,c]=R[t-1]; const b=BONUS[t-1]*(shiny?1.5:1);
+  return `<div class="panel card">${shiny?'<div class="big tag" style="position:absolute;left:14px;top:10px;font-size:15px">✦ SHINY</div>':''}
+   <div style="display:flex;justify-content:center">${bust(look,t,130,shiny)}</div>
+   <div class="big nm" style="color:${t===9?'#ffd6f6':'#fff'}">${NAMES[look][t-1]}</div>
+   <div class="pill" style="background:${t===9?'linear-gradient(90deg,#ff6e6e,#ffd34d,#6ee1a0,#6eaaff,#d06eff)':c}">${rn}</div>
+   <div class="amt big">${qi(24)}+${fmt(b)}%</div></div>`;
+}
+function oddsSheet(extra){
+  let h=`<div class="panel odds"><div class="big" style="font-size:20px;--sw:4px;margin-bottom:6px">Recruit odds</div>`;
+  R.forEach(([n,c,p],i)=>{h+=`<div class="orow">${bust('sword',i+1,26)}<span class="big" style="color:${c};--sw:3px">${n}</span><span class="big p">${pct(p)}</span></div>`;});
+  h+=`<div class="note big">Each recruit is one of 4 disciples of its rarity, equally likely.${extra||''}</div></div>`;
+  return h;
+}
+function index(){
+  let h=`<div class="panel"><div class="grid">`;
+  R.forEach(([n,c])=>h+=`<div class="big colh" style="color:${c}">${n.split(' ')[0]}</div>`);
+  for(const L of LOOKS) for(let t=1;t<=9;t++) h+=`<div class="cell">${bust(L,t,62)}<div class="big n">${NAMES[L][t-1]}</div></div>`;
+  return h+`</div></div>`;
+}
+const view=new URLSearchParams(location.search).get('view')||'names';
+let h='';
+if(view==='names'){
+  h=`<h1 class="big">A: Named disciples (copy Bee Swarm Simulator and Anime Vanguards)</h1>
+  <div class="sub big">every disciple has a name and a face; the rarity is its frame and colour. 36 named disciples = the index you already have (9 rarities x 4 looks). Odds unchanged.</div>
+  <div class="row">${index()}${card('lotus',5)}${oddsSheet()}</div>`;
+}
+if(view==='pity'){
+  h=`<h1 class="big">B: Named disciples + pity (copy Anime Defenders and Anime Vanguards)</h1>
+  <div class="sub big">A, plus a guarantee: a Celestial or better within 1,000 recruits, a Dao Ancestor or better within 5,000. The count shows under the Recruit seal.</div>
+  <div class="row">
+   <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:260px;margin-top:20px">
+     <div class="seal big">Recruit</div>
+     <div class="panel" style="width:250px">
+       <div style="display:flex;align-items:center;gap:6px">${bust('sage',6,30)}<span class="big" style="font-size:15px;color:#6ee1eb;--sw:3px">Celestial</span><span class="big" style="margin-left:auto;font-size:14px;--sw:3px">812 / 1,000</span></div>
+       <div class="bar"><i style="width:81.2%;background:linear-gradient(90deg,#3fb6c4,#9ef3fa)"></i></div>
+       <div style="display:flex;align-items:center;gap:6px;margin-top:8px">${bust('sage',7,30)}<span class="big" style="font-size:15px;color:#e6323c;--sw:3px">Dao Ancestor</span><span class="big" style="margin-left:auto;font-size:14px;--sw:3px">2,140 / 5,000</span></div>
+       <div class="bar"><i style="width:42.8%;background:linear-gradient(90deg,#b81f2a,#ff6d74)"></i></div>
+     </div>
+     <div class="note big" style="text-align:center;width:250px">A Celestial or better resets its bar. The x10 and x50 count each recruit.</div>
+   </div>
+   ${oddsSheet(' Pity: a Celestial or better by 1,000 recruits, a Dao Ancestor or better by 5,000.')}
+   ${card('sword',6)}</div>`;
+}
+if(view==='shiny'){
+  h=`<h1 class="big">C: Named disciples + Shiny (copy Pet Simulator 99)</h1>
+  <div class="sub big">A, plus 1 in 100 recruits comes out Shiny: a sparkling frame and x1.5 that disciple's qi. The index gets a Shiny tick for each of the 36.</div>
+  <div class="row" style="align-items:center">${card('monk',4)}<div class="big" style="font-size:40px">→</div>${card('monk',4,true)}
+   <div class="panel" style="width:300px"><div class="big" style="font-size:18px;--sw:4px;margin-bottom:8px">Index: Shiny found</div>
+   <div style="display:grid;grid-template-columns:repeat(4,64px);gap:8px">${LOOKS.map((L,i)=>bust(L,[4,5,4,6][i],60,i!==2)).join('')}</div>
+   <div class="note big">Shiny odds: 1% of every recruit, on top of its rarity.</div></div></div>`;
+}
+if(view==='atlas'){ // the upload sheet: 1024 x 1024, 160 px cells, 6 a row, cell = (tier-1)*4 + look
+  document.body.style.cssText='width:1024px;height:1024px;background:transparent;position:relative';
+  document.head.insertAdjacentHTML('beforeend','<style>body::before{display:none}html{background:transparent}</style>');
+  h='';
+  for(let t=1;t<=9;t++) LOOKS.forEach((L,li)=>{const i=(t-1)*4+li; h+=`<div style="position:absolute;left:${(i%6)*160}px;top:${Math.floor(i/6)*160}px;width:160px;height:160px">${bust(L,t,160)}</div>`;});
+  document.body.innerHTML=h;
+} else
+document.getElementById('w').innerHTML=h;
+</script></body></html>
