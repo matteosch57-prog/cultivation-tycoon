@@ -308,7 +308,7 @@ return function()
 			local f = k / steps
 			local a = phase + f * turns * math.pi * 2
 			local z = size.Z / 2 - f * size.Z
-			local at = attach(holder, cf * CFrame.new(math.cos(a) * radius, math.sin(a) * math.max(size.Y * 1.5, 0.3), z)) -- hugs the blade: just past the edge, just over the flat
+			local at = attach(holder, cf * CFrame.new(math.cos(a) * radius, math.sin(a) * 0.22, z)) -- hugs the blade: just past the edge, just over the flat
 			if prev then
 				beam(holder, prev, at, color, width * (1 - f * 0.6), width * (1 - (f + 1 / steps) * 0.6), 1, 0.1)
 			end
@@ -339,8 +339,8 @@ return function()
 		-- under-glow: a soft flat band of the tier colour just under the blade
 		local u0 = attach(holder, cf * CFrame.new(0, -size.Y, size.Z / 2))
 		local u1 = attach(holder, cf * CFrame.new(0, -size.Y, -size.Z / 2))
-		local under = beam(holder, u0, u1, t.color, size.X * (1.6 + i * 0.4), size.X * 0.8, 1, 0.3)
-		under.FaceCamera = false
+		-- v6: a narrow camera-facing glow (the wide flat one showed straight edges up close)
+		local under = beam(holder, u0, u1, t.color, 0.9, 0.4, 1, 0.55)
 		under.Texture = GLOW
 		under.TextureMode = Enum.TextureMode.Stretch
 		-- the ribbons
@@ -350,7 +350,7 @@ return function()
 			{ { Color3.new(1, 1, 1), 2.5, 0 }, { Color3.fromHex("8FD3FF"), 2.5, math.pi * 2 / 3 }, { Color3.fromHex("FFD34D"), 2.5, math.pi * 4 / 3 } },
 		}
 		for _, r in RIBBONS[i] do
-			ribbon(holder, cf, size, r[1], r[2], r[3], size.X * 0.55 + 0.12, 0.1 + i * 0.03)
+			ribbon(holder, cf, size, r[1], r[2] * 0.6, r[3], 0.45, 0.07 + i * 0.015) -- v6: fixed radius (size.X includes the guard), fewer, thinner turns
 		end
 		-- motes along the blade
 		for k = 1, 3 + i do
@@ -369,8 +369,8 @@ return function()
 			local back = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2 + t.back * 0.85))
 			local base = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2))
 			local soft = beam(holder, base, back, i == 2 and Color3.fromHex("FF9A2E") or Color3.fromHex("CFE9FF"), t.width * (i == 2 and 1.3 or 2), t.width * 0.4, i == 2 and 0.8 or 0.5, 0)
-			soft.FaceCamera = false
-			soft.Texture = GLOW
+			soft.FaceCamera = true
+			soft.Texture = "rbxassetid://" .. t.trail -- the trail texture fades at its edges, the glow did not
 			soft.TextureMode = Enum.TextureMode.Stretch
 			soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
 			-- sparks shed off the hilt into the trail
