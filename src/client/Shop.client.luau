@@ -646,6 +646,7 @@ local function showOffer()
 	if not it or player:GetAttribute("Limit_welcome") then
 		return
 	end
+	remotes.OfferShown:FireServer("welcome") -- the once-only offer counts as made only now
 	offerGui:ClearAllChildren()
 	Toy.S = computeScale()
 	local veil = Instance.new("TextButton")
@@ -837,6 +838,7 @@ local function showStarter()
 	if not it or player:GetAttribute("Limit_starter") then
 		return
 	end
+	remotes.OfferShown:FireServer("starter") -- the once-only offer counts as made only now
 	starterGui:ClearAllChildren()
 	Toy.S = computeScale()
 	local veil = Instance.new("TextButton")

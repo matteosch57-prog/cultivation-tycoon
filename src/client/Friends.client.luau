@@ -82,6 +82,7 @@ local function openCard()
 	veil.BackgroundColor3 = Color3.fromHex("140E1E")
 	veil.BackgroundTransparency = 0.32
 	veil.ZIndex = 10
+	veil.Name = "Card" -- the HUD hides while it is up (Hud MODAL_PART)
 	veil.Parent = gui
 	veil.Activated:Connect(closeCard)
 	card = veil

@@ -1052,12 +1052,24 @@ end
 -- layout: place things around Roblox's own controls (called on any change)
 -- a full-screen screen (Shop, Reincarnation) is open: the HUD steps aside (toasts stay), so nothing
 -- peeks out from under that screen's veil or under its title on a phone (phone check 2026-10-21)
-local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index" }
+-- the HUD hides under every full screen (owner 2026-10-23: Disciples, Gifts, Daily Blessing,
+-- Breakthrough, Odds, the return chest and the Friends card too). Gifts and Streak stay Enabled and
+-- empty their children when closed, so a screen counts while it is Enabled AND draws something; the
+-- Friends gui always holds its HUD row, so only its card counts (Friends.client names it "Card")
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index", "Disciples", "Gifts", "Streak", "Breakthrough", "RecruitOdds", "IdleChest", "Friends" }
+local MODAL_PART = { Friends = "Card" }
 local function modalOpen()
 	for _, name in MODALS do
 		local g = playerGui:FindFirstChild(name)
 		if g and g:IsA("ScreenGui") and g.Enabled then
-			return true
+			local part = MODAL_PART[name]
+			if part then
+				if g:FindFirstChild(part) then
+					return true
+				end
+			elseif #g:GetChildren() > 0 then
+				return true
+			end
 		end
 	end
 	return false
@@ -1365,6 +1377,12 @@ player:GetAttributeChangedSignal("HudDevice"):Connect(rebuildAll)
 local function watchModal(g)
 	if table.find(MODALS, g.Name) and g:IsA("ScreenGui") then
 		g:GetPropertyChangedSignal("Enabled"):Connect(layout)
+		g.ChildAdded:Connect(function()
+			task.defer(layout)
+		end)
+		g.ChildRemoved:Connect(function()
+			task.defer(layout)
+		end)
 	end
 end
 for _, g in playerGui:GetChildren() do

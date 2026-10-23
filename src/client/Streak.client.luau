@@ -420,6 +420,21 @@ local function show()
 	end)
 end
 
+-- the card never opens over another screen (owner 2026-10-23): it waits until each of these is gone.
+-- A screen counts while its gui is Enabled and draws something (Gifts and Intro stay Enabled, emptied);
+-- the Friends gui always holds its HUD row, so only its card counts
+local COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest" }
+local function covered()
+	for _, name in COVERS do
+		local g = playerGui:FindFirstChild(name)
+		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
+			return true
+		end
+	end
+	local friends = playerGui:FindFirstChild("Friends")
+	return friends ~= nil and friends:FindFirstChild("Card") ~= nil
+end
+
 -- once a day, after the launch screen and the gift (a new save waits FIRST_DELAY s)
 local hadGift = (player:GetAttribute("WelcomeQi") or 0) > 0
 local shownToday = false
@@ -433,7 +448,7 @@ task.spawn(function()
 			if (player:GetAttribute("WelcomeQi") or 0) > 0 then
 				hadGift = true
 			end
-			if not hadGift or time() > FIRST_DELAY then
+			if (not hadGift or time() > FIRST_DELAY) and not covered() then
 				shownToday = true
 				show()
 			end

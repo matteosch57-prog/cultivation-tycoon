@@ -287,7 +287,14 @@ local function giveCrown(player)
 	m.Parent = char
 end
 
-local KNOCK_CHECK = 1.2 -- s after a knock is sent: room for a 500 ms ping both ways
+local KNOCK_CHECK = 1.2 -- s after a knock is sent: room for a 500 ms ping both ways; plus twice the
+-- player's own ping (owner 2026-10-23: a laggy phone must not read as "ignored the knock"), capped
+local KNOCK_PING_CAP = 1.5 -- s of ping counted at most (a cheat cannot buy unlimited time with lag)
+
+local function knockWait(player)
+	local ok, ping = pcall(player.GetNetworkPing, player)
+	return KNOCK_CHECK + 2 * (if ok and type(ping) == "number" then math.clamp(ping, 0, KNOCK_PING_CAP) else 0)
+end
 local KNOCK_MIN_MOVE = 5 -- studs; a real knock carries the body ~14 studs sideways
 
 ---------------------------------------------------------------------------------------------
@@ -416,7 +423,7 @@ local function tick(dt)
 		-- that is still on the altar and has barely moved KNOCK_CHECK s later ignored it, and counts
 		-- as fallen (security pass 2026-10-22).
 		local k = round.knocked[player]
-		if k and clock - k.t >= KNOCK_CHECK then
+		if k and clock - k.t >= knockWait(player) then
 			round.knocked[player] = nil
 			local hrp = onTop(player) and player.Character.HumanoidRootPart
 			local moved = hrp and (hrp.Position - k.at) * Vector3.new(1, 0, 1)

@@ -62,8 +62,9 @@ end
 
 -- Takes the lock and returns (data or nil for a new player, true), or (nil, false, reason) when the
 -- save could not be read ("error"), is newer than this server ("newer") or stays locked ("locked"):
--- that session must never save (Main asks the player to rejoin). `stillHere()` stops the wait early.
-function SaveStore.load(store, userId, sessionId, stillHere)
+-- that session must never save (Main asks the player to rejoin). `stillHere()` stops the wait early;
+-- `onLocked()` (optional) runs each time the lock is found held, before the wait.
+function SaveStore.load(store, userId, sessionId, stillHere, onLocked)
 	local key = "u" .. userId
 	for wait = 1, Config.SAVE_LOCK_WAITS do
 		local ok, record = retry("load", userId, function()
@@ -94,6 +95,9 @@ function SaveStore.load(store, userId, sessionId, stillHere)
 		end
 		log("load_locked", userId, string.format("wait=%d/%d", wait, Config.SAVE_LOCK_WAITS))
 		if wait < Config.SAVE_LOCK_WAITS then
+			if onLocked then
+				onLocked()
+			end
 			task.wait(Config.SAVE_LOCK_WAIT)
 			if not stillHere() then
 				return nil, false, "left"

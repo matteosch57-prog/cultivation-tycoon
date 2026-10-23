@@ -20,6 +20,7 @@ fling other players. They cannot change server values, other players' data or th
 | ClaimStreak | nothing | server UTC day, `data.streak` (one claim a day) | Safe |
 | ClaimShopFree | nothing | server UTC day, `data.shopFreeDay`, `DOT_SHOP_FIRST` s played | Safe |
 | MenuOpened | menu key | whitelist `MENUS`; only marks a red dot followed (`Dots.seen`), grants nothing | Safe |
+| OfferShown | `welcome` / `starter` | whitelist; counts only for an offer this session sent (`s.offerSent`), only stamps the once-only offer as made, grants nothing | Safe |
 | ClaimWelcome | nothing | `welcomed == false`, once | Safe |
 | Teleport | "home" or "ranks" | Guard budget, `TELEPORT_COOLDOWN`, live character; the server picks the spot | Safe (no qi) |
 | Breakthrough | nothing | Guard budget; only within `BREAKTHROUGH_ASK_SECONDS` of the server's own offer (pad step or Hands); pad present, qi >= price, rebirth gate re-checked | Safe |

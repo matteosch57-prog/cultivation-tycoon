@@ -228,6 +228,10 @@ local ready = false
 local tapPrompt
 local conn
 conn = RunService.RenderStepped:Connect(function(dt)
+	if player:GetAttribute("SaveWait") then
+		-- the last server still holds the save (a crash): wait here, never offer the tap without a peak
+		startedAt = math.max(startedAt, os.clock() - MAX_WAIT + 10)
+	end
 	local waited = os.clock() - startedAt
 	local all = steps.loaded and steps.hud and steps.peak and steps.body
 	local goal = if all or waited > MAX_WAIT then 1 else math.min(0.95, target + waited * 0.006)
@@ -238,7 +242,7 @@ conn = RunService.RenderStepped:Connect(function(dt)
 	if clip then
 		clip.Size = UDim2.new(1, 0, fill, 0)
 	end
-	status.Text = string.format("Gathering qi... %d%%", math.floor(fill * 100))
+	status.Text = if player:GetAttribute("SaveWait") then "Your last server is still saving your sect..." else string.format("Gathering qi... %d%%", math.floor(fill * 100))
 	if fill >= 1 and not ready then
 		ready = true
 		conn:Disconnect()

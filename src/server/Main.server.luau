@@ -1455,7 +1455,10 @@ local function load(player, sessionId)
 	if store then
 		data, loaded, reason = SaveStore.load(store, player.UserId, sessionId, function()
 			return player.Parent ~= nil
+		end, function()
+			player:SetAttribute("SaveWait", true) -- the loading screen says why it waits (Launch.client)
 		end)
+		player:SetAttribute("SaveWait", nil)
 	end
 	if type(data) == "table" and data.climbed == nil then
 		data.climbed = math.max(0, (data.best or 1) - 1) -- saves from before the ranking: their deepest climb
@@ -2621,8 +2624,19 @@ Shop.init({
 		return kept
 	end,
 	tideBell = function(player)
-		startTide(player)
-		print(string.format("[Tycoon] spirit tide rung by %d (Tide Bell)", player.UserId))
+		-- the altar never shares the sky with a tide (owner 2026-10-23): a bell paid for while a round
+		-- runs or is about to open rings right after that round closes
+		task.spawn(function()
+			local function altarBusy()
+				local now = workspace:GetServerTimeNow()
+				return (workspace:GetAttribute("AltarUntil") or 0) > now or (workspace:GetAttribute("AltarNext") or math.huge) - now <= Config.ALTAR_WARN
+			end
+			while altarBusy() do
+				task.wait(1)
+			end
+			startTide(player)
+			print(string.format("[Tycoon] spirit tide rung by %d (Tide Bell)", player.UserId))
+		end)
 	end,
 	remotes = remotes,
 	style = Style,

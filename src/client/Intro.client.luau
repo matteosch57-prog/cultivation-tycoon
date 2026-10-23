@@ -7,6 +7,7 @@
 -- WelcomeQi > 0. Owner 2026-10-23: the rays were cut by a straight line on top (they ran past the
 -- screen's top edge), so the aura shrinks to fit the room above the drop; and "quick bouncy collect
 -- is enough": the whole collect now takes under half the old 5.7 s.
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -313,6 +314,26 @@ local function show(amount)
 	end
 	goBtn.Activated:Connect(go)
 	goNow = go
+
+	-- a small X (owner 2026-10-23): a way out when GO keeps failing. The gift is not claimed, so the
+	-- server offers it again next session; WelcomeQi is zeroed locally only, so the Daily Blessing,
+	-- the offers and the tips stop waiting for the intro this session
+	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF7A6B"), px(22))
+	xHolder.AnchorPoint = Vector2.new(1, 0)
+	xHolder.Position = UDim2.new(1, -px(16), 0, GuiService.TopbarInset.Max.Y + px(8))
+	xHolder.ZIndex = 3
+	text(xBtn, "X", px(24), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	xBtn.Activated:Connect(function()
+		if busy or not open then
+			return
+		end
+		busy = true
+		tween(veil, 0.3, { BackgroundTransparency = 1 })
+		task.wait(0.3)
+		gui:ClearAllChildren()
+		open = false
+		player:SetAttribute("WelcomeQi", 0)
+	end)
 end
 
 -- no launch screen (ReplicatedFirst.Launch missing, e.g. a Rojo still serving an older project tree,

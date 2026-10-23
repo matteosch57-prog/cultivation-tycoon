@@ -166,7 +166,14 @@ local function processReceipt(info)
 		warn("[Tycoon][shop] receipt for an unknown product", info.ProductId)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	grantProduct(player, s, it)
+	-- a once-only item paid for again (two prompts, two servers): the extra pays its `overLimit` Qi
+	-- pack instead, so the Pouch's +10% never stacks (owner 2026-10-23)
+	local bought = (d.shopBought or {})[it.key] or 0
+	local swap = it.limit and bought >= it.limit and it.overLimit and Config.shopItem(it.overLimit)
+	if swap then
+		Telemetry.custom(player, "Shop", "overLimit", it.key, realm(s))
+	end
+	grantProduct(player, s, swap or it)
 	countBuy(player, s, it)
 	table.insert(d.receipts, info.PurchaseId)
 	while #d.receipts > Config.RECEIPTS_KEPT do
@@ -203,9 +210,13 @@ function Shop.maybeWelcome(player, s, pad)
 	if played < Config.WELCOME.after or (not pad.feature and played < Config.WELCOME.late) then
 		return
 	end
-	d.welcomeOffered = true
-	d.welcomeAt = d.welcomeAt or played
-	Telemetry.custom(player, "Shop", "offer", "welcome", realm(s))
+	-- sent once a session; saved as offered only when the card draws (OfferShown, owner 2026-10-23):
+	-- a player who leaves before the card shows gets it next session
+	s.offerSent = s.offerSent or {}
+	if s.offerSent.welcome then
+		return
+	end
+	s.offerSent.welcome = true
 	api.notify:FireClient(player, "welcomeOffer")
 end
 
@@ -229,8 +240,11 @@ function Shop.maybeStarter(player, s, pad)
 	if (d.playSec or 0) < (d.welcomeAt or 0) + Config.STARTER_OFFER.after then
 		return
 	end
-	d.starterOffered = true
-	Telemetry.custom(player, "Shop", "offer", "starter", realm(s))
+	s.offerSent = s.offerSent or {}
+	if s.offerSent.starter then
+		return
+	end
+	s.offerSent.starter = true -- saved as offered when the card draws (OfferShown)
 	api.notify:FireClient(player, "starterOffer")
 end
 
@@ -496,6 +510,35 @@ function Shop.init(a)
 			lastOpen[player] = now
 			Telemetry.custom(player, "Shop", "open", from, realm(s))
 		end
+	end)
+
+	-- an offer card drew on the client (Shop.client showOffer / showStarter): only now is the once-only
+	-- offer saved as made, and only for an offer this session sent
+	local shown = Instance.new("RemoteEvent")
+	shown.Name = "OfferShown"
+	shown.Parent = api.remotes
+	shown.OnServerEvent:Connect(function(player, key)
+		local s = api.sessions[player]
+		if not s or not Guard.allow(player, "OfferShown") or (key ~= "welcome" and key ~= "starter") then
+			return
+		end
+		if not (s.offerSent and s.offerSent[key]) then
+			return
+		end
+		local d = s.data
+		if key == "welcome" then
+			if d.welcomeOffered then
+				return
+			end
+			d.welcomeOffered = true
+			d.welcomeAt = d.welcomeAt or d.playSec or 0 -- the Starter Pack offer waits STARTER_OFFER.after from here
+		else
+			if d.starterOffered then
+				return
+			end
+			d.starterOffered = true
+		end
+		Telemetry.custom(player, "Shop", "offer", key, realm(s))
 	end)
 
 	-- the Shop's free daily gift (its red dot leads here; Dots.freeReady): SHOP_FREE_SECONDS of income

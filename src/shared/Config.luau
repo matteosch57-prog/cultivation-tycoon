@@ -29,7 +29,8 @@ Config.MOCK_DATASTORE = true -- Studio only: every Play is a new player, nothing
 Config.DATA_VERSION = 1 -- save record format; SaveStore.migrate lifts older records to it
 Config.SAVE_LEASE = 150 -- s a session lock lives without a refresh (autosave refreshes it)
 Config.SAVE_RETRIES = 3 -- DataStore attempts per load/save (backoff 1 s, 2 s)
-Config.SAVE_LOCK_WAITS = 6 -- tries to take a lock held by another live session on join
+Config.SAVE_LOCK_WAITS = 33 -- tries to take a lock held by another live session on join: 33 x 5 s outlasts SAVE_LEASE, so a
+-- rejoin right after a server crash waits on the loading screen instead of being kicked (owner 2026-10-23)
 Config.SAVE_LOCK_WAIT = 5 -- s between those tries
 Config.SAVE_MIN_BUDGET = 2 -- an autosave waits for this much UpdateAsync budget (leave, close, receipts never wait)
 Config.SAVE_STAGGER = 0.3 -- s between players in one autosave pass
@@ -622,7 +623,7 @@ Config.SWORD_RIDE = {
 Config.SHOP_PRODUCTS = {
 	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
 	-- Elder plus `qiBonus` more qi forever (kept through every life); offered once by WELCOME
-	{ key = "welcome", id = 3721094927, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1 },
+	{ key = "welcome", id = 3721094927, name = "Welcome Pouch", line = "Elder + 10% Qi forever", rarity = "Elder", qiBonus = 0.1, limit = 1, overLimit = "pack1" },
 	{ key = "pill", id = 3721095019, name = "Instant Pill", line = "2x Qi for 60 s now" },
 	{ key = "pack1", id = 3721095093, name = "Qi Pouch", line = "10 min of income", seconds = 600 },
 	{ key = "pack2", id = 3721095259, name = "Qi Chest", line = "1 hour of income", seconds = 3600 },
@@ -647,8 +648,8 @@ Config.SHOP_PRODUCTS = {
 	-- Sect Starter Pack (owner 2026-10-23, card "B night jade"): once per player, one item granting three
 	-- things: an Immortal (a bought disciple), `seconds` of income in qi (like the Qi Chest) and `pill` s
 	-- of 2x Qi added to boostUntil (like the Instant Pill). Offered once by STARTER_OFFER; `short` = the
--- name on its Shop tile
-	{ key = "starter", id = 0, name = "Sect Starter Pack", short = "Starter Pack", line = "Immortal + Qi Chest + 2x Qi", rarity = "Immortal", seconds = 3600, pill = 600, limit = 1 },
+-- name on its Shop tile. `overLimit` = what a once-only item pays when bought past its `limit` (a Qi pack)
+	{ key = "starter", id = 0, name = "Sect Starter Pack", short = "Starter Pack", line = "Immortal + Qi Chest + 2x Qi", rarity = "Immortal", seconds = 3600, pill = 600, limit = 1, overLimit = "pack2" },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
