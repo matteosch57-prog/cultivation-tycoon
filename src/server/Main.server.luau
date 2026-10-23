@@ -824,9 +824,11 @@ end
 -- drifting off it (built-in texture, low rate: the client's aura range switches emitters off far away)
 -- Shiny in the 3D world (owner pick C "Glint ring", mock tools/mock_shiny.luau, made bolder and gold
 -- after the Studio captures 2026-10-23 so it beats every rarity's own aura): gold glints rise from a
--- ring around the cushion, and a gold star bursts over the head every 2 s. Live check 10:00: the
+-- ring around the cushion, and a gold star bursts over the head every 1.6 s. Live check 10:00: the
 -- additive glow washed the gold out over purple auras, so the glints blend mostly normally (low
--- LightEmission keeps them gold), draw in front (ZOffset), are bigger, and a warm light marks the seat
+-- LightEmission keeps them gold), draw in front (ZOffset), are bigger, and a warm light marks the seat.
+-- Recheck 10:03: the light lit the whole deck (now a short range at the cushion) and the burst hid in
+-- the aura's circle behind the head (now higher, bigger and drawn in front of it)
 local SHINY_GOLD = Color3.fromHex("FFD34D")
 local SHINY_WARM = Color3.fromRGB(255, 244, 196)
 local function shinySparkle(m)
@@ -872,29 +874,30 @@ local function shinySparkle(m)
 		Color = ColorSequence.new(SHINY_GOLD),
 	})
 	local top = Instance.new("Attachment")
-	top.Position = Vector3.new(0, 5.6, 0)
+	top.Position = Vector3.new(0, 6.6, 0)
 	top.Parent = ring
 	local burst = emitter(top, {
 		Name = "ShinyBurst",
 		Rate = 0,
-		Lifetime = NumberRange.new(0.6, 1),
-		Speed = NumberRange.new(3, 5),
+		Lifetime = NumberRange.new(0.7, 1.1),
+		Speed = NumberRange.new(3.5, 6),
+		ZOffset = 4,
 		SpreadAngle = Vector2.new(180, 180),
 		Rotation = NumberRange.new(0, 360),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.8), NumberSequenceKeypoint.new(1, 0) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.6), NumberSequenceKeypoint.new(0.4, 1.6), NumberSequenceKeypoint.new(1, 0) }),
 		Color = ColorSequence.new(SHINY_WARM, SHINY_GOLD),
 	})
 	local light = Instance.new("PointLight")
 	light.Name = "ShinyLight"
 	light.Color = SHINY_GOLD
-	light.Brightness = 3
-	light.Range = 9
-	light.Parent = top
+	light.Brightness = 2
+	light.Range = 3.5 -- this seat only: a longer reach gilds the neighbours too
+	light.Parent = ring
 	task.spawn(function()
 		task.wait(math.random() * 2) -- Shiny neighbours don't burst in step
 		while burst.Parent and m.Parent do
-			burst:Emit(16)
-			task.wait(2)
+			burst:Emit(22)
+			task.wait(1.6)
 		end
 	end)
 end
