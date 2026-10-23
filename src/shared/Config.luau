@@ -596,9 +596,9 @@ Config.SHOP_PASSES = {
 	-- Flying Swords (owner 2026-10-23, picked "Hover ride, faster each level"; PS99's hoverboards copied
 	-- as is): three passes, each a sword to ride (Config.SWORD_RIDE, src/server/SwordRide.luau).
 	-- Owning a higher one keeps the lower ones; the HUD's sword button picks which to ride.
-	{ key = "swordJade", id = 0, name = "Jade Jian", line = "Ride a sword, x1.5 speed", ride = 1 },
-	{ key = "swordHeavenly", id = 0, name = "Heavenly Sword", line = "Ride a sword, x1.75 speed", ride = 2 },
-	{ key = "swordCelestial", id = 0, name = "Celestial Crystal Sword", line = "Ride a sword, x2 speed", ride = 3 },
+	{ key = "swordJade", id = 2053738987, name = "Jade Jian", line = "Ride a sword, x1.5 speed", ride = 1 },
+	{ key = "swordHeavenly", id = 2052916966, name = "Heavenly Sword", line = "Ride a sword, x1.75 speed", ride = 2 },
+	{ key = "swordCelestial", id = 2055358863, name = "Celestial Crystal Sword", line = "Ride a sword, x2 speed", ride = 3 },
 }
 -- The sword ride (D76; v2 2026-10-23, owner after trying the hover ride: "i cant fly with them? When i
 -- jump they got removed? this is bad"): real flight, Adopt Me's flying pets copied. The sword is welded
@@ -650,12 +650,12 @@ Config.SHOP_PRODUCTS = {
 	-- Tide Bell (owner 2026-10-23, Bee Swarm Simulator's Night Bell): a Spirit Tide starts now for the
 	-- whole server, the buyer's name on the banner. Repeatable; refused while a tide runs or the altar
 	-- is open or about to open (Shop.luau)
-	{ key = "tidebell", id = 0, name = "Tide Bell", line = "x2 Qi for the whole server" },
+	{ key = "tidebell", id = 3721585058, name = "Tide Bell", line = "x2 Qi for the whole server" },
 	-- Sect Starter Pack (owner 2026-10-23, card "B night jade"): once per player, one item granting three
 	-- things: an Immortal (a bought disciple), `seconds` of income in qi (like the Qi Chest) and `pill` s
 	-- of 2x Qi added to boostUntil (like the Instant Pill). Offered once by STARTER_OFFER; `short` = the
 -- name on its Shop tile. `overLimit` = what a once-only item pays when bought past its `limit` (a Qi pack)
-	{ key = "starter", id = 0, name = "Sect Starter Pack", short = "Starter Pack", line = "Immortal + Qi Chest + 2x Qi", rarity = "Immortal", seconds = 3600, pill = 600, limit = 1, overLimit = "pack2" },
+	{ key = "starter", id = 3721585167, name = "Sect Starter Pack", short = "Starter Pack", line = "Immortal + Qi Chest + 2x Qi", rarity = "Immortal", seconds = 3600, pill = 600, limit = 1, overLimit = "pack2" },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
