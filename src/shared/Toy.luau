@@ -879,7 +879,8 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	rs.Thickness = full and px(3) or px(2)
 	rs.Parent = rim
 	if found and opts.shiny then -- a clear gold mark, the sparkles alone are easy to miss (Play check 2026-10-23)
-		Toy.text(face, "✦", math.max(px(12), math.floor(w * 0.3)), Color3.fromHex("FFD34D"), { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -px(2), 1, px(1)), ZIndex = 7 })
+		local m = math.max(px(14), math.floor(w * 0.36)) -- the atlas sparkle in gold (the font has no ✦)
+		Toy.atlasPiece(face, "sparkle", m, m, Color3.fromHex("FFD34D"), 0, { Position = UDim2.new(1, -m * 0.45, 1, -m * 0.45), ZIndex = 7 })
 	end
 	if found and opts.count then
 		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 }), "x" .. opts.count, px(9), WHITE, { ZIndex = 7 })

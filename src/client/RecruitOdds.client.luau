@@ -101,7 +101,10 @@ local function fill(page)
 	-- Shiny (Pet Simulator 99): on top of any rarity
 	local shiny = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 10 })
 	Toy.list(shiny, false, px(1))
-	text(shiny, "✦ Shiny", px(14), GOLD, { LayoutOrder = 1 })
+	local head = frame(shiny, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	Toy.list(head, true, px(3))
+	Toy.atlasPiece(head, "sparkle", px(16), px(16), GOLD, 0, { LayoutOrder = 1 }) -- the font has no ✦
+	text(head, "Shiny", px(14), GOLD, { LayoutOrder = 2 })
 	text(shiny, string.format("%s of every recruit, x%s qi", pct(Config.SHINY_CHANCE * 100), tostring(Config.SHINY_MULT)), px(13), WHITE, { LayoutOrder = 2 })
 	return refresh
 end
