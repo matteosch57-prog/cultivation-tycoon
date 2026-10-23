@@ -443,6 +443,12 @@ local function knock(vel)
 	lv.Parent = hrp
 	task.delay(Config.ALTAR_PUSH_TIME, function()
 		lv:Destroy()
+		-- the drive is the knock: keep only a little of its sideways speed, or a ragdolled body
+		-- (no air control) sails ~75 studs over the plaza (Play check 2026-10-23)
+		if hrp.Parent then
+			local v = hrp.AssemblyLinearVelocity
+			hrp.AssemblyLinearVelocity = Vector3.new(v.X * 0.15, v.Y, v.Z * 0.15)
+		end
 	end)
 end
 

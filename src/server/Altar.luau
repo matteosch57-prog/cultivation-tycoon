@@ -70,12 +70,13 @@ local function build(parent)
 		for k = 0, 7 do
 			local a = k / 8 * math.pi * 2 + i * 0.4
 			local s = r * rng:NextNumber(0.55, 0.75)
+			-- chunky blocks (slabs read as a thin pale column from the plaza, Play check 2026-10-23)
 			P(
 				m,
-				Vector3.new(s, 1.8 + i * 0.4, s),
-				CFrame.new(math.cos(a) * r * 0.45, y - 4 - i * 1.9, math.sin(a) * r * 0.45)
+				Vector3.new(s, s * 0.6, s),
+				CFrame.new(math.cos(a) * r * 0.45, y - 3.4 - s * 0.3 - i * 2.6, math.sin(a) * r * 0.45)
 					* CFrame.Angles(0, a, rng:NextNumber(-0.2, 0.2)),
-				PAL.rock
+				i % 2 == 0 and PAL.rock or Color3.fromHex("6E655E")
 			)
 		end
 	end
