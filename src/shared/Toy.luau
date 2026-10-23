@@ -883,10 +883,10 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 		Toy.atlasPiece(face, "sparkle", m, m, Color3.fromHex("FFD34D"), 0, { Position = UDim2.new(1, -m * 0.45, 1, -m * 0.45), ZIndex = 7 })
 	end
 	if found and opts.count then
-		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 }), "x" .. opts.count, px(9), WHITE, { ZIndex = 7 })
+		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 }), "x" .. opts.count, px(10), WHITE, { ZIndex = 7 })
 	end
 	if opts.tag then
-		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(9), WHITE, { ZIndex = 7 })
+		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(10), WHITE, { ZIndex = 7 })
 	end
 	if opts.new then
 		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
@@ -899,7 +899,7 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 		local pad = Instance.new("UIPadding")
 		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(3)), UDim.new(0, px(3))
 		pad.Parent = tag
-		Toy.text(tag, "NEW", px(9), WHITE, { ZIndex = 9 })
+		Toy.text(tag, "NEW", px(10), WHITE, { ZIndex = 9 })
 	end
 	if opts.stars then -- on a dark pill (Toy.stars: gold, then red, then blue)
 		Toy.stars(darkPill(cell, { LayoutOrder = 2 }), stars, math.max(px(9), math.floor(w * 0.2)))

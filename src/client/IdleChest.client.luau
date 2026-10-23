@@ -302,6 +302,13 @@ local function build(away, summons, mode)
 		gui,
 		{ Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BackgroundColor3 = Color3.fromHex("140E1E") }
 	)
+	-- swallow taps: the HUD and the world under the card must not take them (audit 2026-10-23)
+	local sink = Instance.new("TextButton")
+	sink.Text = ""
+	sink.AutoButtonColor = false
+	sink.BackgroundTransparency = 1
+	sink.Size = UDim2.fromScale(1, 1)
+	sink.Parent = ui.veil
 	ui.layer = frame(gui, { Size = UDim2.fromScale(1, 1), ZIndex = 5 }) -- flying qi and bursts
 	local card = frame(gui, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -557,11 +564,42 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+local joinShown = false -- the join's return screen plays once, from the Notify or the attribute
+local function show(gain, away, summons, mode)
+	if mode == nil then
+		if joinShown then
+			return
+		end
+		joinShown = true
+	end
+	while not player:GetAttribute("LaunchDone") do -- after the launch screen's tap (src/first/Launch)
+		player:GetAttributeChangedSignal("LaunchDone"):Wait()
+	end
+	if gui.Enabled then
+		return
+	end
+	task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX), mode)
+end
+
 remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, gain, away, summons, mode)
 	if kind == "idleChest" and not gui.Enabled then
-		while not player:GetAttribute("LaunchDone") do -- after the launch screen's tap (src/first/Launch)
-			player:GetAttributeChangedSignal("LaunchDone"):Wait()
-		end
-		task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX), mode)
+		task.spawn(show, gain, away, summons, mode)
 	end
 end)
+
+-- pull: the server also leaves the join's chest on the player (ReturnChest "qi,away,summons"), so a
+-- script that connected after the Notify fired still shows it
+local function pull()
+	local v = player:GetAttribute("ReturnChest")
+	if type(v) ~= "string" then
+		return
+	end
+	local g, a, n = string.match(v, "^(%d+),(%d+),(%d+)$")
+	if g then
+		show(tonumber(g), tonumber(a), tonumber(n), nil)
+	end
+end
+player:GetAttributeChangedSignal("ReturnChest"):Connect(function()
+	task.delay(1, pull) -- the Notify normally lands first; this is the fallback
+end)
+task.spawn(pull)

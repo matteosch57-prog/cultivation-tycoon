@@ -86,6 +86,7 @@ local function jumpButton()
 	end
 	return nil
 end
+local touchSeen = false
 local function isPhone()
 	local forced = player:GetAttribute("HudDevice")
 	if forced then
@@ -93,7 +94,13 @@ local function isPhone()
 	end
 	-- Roblox's own touch controls on screen are the truth (emulators and touch laptops also
 	-- report a keyboard, so TouchEnabled/KeyboardEnabled alone guess wrong)
+	-- once seen, a touch screen stays a phone layout: an iPad with a keyboard hides the jump
+	-- button whenever a key is pressed, and each flip rebuilt the HUD and lost its toasts (audit)
 	if jumpButton() then
+		touchSeen = true
+		return true
+	end
+	if touchSeen and UserInputService.TouchEnabled then
 		return true
 	end
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
@@ -1073,7 +1080,7 @@ end
 -- Breakthrough, Odds, the return chest and the Friends card too). Gifts and Streak stay Enabled and
 -- empty their children when closed, so a screen counts while it is Enabled AND draws something; the
 -- Friends gui always holds its HUD row, so only its card counts (Friends.client names it "Card")
-local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index", "Disciples", "Gifts", "Streak", "Breakthrough", "RecruitOdds", "IdleChest", "Friends" }
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index", "Disciples", "Gifts", "Streak", "Breakthrough", "RecruitOdds", "IdleChest", "Friends", "Settings" }
 local MODAL_PART = { Friends = "Card" }
 local function modalOpen()
 	for _, name in MODALS do

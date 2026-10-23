@@ -31,6 +31,7 @@ local LIMITS = {
 	Rankings = { 2, 6 },
 	Breakthrough = { 1, 3 },
 	SwordRide = { 2, 4 },
+	SaveSettings = { 1, 3 },
 }
 
 local buckets = {} -- [player] = { [remote] = { tokens, at } }

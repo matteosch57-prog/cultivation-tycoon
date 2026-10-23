@@ -83,9 +83,18 @@ local function label(parent, text, x, size, color, align, w)
 end
 
 -- one board's rows (cleared and redrawn on a change only)
+local gens = {} -- [key] = draw count: a draw that yielded behind a newer one stops (no duplicate rows)
 local function draw(key, rows)
 	local g = guis[key]
 	if not g then
+		return
+	end
+	gens[key] = (gens[key] or 0) + 1
+	local gen = gens[key]
+	for _, r in rows do -- fetch the head shots first (they yield), then build in one go
+		headOf(r.userId)
+	end
+	if gens[key] ~= gen or not g.Parent then
 		return
 	end
 	for _, c in g:GetChildren() do

@@ -296,6 +296,35 @@ end
 
 local MAX_YAW = math.rad(55)
 
+-- Roblox draws at most 31 Highlights at once and drops the rest at random: keep the rims of the
+-- nearest RIM_BUDGET lit figures only (the rest of the 31 is for swords, Shiny outlines, the altar)
+local RIM_BUDGET = 22
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		local cam = workspace.CurrentCamera
+		if cam then
+			local eye = cam.CFrame.Position
+			local list = {}
+			for m, f in figures do
+				if f.rim and m.Parent then
+					f.rimDist = (f.centre - eye).Magnitude
+					table.insert(list, f)
+				end
+			end
+			table.sort(list, function(a, b)
+				return a.rimDist < b.rimDist
+			end)
+			for i, f in list do
+				local on = i <= RIM_BUDGET and f.rimDist < GLOW
+				if f.rim.Enabled ~= on then
+					f.rim.Enabled = on
+				end
+			end
+		end
+	end
+end)
+
 -- PreSimulation: the engine applies the joints' Transforms in one batch right after
 RunService.PreSimulation:Connect(function(dt)
 	local cam = workspace.CurrentCamera
@@ -315,9 +344,6 @@ RunService.PreSimulation:Connect(function(dt)
 			f.lit = dist < GLOW
 			for _, l in f.layers do
 				l.Enabled = f.lit
-			end
-			if f.rim then
-				f.rim.Enabled = f.lit
 			end
 		end
 		if not m.Parent then

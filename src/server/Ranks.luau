@@ -162,6 +162,7 @@ local function write(userId, now)
 		end
 		if ok then
 			p[key] = nil
+			written[userId] = written[userId] or {}
 			written[userId][key] = s
 		else
 			warn("[Tycoon][ranks] write failed")
@@ -196,7 +197,15 @@ function Ranks.leave(player, d)
 		end
 	end
 	here[id] = nil
-	task.spawn(write, id, true)
+	task.spawn(function()
+		write(id, true)
+		if not Players:GetPlayerByUserId(id) then -- gone: drop the per-player tables (names stay for the rows)
+			written[id], wroteAt[id] = nil, nil
+			if not pending[id] then
+				countries[id] = nil
+			end
+		end
+	end)
 end
 
 -- the row a client or the wall draws

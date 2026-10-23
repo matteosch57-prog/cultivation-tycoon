@@ -69,7 +69,7 @@ Telemetry.EVENTS = {
 		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",
 	},
 	Menu = {
-		fields = { "disciples | reinc | karma | group | index (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
+		fields = { "disciples | reinc | karma | group | index | ranks | settings (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
 		question = "Which HUD menus do players open, and when in the climb (data audit 2026-10-22)?",
 	},
 	Shop = {

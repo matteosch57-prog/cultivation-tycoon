@@ -121,7 +121,8 @@ function Sfx.init()
 	Sfx.musicSound = makeSound(Sfx.MUSIC[1].id, Sfx.MUSIC[1].vol, holder, groups.Music)
 	Sfx.musicSound.Looped = true
 	local function applyTrack()
-		local idx = math.clamp(tonumber(workspace:GetAttribute("MusicTrack")) or 1, 1, #Sfx.MUSIC)
+		-- the player's own pick on the Settings page wins over the place's MusicTrack
+		local idx = math.clamp(Sfx.trackPick or tonumber(workspace:GetAttribute("MusicTrack")) or 1, 1, #Sfx.MUSIC)
 		local t = Sfx.MUSIC[idx]
 		Sfx.musicSound:Stop()
 		Sfx.musicSound.SoundId = "rbxassetid://" .. t.id
@@ -129,7 +130,25 @@ function Sfx.init()
 		Sfx.musicSound:Play()
 	end
 	workspace:GetAttributeChangedSignal("MusicTrack"):Connect(applyTrack)
+	Sfx.applyTrack = applyTrack
 	applyTrack()
+end
+
+-- Settings page: the three group volumes (0..1) and the music track (nil = the place's)
+function Sfx.setVolume(name, v)
+	local g = groups[name]
+	if g then
+		g.Volume = v
+	end
+end
+function Sfx.setTrack(idx)
+	if Sfx.trackPick == idx then
+		return
+	end
+	Sfx.trackPick = idx
+	if Sfx.applyTrack then
+		Sfx.applyTrack()
+	end
 end
 
 -- play(name [, opts]) opts: pitch (multiplier), volume (multiplier), at (Vector3: positional)

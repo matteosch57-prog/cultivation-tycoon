@@ -127,7 +127,7 @@ local function fill(body)
 		rbs.Thickness = px(2)
 		rbs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		rbs.Parent = ribbon
-		text(ribbon, found and name or "???", px(#name > 9 and 8 or 10), found and Color3.new(1, 1, 1) or GREY, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+		text(ribbon, found and name or "???", px(#name > 9 and 9 or 10), found and Color3.new(1, 1, 1) or GREY, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	end
 	for li, look in Config.DISCIPLE_LOOKS do
 		local row = frame(grid, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = li })

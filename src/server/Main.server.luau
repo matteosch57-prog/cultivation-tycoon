@@ -4,6 +4,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 local GroupService = game:GetService("GroupService")
+local HttpService = game:GetService("HttpService")
 
 Players.CharacterAutoLoads = false -- first thing: onJoin spawns each avatar on its peak (watchDeath)
 
@@ -95,6 +96,9 @@ teleportEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
 breakthroughFn.Parent = remotes
+local settingsEv = Instance.new("RemoteEvent")
+settingsEv.Name = "SaveSettings" -- the Settings page (Settings.client) sends its values when it closes
+settingsEv.Parent = remotes
 local rankingsFn = Instance.new("RemoteFunction")
 rankingsFn.Name = "Rankings" -- the Rankings screen asks for one board: Global, Country or Friends (Ranks.fetch)
 rankingsFn.Parent = remotes
@@ -1529,6 +1533,14 @@ local function findFriends(player)
 end
 
 -- after a friend's session starts or ends, their friends' rates change
+-- the player's Settings page values (data.settings), for Settings.client to apply
+local function publishSettings(player, data)
+	local ok, json = pcall(HttpService.JSONEncode, HttpService, data.settings or {})
+	if ok and player.Parent then
+		player:SetAttribute("Settings", json)
+	end
+end
+
 local function publishFriends(player)
 	for other in friendsOf[player] or {} do
 		if sessions[other] then
@@ -1723,10 +1735,16 @@ local function onJoin(player)
 	refreshPads(player, s)
 	publish(player)
 	publishFriends(player)
+	publishSettings(player, data)
 	s.ready = true -- receipts wait for this (Shop processReceipt): passes known, peak built
 	if showChest then
 		task.delay(3, function()
 			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
+			-- also kept on the player: a slow phone whose IdleChest script connects after this fire
+			-- still pulls it (IdleChest.client reads ReturnChest once at start)
+			if player.Parent then
+				player:SetAttribute("ReturnChest", string.format("%.0f,%.0f,%.0f", offlineGain, away, data.chestSummons or 0))
+			end
 			notify:FireClient(player, "idleChest", offlineGain, away, data.chestSummons)
 		end)
 	end
@@ -2217,6 +2235,36 @@ inviteEv.OnServerEvent:Connect(function(player)
 	end
 	s.inviteAt = os.clock()
 	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
+end)
+
+-- the Settings page (Settings.client): volumes, the music track and three switches, kept in the
+-- save (data.settings) and published as the Settings attribute (JSON) for the client to apply on join
+settingsEv.OnServerEvent:Connect(function(player, t)
+	if not Guard.allow(player, "SaveSettings") or type(t) ~= "table" then
+		return
+	end
+	local s = sessions[player]
+	if not s or not s.data then
+		return
+	end
+	local clean = {}
+	for _, key in { "music", "sfx", "amb" } do
+		local v = tonumber(t[key])
+		if v and v == v then
+			clean[key] = math.round(math.clamp(v, 0, 1) * 20) / 20
+		end
+	end
+	local track = tonumber(t.track)
+	if track and track == math.floor(track) and track >= 0 and track <= 9 then
+		clean.track = track
+	end
+	for _, key in { "haptic", "auras", "clouds" } do
+		if type(t[key]) == "boolean" then
+			clean[key] = t[key]
+		end
+	end
+	s.data.settings = clean
+	publishSettings(player, s.data)
 end)
 
 -- the Rankings screen (Ranks.client): a board's top RANK_READ for one scope, and your own row

@@ -34,8 +34,9 @@ local function effect(kind)
 	return e
 end
 
+Haptic.enabled = true -- the Settings page's Vibration switch
 function Haptic.play(kind)
-	if not KINDS[kind] then
+	if not Haptic.enabled or not KINDS[kind] then
 		return
 	end
 	local now = os.clock()

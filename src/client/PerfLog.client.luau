@@ -12,7 +12,15 @@ local TextChatService = game:GetService("TextChatService")
 local PerfMark = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("PerfMark"))
 
 local player = Players.LocalPlayer
-if not (RunService:IsStudio() or player.UserId == game.CreatorId) then
+-- the owner: the place's creator, or the group's owner (rank 255) when a group owns the place
+local function isOwner()
+	if game.CreatorType == Enum.CreatorType.Group then
+		local ok, rank = pcall(player.GetRankInGroup, player, game.CreatorId)
+		return ok and rank == 255
+	end
+	return player.UserId == game.CreatorId
+end
+if not (RunService:IsStudio() or isOwner()) then
 	return
 end
 
