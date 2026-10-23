@@ -167,7 +167,7 @@ Config.DAO = {
 	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
 	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
 	-- "isle") are offered every life from then on, and are built with qi like any pad
-	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12 } },
+	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
@@ -241,6 +241,13 @@ Config.PADS = {
 	{ id = "lotus1", name = "Floating Lotus Isle", cost = 9000, income = 20, unlock = 12, req = { "platform", "expand1" }, x = -24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
 	{ id = "lotus2", name = "Twin Lotus Isle", cost = 19000, income = 40, unlock = 16, req = { "lotus1", "expand2" }, x = 24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
 	{ id = "lotus3", name = "Heavenly Lotus Isle", cost = 31000, income = 60, unlock = 21, req = { "lotus2" }, x = 0, z = -19, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
+	-- five more (owner 2026-10-23: "add like 5 more, the easy to spot strong player thing"): the
+	-- second level of the Floating Isles karma node (`karma` = the node level a pad needs)
+	{ id = "lotus4", name = "Cloud Lotus Isle", cost = 40000, income = 70, unlock = 22, req = { "lotus3" }, x = 34, z = -40, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus5", name = "Moon Lotus Isle", cost = 52000, income = 80, unlock = 23, req = { "lotus4" }, x = -34, z = -40, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus6", name = "Star Lotus Isle", cost = 66000, income = 90, unlock = 24, req = { "lotus5" }, x = -40, z = -14, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus7", name = "Sun Lotus Isle", cost = 82000, income = 100, unlock = 25, req = { "lotus6" }, x = -40, z = 24, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
+	{ id = "lotus8", name = "Immortal Lotus Isle", cost = 100000, income = 110, unlock = 26, req = { "lotus7" }, x = 32, z = 34, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle", karma = 2 },
 	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Hall level 5", district = "heart" },
 	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
 	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
@@ -505,19 +512,31 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 -- Playtime gifts, D49 (owner 2026-10-22: "always show the next reward, reset daily, up to 2 h
 -- online"): gift i is claimable after GIFT_TIMES[i] seconds of play TODAY (UTC day, summed over
 -- every session; the ladder restarts at 00:00 UTC). Each pays GIFT_VALUE[i] seconds of income (no
--- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
--- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
+-- tide, no pill), GIFT_SUMMONS[i] free summons (into the idle chest's summons), GIFT_PILL[i] s of
+-- 2x qi and a GIFT_RARITY[i] disciple (owner: "make them interesting": an Elder at 45 min, an
+-- Immortal at 2 h). Simmed 2026-10-22 (tools/sim_game.py): every player kind's lives end on the
+-- same days as before, within a minute or two of play.
 Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
 -- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
 -- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
 -- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's (unclaimed
 -- group gift) lights at most once per DOT_GROUP_SECONDS.
-Config.DOT_SHOP_FIRST = 600
+Config.DOT_SHOP_FIRST = 120
 Config.SHOP_FREE_SECONDS = 300
 Config.DOT_GROUP_SECONDS = 24 * 3600
-Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
-Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
+Config.GIFT_VALUE = { 180, 120, 0, 300, 0, 900, 0, 0 }
+Config.GIFT_SUMMONS = { 0, 1, 0, 3, 0, 0, 5, 0 }
+Config.GIFT_PILL = { 0, 0, 300, 0, 0, 0, 0, 0 } -- seconds of 2x qi (adds to a running pill)
+Config.GIFT_RARITY = { "", "", "", "", "Elder", "", "", "Immortal" } -- a disciple of that rarity
 Config.GIFT_DAILY = true -- read by the sim
+-- what gift i pays (the HUD chip and the Free Gifts page draw it)
+function Config.giftPrize(i)
+	if not Config.GIFT_TIMES[i] then
+		return nil
+	end
+	local r = Config.GIFT_RARITY[i]
+	return { at = Config.GIFT_TIMES[i], qiSec = Config.GIFT_VALUE[i] or 0, summons = Config.GIFT_SUMMONS[i] or 0, pill = Config.GIFT_PILL[i] or 0, rarity = r ~= "" and r or nil }
+end
 -- Daily Blessing (login streak, D58, owner pick A: "elder d7 is super late, should be day 2 at
 -- least. I'd say even one tier more day 2"): one claim per UTC day (Config.giftDay); a missed day
 -- PAUSES the ladder (owner), it never resets. After day 7 it starts again at day 1. A day gives
@@ -550,7 +569,7 @@ Config.BADGES = {
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end
-Config.SLOT_PADS = { "quarters1", "quarters2", "lotus1", "lotus2", "lotus3" } -- each owned one adds its pad's `seats` (1 when missing)
+Config.SLOT_PADS = { "quarters1", "quarters2", "lotus1", "lotus2", "lotus3", "lotus4", "lotus5", "lotus6", "lotus7", "lotus8" } -- each owned one adds its pad's `seats` (1 when missing)
 
 -- `vip` = owns the VIP Sect pass (VIP_SLOTS more)
 function Config.maxDisciples(owned, vip)
@@ -607,16 +626,21 @@ Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "
 -- each, giving a qi boost, low but good to get. Some summons at each step"): one entry per rarity and
 -- look; a star at each of INDEX_STARS pulls of it, INDEX_STAR_BONUS income per star (forever, every
 -- life), INDEX_STEP_SUMMONS free summons each INDEX_STEP_STARS stars. Numbers: the economy pass.
-Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
+-- Owner 2026-10-23 ("show some with red and blue stars like the beads, we'll let them grow that far"):
+-- 15 stars, shown five at a time like the life beads: gold 1-5, then red 6-10 over the gold, then
+-- blue 11-15 (Config.STAR_COLORS, Config.starRow)
+Config.INDEX_STARS = { 1, 3, 10, 30, 100, 200, 300, 500, 700, 1000, 1500, 2000, 3000, 4000, 5000 }
+Config.STAR_ROW = 5
+Config.STAR_COLORS = { Color3.fromHex("FFD34D"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF") }
 Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
 Config.INDEX_STEP_STARS = 10
 -- A disciple's own stars (owner 2026-10-22: "stars should count on their performance too. And they
 -- could show when you look at them"): a working disciple's bonus x (1 + this x the stars of its index
--- entry), so a five-star disciple works twice as hard. Bee Swarm Simulator's gifted bee, per seat.
+-- entry), so a five-star disciple works twice as hard (fifteen stars: four times). Bee Swarm Simulator's gifted bee, per seat.
 -- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
 Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
-Config.DISCIPLE_CAP = 21 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
+Config.DISCIPLE_CAP = 41 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
 -- item stands where it acts, on the owner's peak. `x` = across the peak; `z` = along it, or
@@ -832,6 +856,26 @@ Config.TITLE_SEE = 110 -- studs: farther titles are hidden
 -- bead per rebirth on a halo of AURA_BEAD_BAND slots; each full band the beads take the next colour
 -- (owner: "like 20 yellow then 20 red then 20 blue and with more aura each time... easily to 100").
 -- After the last band the halo stays full.
+-- The ground glyph textures (owner pick 2026-10-23: our WC3-style set, tools/aura_textures.py; the
+-- owner uploads upload/auras/*.png and pastes the image ids here). White art tinted per realm. A realm
+-- whose two ids are 0 keeps the UI-drawn glyph (AuraGlyph RECIPES); runes from realm 6 and the light
+-- column from realm 9 need their own ids.
+Config.AURA_TEX = {
+	glow = 97261261909185, -- aura_glow.png
+	column = 136175245864583, -- aura_column.png
+	runes = 105666316409518, -- aura_runes_2x2.png (a 2 x 2 flipbook)
+	realms = { -- realm = { aura_r<n>_a.png, aura_r<n>_b.png }
+		[2] = { 101462076907885, 116445156630131 },
+		[3] = { 78351354918107, 139521718891710 },
+		[4] = { 82692031342257, 102753656570417 },
+		[5] = { 136482327832298, 112348904539057 },
+		[6] = { 131839890508081, 71277369931412 },
+		[7] = { 127679238936600, 78699647461511 },
+		[8] = { 82830787818404, 139794889534766 },
+		[9] = { 106824336271041, 110215277572986 },
+		[10] = { 135856301285308, 117237264599559 },
+	},
+}
 Config.AURA_BEAD_BAND = 20
 Config.AURA_BEAD_COLORS = { Color3.fromHex("FFD36A"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF"), Color3.fromHex("B46BFF"), Color3.fromHex("BFF2E0") } -- rebirths 1-20, 21-40, 41-60, 61-80, 81-100
 function Config.ordinal(n)
@@ -1039,6 +1083,23 @@ function Config.indexTotalStars(index)
 	end
 	return n
 end
+-- the STAR_ROW slots that show `stars`: each slot's colour, nil for an empty slot. The band's colour
+-- fills from the left over the band before (6 stars = one red, four gold), like the life beads.
+function Config.starRow(stars)
+	local n, row = Config.STAR_ROW, {}
+	local band = math.max(1, math.ceil((stars or 0) / n))
+	local lit = (stars or 0) - (band - 1) * n
+	for i = 1, n do
+		row[i] = i <= lit and Config.STAR_COLORS[band] or Config.STAR_COLORS[band - 1]
+	end
+	return row
+end
+
+-- the colour of star number `n` (1..#INDEX_STARS): gold, red or blue (Config.STAR_COLORS)
+function Config.starColor(n)
+	return Config.STAR_COLORS[math.clamp(math.ceil((n or 1) / Config.STAR_ROW), 1, #Config.STAR_COLORS)]
+end
+
 -- a working disciple's bonus multiplier from its own entry's stars (`count` = that entry's pulls)
 function Config.discipleStarMult(count)
 	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)
@@ -1087,7 +1148,7 @@ Config.REALM_PADS = {
 	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
 	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training", "lotus1" },
 	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2", "lotus2" },
-	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3" },
+	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3", "lotus4", "lotus5", "lotus6", "lotus7", "lotus8" },
 }
 local padRealm = {}
 for r, ids in Config.REALM_PADS do

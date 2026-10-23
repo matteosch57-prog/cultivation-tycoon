@@ -23,9 +23,9 @@ def main():
     global PAGE
     args = sys.argv[1:]
     frames = 3
-    if args and args[0] in ("tips", "streak"):  # docs/art/mocks/<page>.html -> <page>_<opt>.jpg
+    if args and args[0] in ("tips", "streak", "timed_gift"):  # docs/art/mocks/<page>.html -> <page>_<opt>.jpg
         PAGE, args = args[0] + ".html", args[1:]
-        frames = 2 if PAGE == "streak.html" else 3
+        frames = 2 if PAGE in ("streak.html", "timed_gift.html") else 3
     opts = args or ["A", "B", "C"]
     tmp = pathlib.Path(tempfile.mkdtemp())
     for opt in opts:
