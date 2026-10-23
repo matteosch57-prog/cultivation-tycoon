@@ -1,12 +1,12 @@
 -- Heavenly Altar on the client (mock A, docs/art/mocks/altar_A_phone.jpg): while a round is open, a
 -- small altar button in the HUD's right stack (owner 2026-10-22: the ring in the middle was "too
 -- invasive"; docs/art/mocks/fight_options.jpg): beads around it fill as the holder's timer runs, a
--- tap draws the guide trail to the nearest Spirit Spring, its X hides it until the next round. The
+-- tap draws the guide trail to the nearest moon gate, its X hides it until the next round. The
 -- Palm Strike button while you stand on the altar (owner pick 1 2026-10-23,
 -- docs/art/mocks/altar_phone_buttons.jpg: on a phone it takes the Recruit seal's spot left of Jump and
--- the seal steps aside through the Player attribute AltarPalm; F on a keyboard), the Spirit Springs
+-- the seal steps aside through the Player attribute AltarPalm; F on a keyboard), the moon gates
 -- that throw you up, the knockback (a short ragdoll, a camera kick), toasts and sounds. In the last ALERT_SECS of a round a bouncing "!" sits on the
--- button's other corner (owner 2026-10-23): a tap teleports you beside a Spirit Spring at the hub.
+-- button's other corner (owner 2026-10-23): a tap teleports you beside a moon gate at the hub.
 -- The server decides who holds and who wins (src/server/Altar.luau); this only draws and asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -128,20 +128,8 @@ local function placeRow()
 	end
 end
 
--- a tap on the altar button: the guide trail to the nearest Spirit Spring, which throws you up (the
--- deck floats ALTAR_HEIGHT over the plaza: a trail at the altar itself would point at the sky)
-local springs = {}
-local function findSprings()
-	table.clear(springs)
-	local m = workspace:FindFirstChild("Sect") and workspace.Sect:FindFirstChild("HeavenlyAltar")
-	if m then
-		for _, p in m:GetChildren() do
-			if p:GetAttribute("Spring") then
-				table.insert(springs, p)
-			end
-		end
-	end
-end
+-- a tap on the altar button: the guide trail to the nearest moon gate, which takes you up (the deck
+-- floats ALTAR_HEIGHT over the plaza: a trail at the altar itself would point at the sky)
 -- from Config, not the parts: far from the hub the altar model has not streamed in
 local function nearestSpring()
 	local top = workspace:GetAttribute("AltarTop")
@@ -452,51 +440,31 @@ local function knock(vel)
 	end)
 end
 
--- Spirit Springs: standing on one while the altar is open (and I'm not out) throws me up onto it
+-- The moon gates (D79, they replaced the Spirit Springs): stepping into one while the altar is open
+-- (and I'm not out) teleports me onto the deck, with the HUD's jade wipe; the server checks I stand
+-- in the doorway (Main, Teleport "altarGate"). Gate spots come from Config, not the parts (streaming).
 local lastLaunch = 0
 local function checkSprings()
 	if not isOpen() or player:GetAttribute("AltarOut") or os.clock() - lastLaunch < 1.2 then
 		return
 	end
-	local hrp, hum = root()
+	local hrp = root()
 	local top = altarTop()
-	if not hrp or not hum or not top then
+	if not hrp or not top then
 		return
 	end
-	if #springs == 0 then
-		findSprings()
-	end
-	for _, sp in springs do
-		local d = hrp.Position - sp.Position
-		if Vector2.new(d.X, d.Z).Magnitude < 3.2 and d.Y > -1 and d.Y < 6 then
+	local ground = top.Y - Config.ALTAR_HEIGHT
+	for _, sx in { -1, 1 } do
+		local gate = Vector3.new(top.X + sx * Config.ALTAR_SPRING_X, ground, top.Z - 2)
+		local d = hrp.Position - gate
+		if Vector2.new(d.X, d.Z).Magnitude < 2.6 and d.Y > -1 and d.Y < 7 then
 			lastLaunch = os.clock()
-			-- ballistic arc landing a third of the way in from the rim, T seconds from now
-			-- (the deck is ALTAR_HEIGHT up and the spring stands out past its apron: a high arc)
-			local land = Vector3.new(top.X + (sp.Position.X - top.X) * 0.3, top.Y + 3.2, top.Z + (sp.Position.Z - top.Z) * 0.3)
-			local T = 1.1
-			local g = Vector3.new(0, -workspace.Gravity, 0)
-			local v = (land - hrp.Position - 0.5 * g * T * T) / T
-			hum:ChangeState(Enum.HumanoidStateType.Freefall)
-			-- fly the arc kinematically: a LinearVelocity follows v + g t until it lands (a humanoid
-			-- otherwise cancels the launch on the ground and steers the sideways part back to the stick)
-			local att = hrp:FindFirstChild("RootAttachment")
-			if att then
-				local lv = Instance.new("LinearVelocity")
-				lv.Attachment0 = att
-				lv.RelativeTo = Enum.ActuatorRelativeTo.World
-				lv.MaxForce = 1e6
-				lv.VectorVelocity = v
-				lv.Parent = hrp
-				local t0 = os.clock()
-				task.spawn(function()
-					while os.clock() - t0 < T and lv.Parent do
-						lv.VectorVelocity = v + g * (os.clock() - t0)
-						RunService.Heartbeat:Wait()
-					end
-					lv:Destroy()
-				end)
+			local slots = player:FindFirstChild("HudSlots")
+			local travel = slots and slots:FindFirstChild("Travel")
+			if travel then
+				travel:Fire("altarGate")
 			else
-				hrp.AssemblyLinearVelocity = v
+				remotes.Teleport:FireServer("altarGate")
 			end
 			Sfx.play("rise", { volume = 1.3 })
 			return
@@ -505,7 +473,7 @@ local function checkSprings()
 end
 
 ---------------------------------------------------------------------------------------------
--- per frame: the ring, the palm button, the springs
+-- per frame: the ring, the palm button, the gates
 local lastLit = 0
 local acc = 0
 RunService.Heartbeat:Connect(function(dt)

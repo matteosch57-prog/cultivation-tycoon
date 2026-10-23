@@ -518,4 +518,8 @@ the log as a D-number.
   block a push. Stepping off the deck onto the islet's grass counts as out. Springs moved to
   `ALTAR_SPRING_X` 24, clear of the islet. D78's push, Palm spot and sword rule stay. The deck braziers
   went (owner: they read like stools); the hold timer is the HUD beads, a gold light warms the deck
-  for 6 s on a win.
+  for 6 s on a win. Then (owner): the deck 36 up (`ALTAR_HEIGHT`), a jade sigil with a small light
+  under each corner pole's foot (they stand past the islet's rim: magic holds them), warm lamps at the
+  pole tops; two moon gates (owner pick C, docs/art/mocks/altar_tp_pads.jpg) replace the Spirit Springs
+  (their arc could not reach 36 up): stepping into a gate's glowing door teleports you onto the deck
+  (Teleport "altarGate", checked on the server).

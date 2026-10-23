@@ -1,7 +1,7 @@
 -- Heavenly Altar: king of the hill over the hub (Config ALTAR_*, mock A, owner idea 2026-10-21; the
 -- stage is a store arena on a lotus-isle rock since 2026-10-23). A floating square duel stage above
--- the cauldron opens every ALTAR_INTERVAL s; two Spirit Springs on the
--- plaza throw players up to it. Stand on it ALONE for ALTAR_HOLD s to claim it; two or more on it
+-- the cauldron opens every ALTAR_INTERVAL s; two moon gates on the
+-- plaza teleport players up to it. Stand on it ALONE for ALTAR_HOLD s to claim it; two or more on it
 -- pause the timer. Palm Strike knocks rivals off; whoever falls off is out until the round ends.
 -- The server decides everything (R9): who stands on it is read from positions every tick, the
 -- push is validated here and only the knockback runs on the victim's client (it owns its body).
@@ -21,7 +21,7 @@ local ctx -- from Main: sessions, rate, publish, notify, telemetry, style, baseY
 local top -- world position of the altar's top centre
 local braziers = {} -- { flame = Part, fire = Fire, light = PointLight } (none since the deck braziers went, D79)
 local winGlow -- PointLight over the deck while a win is fresh
-local springs = {} -- Parts on the plaza (clients launch themselves from them)
+local springs = {} -- the moon gates on the plaza: { door, light, pe } (they replaced the Spirit Springs)
 local round = nil -- { untilT, holder, hold, joined = {[player]=true}, out = {[player]=true} }
 local crowned = nil -- the winner wearing the light aura until the next round
 local lastPush = {}
@@ -35,8 +35,7 @@ local lastPush = {}
 -- clouds trailing under it), its deck ALTAR_HEIGHT over the plaza. The meshes only draw: an invisible
 -- slab is the deck players stand on (every edge open for ring-outs) and the grass top catches whoever
 -- falls short. Lamps on the corner poles light the deck, a jade sigil holds up each pole's foot, a gold
--- light warms the deck when someone wins. Two Spirit Springs on the plaza throw you
--- up while it is open.
+-- light warms the deck when someone wins. Two moon gates on the plaza teleport you up while it is open.
 local function lightBrazier(b, on)
 	b.flame.Transparency = on and 0 or 1
 	b.fire.Enabled = on
@@ -199,50 +198,50 @@ local function build(parent)
 	glowAt.Position = Vector3.new(0, 4, 0) -- over the deck, not inside the arena mesh
 	glowAt.Parent = floor
 	winGlow.Parent = glowAt
-	-- Spirit Springs on the plaza, either side of the cauldron (clear of the spawn at z = 9 and out
-	-- past the islet, so the arc clears its rim)
+	-- the moon gates on the plaza (owner pick C 2026-10-23, docs/art/mocks/altar_tp_pads.jpg; they
+	-- replace the Spirit Springs, whose arc could not reach a deck 36 studs up): a jade round doorway
+	-- either side of the cauldron, its door facing along X; while a round is open the door glows and
+	-- stepping into it teleports you onto the deck (Altar.client asks, Main checks: Teleport
+	-- "altarGate"). Nothing on a gate collides: you walk into the door.
+	local GATE_GLOW = Color3.fromHex("8FF3CF")
 	for _, sx in { -1, 1 } do
-		local c = Vector3.new(sx * Config.ALTAR_SPRING_X, ctx.baseY + 0.45, -2)
-		local ring = P(
-			m,
-			Vector3.new(0.3, 4.6, 4.6),
-			CFrame.new(c) * CFrame.Angles(0, 0, math.pi / 2),
-			PAL.gold,
-			Enum.Material.Metal,
-			Enum.PartType.Cylinder
-		)
-		ring.Name = "Spring"
-		P(
-			m,
-			Vector3.new(0.34, 3.6, 3.6),
-			CFrame.new(c) * CFrame.Angles(0, 0, math.pi / 2),
-			PAL.jade,
-			nil,
-			Enum.PartType.Cylinder
-		)
-		P(
-			m,
-			Vector3.new(0.38, 1.4, 1.4),
-			CFrame.new(c) * CFrame.Angles(0, 0, math.pi / 2),
-			Color3.fromHex("8FD3B8"),
-			nil,
-			Enum.PartType.Cylinder
-		)
-		-- rising qi wisps while the altar is open (particles, not a light source)
-		local pe = Instance.new("ParticleEmitter")
+		local c = Vector3.new(sx * Config.ALTAR_SPRING_X, ctx.baseY, -2)
+		local face = CFrame.new(c) * CFrame.Angles(0, math.pi / 2, 0) -- local Z runs along world X
+		local dais = P(m, Vector3.new(0.5, 8, 8), CFrame.new(c + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, 0, math.pi / 2), PAL.stoneLight, nil, Enum.PartType.Cylinder)
+		dais.Name = "Gate"
+		dais:SetAttribute("Spring", true) -- Altar.client finds the gates by this (the springs' old key)
+		local n = 24
+		for k = 0, n - 1 do
+			local a = k / n * math.pi * 2
+			local b = P(m, Vector3.new(1.4, 1.4, 1.1), face * CFrame.new(math.cos(a) * 3.6, 4.2 + math.sin(a) * 3.6, 0) * CFrame.Angles(0, 0, a), PAL.jade, Enum.Material.Marble)
+			b.CanCollide, b.CanQuery = false, false
+		end
+		local ring = P(m, Vector3.new(0.3, 8.6, 8.6), face * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.pi / 2, 0), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)
+		ring.CanCollide, ring.CanQuery = false, false
+		local door = P(m, Vector3.new(0.4, 6.4, 6.4), face * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.pi / 2, 0), GATE_GLOW, Enum.Material.Neon, Enum.PartType.Cylinder)
+		door.Name = "Door"
+		door.CanCollide, door.CanQuery, door.CastShadow = false, false, false
+		local roof = P(m, Vector3.new(10, 0.6, 1.6), face * CFrame.new(0, 8.4, 0), PAL.tile)
+		roof.CanCollide, roof.CanQuery = false, false
+		local trim = P(m, Vector3.new(9, 0.3, 1.4), face * CFrame.new(0, 8, 0), PAL.gold, Enum.Material.Metal)
+		trim.CanCollide, trim.CanQuery = false, false
+		local light = Instance.new("PointLight") -- R3: the glowing door is a real lamp
+		light.Color = GATE_GLOW
+		light.Range = 14
+		light.Brightness = 1.6
+		light.Shadows = false
+		light.Parent = door
+		local pe = Instance.new("ParticleEmitter") -- motes drifting off the door, both faces
 		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 		pe.Color = ColorSequence.new(Color3.fromHex("C9FFE6"), Color3.fromHex("FFE9A8"))
-		pe.LightEmission = 0.3
-		pe.Size = NumberSequence.new(0.5, 0)
+		pe.LightEmission = 0.6
+		pe.Size = NumberSequence.new(0.4, 0)
 		pe.Lifetime = NumberRange.new(1, 1.6)
-		pe.Speed = NumberRange.new(6, 9)
-		pe.SpreadAngle = Vector2.new(12, 12)
-		pe.Rate = 14
-		pe.EmissionDirection = Enum.NormalId.Right -- the cylinder's axis points up
-		pe.Enabled = false
-		pe.Parent = ring
-		ring:SetAttribute("Spring", true)
-		table.insert(springs, ring)
+		pe.Speed = NumberRange.new(1.5, 3)
+		pe.SpreadAngle = Vector2.new(180, 40)
+		pe.Rate = 8
+		pe.Parent = door
+		table.insert(springs, { door = door, light = light, pe = pe })
 	end
 	for _, d in m:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -254,9 +253,12 @@ local function build(parent)
 	workspace:SetAttribute("AltarRadius", Config.ALTAR_RADIUS)
 end
 
+-- the gates' doors glow only while a round is open
 local function setSprings(on)
-	for _, s in springs do
-		s.ParticleEmitter.Enabled = on
+	for _, g in springs do
+		g.door.Transparency = on and 0.3 or 0.85
+		g.light.Enabled = on
+		g.pe.Enabled = on
 	end
 end
 
@@ -576,6 +578,7 @@ end
 function Altar.init(context, parent)
 	ctx = context
 	build(parent)
+	setSprings(false)
 	workspace:SetAttribute("AltarNext", workspace:GetServerTimeNow() + Config.ALTAR_FIRST)
 	workspace:SetAttribute("AltarUntil", 0)
 	workspace:SetAttribute("AltarCrowd", 0)

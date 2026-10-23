@@ -2234,13 +2234,28 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 		s.teleportAt = os.clock()
 		char:PivotTo(rankStand)
 	elseif where == "altar" and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
-		-- the altar "!" (Altar.client, last 30 s of a round): beside the Spirit Spring on your side
-		-- of the plaza, facing it, so one step forward throws you up
+		-- the altar "!" (Altar.client, last 30 s of a round): beside the moon gate on your side
+		-- of the plaza, facing it, so one step forward takes you up
 		s.teleportAt = os.clock()
 		local root = char:FindFirstChild("HumanoidRootPart")
 		local sx = root and root.Position.X < 0 and -1 or 1
 		local at = Vector3.new(sx * (Config.ALTAR_SPRING_X + 5), BASE_Y + 3, -2)
 		char:PivotTo(CFrame.lookAt(at, Vector3.new(0, BASE_Y + 3, -2)))
+	elseif where == "altarGate" and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
+		-- a moon gate under the altar (Altar.luau, D79): only from inside a gate's doorway and only for
+		-- a player still in the round; lands on the deck's near edge, facing the middle
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local top = workspace:GetAttribute("AltarTop")
+		if root and top and not player:GetAttribute("AltarOut") then
+			local p = root.Position
+			local sx = p.X < top.X and -1 or 1
+			local gate = Vector3.new(top.X + sx * Config.ALTAR_SPRING_X, BASE_Y, top.Z - 2)
+			if Vector2.new(p.X - gate.X, p.Z - gate.Z).Magnitude < 5 and math.abs(p.Y - BASE_Y) < 8 then
+				s.teleportAt = os.clock()
+				local at = Vector3.new(top.X + sx * (Config.ALTAR_RADIUS - 3), top.Y + 3, top.Z)
+				char:PivotTo(CFrame.lookAt(at, Vector3.new(top.X, top.Y + 3, top.Z)))
+			end
+		end
 	elseif type(where) == "string" then
 		-- a portal (Portals.luau): only from where you stand on it, to a claimed island or the hub
 		local root = char:FindFirstChild("HumanoidRootPart")
