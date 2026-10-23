@@ -445,9 +445,10 @@ end
 -- in the doorway (Main, Teleport "altarGate"). Gate spots come from Config, not the parts (streaming).
 local lastLaunch = 0
 local function checkSprings()
-	if not isOpen() or player:GetAttribute("AltarOut") or os.clock() - lastLaunch < 1.2 then
+	if not isOpen() or os.clock() - lastLaunch < 1.2 then
 		return
 	end
+	local out = player:GetAttribute("AltarOut")
 	local hrp = root()
 	local top = altarTop()
 	if not hrp or not top then
@@ -458,6 +459,12 @@ local function checkSprings()
 		local gate = Vector3.new(top.X + sx * Config.ALTAR_SPRING_X, ground, top.Z - 2)
 		local d = hrp.Position - gate
 		if Vector2.new(d.X, d.Z).Magnitude < 2.6 and d.Y > -1 and d.Y < 7 then
+			if out then
+				-- a fallen player's gate stays shut: say why, once per 4 s (Play check 2026-10-23)
+				lastLaunch = os.clock() + 2.8
+				toast("Out this round, back in next round", PINK, nil, 2.5)
+				return
+			end
 			lastLaunch = os.clock()
 			local slots = player:FindFirstChild("HudSlots")
 			local travel = slots and slots:FindFirstChild("Travel")
