@@ -29,7 +29,7 @@ fling other players. They cannot change server values, other players' data or th
 | DaoBuy | node key | string, node exists, price, cap | Safe |
 | Reincarnate | nothing | the qi price AND `Config.rebirthOpen` (a realm gate that still needs this rebirth, its breakthrough pads all built) inside the one shared function (D63; `soulPeak` is kept for the record only) | **Fixed** (audit 2026-10-22): the realm-only gate let a fired remote repeat it for free lives once a life landed on realm 2 |
 | ShopBuy / ShopOpened | item key / source | string, length, 1 s, realm gate, limit / whitelist | Safe |
-| SwordRide (D76) | sword key or false | Guard budget, string length, the pass owned (`s.passes`), live character, not within `padRadius` of a pad nor on a running altar; the server welds the sword and sets HipHeight / WalkSpeed, and switches it off on a pad, the altar, death, or `speedStrikes` checks over `speedSlack` x the tier's speed; pads ignore a rider | Safe: a ride buys and pays nothing |
+| SwordRide (D76) | sword key or false | Guard budget, string length, the pass owned (`s.passes`), live character, not within `padRadius` of a pad nor on a running altar; the server welds the sword and sets WalkSpeed (HipHeight untouched: the step height stays the walker's), and switches it off on a pad, the altar, death, or `speedStrikes` checks over `speedSlack` x the tier's speed; pads ignore a rider | Safe: a ride buys and pays nothing |
 | ProcessReceipt | (Roblox) | PurchaseId de-dup in the save, grant then save, `NotProcessedYet` on a failed save | Safe |
 | Qi orbs | nothing (position) | own orbs, spawn rate caps the income | Safe: a teleport only saves walking |
 | Saves | nothing | session lock + version in `SaveStore` | Safe |

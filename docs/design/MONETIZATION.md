@@ -170,16 +170,18 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   foot; the light stairs and locked isles stay closed. Everyone sees it. No qi, so the economy does
   not move.
 - HUD: a sword button on the left rail (after Friends) once one is owned: tap = ride the last one
-  (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker.
+  (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker that
+  floats beside the button (outside the rail, so it never shoves the other buttons).
 - Off by itself near any pad (`padRadius`; a pad also ignores a rider, so a ride never buys), on the
-  Heavenly Altar while a round runs, on death or reset, and when the server sees the root faster than
+  Heavenly Altar while a round runs (the platform and the plaza ring under it), on death or reset, and when the server sees the root faster than
   the tier allows (`speedSlack`, `speedStrikes`). A short line says why.
 - The look (`src/server/SwordLook.luau`) is the owner-reviewed Studio mock v9
   (`tools/mock_swords_tiers.luau`, mock branch): the Creator Store blades 74897223654299 /
   13467141475 / 5131677948 with a Highlight in the tier colour, wound ribbons (1 / 2 / 3), motes, a
-  shimmer and a second trail (tiers 2-3), sparks off the hilt, the double gold halo over the front
+  shimmer and a second trail (tiers 2-3), sparks off the hilt, the Heavenly Sword's own gold bloom
+  and rising sparkles (its aura asset 17781650714 turned out to be a hat mesh with no emitters), the double gold halo over the front
   half of the tier 3 blade (moved off the rider's legs), real Trails off the hilt. Effects hang on
   the sword only. The blades and aura emitters ship as data (`src/server/SwordData.luau`, dumped in
-  Studio by `tools/dump_swords.luau`); until that dump lands, a plain built blade stands in.
+  Studio by `tools/dump_swords.luau`, dumped 2026-10-23).
 - Studio test: `DebugSet "pass", "swordJade"` then `DebugSet "ride", "swordJade"` (false steps off).
   Telemetry `Sword` "ride" with the key.
