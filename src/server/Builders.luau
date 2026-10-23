@@ -331,10 +331,8 @@ end
 ---------------------------------------------------------------------------------------------
 -- Floating Lotus Isles (owner pick C 2026-10-22, docs/art/captures/2026-10-22_platform_C_v2_islets.jpg):
 -- a jade lotus deck on a rock islet wrapped in clouds, floating over the Meditation Platform, with a
--- palace lantern in its heart and 4 more disciple seats. Floating stepping stones lead up to it from
--- the platform (isle 1) or the isle before (owner: "make sure we can jump on them one per one"):
--- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
--- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
+-- palace lantern in its heart and 4 more disciple seats. A stair of light plates leads up to it from
+-- the platform (isle 1) or the isle before (steps below). Meshes: Config.SKY_MESH (Lowpoly.sky).
 local ISLES = { -- centre of the deck's top, peak frame space (the platform is at 0, 0). Out to the
 	-- sides of the platform, clear of the Main Hall (0, -30) as seen from the gate (owner 2026-10-23)
 	{ x = -30, y = 18, z = 8 },
@@ -356,7 +354,6 @@ local ISLE_R = 10 -- the jade deck's radius
 local ISLE_SEAT_R = 3.6 -- seat + its 1.25x aura rings (r ~6.3) stay inside ISLE_R
 local ISLE_SCALE = 1.25
 local ISLE_FLOAT = 1.6 -- isle disciples hover this high over the deck
-local ISLE_STEP_RISE, ISLE_STEP_GAP = 4.5, 7
 local PLATFORM_TOP = 1.3 -- the platform deck's top: a seat's y is measured from it (Builders.disciple)
 local CLOUD_WHITE, CLOUD_LILAC = Color3.fromRGB(255, 252, 255), Color3.fromRGB(214, 206, 240)
 local SAND, SLATE, SHELF = Color3.fromHex("A08A74"), Color3.fromHex("5A5670"), Color3.fromHex("B8A48C")
@@ -431,20 +428,30 @@ local function isleBody(ctx, at, r, rng)
 	end
 end
 
--- a stepping stone: the same islet, small, under a grass cap you land on
-local function stone(ctx, p, rng)
-	local s = 4.6
-	-- a thick cap: a thin disc at chest height read as a ladder rung (the avatar went Climbing, Studio)
-	cyl(ctx, 1.4, s, CFrame.new(p.X, p.Y - 0.7, p.Z), LAWN, Enum.Material.LeafyGrass)
-	local rock = skyPart(ctx, "islet", Vector3.new(s, s * 0.8, s), CFrame.new(p.X, p.Y - 1.4 - s * 0.4, p.Z) * CFrame.Angles(0, rng:NextNumber(0, 6), 0), false)
-	if rock then
-		rock.Material = Enum.Material.Rock
-		rock.Color = ROCK
-	else
-		deco(ctx, Vector3.new(s * 0.8, s * 0.6, s * 0.8), CFrame.new(p.X, p.Y - 0.6 - s * 0.3, p.Z), ROCK, Enum.Material.Rock)
+-- owner 2026-10-23 ("instead of the small islands, magic light stairs, almost transparent"): a stair
+-- of floating plates of spirit light from one deck to the next. Walkable, no jump: each plate rises at
+-- most STAIR_RISE (a Humanoid steps up ~2 studs) and plates touch along the way. The plate is the
+-- collider (thick, a thin one reads as a ladder rung); its look is a near-clear light pane on top.
+local STAIR_RISE, STAIR_RUN, STAIR_W = 0.9, 2.8, 4.4
+local LIGHT = Color3.fromHex("BFF2E0")
+
+local function plate(ctx, p, dir)
+	local cf = CFrame.lookAt(p, p + dir) -- local -Z runs along the stair
+	local body = part(ctx, Vector3.new(STAIR_W, 1, STAIR_RUN + 0.3), cf * CFrame.new(0, -0.5, 0), LIGHT, Enum.Material.SmoothPlastic, {
+		Transparency = 1,
+		CastShadow = false,
+	})
+	body.Name = "StairStep"
+	local pane = deco(ctx, Vector3.new(STAIR_W, 0.12, STAIR_RUN), cf * CFrame.new(0, -0.06, 0), LIGHT, Enum.Material.Neon)
+	pane.Transparency = 0.72
+	pane.CastShadow = false
+	-- two fine gold edges along the sides
+	for _, sx in { -1, 1 } do
+		local edge = deco(ctx, Vector3.new(0.12, 0.14, STAIR_RUN), cf * CFrame.new(sx * (STAIR_W / 2 - 0.06), -0.05, 0), SP.gold, Enum.Material.Neon)
+		edge.Transparency = 0.35
+		edge.CastShadow = false
 	end
-	local gem = deco(ctx, Vector3.new(0.5, 1.6, 0.5), CFrame.new(p.X, p.Y - 0.6 - s * 0.85, p.Z) * CFrame.Angles(0, math.rad(45), 0), SPIRIT, Enum.Material.Glass)
-	gem.CastShadow = false
+	return pane
 end
 
 local function isleTop(i)
@@ -452,19 +459,37 @@ local function isleTop(i)
 	return Vector3.new(c.x, c.y, c.z)
 end
 
--- stepping stones from `a` to `b` (both walking surfaces), bowed sideways a little so the climb
--- reads as a path; neither end gets a stone. Each step rises at most ISLE_STEP_RISE and lies at most
--- ISLE_STEP_GAP from the last (jump 8.5 studs, walk 28, Config.MOVE): every step is a plain jump.
+-- a light stair from `a` to `b` (both walking surfaces), bowed sideways a little so it reads as a
+-- path; motes drift up off every fourth plate
 local function steps(ctx, a, b, rng)
 	local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
-	local n = math.max(math.ceil(math.abs(b.Y - a.Y) / ISLE_STEP_RISE), math.ceil(flat.Magnitude / ISLE_STEP_GAP))
+	local n = math.max(math.ceil(math.abs(b.Y - a.Y) / STAIR_RISE), math.ceil(flat.Magnitude / STAIR_RUN))
 	local side = flat.Magnitude > 0 and Vector3.new(-flat.Z, 0, flat.X).Unit or Vector3.zero
+	local function at(t)
+		return a:Lerp(b, t) + side * math.sin(t * math.pi) * 3
+	end
 	for i = 1, n - 1 do
 		local t = i / n
-		local p = a:Lerp(b, t) + side * math.sin(t * math.pi) * 3
-		stone(ctx, p, rng)
-		if i % 2 == 1 then
-			cloud(ctx, CFrame.new(p.X, p.Y - 4.5, p.Z), rng:NextNumber(6, 8), rng)
+		local p = at(t)
+		local ahead = at((i + 1) / n) - p
+		local dir = Vector3.new(ahead.X, 0, ahead.Z)
+		local pane = plate(ctx, p, dir.Magnitude > 0.01 and dir.Unit or Vector3.new(0, 0, -1))
+		if i % 4 == 0 then
+			local att = Instance.new("Attachment")
+			att.Parent = pane
+			local pe = Instance.new("ParticleEmitter")
+			pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			pe.Color = ColorSequence.new(LIGHT)
+			pe.LightEmission = 1
+			pe.LightInfluence = 0
+			pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })
+			pe.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+			pe.Lifetime = NumberRange.new(1.2, 2)
+			pe.Rate = 2
+			pe.Speed = NumberRange.new(0.6, 1.2)
+			pe.SpreadAngle = Vector2.new(25, 25)
+			pe.EmissionDirection = Enum.NormalId.Top
+			pe.Parent = att
 		end
 	end
 end
@@ -475,7 +500,7 @@ function Builders.lotusIsle(ctx, i)
 	local c = isleTop(i)
 	isleBody(ctx, c, ISLE_R, rng)
 	-- a palace lantern in the middle (a real lamp, R3)
-	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.X, c.Y + 1.6, c.Z), true)
+	local lantern = skyPart(ctx, "lantern", Vector3.new(4.66, 7.6, 4) * (3.2 / 7.6), CFrame.new(c.X, c.Y + 1.6, c.Z), false)
 	if lantern then
 		local l = Instance.new("PointLight")
 		l.Color, l.Range, l.Brightness = Color3.fromRGB(255, 175, 95), 10, 1.2
@@ -541,9 +566,11 @@ function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
 		m.WorldPivot = ctx.frame * face -- scale about the floor point
 		m:ScaleTo(ISLE_SCALE)
 		for _, d in m:GetDescendants() do
-			if d:IsA("BasePart") and d.Name == "Cushion" then
-				d.Transparency = 1 -- kept (the inspect card and the idle read it), just not drawn
-				d.CanCollide = false
+			if d:IsA("BasePart") then
+				d.CanCollide = false -- a player crossing the deck to the next stair walks through them
+				if d.Name == "Cushion" then
+					d.Transparency = 1 -- kept (the inspect card and the idle read it), just not drawn
+				end
 			end
 		end
 		m:PivotTo(m:GetPivot() * CFrame.new(0, ISLE_FLOAT, 0))
