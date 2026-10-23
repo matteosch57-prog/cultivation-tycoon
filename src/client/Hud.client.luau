@@ -563,7 +563,7 @@ local function build()
 	-- a small X on the box's top-right corner closes it too (owner 2026-10-22)
 	local xHolder, xBtn = toy(card, UDim2.fromOffset(px(24), px(24)), Color3.fromHex("FF7A6B"), px(7))
 	xHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-	xHolder.Position = UDim2.new(1, px(6), 0, -px(6))
+	xHolder.Position = UDim2.new(1, px(18), 0, px(6)) -- outside the box: on its corner it covered the 4th face
 	xHolder.ZIndex = 4
 	text(xBtn, "X", px(14), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 4 })
 	xBtn.Activated:Connect(toggleDisciples)
@@ -1145,10 +1145,23 @@ refreshStatic = function()
 		cl.SortOrder = Enum.SortOrder.LayoutOrder
 		cl.Parent = cell
 		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }, false, looks[i], shiny[i] == "1") -- its face and its rarity's moving aura
+		-- a tap opens the Disciples book on My Sect (Roster.client)
+		local tapFace = Instance.new("TextButton")
+		tapFace.Text = ""
+		tapFace.BackgroundTransparency = 1
+		tapFace.Size = UDim2.fromScale(1, 1)
+		tapFace.ZIndex = 8
+		tapFace.Parent = face
+		tapFace.Activated:Connect(function()
+			local ev = player:FindFirstChild("OpenRoster")
+			if ev then
+				ev:Fire("sect")
+			end
+		end)
 		if state.discNew and (state.discNew[name] or 0) > 0 then
 			newLeft[name] = (newLeft[name] or state.discNew[name]) - 1
 			if newLeft[name] >= 0 then
-				Toy.dot(face, px(14))
+				Toy.dot(face, px(11), { Position = UDim2.new(1, px(1), 0, -px(1)) }) -- small, off the face's corner
 			end
 		end
 		-- a sold rarity the player also rolled carries its "first pulled" mark: a gold dot
@@ -1175,9 +1188,11 @@ refreshStatic = function()
 		Toy.dot(iHolder, px(17))
 	end
 	iBtn.Activated:Connect(function()
-		local ev = player:FindFirstChild("IndexOpen")
+		-- the Disciples book's Index tab (Roster.client); IndexBook's own window until the book loads
+		local book = player:FindFirstChild("OpenRoster")
+		local ev = book or player:FindFirstChild("IndexOpen")
 		if ev then
-			ev:Fire()
+			ev:Fire(book and "index" or nil)
 		end
 	end)
 	-- realm progress = buildings owned this realm (published by the server)
