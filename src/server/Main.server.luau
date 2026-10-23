@@ -102,6 +102,9 @@ settingsEv.Parent = remotes
 local rankingsFn = Instance.new("RemoteFunction")
 rankingsFn.Name = "Rankings" -- the Rankings screen asks for one board: Global, Country or Friends (Ranks.fetch)
 rankingsFn.Parent = remotes
+local perfEv = Instance.new("RemoteEvent")
+perfEv.Name = "PerfReport" -- fps of one zone window and the scene load around the camera (PerfReport.client)
+perfEv.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -2259,6 +2262,12 @@ end)
 
 -- the Settings page (Settings.client): volumes, the music track and three switches, kept in the
 -- save (data.settings) and published as the Settings attribute (JSON) for the client to apply on join
+perfEv.OnServerEvent:Connect(function(player, t)
+	if Guard.allow(player, "PerfReport") then
+		Telemetry.clientPerf(player, t)
+	end
+end)
+
 settingsEv.OnServerEvent:Connect(function(player, t)
 	if not Guard.allow(player, "SaveSettings") or type(t) ~= "table" then
 		return

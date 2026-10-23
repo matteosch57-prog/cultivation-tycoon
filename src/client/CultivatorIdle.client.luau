@@ -9,6 +9,10 @@
 -- raised mudra, a qi surge sends the orbs racing and the circles spinning while the figure draws in a
 -- deep breath, and a visitor who comes close gets a small bow. Local only (nothing replicates): the motion stops
 -- beyond FAR studs and the aura layers switch off beyond GLOW studs, which keeps phones cheap.
+-- Phone fps 2026-10-23 (the owner's Pixel near a full sect of 41): only the nearest FULL_N figures
+-- (within FULL_R) draw their orbs of light and blade orbs (the heavy particles), the Highlights (rims,
+-- sword fans, Shiny outlines) go to the nearest figures up to HL_BUDGET, and the other figures move
+-- on every SLOW-th frame. Phones and low graphics settings get the smaller budgets.
 -- The figure moves through its own joints (Rig.luau): the float on its anchored root, the breath on
 -- the waist, the look on the neck, the mudra on the shoulder, so the robe, the hair and the props
 -- move with the body (owner 2026-10-22: the robe stayed behind and the hair stayed fixed when every
@@ -19,6 +23,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PerfMark = require(Shared:WaitForChild("PerfMark"))
+local PerfScene = require(Shared:WaitForChild("PerfScene"))
 local Rig = require(Shared:WaitForChild("Rig"))
 local POSES = require(Shared:WaitForChild("CultivatorPoses"))
 
@@ -26,6 +31,14 @@ local TAG = "Cultivator"
 local FAR = 150
 local BODY_R = 6 -- studs: a figure with its aura, for the on-screen test
 local GLOW = 90
+local SLOW = 3 -- a figure outside the full set moves every SLOW-th frame (its motion is slow anyway)
+-- [small device or low graphics] = the budgets
+local BUDGET = {
+	[true] = { FULL_N = 8, FULL_R = 45, HL = 10 },
+	[false] = { FULL_N = 16, FULL_R = 70, HL = 28 },
+}
+-- the heavy aura layers: only the full set draws them
+local HEAVY = { Glow = true, Heart = true, Tail = true, BladeOrbs = true }
 local WATCH = 24 -- studs: a player this close is watched
 local HOVER = 0.7 -- studs above the cushion (Shop's Play: 2 studs read as detached)
 local BOB = 0.25 -- studs of float bob
@@ -43,15 +56,15 @@ local SURGE = 2.5 -- seconds a qi surge lasts
 local player = Players.LocalPlayer
 local figures = {}
 
--- every aura layer of a figure: particle emitters, ribbons and orb trails
+-- every aura layer of a figure: particle emitters, ribbons and orb trails; the heavy ones apart
 local function layersOf(m)
-	local list = {}
+	local list, heavy = {}, {}
 	for _, d in m:GetDescendants() do
 		if d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") then
-			table.insert(list, d)
+			table.insert(if HEAVY[d.Name] then heavy else list, d)
 		end
 	end
-	return list
+	return list, heavy
 end
 
 local function add(m)
@@ -81,16 +94,22 @@ local function add(m)
 			table.insert(f.orbBase, p.Position - f.centre)
 		elseif p.Name == "SigilCircle" or p.Name == "SigilCircle2" then
 			table.insert(f.circles, { part = p, base = p.CFrame, dir = p.Name == "SigilCircle" and 1 or -1 })
-		elseif p.Name == "Sword" then
-			-- a spirit sword is a Model of mesh pieces: every piece bobs with the same phase
-			table.insert(f.swords, p)
-			local pieces = {}
-			for _, q in p:GetDescendants() do
-				if q:IsA("BasePart") then
-					table.insert(pieces, { part = q, base = q.CFrame })
+		elseif p.Name == "SwordFan" then
+			-- a spirit sword is a Model of mesh pieces: every piece bobs with the same phase; the fan
+			-- shares one rim glow (Aura)
+			f.fan = p:FindFirstChild("Aura")
+			for _, sword in p:GetChildren() do
+				if sword.Name == "Sword" then
+					table.insert(f.swords, sword)
+					local pieces = {}
+					for _, q in sword:GetDescendants() do
+						if q:IsA("BasePart") then
+							table.insert(pieces, { part = q, base = q.CFrame })
+						end
+					end
+					table.insert(f.swordBase, pieces)
 				end
 			end
-			table.insert(f.swordBase, pieces)
 		elseif p.Name == "MountSword" then
 			-- a flyer's sword rides the float with its rider
 			f.mount = {}
@@ -113,8 +132,10 @@ local function add(m)
 	f.haloBase = f.halo and f.halo.Parent.CFrame:PointToObjectSpace(head.Position - head.CFrame.LookVector * 0.7)
 	f.motes = aura and aura:FindFirstChild("Motes", true)
 	f.pulse = aura and aura:FindFirstChild("Pulse", true)
-	f.layers = layersOf(m)
-	f.lit = true
+	f.layers, f.heavy = layersOf(m)
+	f.lit, f.full = true, true
+	f.acc = 0
+	f.slot = math.random(0, SLOW - 1)
 	f.prismatic = m:GetAttribute("Prismatic") == true
 	f.nextPuff = os.clock() + 4 + math.random() * 8
 	f.yaw, f.pitch = 0, 0
@@ -128,6 +149,7 @@ local function add(m)
 	f.bowAt = -100
 	f.orbAngle, f.circleAngle = math.random() * TAU, 0
 	f.rimFill = f.rim and f.rim.FillTransparency
+	f.model = m
 	figures[m] = f
 end
 
@@ -296,29 +318,63 @@ end
 
 local MAX_YAW = math.rad(55)
 
--- Roblox draws at most 31 Highlights at once and drops the rest at random: keep the rims of the
--- nearest RIM_BUDGET lit figures only (the rest of the 31 is for swords, Shiny outlines, the altar)
-local RIM_BUDGET = 22
+-- Every 0.5 s, nearest first: which figures are lit (aura layers on), which are in the full set
+-- (heavy layers on, moved every frame) and which keep their Highlights. A Highlight costs screen
+-- fill on a phone (most of all the first, and more the more screen it covers; Roblox docs), and the
+-- engine draws a limited number at once: rims, sword fans and Shiny outlines share HL budget slots
+-- (the altar winner's rim and the swords' riders keep theirs, they are not figures).
+local function setAll(list, on)
+	for _, l in list do
+		l.Enabled = on
+	end
+end
+local function setHighlight(h, on)
+	if h and h.Enabled ~= on then
+		h.Enabled = on
+	end
+end
 task.spawn(function()
 	while true do
 		task.wait(0.5)
 		local cam = workspace.CurrentCamera
 		if cam then
+			local q = UserSettings().GameSettings.SavedQualityLevel.Value -- 0 = automatic
+			local b = BUDGET[PerfScene.device() ~= "pc" or (q > 0 and q <= 4)]
 			local eye = cam.CFrame.Position
 			local list = {}
 			for m, f in figures do
-				if f.rim and m.Parent then
-					f.rimDist = (f.centre - eye).Magnitude
+				if m.Parent then
+					f.dist = (f.centre - eye).Magnitude
 					table.insert(list, f)
 				end
 			end
-			table.sort(list, function(a, b)
-				return a.rimDist < b.rimDist
+			table.sort(list, function(x, y)
+				return x.dist < y.dist
 			end)
+			local hl = 0
 			for i, f in list do
-				local on = i <= RIM_BUDGET and f.rimDist < GLOW
-				if f.rim.Enabled ~= on then
-					f.rim.Enabled = on
+				local lit = f.dist < GLOW
+				local full = lit and i <= b.FULL_N and f.dist < b.FULL_R
+				if lit ~= f.lit then
+					f.lit = lit
+					setAll(f.layers, lit)
+				end
+				if full ~= f.full then
+					f.full = full
+					setAll(f.heavy, full)
+					for _, l in f.heavy do
+						if not full and l:IsA("ParticleEmitter") then
+							l:Clear()
+						end
+					end
+				end
+				f.shiny = f.shiny or f.model:FindFirstChild("ShinyOutline")
+				for _, h in { f.rim, f.fan, f.shiny } do
+					local on = lit and hl < b.HL
+					if on then
+						hl += 1
+					end
+					setHighlight(h, on)
 				end
 			end
 		end
@@ -326,7 +382,8 @@ task.spawn(function()
 end)
 
 -- PreSimulation: the engine applies the joints' Transforms in one batch right after
-RunService.PreSimulation:Connect(function(dt)
+local frame = 0
+RunService.PreSimulation:Connect(function(frameDt)
 	local cam = workspace.CurrentCamera
 	if not cam then
 		return
@@ -336,19 +393,18 @@ RunService.PreSimulation:Connect(function(dt)
 	local char = player and player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	local now = os.clock()
-	local ease = math.min(1, dt * 2.5)
+	frame += 1
 	local parts, cfs = {}, {}
 	for m, f in figures do
 		local dist = (f.centre - eye).Magnitude
-		if m.Parent and (dist < GLOW) ~= f.lit then
-			f.lit = dist < GLOW
-			for _, l in f.layers do
-				l.Enabled = f.lit
-			end
-		end
+		f.acc += frameDt
 		if not m.Parent then
 			figures[m] = nil
-		elseif dist < FAR and PerfMark.onScreen(cam, f.centre, BODY_R) then -- nothing moves unseen
+		elseif dist < FAR and (f.full or (frame + f.slot) % SLOW == 0) and PerfMark.onScreen(cam, f.centre, BODY_R) then -- nothing moves unseen
+			-- the time since this figure last moved (SLOW frames for one outside the full set)
+			local dt = math.min(f.acc, 0.25) -- (a figure seen again after a while eases in, no jump)
+			f.acc = 0
+			local ease = math.min(1, dt * 2.5)
 			local t = now + f.phase
 			local b = math.sin(t / BREATH * TAU)
 			local s = math.sin(t / SWAY * TAU)
@@ -507,12 +563,12 @@ RunService.PreSimulation:Connect(function(dt)
 					for _, c2 in f.circles do
 						c2.part.Color = c
 					end
-					for _, sword in f.swords do
-						local h = sword:FindFirstChild("Aura")
-						if h then
-							h.FillColor = c
-							h.OutlineColor = c:Lerp(Color3.new(1, 1, 1), 0.3)
-						end
+					for _, l in f.heavy do
+						l.Color = cs
+					end
+					if f.fan then
+						f.fan.FillColor = c
+						f.fan.OutlineColor = c:Lerp(Color3.new(1, 1, 1), 0.3)
 					end
 					if f.haloCircle then
 						f.haloCircle.Color = c

@@ -108,6 +108,18 @@ Telemetry.EVENTS = {
 		},
 		question = "Do sessions with a friend last longer than SessionEnd's (all sessions), do players invite, and does the group gift get claimed (D35)?",
 	},
+	ClientFps = {
+		fields = { "zone (PerfScene.ZONES: disciples | hub | peak | bridge | sky)", "median fps of the window (fpsBucket)", "phone | tablet | pc | console" },
+		question = "Where in the world do phones lose fps (owner's Pixel near the disciples, 2026-10-23), and on which devices?",
+	},
+	ClientLoad = {
+		fields = {
+			"zone (PerfScene.ZONES)",
+			"live particles within 80 studs of the camera (loadBucket)",
+			"h<highlights>|g<billboard + surface guis>|p<visible parts> (loadBucket each)",
+		},
+		question = "What does the scene hold where fps drops: particles, Highlights, in-world guis or parts?",
+	},
 }
 
 -- The onboarding funnel: one-time per player, steps in order. A step counts once it is true now or
@@ -278,7 +290,7 @@ local function send(what, fn, ...)
 end
 
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
-local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true }
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, ClientFps = true, ClientLoad = true }
 
 -- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
 function Telemetry.customValue(player, name, value, ...)
@@ -328,6 +340,63 @@ function Telemetry.funnel(player, d)
 		Telemetry.custom(player, "FunnelTime", step.name, Telemetry.minuteBucket(d.playSec or 0))
 		nextStep += 1
 		step = Telemetry.FUNNEL[nextStep]
+	end
+end
+
+-- Client fps (PerfReport.client): one window of one zone, checked and bucketed here so a client
+-- can only ever send catalogued values. One event a window; the fps bucket gets an "s" suffix when
+-- the slow 5% of frames ran under half the median (a stutter rather than a steady low).
+local ZONES = { disciples = true, hub = true, peak = true, bridge = true, sky = true }
+local DEVICES = { phone = true, tablet = true, pc = true, console = true }
+function Telemetry.fpsBucket(fps)
+	for _, hi in { 15, 20, 25, 30, 40, 50 } do
+		if fps < hi then
+			return "fps" .. hi
+		end
+	end
+	return "fps50plus"
+end
+function Telemetry.loadBucket(n, edges)
+	local lo = 0
+	for _, hi in edges do
+		if n < hi then
+			return lo .. "-" .. (hi - 1)
+		end
+		lo = hi
+	end
+	return lo .. "+"
+end
+local function num(v, max)
+	v = tonumber(v)
+	return (v and v == v) and math.clamp(v, 0, max) or nil
+end
+function Telemetry.clientPerf(player, t)
+	if type(t) ~= "table" or not ZONES[t.zone] or not DEVICES[t.device] then
+		return
+	end
+	local p50, p5 = num(t.p50, 1000), num(t.p5, 1000)
+	if not p50 or not p5 then
+		return
+	end
+	local fps = Telemetry.fpsBucket(p50)
+	if p5 < p50 * 0.5 then
+		fps ..= "s" -- the slow 5% of frames ran under half the median: a stutter, not a steady low
+	end
+	if STUDIO then
+		print(string.format("[Tycoon][perf] %s %s p50 %.0f p5 %.0f parts %s particles %s highlights %s guis %s", t.zone, t.device, p50, p5, tostring(t.parts), tostring(t.particles), tostring(t.highlights), tostring(t.guis)))
+	end
+	Telemetry.custom(player, "ClientFps", t.zone, fps, t.device)
+	local particles, highlights, guis, parts = num(t.particles, 1e6), num(t.highlights, 1e4), num(t.guis, 1e4), num(t.parts, 1e6)
+	if particles and highlights and guis and parts then
+		Telemetry.custom(
+			player,
+			"ClientLoad",
+			t.zone,
+			Telemetry.loadBucket(particles, { 100, 300, 1000, 3000, 10000 }),
+			"h" .. Telemetry.loadBucket(highlights, { 1, 6, 16, 32 })
+				.. "|g" .. Telemetry.loadBucket(guis, { 21, 61, 151 })
+				.. "|p" .. Telemetry.loadBucket(parts, { 2000, 6000, 15000 })
+		)
 	end
 end
 

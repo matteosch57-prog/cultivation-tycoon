@@ -2,7 +2,8 @@
 -- The phone is the truth: Studio on a PC is not GPU bound like a phone (Gladiator RNG D671).
 --   /perf    start or stop a 10 minute recording: every 10 s one "[Perf]" line in the console
 --            (fps median / slow 5% / worst frame, draw calls, triangles, instances, memory, and
---            each PerfMark job's average/worst ms), one "[Perf] hitch" line per frame over 50 ms
+--            each PerfMark job's average/worst ms, the zone and what sits within 80 studs of the
+--            camera: parts, emitters, live particles, Highlights, guis; PerfScene), one "[Perf] hitch" line per frame over 50 ms
 --            naming the jobs that ran just before it, then a summary. Read it with /console.
 --   /clouds  hide or show the cloud sea's particles on this screen only (overdraw A/B test).
 local Players = game:GetService("Players")
@@ -10,6 +11,7 @@ local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local TextChatService = game:GetService("TextChatService")
 local PerfMark = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("PerfMark"))
+local PerfScene = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("PerfScene"))
 
 local player = Players.LocalPlayer
 -- the owner: the place's creator, or the group's owner (rank 255) when a group owns the place
@@ -59,7 +61,7 @@ local function start()
 	table.clear(summary)
 	PerfMark.clear()
 	PerfMark.on = true
-	print("[Perf] t,fps_p50,fps_p5,worst_ms,draws,tris,shadow_draws,instances,mem_mb,quality,jobs avg/worst ms")
+	print("[Perf] t,fps_p50,fps_p5,worst_ms,draws,tris,shadow_draws,instances,mem_mb,quality,zone,near parts/emitters/particles/highlights/guis,jobs avg/worst ms")
 	recording = RunService.RenderStepped:Connect(function(dt)
 		table.insert(frames, dt)
 		local now = os.clock()
@@ -76,7 +78,10 @@ local function start()
 		local p50 = 1 / frames[math.ceil(n * 0.5)]
 		local p5 = 1 / frames[math.ceil(n * 0.95)]
 		local q = UserSettings().GameSettings.SavedQualityLevel.Value
-		print(string.format("[Perf] %.0f,%.0f,%.0f,%.0f,%d,%d,%d,%d,%.0f,%d,%s", now - began, p50, p5, frames[n] * 1000, stat("SceneDrawcallCount"), stat("SceneTriangleCount"), stat("ShadowsDrawcallCount"), stat("InstanceCount"), Stats:GetTotalMemoryUsageMb(), q, PerfMark.window()))
+		local c = PerfScene.latest
+		local near = c and string.format("%d/%d/%d/%d/%d", c.parts, c.emitters, c.particles, c.highlights, c.guis) or "-"
+		print(string.format("[Perf] %.0f,%.0f,%.0f,%.0f,%d,%d,%d,%d,%.0f,%d,%s,%s,%s", now - began, p50, p5, frames[n] * 1000, stat("SceneDrawcallCount"), stat("SceneTriangleCount"), stat("ShadowsDrawcallCount"), stat("InstanceCount"), Stats:GetTotalMemoryUsageMb(), q, PerfScene.zone(), near, PerfMark.window()))
+		PerfScene.scan() -- for the next row
 		table.insert(summary, p50)
 		table.clear(frames)
 		rowStart = now

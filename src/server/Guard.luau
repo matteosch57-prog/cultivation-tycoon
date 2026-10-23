@@ -32,6 +32,7 @@ local LIMITS = {
 	Breakthrough = { 1, 3 },
 	SwordRide = { 2, 4 },
 	SaveSettings = { 1, 3 },
+	PerfReport = { 0.1, 3 }, -- one zone window per 12 s at most (PerfReport.client)
 }
 
 local buckets = {} -- [player] = { [remote] = { tokens, at } }

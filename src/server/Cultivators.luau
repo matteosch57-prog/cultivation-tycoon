@@ -354,7 +354,10 @@ local function meshPart(m, name, size, cf, color, meshId, texId, scale)
 end
 
 -- One jian as a Model `name`: `cf` is its middle, tip along +Y; `k` scales it (1 = 5.35 studs).
-local function jian(m, name, cf, color, k)
+-- `shared`: the caller draws one rim glow over all its swords (a fan of 3 to 9 swords was 3 to 9
+-- Highlights, each its own screen pass and each one of the 31 the engine draws at once: phone fps
+-- 2026-10-23)
+local function jian(m, name, cf, color, k, shared)
 	local g = Instance.new("Model")
 	g.Name = name
 	local frame = cf * CFrame.Angles(0, 0, math.pi / 2) * CFrame.new(-JIAN_MID * k, 0, 0) -- +X (tip) to +Y
@@ -383,6 +386,10 @@ local function jian(m, name, cf, color, k)
 			})
 		end
 	end
+	g.Parent = m
+	if shared then
+		return g
+	end
 	-- the aura: a rim glow in the rarity colour around the steel (as on the disciples)
 	local h = Instance.new("Highlight")
 	h.Name = "Aura"
@@ -392,7 +399,6 @@ local function jian(m, name, cf, color, k)
 	h.OutlineTransparency = 0
 	h.DepthMode = Enum.HighlightDepthMode.Occluded
 	h.Parent = g
-	g.Parent = m
 	return g
 end
 
@@ -411,6 +417,8 @@ end
 -- The client turns the circles, floats the halo and the swords with the figure and circles the orbs;
 -- the body's rim glow (a Highlight) comes with the avatar.
 local ORBS = { 0, 0, 3, 4, 5, 5, 7, 7, 9 }
+-- an orb sprite fades in and out so 4 overlapping copies blend into one steady glow (no blink at birth)
+local ORB_FADE = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0), NumberSequenceKeypoint.new(0.8, 0), NumberSequenceKeypoint.new(1, 1) })
 local SWORDS = { 0, 0, 0, 0, 3, 5, 7, 7, 9 }
 local function aura(m, f, color, tier, flying)
 	if tier < 2 then
@@ -453,9 +461,11 @@ local function aura(m, f, color, tier, flying)
 			orb.Name = "AuraOrb" -- not "QiOrb": Juice bobs every QiOrb (the collectible orbs)
 			-- a soft halo, a twinkling star heart, and sparkles left behind as a tail (a Trail drew
 			-- glassy shards in Play)
-			emitter(orb, "Glow", { Texture = GLOW, Color = seq(color), LightEmission = 1, Brightness = 3, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(1.3), Transparency = NumberSequence.new(0), Lifetime = NumberRange.new(0.3), Rate = 40 })
-			emitter(orb, "Heart", { Texture = SPARKLE, Color = ColorSequence.new(vivid(color):Lerp(WHITE, 0.55)), LightEmission = 1, Brightness = 4, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(0.8), Lifetime = NumberRange.new(0.3), Rate = 40, Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90) })
-			emitter(orb, "Tail", { Texture = SPARKLE, Color = seq(color), LightEmission = 1, Brightness = 3, Speed = NumberRange.new(0), Size = NumberSequence.new(0.35, 0), Lifetime = NumberRange.new(0.5, 0.7), Rate = 18 })
+			-- (phone fps 2026-10-23: Rate 40 x 0.3 s stacked 12 copies of each sprite on the orb, ~35 live
+			-- particles an orb, 300+ for a 9-orb figure. Now 4 copies drawn brighter, the same look)
+			emitter(orb, "Glow", { Texture = GLOW, Color = seq(color), LightEmission = 1, Brightness = 9, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(1.3), Transparency = ORB_FADE, Lifetime = NumberRange.new(0.8), Rate = 5 })
+			emitter(orb, "Heart", { Texture = SPARKLE, Color = ColorSequence.new(vivid(color):Lerp(WHITE, 0.55)), LightEmission = 1, Brightness = 12, LockedToPart = true, Speed = NumberRange.new(0), Size = NumberSequence.new(0.8), Lifetime = NumberRange.new(0.8), Rate = 5, Rotation = NumberRange.new(0, 360), RotSpeed = NumberRange.new(-90, 90), Transparency = ORB_FADE })
+			emitter(orb, "Tail", { Texture = SPARKLE, Color = seq(color), LightEmission = 1, Brightness = 4, Speed = NumberRange.new(0), Size = NumberSequence.new(0.35, 0), Lifetime = NumberRange.new(0.5, 0.7), Rate = 8 })
 		end
 	end
 	if tier >= 4 then
@@ -480,12 +490,24 @@ local function aura(m, f, color, tier, flying)
 		local n = SWORDS[tier]
 		-- 65 degrees at most: wider, the outer swords crossed the shoulders and the face (Play 2026-10-22)
 		local spread = math.rad(n >= 7 and 65 or (n >= 5 and 55 or 40))
+		local fan = Instance.new("Model")
+		fan.Name = "SwordFan"
 		for i = 1, n do
 			local ang = -spread + 2 * spread * (i - 1) / (n - 1)
 			local k = 0.86
 			local cf = f * CFrame.new(0, 3.3, 1.7) * CFrame.Angles(0, 0, ang) * CFrame.new(0, 0.6 + 2.68 * k, 0)
-			jian(m, "Sword", cf, color, k)
+			jian(fan, "Sword", cf, color, k, true)
 		end
+		-- one rim glow over the whole fan (was one Highlight a sword)
+		local h = Instance.new("Highlight")
+		h.Name = "Aura"
+		h.FillColor = vivid(color)
+		h.FillTransparency = 0.82
+		h.OutlineColor = vivid(color):Lerp(WHITE, 0.3)
+		h.OutlineTransparency = 0
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Parent = fan
+		fan.Parent = m
 	end
 	if tier >= 6 and not flying then
 		circle(m, "SigilCircle2", 8.5, f * CFrame.new(0, 0.05, 0), color).Transparency = 0.4
