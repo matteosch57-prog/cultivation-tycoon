@@ -200,7 +200,7 @@ return function()
 			b.LightInfluence = 0
 			b.Brightness = 1 + t.light * 0.5
 			b.Color = ColorSequence.new(Color3.new(1, 1, 1), t.color)
-			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, t.alpha), NumberSequenceKeypoint.new(0.6, 0.5 + t.alpha / 2), NumberSequenceKeypoint.new(1, 1) })
+			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.12, t.alpha), NumberSequenceKeypoint.new(0.6, 0.5 + t.alpha / 2), NumberSequenceKeypoint.new(1, 1) })
 			b.Parent = holder
 		end
 	end
@@ -372,7 +372,7 @@ return function()
 			soft.FaceCamera = true
 			soft.Texture = "rbxassetid://" .. t.trail -- the trail texture fades at its edges, the glow did not
 			soft.TextureMode = Enum.TextureMode.Stretch
-			soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+			soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0.35), NumberSequenceKeypoint.new(1, 1) }) -- v7: fades in, no hard start line
 			-- sparks shed off the hilt into the trail
 			local s = motes(hilt, i == 2 and Color3.fromHex("FFD34D") or Color3.new(1, 1, 1), 10 + i * 6, 0.25, 4, 0.8)
 			s.EmissionDirection = Enum.NormalId.Back
