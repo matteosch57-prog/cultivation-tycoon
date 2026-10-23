@@ -559,7 +559,20 @@ local function build()
 			remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md); marks the dot seen
 		end
 	end
-	dBtn.Activated:Connect(toggleDisciples)
+	-- the disciples button opens the Disciples book on My Sect (owner 2026-10-23: "not the small pop
+	-- up anymore"); the small card stays only as the fallback while the book is not loaded
+	dBtn.Activated:Connect(function()
+		local book = player:FindFirstChild("OpenRoster")
+		if not book then
+			toggleDisciples()
+			return
+		end
+		if state.discOpen then
+			toggleDisciples() -- shut the old card if it was open
+		end
+		remotes.MenuOpened:FireServer("disciples") -- analytics Menu (DATA.md); marks the dot seen
+		book:Fire("sect")
+	end)
 	-- a small X on the box's top-right corner closes it too (owner 2026-10-22)
 	local xHolder, xBtn = toy(card, UDim2.fromOffset(px(24), px(24)), Color3.fromHex("FF7A6B"), px(7))
 	xHolder.AnchorPoint = Vector2.new(0.5, 0.5)
