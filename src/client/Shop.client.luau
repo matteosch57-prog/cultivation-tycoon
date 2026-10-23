@@ -26,11 +26,15 @@ local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
-local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B" }
+local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B", starter = "FFB3A8", tidebell = "9FD0FF" }
+-- a disciple sold on its own (the Welcome Pouch and the Starter Pack also hold one, inside a bundle)
+local function soldDisciple(it)
+	return it ~= nil and it.rarity ~= nil and not it.qiBonus and not it.seconds
+end
 -- disciples for sale: a pale tile of their rarity colour
 local function tileColor(key)
 	local it = Config.shopItem(key)
-	if it and it.rarity and not it.qiBonus then
+	if soldDisciple(it) then
 		return Config.rarity(it.rarity).color:Lerp(Color3.new(1, 1, 1), 0.55)
 	end
 	return Color3.fromHex(TILE[key] or "C9FFE4")
@@ -112,15 +116,20 @@ local PAGES = {
 		items = function()
 			local list = table.clone(Config.SHOP_PASSES)
 			table.insert(list, (Config.shopItem("pill")))
-			-- the Welcome Pouch leads the row until it is bought (it is once per player)
+			table.insert(list, 1, (Config.shopItem("tidebell")))
+			-- the once-per-player bundles lead the row until they are bought: the Starter Pack, then
+			-- the Welcome Pouch
 			if not player:GetAttribute("Limit_welcome") then
 				table.insert(list, 1, (Config.shopItem("welcome")))
+			end
+			if not player:GetAttribute("Limit_starter") then
+				table.insert(list, 1, (Config.shopItem("starter")))
 			end
 			return list
 		end,
 	},
 	{ key = "qi", name = "Qi", icon = "pack2", items = products(function(it) return it.seconds ~= nil end) },
-	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(function(it) return it.rarity ~= nil and not it.qiBonus end) },
+	{ key = "disciples", name = "Disciples", icon = "celestial", items = products(soldDisciple) },
 }
 
 local function computeScale()
@@ -136,6 +145,7 @@ end
 local close -- forward
 
 local BEST = "pack3" -- the one "Best value" ribbon (the most qi per Robux)
+local NEW = { tidebell = true } -- tiles wearing the "New" tag (drop a key once the item is not new)
 
 local function tile(parent, key, order, name, line)
 	local col = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, Rotation = TILT[(order - 1) % #TILT + 1] })
@@ -143,9 +153,11 @@ local function tile(parent, key, order, name, line)
 	local holder, btn = Toy.button(col, UDim2.fromOffset(px(92), px(92)), tileColor(key), px(20))
 	holder.LayoutOrder = 1
 	Toy.icon(btn, key, px(68), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	local ribbon = (key == BEST and "Best value") or (key == "welcome" and "Once") or nil
-	if ribbon then
-		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, px(12), 0, -px(2)), Rotation = 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF6B5E"), ZIndex = 5 })
+	local ribbon = (key == BEST and "Best value") or ((key == "welcome" or key == "starter") and "Once") or nil
+	-- a new item wears a blue "New" tag on the other corner (mock 2026-10-23 tiles)
+	local isNew = NEW[key]
+	if ribbon or isNew then
+		local rib = Toy.frame(holder, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(isNew and 0 or 1, 0), Position = isNew and UDim2.new(0, -px(10), 0, -px(4)) or UDim2.new(1, px(12), 0, -px(2)), Rotation = isNew and -10 or 8, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex(isNew and "4FD7FF" or "FF6B5E"), ZIndex = 5 })
 		Toy.corner(rib, UDim.new(0, px(8)))
 		local st = Instance.new("UIStroke")
 		st.Color = Toy.INK
@@ -155,14 +167,14 @@ local function tile(parent, key, order, name, line)
 		local pad = Instance.new("UIPadding")
 		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(7)), UDim.new(0, px(7))
 		pad.Parent = rib
-		text(rib, ribbon, px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
+		text(rib, ribbon or "New", px(12), Color3.new(1, 1, 1), { ZIndex = 6 })
 	end
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = col
 	-- a disciple's name in its rarity colour (the Index and recruit language)
 	local it = Config.shopItem(key)
-	local nameColor = it and it.rarity and not it.qiBonus and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
+	local nameColor = soldDisciple(it) and Config.rarity(it.rarity).color or Color3.new(1, 1, 1)
 	text(col, name, px(17), nameColor, { LayoutOrder = 2 })
 	local lineLabel
 	if key ~= "more" and Config.shopItem(key) and Config.shopItem(key).seconds then
@@ -176,7 +188,7 @@ local function tile(parent, key, order, name, line)
 end
 
 local function itemTile(parent, it, order)
-	local col, btn, lineLabel = tile(parent, it.key, order, it.name, it.line)
+	local col, btn, lineLabel = tile(parent, it.key, order, it.short or it.name, it.line)
 	Toy.frame(col, { Size = UDim2.fromOffset(1, px(3)), LayoutOrder = 4 })
 	local pHolder, pBtn = Toy.button(col, UDim2.fromOffset(px(96), px(32)), BUY, px(10))
 	pHolder.LayoutOrder = 5
@@ -233,6 +245,33 @@ local function row(parent, order)
 	return r
 end
 
+-- A row wider than the screen (Boosts with both once-only bundles on a phone) scrolls sideways
+-- inside a strip as wide as the screen allows; the tiles keep their size and nothing is cut.
+local function fitRow(r)
+	local vpW = gui.AbsoluteSize.X
+	local room = vpW - px(24)
+	if r.AbsoluteSize.X <= room then
+		return
+	end
+	local h = r.AbsoluteSize.Y
+	local strip = Instance.new("ScrollingFrame")
+	strip.Name = "Scroll"
+	strip.BackgroundTransparency = 1
+	strip.BorderSizePixel = 0
+	strip.LayoutOrder = r.LayoutOrder
+	strip.Visible = r.Visible
+	strip.Size = UDim2.fromOffset(room, h + px(18))
+	strip.CanvasSize = UDim2.fromOffset(r.AbsoluteSize.X + px(28), 0)
+	strip.ScrollingDirection = Enum.ScrollingDirection.X
+	strip.ScrollBarThickness = px(5)
+	strip.ScrollBarImageColor3 = Color3.fromHex("FFD36B")
+	strip.ElasticBehavior = Enum.ElasticBehavior.Always
+	strip.Parent = r.Parent
+	r.Position = UDim2.fromOffset(px(14), px(10)) -- room for the tilted tags
+	r.Parent = strip
+	return strip
+end
+
 local function refresh()
 	if not ui.items then
 		return
@@ -248,6 +287,9 @@ local function refresh()
 	end
 	for key, r in ui.rows or {} do
 		r.Visible = key == page
+		if r.Parent and r.Parent:IsA("ScrollingFrame") then
+			r.Parent.Visible = key == page
+		end
 		ui.tabs[key].BackgroundColor3 = key == page and Color3.fromHex("FFD36B") or GREY
 	end
 	if ui.free then
@@ -335,6 +377,18 @@ local function build()
 		end)
 	end
 	refresh()
+	-- measured once the rows are laid out: a row too wide for the screen scrolls (fitRow)
+	local rows = ui.rows
+	task.spawn(function()
+		RunService.Heartbeat:Wait()
+		if ui.rows ~= rows then
+			return -- rebuilt meanwhile
+		end
+		for _, r in rows do
+			fitRow(r)
+		end
+		refresh()
+	end)
 end
 
 -- `tab` = the page to land on (the Get Qi offer opens Qi); the HUD button opens Boosts
@@ -668,15 +722,221 @@ local function showOffer()
 	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 end
 
+---------------------------------------------------------------------------------------------
+-- The Sect Starter Pack offer card (owner pick "B night jade" 2026-10-23, mock
+-- docs/art/mocks/starter_pack_B_jade.jpg): a gold frame round a night-jade panel, soft gold rays
+-- and a glow behind the Immortal with its aura, a gold title, "Only once", the two other gifts as
+-- chips, the green price button and "Not now". The server sends "starterOffer" once
+-- (Config.STARTER_OFFER); the Boosts tab keeps a "Once" tile first until it is bought. No discount
+-- is claimed: it shows what it gives.
+local starterGui = Instance.new("ScreenGui")
+starterGui.Name = "StarterOffer"
+starterGui.ResetOnSpawn = false
+starterGui.IgnoreGuiInset = true
+starterGui.DisplayOrder = 6
+starterGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+starterGui.Enabled = false
+starterGui.Parent = playerGui
+
+local JADE_TOP, JADE_MID, JADE_DEEP = Color3.fromHex("1F8F70"), Color3.fromHex("0D4A3D"), Color3.fromHex("06201C")
+local CREAM = Color3.fromHex("FFE9B0")
+local PALE_GOLD = Color3.fromHex("FFD34D")
+
+-- a gold corner ornament: an L of two bars hugging corner (sx, sy) and a small ring inside its bend
+local function ornament(parent, sx, sy)
+	local ax, ay = sx > 0 and 1 or 0, sy > 0 and 1 or 0
+	local box = Toy.frame(parent, { Size = UDim2.fromOffset(px(42), px(42)), AnchorPoint = Vector2.new(ax, ay), Position = UDim2.new(ax, -sx * px(9), ay, -sy * px(9)), ZIndex = 3 })
+	for _, size in { UDim2.fromOffset(px(42), px(4)), UDim2.fromOffset(px(4), px(42)) } do
+		local f = Toy.frame(box, { Size = size, AnchorPoint = Vector2.new(ax, ay), Position = UDim2.fromScale(ax, ay), BackgroundTransparency = 0, BackgroundColor3 = PALE_GOLD, ZIndex = 3 })
+		Toy.corner(f, UDim.new(1, 0))
+	end
+	local ring = Toy.frame(box, { Size = UDim2.fromOffset(px(12), px(12)), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(ax, -sx * px(15), ay, -sy * px(15)), ZIndex = 3 })
+	Toy.corner(ring, UDim.new(1, 0))
+	local st = Instance.new("UIStroke")
+	st.Color = PALE_GOLD
+	st.Thickness = math.max(1, px(2.5))
+	st.Parent = ring
+end
+
+-- one gift chip: its icon, a bold name and a cream line, on a dark plate with a soft gold edge
+local function chip(parent, order, icon, name, line)
+	local c = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, BackgroundTransparency = 0.65, BackgroundColor3 = Color3.new(0, 0, 0), ZIndex = 3 })
+	Toy.corner(c, UDim.new(0, px(12)))
+	local st = Instance.new("UIStroke")
+	st.Color = PALE_GOLD
+	st.Transparency = 0.45
+	st.Thickness = px(2)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = c
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(5)), UDim.new(0, px(11))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(3)), UDim.new(0, px(3))
+	pad.Parent = c
+	Toy.list(c, true, px(5), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	Toy.icon(c, icon, px(36), { LayoutOrder = 1, ZIndex = 4 })
+	local words = Toy.frame(c, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2, ZIndex = 4 })
+	Toy.list(words, false, 0, { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	text(words, name, px(15), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 4 })
+	text(words, line, px(10), CREAM, { LayoutOrder = 2, ZIndex = 4 })
+end
+
+local function showStarter()
+	local it = Config.shopItem("starter")
+	if not it or player:GetAttribute("Limit_starter") then
+		return
+	end
+	starterGui:ClearAllChildren()
+	Toy.S = computeScale()
+	local veil = Instance.new("TextButton")
+	veil.Text = ""
+	veil.AutoButtonColor = false
+	veil.Size = UDim2.fromScale(1, 1)
+	veil.BackgroundColor3 = Color3.fromHex("06040F")
+	veil.BackgroundTransparency = 0.34
+	veil.BorderSizePixel = 0
+	veil.Parent = starterGui
+	-- the gold frame (ink rim and drop like every toy plate), the jade panel inside it
+	local holder = Toy.frame(starterGui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(px(452), px(346)) })
+	local drop = Toy.frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(6)), BackgroundTransparency = 0, BackgroundColor3 = Toy.INK })
+	Toy.corner(drop, UDim.new(0, px(22)))
+	local rim = Toy.frame(holder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 1 })
+	Toy.corner(rim, UDim.new(0, px(22)))
+	local gold = Instance.new("UIGradient")
+	gold.Rotation = 70
+	gold.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromHex("FFF4C2")),
+		ColorSequenceKeypoint.new(0.3, Color3.fromHex("E9A92C")),
+		ColorSequenceKeypoint.new(0.52, Color3.fromHex("8E520A")),
+		ColorSequenceKeypoint.new(0.75, Color3.fromHex("F6C040")),
+		ColorSequenceKeypoint.new(1, Color3.fromHex("FFF0B0")),
+	})
+	gold.Parent = rim
+	local ink = Instance.new("UIStroke")
+	ink.Color = Toy.INK
+	ink.Thickness = px(4)
+	ink.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	ink.Parent = rim
+	local panel = Instance.new("CanvasGroup") -- clips the rays to the rounded panel
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.Position = UDim2.fromScale(0.5, 0.5)
+	panel.Size = UDim2.new(1, -px(12), 1, -px(12))
+	panel.BackgroundColor3 = Color3.new(1, 1, 1)
+	panel.BorderSizePixel = 0
+	panel.ZIndex = 2
+	panel.Parent = holder
+	Toy.corner(panel, UDim.new(0, px(17)))
+	local shade = Instance.new("UIGradient") -- night jade: lighter round the hero, deep at the foot
+	shade.Rotation = 90
+	shade.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, JADE_MID), ColorSequenceKeypoint.new(0.35, JADE_TOP), ColorSequenceKeypoint.new(0.7, JADE_MID), ColorSequenceKeypoint.new(1, JADE_DEEP) })
+	shade.Parent = panel
+	-- soft gold rays turning slowly and a warm glow behind the hero
+	local heroY = px(124)
+	Toy.atlasPiece(panel, "glow", px(380), px(300), JADE_TOP, 0.2, { Position = UDim2.new(0.5, 0, 0, heroY) })
+	local rays = Toy.atlasPiece(panel, "rays12", px(560), px(560), Color3.fromHex("FFDC78"), 0.72, { Position = UDim2.new(0.5, 0, 0, heroY) })
+	Toy.atlasPiece(panel, "glow", px(250), px(250), Color3.fromHex("FFE28C"), 0.15, { Position = UDim2.new(0.5, 0, 0, heroY) })
+	for _, sx in { -1, 1 } do
+		for _, sy in { -1, 1 } do
+			ornament(panel, sx, sy)
+		end
+	end
+	for _, s in { { 0.27, 0.27, 16 }, { 0.71, 0.21, 22 }, { 0.68, 0.5, 12 }, { 0.3, 0.52, 11 } } do
+		Toy.atlasPiece(panel, "sparkle", px(s[3]), px(s[3]), Color3.fromHex("FFF7D0"), 0, { Position = UDim2.fromScale(s[1], s[2]), ZIndex = 3 })
+	end
+	local body = Toy.frame(panel, { Size = UDim2.fromScale(1, 1), ZIndex = 3 })
+	Toy.list(body, false, px(4))
+	local top = Instance.new("UIPadding")
+	top.PaddingTop = UDim.new(0, px(6))
+	top.Parent = body
+	local title = text(body, it.name, px(32), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 4 })
+	local tg = Instance.new("UIGradient")
+	tg.Rotation = 90
+	tg.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("FFFBE0")), ColorSequenceKeypoint.new(0.55, PALE_GOLD), ColorSequenceKeypoint.new(1, Color3.fromHex("E08A12")) })
+	tg.Parent = title
+	text(body, "Only once", px(14), CREAM, { LayoutOrder = 2, ZIndex = 4 })
+	-- the hero: the Immortal in its gold well with its aura, its bonus under it
+	local r = Config.rarity(it.rarity)
+	Toy.disciple(body, px(122), it.rarity, { LayoutOrder = 3, ZIndex = 4 })
+	text(body, string.format("%s +%d%%", it.rarity, math.floor(r.bonus * 100 + 0.5)), px(20), PALE_GOLD, { LayoutOrder = 4, ZIndex = 4 })
+	local chips = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 5, ZIndex = 3 })
+	Toy.list(chips, true, px(12), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	local hours = math.floor(it.seconds / 3600 + 0.5)
+	chip(chips, 1, "pack2", "Qi Chest", string.format("%d hour%s of income", hours, hours == 1 and "" or "s"))
+	chip(chips, 2, "pill", "2x Qi", string.format("%d minutes", math.floor(it.pill / 60 + 0.5)))
+	Toy.frame(body, { Size = UDim2.fromOffset(1, px(2)), LayoutOrder = 6 })
+	-- the price button (a light stripe across it) and "Not now" beside it
+	local buyRow = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 7, ZIndex = 3 })
+	Toy.list(buyRow, true, px(16), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	local bHolder, bBtn = Toy.button(buyRow, UDim2.fromOffset(px(150), px(46)), BUY, px(14))
+	bHolder.LayoutOrder = 1
+	bBtn.ClipsDescendants = true
+	Toy.frame(bBtn, { Name = "Shine", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.66, 0.5), Size = UDim2.new(0, px(18), 1.8, 0), Rotation = 20, BackgroundTransparency = 0.6, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 2 })
+	local priceRow, label = Toy.amount(bBtn, "robux", px(26), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local function paint()
+		local t, canBuy = priceText("starter")
+		label.Text = t
+		local icon = priceRow:FindFirstChild("Currency")
+		if icon then
+			icon.Visible = canBuy
+		end
+	end
+	paint()
+	fetchPrices(paint)
+	local notNow = Instance.new("TextButton")
+	notNow.BackgroundTransparency = 1
+	notNow.AutomaticSize = Enum.AutomaticSize.XY
+	notNow.Size = UDim2.new()
+	notNow.Text = ""
+	notNow.LayoutOrder = 2
+	notNow.ZIndex = 4
+	notNow.Parent = buyRow
+	text(notNow, "Not now", px(15), CREAM, { ZIndex = 4 })
+	Toy.feel(notNow)
+	local function closeCard()
+		starterGui.Enabled = false
+	end
+	notNow.Activated:Connect(closeCard)
+	veil.Activated:Connect(closeCard)
+	bBtn.Activated:Connect(function()
+		local _, canBuy = priceText("starter")
+		if canBuy then
+			remotes.ShopBuy:FireServer("starter")
+		end
+	end)
+	starterGui.Enabled = true
+	Sfx.play("toast")
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.85
+	sc.Parent = holder
+	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	-- the rays turn while the card is up (one looping tween, cancelled with the card: R16)
+	local spin = TweenService:Create(rays, TweenInfo.new(40, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), { Rotation = 360 })
+	spin:Play()
+	starterGui:GetPropertyChangedSignal("Enabled"):Once(function()
+		spin:Cancel()
+	end)
+end
+
+-- Studio test hook: local player attribute StarterCard = true draws the card (no offer, no purchase)
+player:GetAttributeChangedSignal("StarterCard"):Connect(function()
+	if player:GetAttribute("StarterCard") then
+		showStarter()
+	end
+end)
+
 remotes.Notify.OnClientEvent:Connect(function(kind, rarity, kept)
 	if kind == "welcomeOffer" then
 		if not gui.Enabled then
 			showOffer()
 		end
-	elseif kind == "shopWelcome" or kind == "shopDisciple" then
+	elseif kind == "starterOffer" then
+		if not gui.Enabled and not offerGui.Enabled then
+			showStarter()
+		end
+	elseif kind == "shopWelcome" or kind == "shopDisciple" or kind == "shopStarter" then
 		-- bought: close the card and the shop, and let the recruit reveal show the disciple arrive
 		-- (owner 2026-10-22: every Robux disciple plays the recruit reveal)
 		offerGui.Enabled = false
+		starterGui.Enabled = false
 		close()
 		local fx = player:FindFirstChild("RecruitFx")
 		if fx then

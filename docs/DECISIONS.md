@@ -463,3 +463,17 @@ the log as a D-number.
   right end, its label on the lower rim, gold and wobbling once the price is held. The bar always
   shows the hall count (the next step says Breakthrough). The right stack starts under the top bar.
   Checked in Studio Play (fresh save): no overlaps, no Hud errors.
+- **D75** Three shop changes (owner picks 2026-10-23). (1) **Tide Bell**, a repeatable developer
+  product (Bee Swarm Simulator's Night Bell, copied as is): it starts a Spirit Tide for the whole
+  server now, everyone sees "<name> rang the Tide Bell!" with the countdown; refused while a tide
+  runs or the Heavenly Altar is open or warning; the tide schedule never moves, and a tide that lands
+  in another adds its time instead of restarting it. (2) **Sect Starter Pack**, 75 Robux once per
+  player: an Immortal + 1 hour of income + 10 min of 2x in one product (`grantProduct` handles each
+  field of an item), offered once on the card "B night jade" the first time a `feature` building is
+  bought 5 min or more after the Welcome card; a "Once" tile in Boosts until bought; no fake discount.
+  (3) **Disciples without buy limits** ("let people buy the disciples as much as they want"): `limit`
+  dropped from the six disciple products; the prompt is refused when the newcomer could not stay
+  (a full sect of stronger ones) or `DISCIPLE_CAP` bought ones are already held, which bounds the
+  list and the save. Whether bought disciples count in `priceRate` stays the owner's open decision.
+  Sims (`sim_game.py`, `sim_check.py`) unchanged: both items are bought, not simulated.
+  Design: MONETIZATION "Tide Bell", "Sect Starter Pack"; list: SHOP_ITEMS.

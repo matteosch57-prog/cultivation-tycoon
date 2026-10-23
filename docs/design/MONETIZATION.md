@@ -60,16 +60,18 @@ product in the Creator Dashboard and owns prices; the ids go in `Config` (keys n
   (before the offline qi, so 2x counts on it) and `PromptGamePassPurchaseFinished` live; ownership is
   never saved (Roblox is the record).
 - **Disciples for sale (D28, owner pick C "but price accordingly"):** a FIXED rarity, never a roll
-  (R8), every tier from Elder to Primordial. Economy guard-rails: Celestial and above once per
-  player each and Elder / Immortal at most 8 each (`limit`, `data.shopBought`) and on sale only from a realm (`minRealm`: Celestial 3,
-  Dao Ancestor 5, Heavenly Emperor 7, Primordial 9; the pad says "Opens at ..."), because owning Dao
-  or above from the start flattens realms 1 to 6 to the 5 min floor. Bought ones are counted in
+  (R8), every tier from Elder to Primordial. No buy limit (D75, owner 2026-10-23: "let people buy
+  the disciples as much as they want"; it was 8 Elders / 8 Immortals and one of each higher tier).
+  Every tier is on sale at every realm (owner 2026-10-22); an item may still set `minRealm` (the pad
+  then says "Opens at ..."). Bought ones are counted in
   `data.boughtDisciples`, survive breakthroughs and are never trimmed by the disciple cap (the
   cap drops the weakest unbought one); a reincarnation must keep them. A rarity
   the player rolled shows a gold "first pulled" dot in the disciples row (`data.pulled`). Event
   `DiscipleBought` (key, realm, minutes played). The server refuses the prompt when the sect is
-  full of stronger ones (it could not stay). A bought one joins like a recruit and, if no seat is
-  free, rests on the bench (`DISCIPLE_CAP`).
+  full of stronger ones (it could not stay) or already holds `DISCIPLE_CAP` bought ones (they are
+  never trimmed, so this is what bounds the list and the save without a buy limit). A bought one joins
+  like a recruit and, if no seat is free, rests on the bench (`DISCIPLE_CAP`). Whether bought ones
+  count in the recruit price (`priceRate`) is an open owner decision, unchanged here.
 - **Effects:** 2x Qi = `PASS_QI_MULT` on every qi/s, offline and gifts too (economy check: keep it);
   VIP = `VIP_SLOTS` more disciple seats and the arch name in bright gold; Auto Orbs = every orb on the
   owner's peak is collected 1.5 s after it appears while they stand on the peak; Instant Pill = 60 s
@@ -101,6 +103,34 @@ The list to create in the dashboard (name, description, price, icon): [SHOP_ITEM
   Boosts tab keeps a "Once" tile first until it is bought. Bought: the recruit reveal plays its Elder,
   then a "+10% forever" toast. Telemetry `Shop` "offer" / "prompt" / "bought" with key `welcome`.
 - Repeatable cheap qi (Pocket Qi, short pills) was studied and left out (anchors the 29 Pouch low).
+
+## Tide Bell (D75, owner 2026-10-23; Bee Swarm Simulator's Night Bell)
+- A repeatable developer product (`SHOP_PRODUCTS` key `tidebell`): buying it starts a Spirit Tide for
+  the whole server right now (`TIDE_DURATION` s of `TIDE_MULT` qi, the same tide as the schedule:
+  Main `startTide`). Everyone gets a blue banner, "<name> rang the Tide Bell!" over "Spirit Tide x2 Qi
+  for everyone" and the countdown (Hud `tideBanner`, mock `docs/art/mocks/tide_bell_banner.jpg`);
+  the gong and the pillar play as for any tide.
+- The regular schedule (`TideNext`) never moves. A tide that starts while another runs adds its
+  `TIDE_DURATION` on top of the time left instead of restarting it, so a bought tide is never eaten.
+- The prompt is refused, with one short line, while a tide runs or the Heavenly Altar is open or its
+  heads-up is out (`ALTAR_WARN`): the altar never shares the sky with a tide.
+- Shop: a "New" tile in Boosts (icon `tidebell`: the HUD sheet's bell, cell 31 once the new sheet is
+  uploaded; the tide wave until then). Telemetry `Shop` "prompt" / "bought" with key `tidebell`.
+
+## Sect Starter Pack (D75, owner 2026-10-23, card "B night jade")
+- **75 Robux, once per player** (`SHOP_PRODUCTS` key `starter`, `limit = 1`). One product, three
+  grants (Shop `grantProduct` handles each field of an item): an Immortal (`rarity`, a bought
+  disciple), `seconds` of income in qi (like the Qi Chest, counted before the Immortal joins) and
+  `pill` s of 2x Qi added to `boostUntil` (like the Instant Pill). No discount is claimed.
+- Offered once (`Config.STARTER_OFFER`, `data.starterOffered`): the first time a building with a
+  `feature` is bought after the Welcome Pouch was bought or its card was shown, at least `after` s of
+  play after that (`data.welcomeAt`). The card (`Shop.client`, ScreenGui `StarterOffer`, mock
+  `docs/art/mocks/starter_pack_B_jade.jpg`, source `starter_pack.html`): gold frame, night-jade panel,
+  turning gold rays and a glow behind the Immortal with its aura, "Only once", two chips (Qi Chest,
+  2x Qi), the green Robux button with a shine, "Not now", gold corner ornaments. The Boosts tab keeps
+  a "Once" tile first until it is bought. Bought: the recruit reveal plays its Immortal, then a toast
+  with the qi and the 2x. Telemetry `Shop` "offer" / "prompt" / "bought" with key `starter`.
+- A Boosts row too wide for a phone (both once-only tiles still up) scrolls sideways (`fitRow`).
 
 ## Disciple price ladder (economy check, D28)
 Relative to the 2x Qi pass price P: Elder 0.15P, Immortal 0.3P, Celestial 0.6P, Dao Ancestor 1P,

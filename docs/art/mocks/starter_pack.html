@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:F;src:url(fred3.ttf)}
+@font-face{font-family:F6;src:url(fred2.ttf)}
+html,body{margin:0;background:#111}
+.f{position:relative;width:1405px;height:646px;overflow:hidden;font-family:F;color:#fff}
+.bg{position:absolute;inset:0;background:url(bg_hud.jpg) center/cover}
+.veil{position:absolute;inset:0;background:rgba(6,4,16,.66)}
+.o{paint-order:stroke fill;-webkit-text-stroke:7px #1b1420}
+.o5{paint-order:stroke fill;-webkit-text-stroke:5px #1b1420}
+.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:780px;height:600px;border-radius:38px;padding:10px;box-sizing:border-box;
+  background:linear-gradient(160deg,#fff4c2,#e9a92c 30%,#8e520a 52%,#f6c040 75%,#fff0b0);box-shadow:0 12px 0 #1b1420,0 0 0 7px #1b1420,0 0 80px rgba(255,190,60,.45)}
+.in{position:relative;width:100%;height:100%;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;align-items:center}
+.A .in{background:radial-gradient(ellipse at 50% 34%,#d3402f 0,#8e1f1a 42%,#3d0907 100%)}
+.B .in{background:radial-gradient(ellipse at 50% 34%,#1f8f70 0,#0d4a3d 45%,#06201c 100%)}
+.rays{position:absolute;left:50%;top:190px;width:1100px;height:1100px;margin:-550px 0 0 -550px;background:repeating-conic-gradient(rgba(255,220,120,.20) 0 7deg,transparent 7deg 18deg);border-radius:50%;-webkit-mask:radial-gradient(circle,#000 0,#000 25%,transparent 60%);animation:none}
+.glow{position:absolute;left:50%;top:190px;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(circle,rgba(255,226,140,.85),rgba(255,190,60,.35) 45%,transparent 70%)}
+.pattern{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(circle at 0 0,transparent 18px,#ffd34d 19px,#ffd34d 21px,transparent 22px),radial-gradient(circle at 40px 40px,transparent 18px,#ffd34d 19px,#ffd34d 21px,transparent 22px);background-size:80px 80px}
+.title{position:relative;margin-top:16px;font-size:50px;background:linear-gradient(#fffbe0,#ffd34d 55%,#e08a12);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #1b1420) drop-shadow(0 0 2px #1b1420) drop-shadow(0 0 2px #1b1420) drop-shadow(0 0 2px #1b1420)}
+.sub{position:relative;font-family:F6;font-size:22px;color:#ffe9b0;margin-top:-2px}
+.hero{position:relative;width:215px;height:215px;margin-top:4px}
+.hero img{width:100%;height:100%;filter:drop-shadow(0 8px 0 rgba(20,8,0,.6))}
+.hero .tag{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);white-space:nowrap;font-size:30px;color:#ffd34d}
+.row{position:relative;display:flex;align-items:center;gap:18px;margin-top:22px}
+.chip{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.35);border:3px solid rgba(255,211,77,.55);border-radius:18px;padding:6px 16px 6px 8px}
+.chip img{width:58px;height:58px}
+.chip b{font-size:22px;display:block;line-height:1}
+.chip i{font-style:normal;font-family:F6;font-size:15px;color:#ffe9b0}
+.buy{position:relative;margin-top:16px;display:flex;align-items:center;gap:22px}
+.btn{position:relative;width:250px;height:74px;border-radius:22px;border:6px solid #1b1420;box-shadow:0 6px 0 #1b1420;background:linear-gradient(#8dfc9f,#3fc463 60%,#2a9e4a);display:flex;align-items:center;justify-content:center;gap:10px;font-size:40px;overflow:hidden}
+.btn::after{content:"";position:absolute;top:-20px;bottom:-20px;width:40px;left:62%;background:rgba(255,255,255,.45);transform:rotate(20deg)}
+.later{font-family:F6;font-size:22px;color:#ffe9b0}
+.once{position:absolute;top:22px;left:24px;font-size:20px;background:#ff4a6a;border:4px solid #1b1420;border-radius:12px;padding:2px 12px;transform:rotate(-8deg)}
+.corner{position:absolute;width:90px;height:90px}
+.spark{position:absolute;color:#fff7d0;font-size:30px;text-shadow:0 0 10px #ffd34d}
+.lbl{position:absolute;left:16px;top:12px;font-family:F6;font-size:18px;background:rgba(0,0,0,.55);padding:4px 12px;border-radius:10px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="rbx" viewBox="0 0 64 64"><path d="M32 4l24 14v28L32 60 8 46V18z" fill="#fff" stroke="#1b1420" stroke-width="6" stroke-linejoin="round"/><path d="M32 18l12 7v14l-12 7-12-7V25z" fill="#1b1420"/></symbol>
+<symbol id="cloud" viewBox="0 0 90 90"><path d="M8 82 V40 a32 32 0 0 1 32 -32 H82" fill="none" stroke="#ffd34d" stroke-width="6" stroke-linecap="round"/><path d="M20 82 V44 a24 24 0 0 1 24 -24 H82" fill="none" stroke="#ffd34d" stroke-width="3" opacity=".7"/><circle cx="40" cy="40" r="9" fill="none" stroke="#ffd34d" stroke-width="4"/><path d="M40 31 a9 9 0 0 1 0 18" fill="#ffd34d"/></symbol>
+</defs></svg>
+<div class="f" id="sA"><div class="bg"></div><div class="veil"></div>
+ <div class="card A"><div class="in">
+  <div class="pattern"></div><div class="rays"></div><div class="glow"></div>
+  <svg class="corner" style="left:10px;top:10px"><use href="#cloud"/></svg>
+  <svg class="corner" style="right:10px;top:10px;transform:scaleX(-1)"><use href="#cloud"/></svg>
+  <svg class="corner" style="left:10px;bottom:10px;transform:scaleY(-1)"><use href="#cloud"/></svg>
+  <svg class="corner" style="right:10px;bottom:10px;transform:scale(-1,-1)"><use href="#cloud"/></svg>
+  <div class="title">Sect Starter Pack</div>
+  <div class="sub o5">Only once</div>
+  <div class="hero"><img src="immortal.png"><div class="tag o">Immortal +400%</div></div>
+  <div class="row">
+   <div class="chip"><img src="pack2.png"><div><b class="o5">Qi Chest</b><i class="o5">1 hour of income</i></div></div>
+   <div class="chip"><img src="pill.png"><div><b class="o5">2x Qi</b><i class="o5">10 minutes</i></div></div>
+  </div>
+  <div class="buy"><div class="btn o5"><svg width="40" height="40"><use href="#rbx"/></svg>75</div><div class="later o5">Not now</div></div>
+  <span class="spark" style="left:190px;top:150px">✦</span><span class="spark" style="right:200px;top:120px;font-size:40px">✦</span><span class="spark" style="right:230px;top:290px;font-size:22px">✦</span><span class="spark" style="left:220px;top:300px;font-size:20px">✦</span>
+ </div></div>
+ <div class="lbl">Starter Pack A · red lacquer and gold · 75 R$, once, right after the Welcome Pouch</div>
+</div>
+<div class="f" id="sB"><div class="bg"></div><div class="veil"></div>
+ <div class="card B"><div class="in">
+  <div class="pattern"></div><div class="rays"></div><div class="glow"></div>
+  <svg class="corner" style="left:10px;top:10px"><use href="#cloud"/></svg>
+  <svg class="corner" style="right:10px;top:10px;transform:scaleX(-1)"><use href="#cloud"/></svg>
+  <svg class="corner" style="left:10px;bottom:10px;transform:scaleY(-1)"><use href="#cloud"/></svg>
+  <svg class="corner" style="right:10px;bottom:10px;transform:scale(-1,-1)"><use href="#cloud"/></svg>
+  <div class="title">Sect Starter Pack</div>
+  <div class="sub o5">Only once</div>
+  <div class="hero"><img src="immortal.png"><div class="tag o">Immortal +400%</div></div>
+  <div class="row">
+   <div class="chip"><img src="pack2.png"><div><b class="o5">Qi Chest</b><i class="o5">1 hour of income</i></div></div>
+   <div class="chip"><img src="pill.png"><div><b class="o5">2x Qi</b><i class="o5">10 minutes</i></div></div>
+  </div>
+  <div class="buy"><div class="btn o5"><svg width="40" height="40"><use href="#rbx"/></svg>75</div><div class="later o5">Not now</div></div>
+  <span class="spark" style="left:190px;top:150px">✦</span><span class="spark" style="right:200px;top:120px;font-size:40px">✦</span><span class="spark" style="right:230px;top:290px;font-size:22px">✦</span><span class="spark" style="left:220px;top:300px;font-size:20px">✦</span>
+ </div></div>
+ <div class="lbl">Starter Pack B · night jade and gold · 75 R$, once, right after the Welcome Pouch</div>
+</div>
+</body></html>

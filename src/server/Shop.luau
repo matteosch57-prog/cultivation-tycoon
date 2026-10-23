@@ -16,7 +16,7 @@ local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = {}
 
 local STUDIO = RunService:IsStudio()
-local api -- { sessions, rate, publish, save, canSave, notify, passChanged, addDisciple, remotes, style, styleP, palette, cultivators }
+local api -- { sessions, rate, publish, save, canSave, notify, passChanged, addDisciple, tideBell, remotes, style, styleP, palette, cultivators }
 -- rate(s, away) = qi/s of a session; save(s) -> true when the write landed
 
 local function itemById(list, id)
@@ -73,13 +73,29 @@ function Shop.debugPass(player, s, key)
 	end
 end
 
+-- One item may grant several things (the Sect Starter Pack: a disciple, qi and 2x time); each field
+-- is handled on its own. The qi is counted before the disciple joins (the income it was bought at).
 local function grantProduct(player, s, it)
 	local d = s.data
+	local now = workspace:GetServerTimeNow()
 	if it.key == "pill" then
-		local now = workspace:GetServerTimeNow()
 		d.boostUntil = math.max(now, d.boostUntil or 0) + Config.PILL_DURATION
 		api.notify:FireClient(player, "shopPill", Config.PILL_DURATION)
-	elseif it.rarity then
+		return
+	elseif it.key == "tidebell" then
+		api.tideBell(player) -- a Spirit Tide for the whole server, the buyer's name on the banner
+		return
+	end
+	local gain = 0
+	if it.seconds then
+		gain = math.floor(api.rate(s, true) * it.seconds)
+		d.qi += gain
+		Telemetry.iapSource(player, d, gain, it.key)
+	end
+	if it.pill then
+		d.boostUntil = math.max(now, d.boostUntil or 0) + it.pill -- like the Instant Pill: adds to a running one
+	end
+	if it.rarity then
 		-- bought disciples are permanent (D28): counted BEFORE seating, so the cap trim in
 		-- addDisciple can never drop the one just paid for; a reincarnation must keep them too
 		d.boughtDisciples = d.boughtDisciples or {}
@@ -89,15 +105,26 @@ local function grantProduct(player, s, it)
 		if it.qiBonus then
 			-- the Welcome Pouch: qi forever on top of its disciple (Main's rate reads data.qiBonus)
 			d.qiBonus = (d.qiBonus or 0) + it.qiBonus
+			d.welcomeAt = d.welcomeAt or d.playSec or 0 -- the Starter Pack offer waits STARTER_OFFER.after from here
 			api.notify:FireClient(player, "shopWelcome", it.rarity, kept, it.qiBonus)
+		elseif it.seconds or it.pill then
+			-- the Starter Pack: the recruit reveal shows its disciple, then the qi and the 2x
+			api.notify:FireClient(player, "shopStarter", it.rarity, kept, gain, it.pill or 0)
 		else
 			api.notify:FireClient(player, "shopDisciple", it.rarity, kept)
 		end
 	elseif it.seconds then
-		local gain = math.floor(api.rate(s, true) * it.seconds)
-		d.qi += gain
-		Telemetry.iapSource(player, d, gain, it.key)
 		api.notify:FireClient(player, "shopQi", gain, it.name, it.key)
+	end
+end
+
+-- data.shopBought[key] = times bought (enforces `limit`)
+local function countBuy(player, s, it)
+	local d = s.data
+	d.shopBought = d.shopBought or {}
+	d.shopBought[it.key] = (d.shopBought[it.key] or 0) + 1
+	if it.limit and d.shopBought[it.key] >= it.limit then
+		player:SetAttribute("Limit_" .. it.key, true) -- the shop shows it as owned
 	end
 end
 
@@ -119,11 +146,7 @@ local function processReceipt(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	grantProduct(player, s, it)
-	d.shopBought = d.shopBought or {} -- [key] = times bought (enforces `limit`)
-	d.shopBought[it.key] = (d.shopBought[it.key] or 0) + 1
-	if it.limit and d.shopBought[it.key] >= it.limit then
-		player:SetAttribute("Limit_" .. it.key, true) -- the shop shows it as owned
-	end
+	countBuy(player, s, it)
 	table.insert(d.receipts, info.PurchaseId)
 	while #d.receipts > Config.RECEIPTS_KEPT do
 		table.remove(d.receipts, 1)
@@ -160,8 +183,98 @@ function Shop.maybeWelcome(player, s, pad)
 		return
 	end
 	d.welcomeOffered = true
+	d.welcomeAt = d.welcomeAt or played
 	Telemetry.custom(player, "Shop", "offer", "welcome", realm(s))
 	api.notify:FireClient(player, "welcomeOffer")
+end
+
+-- The Sect Starter Pack offer (Config.STARTER_OFFER): once per player, the first time a building with
+-- a `feature` is bought once the Welcome Pouch was bought or its card was shown, at least `after` s of
+-- play after that. Main calls it after every build, right after maybeWelcome.
+function Shop.maybeStarter(player, s, pad)
+	local d = s.data
+	local it = Config.shopItem("starter")
+	if not it or d.starterOffered or not pad.feature or (it.id == 0 and not STUDIO) then
+		return
+	end
+	local bought = d.shopBought or {}
+	if (bought.starter or 0) >= (it.limit or 1) then
+		return
+	end
+	if not (d.welcomeOffered or (bought.welcome or 0) > 0) then
+		return
+	end
+	-- saves from before the Starter Pack have no welcomeAt: their Welcome card is long past
+	if (d.playSec or 0) < (d.welcomeAt or 0) + Config.STARTER_OFFER.after then
+		return
+	end
+	d.starterOffered = true
+	Telemetry.custom(player, "Shop", "offer", "starter", realm(s))
+	api.notify:FireClient(player, "starterOffer")
+end
+
+-- why the Tide Bell cannot ring now (nil = it can): a tide is running, or the Heavenly Altar is open
+-- or about to open (its heads-up is out; the altar never shares the sky with a tide)
+local function tideBellBlocked()
+	local now = workspace:GetServerTimeNow()
+	if (workspace:GetAttribute("TideUntil") or 0) > now then
+		return "tide"
+	end
+	if (workspace:GetAttribute("AltarUntil") or 0) > now or (workspace:GetAttribute("AltarNext") or math.huge) - now <= Config.ALTAR_WARN then
+		return "altar"
+	end
+	return nil
+end
+
+-- The checks before a prompt (and the Studio debug buy): false = refused, the player was told why.
+local function mayBuy(player, s, it)
+	local key = it.key
+	if it.minRealm and (s.data.best or s.data.realm) < it.minRealm then
+		api.notify:FireClient(player, "shopGate", it.name, Config.realmName(it.minRealm))
+		return false
+	end
+	if it.limit and ((s.data.shopBought or {})[key] or 0) >= it.limit then
+		api.notify:FireClient(player, "shopLimit", it.name)
+		return false
+	end
+	if key == "tidebell" then
+		local why = tideBellBlocked()
+		if why then
+			api.notify:FireClient(player, "tideBellNo", why)
+			return false
+		end
+	end
+	if it.rarity then
+		-- never sell a disciple that could not stay: a full list of stronger ones, or a list already
+		-- holding DISCIPLE_CAP bought ones (they are never trimmed, so this bounds the list and the
+		-- save now that disciples have no buy limit)
+		local list = s.data.disciples
+		local weakest = list[#list] and Config.discBonus(list[#list], (s.data.discShiny or {})[#list]) or 0
+		local paid = 0
+		for _, n in s.data.boughtDisciples or {} do
+			paid += n
+		end
+		if (#list >= Config.DISCIPLE_CAP and weakest >= Config.rarity(it.rarity).bonus) or paid >= Config.DISCIPLE_CAP then
+			api.notify:FireClient(player, "shopFull", it.name)
+			return false
+		end
+	end
+	return true
+end
+
+-- Studio test hook (DebugSet "buy", key): the prompt's checks, then the receipt's grant, with no
+-- purchase (the ids may still be 0). Returns true when it was granted.
+function Shop.debugBuy(player, s, key)
+	local it, isPass = Config.shopItem(key)
+	if not STUDIO or not it or isPass or not mayBuy(player, s, it) then
+		return false
+	end
+	grantProduct(player, s, it)
+	countBuy(player, s, it)
+	api.publish(player)
+	Telemetry.custom(player, "Shop", "bought", it.key, realm(s))
+	print(string.format("[Tycoon][shop] debug granted %s to %d", it.key, player.UserId))
+	return true
 end
 
 -- One prompt per player per second; the item must exist and not be owned.
@@ -176,25 +289,8 @@ local function prompt(player, key)
 		return
 	end
 	local it, isPass = Config.shopItem(key)
-	if not it or it.id == 0 or (isPass and s.passes[key]) then
+	if not it or it.id == 0 or (isPass and s.passes[key]) or not mayBuy(player, s, it) then
 		return
-	end
-	if it.minRealm and (s.data.best or s.data.realm) < it.minRealm then
-		api.notify:FireClient(player, "shopGate", it.name, Config.realmName(it.minRealm))
-		return
-	end
-	if it.limit and ((s.data.shopBought or {})[key] or 0) >= it.limit then
-		api.notify:FireClient(player, "shopLimit", it.name)
-		return
-	end
-	if it.rarity then
-		-- never sell a disciple that could not stay: a full list of stronger ones
-		local list = s.data.disciples
-		local weakest = list[#list] and Config.discBonus(list[#list], (s.data.discShiny or {})[#list]) or 0
-		if #list >= Config.DISCIPLE_CAP and weakest >= Config.rarity(it.rarity).bonus then
-			api.notify:FireClient(player, "shopFull", it.name)
-			return
-		end
 	end
 	lastPrompt[player] = now
 	Telemetry.custom(player, "Shop", "prompt", key, realm(s))

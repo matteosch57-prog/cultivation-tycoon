@@ -603,21 +603,34 @@ Config.SHOP_PRODUCTS = {
 	{ key = "pack3", id = 3721095401, name = "Qi Vault", line = "6 hours of income", seconds = 21600 },
 	-- a disciple of a FIXED rarity (never random, R8); joins like a recruit (takes the weakest seat
 	-- when full). Every tier from Elder up is sold (owner, D28), priced by the owner as a ladder.
-	{ key = "elder", id = 3721095583, name = "Elder", line = "+150% Qi disciple", rarity = "Elder", limit = 8 },
-	{ key = "immortal", id = 3721095692, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal", limit = 8 },
-	-- `limit` = times one player may buy it: the chase tiers once each, Elder / Immortal one sect's
-	-- worth (bought disciples are never trimmed, so this bounds the list and the save). Every item is on
-	-- sale at every realm (owner 2026-10-22: "open all products to any level"); an item may still set
-	-- `minRealm` (Shop.luau and Shop.client read it), none does.
-	{ key = "celestial", id = 3721095787, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial", limit = 1 },
-	{ key = "dao", id = 3721095866, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor", limit = 1 },
-	{ key = "emperor", id = 3721095940, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor", limit = 1 },
-	{ key = "primordial", id = 3721095995, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial", limit = 1 },
+	-- No buy limit (owner 2026-10-23: "let people buy the disciples as much as they want"). Bought
+	-- disciples are never trimmed, so Shop.luau bounds the list and the save instead: it refuses the
+	-- prompt when the newcomer could not stay (a full sect of stronger ones, or DISCIPLE_CAP bought ones
+	-- already). Every item is on sale at every realm (owner 2026-10-22: "open all products to any
+	-- level"); an item may still set `minRealm` (Shop.luau and Shop.client read it), none does.
+	{ key = "elder", id = 3721095583, name = "Elder", line = "+150% Qi disciple", rarity = "Elder" },
+	{ key = "immortal", id = 3721095692, name = "Immortal", line = "+400% Qi disciple", rarity = "Immortal" },
+	{ key = "celestial", id = 3721095787, name = "Celestial", line = "+900% Qi disciple", rarity = "Celestial" },
+	{ key = "dao", id = 3721095866, name = "Dao Ancestor", line = "+2,000% Qi disciple", rarity = "Dao Ancestor" },
+	{ key = "emperor", id = 3721095940, name = "Heavenly Emperor", line = "+4,500% Qi disciple", rarity = "Heavenly Emperor" },
+	{ key = "primordial", id = 3721095995, name = "Primordial", line = "+10,000% Qi disciple", rarity = "Primordial" },
+	-- Tide Bell (owner 2026-10-23, Bee Swarm Simulator's Night Bell): a Spirit Tide starts now for the
+	-- whole server, the buyer's name on the banner. Repeatable; refused while a tide runs or the altar
+	-- is open or about to open (Shop.luau)
+	{ key = "tidebell", id = 0, name = "Tide Bell", line = "x2 Qi for the whole server" },
+	-- Sect Starter Pack (owner 2026-10-23, card "B night jade"): once per player, one item granting three
+	-- things: an Immortal (a bought disciple), `seconds` of income in qi (like the Qi Chest) and `pill` s
+	-- of 2x Qi added to boostUntil (like the Instant Pill). Offered once by STARTER_OFFER; `short` = the
+-- name on its Shop tile
+	{ key = "starter", id = 0, name = "Sect Starter Pack", short = "Starter Pack", line = "Immortal + Qi Chest + 2x Qi", rarity = "Immortal", seconds = 3600, pill = 600, limit = 1 },
 }
 Config.PASS_QI_MULT = 2 -- 2x Qi pass: every qi/s, offline and gifts included
 -- The Welcome Pouch offer card: once, after a big building (one with a `feature`) from `after` s of
 -- play, or after any building from `late` s (owner: "after a big building after 5-10 minutes")
 Config.WELCOME = { after = 300, late = 600 }
+-- The Sect Starter Pack offer card: once, the first time a building with a `feature` is bought once the
+-- Welcome Pouch was bought or its card was shown (declined), at least `after` s of play after that
+Config.STARTER_OFFER = { after = 300 }
 Config.VIP_SLOTS = 1
 -- The four cultivator looks (Cultivators.luau): each disciple keeps the one it was rolled with (D60)
 Config.DISCIPLE_LOOKS = { "sword", "lotus", "monk", "elder" }
@@ -1080,6 +1093,9 @@ Config.ICON_ATLAS = {
 		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
 		sworn = 24, seat = 25, isles = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
 		bag = 3, -- the shop's qi pouch
+		-- the Tide Bell: its own bell is cell 31 of art/ui/icon_atlas.png (docs/art/mocks/icons.js, key
+		-- "bell"); the tide wave stands in until the owner uploads it, then set tidebell = 31 with the new id
+		tidebell = 7,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"

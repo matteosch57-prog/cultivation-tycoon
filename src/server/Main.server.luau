@@ -563,6 +563,15 @@ local function boosted(data)
 end
 
 -- Spirit Tide: a server-wide event, every peak on the server earns TIDE_MULT x while it lasts
+-- Start (or lengthen) a Spirit Tide now: TIDE_DURATION more seconds on top of any tide still running,
+-- so a tide that lands inside another never eats the time left. TideNext (the schedule) is untouched.
+-- `by` = the player who rang the Tide Bell (their name goes on everyone's banner), nil = the schedule.
+local function startTide(by)
+	local now = workspace:GetServerTimeNow()
+	workspace:SetAttribute("TideUntil", math.max(workspace:GetAttribute("TideUntil") or 0, now) + Config.TIDE_DURATION)
+	notify:FireAllClients("tide", Config.TIDE_DURATION, by and by.DisplayName or nil)
+end
+
 local function tideOn()
 	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
 end
@@ -1206,6 +1215,7 @@ refreshPads = function(player, s)
 					publish(player)
 					notify:FireClient(player, "built", pad.name)
 					Shop.maybeWelcome(player, s, pad)
+					Shop.maybeStarter(player, s, pad)
 				end)
 				s.pads[pad.id] = part
 			end
@@ -2414,6 +2424,18 @@ if game:GetService("RunService"):IsStudio() then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
 				return true
 			end
+			if key == "buy" then
+				-- DebugSet:Invoke(player, "buy", "starter") runs a product's prompt checks and grants it
+				-- as its receipt would (no purchase); false = refused
+				return Shop.debugBuy(player, s, value)
+			end
+			if key == "offers" then
+				-- DebugSet:Invoke(player, "offers") runs the after-build offers as if a building with a
+				-- `feature` had just been bought (the Welcome Pouch, then the Starter Pack card)
+				Shop.maybeWelcome(player, s, { feature = true })
+				Shop.maybeStarter(player, s, { feature = true })
+				return true
+			end
 			if key == "friend" then
 				-- DebugSet:Invoke(player, "friend", other) counts `other` as a friend here (Studio test
 				-- players are never Roblox friends; `other` may be `player` itself in a solo Play)
@@ -2491,6 +2513,10 @@ Shop.init({
 		publish(s.player)
 		return kept
 	end,
+	tideBell = function(player)
+		startTide(player)
+		print(string.format("[Tycoon] spirit tide rung by %d (Tide Bell)", player.UserId))
+	end,
 	remotes = remotes,
 	style = Style,
 	kit = Kit,
@@ -2560,9 +2586,8 @@ local function tideTick()
 	end
 	if now >= nextAt then
 		tideWarned = false
-		workspace:SetAttribute("TideUntil", now + Config.TIDE_DURATION)
 		workspace:SetAttribute("TideNext", now + Config.TIDE_INTERVAL)
-		notify:FireAllClients("tide", Config.TIDE_DURATION)
+		startTide()
 		local n = 0
 		for _ in sessions do
 			n += 1

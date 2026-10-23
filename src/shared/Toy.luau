@@ -984,6 +984,11 @@ function Toy.icon(parent, key, size, props)
 		local box = atlasIcon(parent, "shop", size, props)
 		Toy.disciple(box, math.floor(size * 0.6), item.rarity, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1.12, 1.12), ZIndex = 4 })
 		return box
+	elseif item and item.rarity and item.seconds then
+		-- the Sect Starter Pack: the gift box with its disciple peeking out of the corner
+		local box = atlasIcon(parent, "gift", size, props)
+		Toy.disciple(box, math.floor(size * 0.6), item.rarity, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1.12, 1.12), ZIndex = 4 })
+		return box
 	elseif item and item.rarity then
 		return well(parent, size, Config.rarityIndex(item.rarity), props)
 	elseif key == "robux" then
