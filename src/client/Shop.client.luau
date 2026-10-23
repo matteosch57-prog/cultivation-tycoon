@@ -780,6 +780,55 @@ local function chip(parent, order, icon, name, line)
 	text(words, line, px(10), CREAM, { LayoutOrder = 2, ZIndex = 4 })
 end
 
+-- The real disciple (as the Streak and Gifts cards draw it): a copy of the one standing in this
+-- peak's Disciple Garden (Shop.luau, ForSale_<key>) facing the camera in a viewport, over the rarity's
+-- UI aura; the atlas figure in its well if the garden has not streamed in.
+local function heroFigure(parent, size, rarity, props)
+	local key = Config.shopKeyOf(rarity)
+	local sect = workspace:FindFirstChild("Sect")
+	local peak = sect and sect:FindFirstChild("Peak" .. tostring(player:GetAttribute("PlotIndex")))
+	local garden = peak and peak:FindFirstChild("DiscipleGarden", true)
+	local src = garden and key and garden:FindFirstChild("ForSale_" .. key, true)
+	local copy
+	if src and src:IsA("Model") then
+		local old = src.Archivable
+		src.Archivable = true
+		copy = src:Clone()
+		src.Archivable = old
+	end
+	if not copy then
+		return Toy.disciple(parent, size, rarity, props)
+	end
+	local holder = Toy.frame(parent, { Size = UDim2.fromOffset(size, size) })
+	for k, v in props or {} do
+		holder[k] = v
+	end
+	Toy.aura(holder, Config.rarityIndex(rarity), size)
+	local vp = Instance.new("ViewportFrame")
+	vp.BackgroundTransparency = 1
+	vp.Size = UDim2.fromScale(1, 1)
+	vp.ZIndex = (props and props.ZIndex or 1) + 2
+	vp.Ambient = Color3.fromRGB(170, 165, 175)
+	vp.LightColor = Color3.fromRGB(255, 245, 230)
+	vp.LightDirection = Vector3.new(-0.3, -1, 0.5)
+	vp.Parent = holder
+	for _, d in copy:GetDescendants() do
+		if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("Sound") then
+			d:Destroy()
+		end
+	end
+	copy:PivotTo(CFrame.identity) -- the seat faces its LookVector: -Z here
+	copy.Parent = vp
+	local cf, ext = copy:GetBoundingBox()
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = 28
+	local focus = cf.Position + Vector3.new(0, ext.Y * 0.12, 0)
+	cam.CFrame = CFrame.lookAt(focus + Vector3.new(0, ext.Y * 0.08, -ext.Y * 2.3), focus)
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+	return holder
+end
+
 local function showStarter()
 	local it = Config.shopItem("starter")
 	if not it or player:GetAttribute("Limit_starter") then
@@ -820,20 +869,23 @@ local function showStarter()
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
 	panel.Size = UDim2.new(1, -px(12), 1, -px(12))
-	panel.BackgroundColor3 = Color3.new(1, 1, 1)
+	panel.BackgroundTransparency = 1
 	panel.BorderSizePixel = 0
 	panel.ZIndex = 2
 	panel.Parent = holder
 	Toy.corner(panel, UDim.new(0, px(17)))
-	local shade = Instance.new("UIGradient") -- night jade: lighter round the hero, deep at the foot
+	-- night jade on its own back plate: a UIGradient on the CanvasGroup itself would tint everything
+	-- drawn in it (the title, the chips, the button)
+	local back = Toy.frame(panel, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 1 })
+	local shade = Instance.new("UIGradient") -- lighter round the hero, deep at the foot
 	shade.Rotation = 90
 	shade.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, JADE_MID), ColorSequenceKeypoint.new(0.35, JADE_TOP), ColorSequenceKeypoint.new(0.7, JADE_MID), ColorSequenceKeypoint.new(1, JADE_DEEP) })
-	shade.Parent = panel
+	shade.Parent = back
 	-- soft gold rays turning slowly and a warm glow behind the hero
 	local heroY = px(124)
-	Toy.atlasPiece(panel, "glow", px(380), px(300), JADE_TOP, 0.2, { Position = UDim2.new(0.5, 0, 0, heroY) })
-	local rays = Toy.atlasPiece(panel, "rays12", px(560), px(560), Color3.fromHex("FFDC78"), 0.72, { Position = UDim2.new(0.5, 0, 0, heroY) })
-	Toy.atlasPiece(panel, "glow", px(250), px(250), Color3.fromHex("FFE28C"), 0.15, { Position = UDim2.new(0.5, 0, 0, heroY) })
+	Toy.atlasPiece(panel, "glow", px(380), px(300), Color3.fromHex("3FD6A8"), 0.35, { Position = UDim2.new(0.5, 0, 0, heroY), ZIndex = 2 })
+	local rays = Toy.atlasPiece(panel, "rays12", px(560), px(560), Color3.fromHex("FFDC78"), 0.55, { Position = UDim2.new(0.5, 0, 0, heroY), ZIndex = 2 })
+	Toy.atlasPiece(panel, "glow", px(250), px(250), Color3.fromHex("FFE28C"), 0.2, { Position = UDim2.new(0.5, 0, 0, heroY), ZIndex = 2 })
 	for _, sx in { -1, 1 } do
 		for _, sy in { -1, 1 } do
 			ornament(panel, sx, sy)
@@ -853,9 +905,9 @@ local function showStarter()
 	tg.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("FFFBE0")), ColorSequenceKeypoint.new(0.55, PALE_GOLD), ColorSequenceKeypoint.new(1, Color3.fromHex("E08A12")) })
 	tg.Parent = title
 	text(body, "Only once", px(14), CREAM, { LayoutOrder = 2, ZIndex = 4 })
-	-- the hero: the Immortal in its gold well with its aura, its bonus under it
+	-- the hero: the real Immortal with its aura, its bonus under it
 	local r = Config.rarity(it.rarity)
-	Toy.disciple(body, px(122), it.rarity, { LayoutOrder = 3, ZIndex = 4 })
+	heroFigure(body, px(128), it.rarity, { LayoutOrder = 3, ZIndex = 4 })
 	text(body, string.format("%s +%d%%", it.rarity, math.floor(r.bonus * 100 + 0.5)), px(20), PALE_GOLD, { LayoutOrder = 4, ZIndex = 4 })
 	local chips = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 5, ZIndex = 3 })
 	Toy.list(chips, true, px(12), { VerticalAlignment = Enum.VerticalAlignment.Center })
