@@ -620,10 +620,11 @@ Config.SWORD_RIDE = {
 	bound = 540, -- studs from the hub (the peaks sit PLOT_RADIUS 280 out, their islets up to ~230 more)
 	speedSlack = 1.5,
 	speedStrikes = 3,
+	-- `bladeTopOffset`: studs from the blade's box top to where the feet stand (SwordLook BladeTop)
 	tiers = {
-		{ key = "swordJade", speed = 1.5, color = Color3.fromHex("8FF5D0"), trail = 4537267850, trailLife = 0.45, trailWidth = 1.6 },
-		{ key = "swordHeavenly", speed = 1.75, color = Color3.fromHex("FFD34D"), trail = 6480618759, trailLife = 0.6, trailWidth = 2.1 },
-		{ key = "swordCelestial", speed = 2, color = Color3.fromHex("9FD8FF"), trail = 94214927232934, trailLife = 0.75, trailWidth = 2.4 },
+		{ key = "swordJade", speed = 1.5, color = Color3.fromHex("8FF5D0"), trail = 4537267850, trailLife = 0.45, trailWidth = 1.6, bladeTopOffset = 0 },
+		{ key = "swordHeavenly", speed = 1.75, color = Color3.fromHex("FFD34D"), trail = 6480618759, trailLife = 0.6, trailWidth = 2.1, bladeTopOffset = 0 },
+		{ key = "swordCelestial", speed = 2, color = Color3.fromHex("9FD8FF"), trail = 94214927232934, trailLife = 0.75, trailWidth = 2.4, bladeTopOffset = -0.4 }, -- the crystal surface mid-blade sits under its box top (the feet stood on the glow),
 	},
 }
 Config.SHOP_PRODUCTS = {
