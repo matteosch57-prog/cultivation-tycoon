@@ -770,6 +770,25 @@ local function build()
 			hidePickLater()
 		end)
 	end
+	-- the odds (R8, Roblox's paid random item rule) and the pity bars: a "%" chip at the end of the
+	-- picker opens them (RecruitOdds.client, later the Disciples book's Odds tab, via Player.OpenOdds)
+	do
+		local col = frame(pick, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = #Config.RECRUIT_COUNTS + 1 })
+		local cl = Instance.new("UIListLayout")
+		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		cl.Parent = col
+		local holder, b = toy(col, UDim2.fromOffset(px(36), px(36)), GOLD, px(18))
+		holder.LayoutOrder = 1
+		text(b, "%", px(18), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		hover(b)
+		b.Activated:Connect(function()
+			local ev = player:FindFirstChild("OpenOdds")
+			if ev then
+				ev:Fire()
+			end
+			hidePickLater()
+		end)
+	end
 	hover(rBtn)
 	ui.seal = { scale = sealScale, rays = rays, glow = glow, ring = ring, orbGlow = orbGlow, orb = orb, shade = orbShade, motes = motes, orbSize = ORB }
 	-- press feel, like the toy buttons
@@ -1094,6 +1113,8 @@ refreshStatic = function()
 	local list = raw == "" and {} or string.split(raw, ",")
 	local looksRaw = player:GetAttribute("DiscLooks") or ""
 	local looks = looksRaw == "" and {} or string.split(looksRaw, ",")
+	local shinyRaw = player:GetAttribute("DiscShiny") or "" -- "1,0,...": Shiny marks, as DiscLooks
+	local shiny = shinyRaw == "" and {} or string.split(shinyRaw, ",")
 	local pulls = {} -- the index (D60): "key=pulls;..."; a disciple's own stars raise its bonus
 	for _, pair in string.split(player:GetAttribute("Index") or "", ";") do
 		local key, n = string.match(pair, "^(.-)=(%d+)$")
@@ -1123,7 +1144,7 @@ refreshStatic = function()
 		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		cl.SortOrder = Enum.SortOrder.LayoutOrder
 		cl.Parent = cell
-		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }) -- its rarity's look and moving aura
+		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }, false, looks[i], shiny[i] == "1") -- its face and its rarity's moving aura
 		if state.discNew and (state.discNew[name] or 0) > 0 then
 			newLeft[name] = (newLeft[name] or state.discNew[name]) - 1
 			if newLeft[name] >= 0 then
@@ -1140,7 +1161,7 @@ refreshStatic = function()
 			ds.Parent = dot
 		end
 		local own = looks[i] and pulls[Config.indexKey(name, looks[i])]
-		text(cell, string.format("+%d%%", math.floor(r.bonus * Config.discipleStarMult(own) * 100 + 0.5)), px(11), r.color, { LayoutOrder = 2 })
+		text(cell, string.format("+%d%%", math.floor(Config.discBonus(name, shiny[i] == "1") * Config.discipleStarMult(own) * 100 + 0.5)), px(11), r.color, { LayoutOrder = 2 })
 	end
 	-- the disciple index (D60, IndexBook.client): a gold book button at the end of the card, with a red
 	-- dot while a star is new (local attribute IndexNew, set by IndexBook where the stars change)
@@ -1194,7 +1215,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()

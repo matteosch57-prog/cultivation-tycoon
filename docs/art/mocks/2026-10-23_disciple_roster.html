@@ -9,6 +9,7 @@
      ?view=names  A: 36 named disciples (rarity x look = the index), drawn busts, odds sheet
      ?view=pity   B: A + pity (Celestial guaranteed by 1,000 recruits, Dao Ancestor by 5,000)
      ?view=shiny  C: A + Shiny (1 in 100 recruits, x1.5 that disciple's bonus)
+     ?view=atlas  the upload sheet art/ui/disciple_faces.png (1024 x 1024, render with a transparent background)
      Rendered at 1300 x 760. -->
 <style>
 *{box-sizing:border-box;margin:0}
@@ -172,5 +173,12 @@ if(view==='shiny'){
    <div style="display:grid;grid-template-columns:repeat(4,64px);gap:8px">${LOOKS.map((L,i)=>bust(L,[4,5,4,6][i],60,i!==2)).join('')}</div>
    <div class="note big">Shiny odds: 1% of every recruit, on top of its rarity.</div></div></div>`;
 }
+if(view==='atlas'){ // the upload sheet: 1024 x 1024, 160 px cells, 6 a row, cell = (tier-1)*4 + look
+  document.body.style.cssText='width:1024px;height:1024px;background:transparent;position:relative';
+  document.head.insertAdjacentHTML('beforeend','<style>body::before{display:none}html{background:transparent}</style>');
+  h='';
+  for(let t=1;t<=9;t++) LOOKS.forEach((L,li)=>{const i=(t-1)*4+li; h+=`<div style="position:absolute;left:${(i%6)*160}px;top:${Math.floor(i/6)*160}px;width:160px;height:160px">${bust(L,t,160)}</div>`;});
+  document.body.innerHTML=h;
+} else
 document.getElementById('w').innerHTML=h;
 </script></body></html>

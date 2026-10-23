@@ -20,6 +20,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local INK = Toy.INK
 local PINK = Color3.fromHex("FFB3A8")
 local WHITE = Color3.new(1, 1, 1)
+local GOLD = Color3.fromHex("FFD34D")
 local R = Config.REVEAL
 
 local gui = Instance.new("ScreenGui")
@@ -127,11 +128,30 @@ local function indexLine(card, one, order)
 	local px = Toy.px
 	local row = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
 	Toy.list(row, true, px(4))
-	Toy.text(row, Config.LOOK_NAMES[one.look] or "", px(18), WHITE, { LayoutOrder = 1 })
 	Toy.stars(row, one.stars or 0, px(16), { LayoutOrder = 2 })
 	if one.newStar then
 		Toy.text(card, "New index star!", px(18), Config.starColor(one.stars), { LayoutOrder = order + 1 })
 	end
+end
+
+-- the card's head (2026-10-23, named disciples): the face, the disciple's name in white, then its rarity
+-- in the rarity's colour (Shiny in front when it is); a recruit without a look (old server) shows the
+-- rarity alone. Returns the rarity label (Primordial cycles its colour) and the bonus it adds.
+local function cardHead(card, rarityName, one, faceSize, nameSize)
+	local px = Toy.px
+	local rarity = Config.rarity(rarityName)
+	local look, shiny = one and one.look, one and one.shiny
+	Toy.disciple(card, faceSize, rarityName, { LayoutOrder = 1 }, true, look, shiny) -- the reveal draws its own aura
+	if look then
+		Toy.text(card, Config.discipleName(rarityName, look) .. "!", nameSize, WHITE, { LayoutOrder = 2 })
+	end
+	local tag = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	Toy.list(tag, true, px(6))
+	if shiny then
+		Toy.text(tag, "Shiny", math.floor(nameSize * 0.55), GOLD, { LayoutOrder = 1 })
+	end
+	local label = Toy.text(tag, look and rarityName or rarityName .. "!", look and math.floor(nameSize * 0.55) or nameSize, rarity.color, { LayoutOrder = 2 })
+	return label, Config.discBonus(rarityName, shiny)
 end
 
 local function start(rarityName, kept, one)
@@ -220,16 +240,15 @@ local function start(rarityName, kept, one)
 	Toy.list(card, false, px(2))
 	local cardScale = Instance.new("UIScale")
 	cardScale.Parent = card
-	Toy.disciple(card, px(118), rarityName, { LayoutOrder = 1 }, true) -- the reveal draws its own aura
-	local nameLabel = Toy.text(card, rarityName .. "!", px(42), rarity.color, { LayoutOrder = 2 })
-	local bonusRow = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	local nameLabel, bonus = cardHead(card, rarityName, one, px(118), px(38))
+	local bonusRow = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
 	Toy.list(bonusRow, true, px(5))
-	Toy.text(bonusRow, string.format("+%d%%", math.floor(rarity.bonus * 100 + 0.5)), px(24), WHITE, { LayoutOrder = 1 })
+	Toy.text(bonusRow, string.format("+%d%%", math.floor(bonus * 100 + 0.5)), px(24), WHITE, { LayoutOrder = 1 })
 	Toy.icon(bonusRow, "qi", px(26), { LayoutOrder = 2 })
 	if not kept then
-		Toy.text(card, "Sect full", px(18), PINK, { LayoutOrder = 4 })
+		Toy.text(card, "Sect full", px(18), PINK, { LayoutOrder = 5 })
 	end
-	indexLine(card, one, 5)
+	indexLine(card, one, 6)
 
 	local t0 = os.clock()
 	local state = { burst = false }
@@ -402,7 +421,7 @@ local function startMulti(results)
 	local endAt = zoomAt + M.hold
 	local best = 1
 	for i, r in results do
-		if Config.rarityIndex(r.rarity) > Config.rarityIndex(results[best].rarity) then
+		if Config.discBonus(r.rarity, r.shiny) > Config.discBonus(results[best].rarity, results[best].shiny) then
 			best = i
 		end
 	end
@@ -481,7 +500,8 @@ local function startMulti(results)
 		tst.Thickness = math.max(2, px(small and 2 or 4))
 		tst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		tst.Parent = it.tile
-		Toy.disciple(it.tile, size, r.rarity, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true)
+		local faced = Config.DISCIPLE_FACES.image ~= "" and r.look -- a face fills the tile, the old figure stands on its floor
+		Toy.disciple(it.tile, size, r.rarity, faced and { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.96, 0.96), ZIndex = 5 } or { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true, r.look, r.shiny)
 		if r.newStar then -- this pull lit an index star (D60): that star, in its colour, in the tile's corner
 			Toy.text(it.tile, "★", math.max(px(10), size * 0.34), Config.starColor(r.stars), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(1), 0, 0), ZIndex = 7 })
 		end
@@ -535,16 +555,15 @@ local function startMulti(results)
 	Toy.list(card, false, px(2))
 	local cardScale = Instance.new("UIScale")
 	cardScale.Parent = card
-	Toy.disciple(card, px(96), bestName, { LayoutOrder = 1 }, true)
-	local nameLabel = Toy.text(card, bestName .. "!", px(36), rarity.color, { LayoutOrder = 2 })
-	local bonusRow = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+	local nameLabel, bonus = cardHead(card, bestName, results[best], px(96), px(32))
+	local bonusRow = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
 	Toy.list(bonusRow, true, px(5))
-	Toy.text(bonusRow, string.format("+%d%%", math.floor(rarity.bonus * 100 + 0.5)), px(21), WHITE, { LayoutOrder = 1 })
+	Toy.text(bonusRow, string.format("+%d%%", math.floor(bonus * 100 + 0.5)), px(21), WHITE, { LayoutOrder = 1 })
 	Toy.icon(bonusRow, "qi", px(23), { LayoutOrder = 2 })
 	if not results[best].kept then
-		Toy.text(card, "Sect full", px(16), PINK, { LayoutOrder = 4 })
+		Toy.text(card, "Sect full", px(16), PINK, { LayoutOrder = 5 })
 	end
-	indexLine(card, results[best], 5)
+	indexLine(card, results[best], 6)
 
 	local flash = Toy.frame(gui, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BackgroundColor3 = WHITE, ZIndex = 7 })
 

@@ -706,7 +706,7 @@ Config.PRICE_FLOOR_S = 20
 -- the first life stays fast (D25 "first realms fast", the 5-10 min hook): the floor starts here
 Config.PRICE_FLOOR_FROM_LIFE = 2
 Config.RARITIES = {
-	{ name = "Outer Disciple", weight = 60, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
+	{ name = "Outer Disciple", weight = 59.84, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
 	{ name = "Core Disciple", weight = 9, bonus = 0.60, color = Color3.fromRGB(80, 150, 255) },
 	{ name = "Elder", weight = 2.5, bonus = 1.50, color = Color3.fromRGB(190, 100, 255) },
@@ -716,6 +716,29 @@ Config.RARITIES = {
 	{ name = "Heavenly Emperor", weight = 0.008, bonus = 45.00, color = Color3.fromRGB(255, 140, 40) },
 	{ name = "Primordial", weight = 0.002, bonus = 100.00, color = Color3.fromRGB(255, 110, 220) }, -- its aura cycles every colour
 }
+
+-- The weights are the shown odds in % and add up to exactly 100 (Roblox's paid random item rule:
+-- qi is sold for Robux, so every recruit shows its odds first; Outer took the 0.16 they were over).
+
+-- Named disciples (owner pick "All" 2026-10-23, mock docs/art/mocks/2026-10-23_disciple_roster.html):
+-- like Bee Swarm Simulator's bees and Anime Vanguards' units, every index entry (rarity x look) is a
+-- character with its own name and face; the rarity is its frame and colour. Names are labels only:
+-- data.index stays keyed by Config.indexKey(rarity, look). Index = rarity tier 1..9.
+Config.DISCIPLE_NAMES = {
+	sword = { "Ah Fan", "Shen Yi", "Zhao Feng", "Swift Blade Han", "Azure Sword Lan", "Starfall Chen", "Sword Ancestor", "Dragon Emperor", "Pangu" },
+	lotus = { "Xiao Mei", "Lin Er", "Su Qing", "Moon Lotus Yue", "Jade Fairy Ling", "Cloud Weaver Xi", "Lotus Mother", "Phoenix Empress", "Nuwa" },
+	monk = { "Little Bao", "Brother Tie", "Monk Kong", "Iron Bell Ming", "Golden Bell Bo", "Thunder Monk Lei", "Furnace Patriarch", "Sun King", "Hundun" },
+	elder = { "Old Wu", "Uncle Gu", "Master Lu", "Old Pine Song", "Crane Immortal He", "Moon Sage Yin", "Yin-Yang Patriarch", "Star Emperor", "Hongjun" },
+}
+-- Pity (copy Anime Defenders / Anime Vanguards: a guaranteed Legendary at 50 pulls, Mythic at 400):
+-- `at` recruits in a row without `rarity` or better makes the next one that rarity. Our players
+-- recruit far more (sim_game: ~700 on day 1, ~56,000 by day 30), so the guarantees sit on the high
+-- tiers. Every roll counts (recruits, idle chest, gifts' summons); data.pity holds the counts.
+Config.PITY = { { rarity = "Celestial", at = 1000 }, { rarity = "Dao Ancestor", at = 5000 } }
+-- Shiny (copy Pet Simulator 99's Shiny pets): SHINY_CHANCE of every roll comes out Shiny, on top of
+-- its rarity: a sparkling frame and SHINY_MULT x its bonus. data.shinyIndex marks each entry found.
+Config.SHINY_CHANCE = 0.01
+Config.SHINY_MULT = 1.5
 
 -- Building palettes cycle with the realm.
 Config.PALETTES = {
@@ -1031,6 +1054,19 @@ Config.DISCIPLE_ATLAS = {
 	},
 }
 
+-- The named disciples' faces (2026-10-23): one 1024 x 1024 sheet of 160 px portraits drawn by
+-- docs/art/mocks/2026-10-23_disciple_roster.html?view=atlas (art/ui/disciple_faces.png), 6 a row,
+-- cell = (tier - 1) x 4 + look - 1 in DISCIPLE_LOOKS order. "" until the owner uploads it (R11): the
+-- old per-rarity figure shows until then.
+Config.DISCIPLE_FACES = { image = "", cell = 160, cols = 6 }
+-- the { x, y } px offset of a rarity and look's face in DISCIPLE_FACES
+function Config.faceCell(rarityName, look)
+	local li = table.find(Config.DISCIPLE_LOOKS, look) or 1
+	local i = (Config.rarityIndex(rarityName) - 1) * #Config.DISCIPLE_LOOKS + li - 1
+	local f = Config.DISCIPLE_FACES
+	return Vector2.new((i % f.cols) * f.cell, (i // f.cols) * f.cell)
+end
+
 -- The UI icon set (owner 2026-10-22: the box-built icons "look AI"; pick A "sticker" of
 -- docs/art/mocks/icons_board.jpg): one uploaded 1024 x 1024 sheet of 128 px cells drawn by
 -- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
@@ -1111,6 +1147,17 @@ end
 -- seconds from the Recruit press to the burst (Juice lights the platform then)
 function Config.revealBurst(name)
 	return Config.REVEAL.fly + (Config.rarityIndex(name) - 1) * Config.REVEAL.step
+end
+
+-- a disciple's name: its rarity's tier in its look's list (Config.DISCIPLE_NAMES)
+function Config.discipleName(rarityName, look)
+	local names = Config.DISCIPLE_NAMES[look] or Config.DISCIPLE_NAMES.sword
+	return names[Config.rarityIndex(rarityName)] or rarityName
+end
+
+-- a disciple's bonus: its rarity's, x SHINY_MULT when Shiny
+function Config.discBonus(rarityName, shiny)
+	return Config.rarity(rarityName).bonus * (shiny and Config.SHINY_MULT or 1)
 end
 
 function Config.rarity(name)

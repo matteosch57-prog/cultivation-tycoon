@@ -20,7 +20,6 @@ local Sfx = require(Shared:WaitForChild("Sfx"))
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
 local GREY = Color3.fromHex("9A8FA8")
-local SHAPE = Color3.fromHex("241C2C")
 local JADE = Color3.fromHex("59D39F")
 local INK = Toy.INK
 
@@ -59,110 +58,51 @@ local function readIndex()
 	return out
 end
 
+-- the ShinyIndex attribute: "Elder|lotus;Core Disciple|sword" -> { [key] = true } (found Shiny)
+local function readShiny()
+	local out = {}
+	for _, key in string.split(player:GetAttribute("ShinyIndex") or "", ";") do
+		if key ~= "" then
+			out[key] = true
+		end
+	end
+	return out
+end
+
 local seen = {} -- stars per entry at the last close: a tile with more since says NEW
 local close
+local nameLine -- the line under the grid: the tapped disciple's name (named disciples, 2026-10-23)
+local shinyFound = {}
 
--- a small dark pill (the pull count, the stars)
-local function pill(parent, props)
-	local f = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = Color3.fromHex("1E1726") })
-	for k, v in props or {} do
-		f[k] = v
-	end
-	Toy.corner(f, UDim.new(1, 0))
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(4)), UDim.new(0, px(4))
-	pad.Parent = f
-	Toy.list(f, true, 0)
-	return f
-end
-
--- One entry as a toy card (owner 2026-10-22: "make it sexier, the frames and add the auras"): a solid
--- shadow, a face lit from the top in the rarity's colours, an ink rim, an inner rim in the rarity's
--- colour (the star colour of each full row of five: gold, red, blue), the toy buttons' glass cap, and the disciple in its moving
--- rarity aura (Toy.aura). Never pulled: a slate card, the figure a dark shape and a "?".
+-- One entry: the shared disciple tile (Toy.discipleTile, the same card as My Sect and the recruit
+-- reveal), its pulls in the corner and its star row under it. Tap: its name under the grid.
 local function tile(parent, rarity, look, pulls, order)
-	local r = Config.rarity(rarity.name)
-	local stars = Config.indexStars(pulls)
-	local found = pulls > 0
-	local full = Config.STAR_COLORS[math.min(stars // Config.STAR_ROW, #Config.STAR_COLORS)] -- a full row's colour
-	local W, H, R = px(54), px(48), px(10)
-	local cell = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
-	Toy.list(cell, false, px(2))
-	local holder = frame(cell, { Size = UDim2.fromOffset(W, H), LayoutOrder = 1 })
-	local shadow = frame(holder, { Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, px(3)), BackgroundTransparency = 0, BackgroundColor3 = INK })
-	Toy.corner(shadow, UDim.new(0, R))
-	local face = frame(holder, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Color3.new(1, 1, 1), ClipsDescendants = true })
-	Toy.corner(face, UDim.new(0, R))
-	local grad = Instance.new("UIGradient")
-	grad.Rotation = 90
-	grad.Color = found and ColorSequence.new(r.color:Lerp(Color3.new(1, 1, 1), 0.62), r.color:Lerp(INK, 0.12)) or ColorSequence.new(Color3.fromHex("4A3F57"), Color3.fromHex("2A2232"))
-	grad.Parent = face
-	local st = Instance.new("UIStroke")
-	st.Color = INK
-	st.Thickness = px(3)
-	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	st.Parent = face
-	Toy.glass(face, R)
-	if found then
-		Toy.disciple(face, px(54), rarity.name, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, px(4)), ZIndex = 2 })
-	else
-		local fig = Toy.disciple(face, px(38), rarity.name, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, px(4)), ZIndex = 2 }, true)
-		fig.ImageColor3 = SHAPE -- never pulled: a dark shape
-		text(face, "?", px(17), Color3.fromHex("A89BBB"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), ZIndex = 3 })
-	end
-	-- the inner rim: the rarity's colour, the star colour once a row of five is full
-	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
-	Toy.corner(rim, UDim.new(0, R - px(3)))
-	local rs = Instance.new("UIStroke")
-	rs.Color = full or (found and r.color:Lerp(Color3.new(1, 1, 1), 0.35) or Color3.fromHex("5E5270"))
-	rs.Thickness = full and px(3) or px(2)
-	rs.Parent = rim
-	if found then
-		local c = pill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 })
-		text(c, "x" .. pulls, px(9), Color3.new(1, 1, 1), { ZIndex = 7 })
-	end
 	local key = Config.indexKey(rarity.name, look)
-	if stars > (seen[key] or 0) then
-		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
-		Toy.corner(tag, UDim.new(0, px(4)))
-		local ts = Instance.new("UIStroke")
-		ts.Color = INK
-		ts.Thickness = px(2)
-		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		ts.Parent = tag
-		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(3)), UDim.new(0, px(3))
-		pad.Parent = tag
-		text(tag, "NEW", px(9), Color3.new(1, 1, 1), { ZIndex = 9 })
-	end
-	-- the stars on a dark pill (Toy.stars: gold, then red, then blue)
-	Toy.stars(pill(cell, { LayoutOrder = 2 }), stars, px(11))
-	local sc = Instance.new("UIScale")
-	sc.Name = "Pop"
-	sc.Parent = cell
+	local stars = Config.indexStars(pulls)
+	local _, tap = Toy.discipleTile(parent, px(54), rarity.name, look, {
+		found = pulls > 0,
+		shiny = shinyFound[key],
+		stars = stars,
+		count = pulls,
+		new = stars > (seen[key] or 0),
+		order = order,
+	})
+	tap.Activated:Connect(function()
+		if nameLine and pulls > 0 then
+			nameLine.Text = (shinyFound[key] and "Shiny " or "") .. Config.discipleName(rarity.name, look) .. " · " .. rarity.name
+			nameLine.TextColor3 = rarity.color:Lerp(Color3.new(1, 1, 1), 0.25)
+		end
+	end)
 end
 
-local function build()
-	gui:ClearAllChildren()
-	Toy.S = computeScale()
+-- the Index page into `body` (a vertical list): the stars line, the grid, the tapped name, the
+-- summons bar and the star rule. The Disciples book's Index tab (Player.BuildIndexTab) and this
+-- script's own window both fill it.
+local function fill(body)
 	local index = readIndex()
-	local veil = Instance.new("TextButton")
-	veil.Text = ""
-	veil.AutoButtonColor = false
-	veil.Size = UDim2.fromScale(1, 1)
-	veil.BackgroundColor3 = Color3.fromHex("140E1E")
-	veil.BackgroundTransparency = 0.32
-	veil.BorderSizePixel = 0
-	veil.Parent = gui
-	veil.Activated:Connect(function()
-		close()
-	end)
-
+	shinyFound = readShiny()
 	local total = Config.indexTotalStars(index)
 	local max = #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.INDEX_STARS
-	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), AutomaticSize = Enum.AutomaticSize.XY })
-	Toy.list(body, false, px(5))
-	text(body, "Disciple Index", px(28), GOLD, { LayoutOrder = 1, Rotation = -2 })
 	text(body, string.format("%d of %d stars · +%s%% qi forever", total, max, string.format("%.2f", (Config.indexMult(index) - 1) * 100):gsub("%.?0+$", "")), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 
 	local grid = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
@@ -198,10 +138,11 @@ local function build()
 		end
 	end
 
+	nameLine = text(body, "Tap a disciple", px(15), GREY, { LayoutOrder = 4 })
 	-- the foot: progress to the next summons step
 	local step = Config.INDEX_STEP_STARS
 	local nextAt = (total // step + 1) * step
-	local bar = frame(body, { Size = UDim2.fromOffset(px(420), px(20)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("2B2033"), ClipsDescendants = true, LayoutOrder = 4 })
+	local bar = frame(body, { Size = UDim2.fromOffset(px(420), px(20)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("2B2033"), ClipsDescendants = true, LayoutOrder = 5 })
 	Toy.corner(bar, UDim.new(1, 0))
 	local bs = Instance.new("UIStroke")
 	bs.Color = INK
@@ -225,7 +166,28 @@ local function build()
 	if #later > 0 then
 		line ..= ", then " .. table.concat(later, ", ")
 	end
-	text(body, line, px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 5 })
+	text(body, line, px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 6 })
+end
+
+-- the window (until the Disciples book replaces it): veil, title, the page, the X
+local function build()
+	gui:ClearAllChildren()
+	Toy.S = computeScale()
+	local veil = Instance.new("TextButton")
+	veil.Text = ""
+	veil.AutoButtonColor = false
+	veil.Size = UDim2.fromScale(1, 1)
+	veil.BackgroundColor3 = Color3.fromHex("140E1E")
+	veil.BackgroundTransparency = 0.32
+	veil.BorderSizePixel = 0
+	veil.Parent = gui
+	veil.Activated:Connect(function()
+		close()
+	end)
+	local body = frame(gui, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), AutomaticSize = Enum.AutomaticSize.XY })
+	Toy.list(body, false, px(5))
+	text(body, "Disciple Index", px(28), GOLD, { LayoutOrder = 1, Rotation = -2 })
+	fill(body)
 
 	-- close: the big X top right, as on the Shop
 	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
@@ -290,3 +252,21 @@ player:GetAttributeChangedSignal("Index"):Connect(function()
 end)
 
 openEvent.Event:Connect(open)
+
+-- the Disciples book's Index tab: fills `parent` (cleared first) with the page; returns true. The book
+-- sets Toy.S before it asks. What it shows counts as seen when the book closes (Player.IndexSeen).
+local buildTab = Instance.new("BindableFunction")
+buildTab.Name = "BuildIndexTab"
+buildTab.Parent = player -- not PlayerGui (R19)
+buildTab.OnInvoke = function(parent)
+	for _, c in parent:GetChildren() do
+		c:Destroy()
+	end
+	Toy.list(parent, false, px(5))
+	fill(parent)
+	return true
+end
+local seenEvent = Instance.new("BindableEvent")
+seenEvent.Name = "IndexSeen"
+seenEvent.Parent = player
+seenEvent.Event:Connect(close)

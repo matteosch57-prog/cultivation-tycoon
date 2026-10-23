@@ -103,6 +103,10 @@ def load(path):
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
+    # pity (2026-10-23, Anime Defenders): Config.PITY = { { rarity = "Celestial", at = 1000 }, ... } -> {tier index: at}
+    m = re.search(r"^Config\.PITY = \{(.*)\}$", src, re.M)
+    if m:
+        env["PITY"] = {env["RARITY_NAMES"].index(n): int(a) for n, a in re.findall(r'rarity = "([^"]+)", at = (\d+)', m.group(1))}
     # D63 rebirth (Muscle Legends): Config.REBIRTH_REALMS = { [realm] = rebirths needed, ... }
     m = re.search(r"^Config\.REBIRTH_REALMS = \{([^}]*)\}", src, re.M)
     if m:
@@ -279,16 +283,27 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
             rb *= harm
         return base() / (x2 * idx_mult() * rb) * dmult(True) / dmult()
 
-    def roll():
+    pity = {}  # PITY (Main roll): {tier index: rolls since that tier or better}
+
+    def roll():  # Main roll: the weights, then pity (Config.PITY), then Shiny (SHINY_CHANCE x SHINY_MULT)
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
+        pick = 0
         for i, (w, b) in enumerate(C["RARITIES"]):
             x -= w
             if x <= 0:
-                d = Disc(b)
-                d.key = idx_record(i)
-                return d
-        d = Disc(C["RARITIES"][0][1])
-        d.key = idx_record(0)
+                pick = i
+                break
+        for t, n in C.get("PITY", {}).items():
+            pity[t] = pity.get(t, 0) + 1
+            if pick < t and pity[t] >= n:
+                pick = t
+            if pick >= t:
+                pity[t] = 0
+        b = C["RARITIES"][pick][1]
+        if C.get("SHINY_CHANCE") and rng.random() < C["SHINY_CHANCE"]:
+            b *= C.get("SHINY_MULT", 1)
+        d = Disc(b)
+        d.key = idx_record(pick)
         return d
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
