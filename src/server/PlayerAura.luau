@@ -5,11 +5,11 @@
 -- hero's feet, a different figure each realm (AuraGlyph), light rising from it, in the realm colour
 -- the status title uses (Config.realmColor). Rising motes from realm 2, wisps up the body from 4,
 -- flames from 8.
--- Life beads: one bead per rebirth on a gold prayer-bead halo behind the head, kept forever. Every
+-- Life beads: one bead per rebirth on a prayer-bead halo behind the head, kept forever. Every
 -- Config.AURA_BEAD_BAND rebirths the beads change colour (Config.AURA_BEAD_COLORS: gold, crimson,
 -- azure, violet, white jade), the new colour filling over the old, and grow, and the halo shines more.
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
--- neon beads only. Phone budget at the top: 6 emitters a player, ~120 live particles, 42 small parts,
+-- neon beads only. Phone budget at the top: 9 emitters a player, ~130 live particles, 20 beads,
 -- ~150 UI lines on the two glyph layers.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
@@ -19,7 +19,6 @@ local PlayerAura = {}
 
 local TEX = "rbxasset://textures/particles/"
 local WHITE = Color3.new(1, 1, 1)
-local CHAIN = Color3.fromHex("B8862E")
 local MAX_TIER = 9 -- realm 10 and up
 
 local function seq(a, b, c)
@@ -55,6 +54,9 @@ local function holder(folder, to, name, size, cf)
 	return p
 end
 
+-- fades in, holds, fades out: a flat glow that is always there while two overlap
+local HOLD = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.35), NumberSequenceKeypoint.new(0.75, 0.35), NumberSequenceKeypoint.new(1, 1) })
+
 local function emitter(parent, props)
 	local pe = Instance.new("ParticleEmitter")
 	pe.LightEmission = 1
@@ -67,6 +69,13 @@ local function emitter(parent, props)
 	return pe
 end
 
+-- a flat emitter lying on the ground (particles face up: VelocityPerpendicular with a tiny upward speed)
+local function flat(parent, props)
+	props.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	props.Speed = NumberRange.new(0.01)
+	return emitter(parent, props)
+end
+
 -- the realm aura: tier 0 (realm 1) none, up to MAX_TIER
 local function realmAura(folder, hrp, hum, tier, color)
 	local feet = hrp.CFrame * CFrame.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.15, 0)
@@ -74,7 +83,49 @@ local function realmAura(folder, hrp, hum, tier, color)
 	local pale = color:Lerp(WHITE, 0.55)
 	local R = 8 + 0.25 * (tier - 1) -- glyph diameter, studs: 8 to 10 (12.8 covered the floor round a crowd)
 	-- the glyph (AuraGlyph): a crisp array of this realm's own figure, two layers turning apart
-	AuraGlyph.build(folder, hrp, tier + 1, hrp.CFrame:ToObjectSpace(feet), R, color, pale, 1.6 + k)
+	AuraGlyph.build(folder, hrp, tier + 1, hrp.CFrame:ToObjectSpace(feet), R, color, pale, 3 + 1.5 * k)
+	-- under the crisp lines, the soft light of v2 (owner: "keep some of the aura we add before"): a
+	-- turning glow, from realm 3 a wider ring turning the other way, from realm 6 pulses over the ground
+	local ground = holder(folder, hrp, "AuraGround", Vector3.new(1, 0.1, 1), feet)
+	local glow = flat(ground, {
+		Name = "Glow",
+		Texture = TEX .. "forcefield_vortex_main.dds",
+		Color = ColorSequence.new(color, pale),
+		Size = NumberSequence.new(R * 0.95),
+		Transparency = HOLD,
+		Brightness = 1.5 + k,
+		Lifetime = NumberRange.new(4),
+		Rate = 0.6,
+		Rotation = NumberRange.new(0, 360),
+		RotSpeed = NumberRange.new(25),
+	})
+	task.defer(glow.Emit, glow, 1) -- on screen at once, not after the first emit tick
+	if tier >= 2 then
+		flat(ground, {
+			Name = "Ring",
+			Texture = TEX .. "explosion01_shockwave_main.dds",
+			Color = ColorSequence.new(pale),
+			Size = NumberSequence.new(R * 1.15),
+			Transparency = HOLD,
+			Brightness = 1.5,
+			Lifetime = NumberRange.new(5),
+			Rate = 0.45,
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-15),
+		})
+	end
+	if tier >= 5 then
+		flat(ground, {
+			Name = "Pulse",
+			Texture = TEX .. "explosion01_shockwave_main.dds",
+			Color = ColorSequence.new(color),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, R * 1.5) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+			Brightness = 2,
+			Lifetime = NumberRange.new(1.4),
+			Rate = 0.7,
+		})
+	end
 	-- motes rising from the circle's edge
 	local rim = holder(folder, hrp, "AuraRim", Vector3.new(R * 0.8, 0.1, R * 0.8), feet)
 	emitter(rim, {
@@ -89,7 +140,7 @@ local function realmAura(folder, hrp, hum, tier, color)
 		Lifetime = NumberRange.new(1.4, 2.2),
 		Speed = NumberRange.new(2, 3.5 + 2 * k),
 		Drag = 0.6,
-		Rate = 8 + 10 * k,
+		Rate = 12 + 12 * k,
 	})
 	if tier >= 3 then
 		-- soft wisps rising round the body (Warcraft 3's Unholy Aura)
@@ -143,7 +194,7 @@ function PlayerAura.beads(rebirths)
 	return band, math.min(n - (band - 1) * B, B)
 end
 
--- the prayer-bead halo behind the head: AURA_BEAD_BAND slots on a gold chain, `lit` of them in the
+-- the prayer-bead halo behind the head: AURA_BEAD_BAND slots (beads only, owner: no bronze circle), `lit` of them in the
 -- band's colour, the rest in the band before (empty sockets in the first band)
 local function halo(folder, head, rebirths)
 	local band, lit = PlayerAura.beads(rebirths)
@@ -160,12 +211,6 @@ local function halo(folder, head, rebirths)
 		return centre * CFrame.new(-math.sin(a) * R, math.cos(a) * R, 0)
 	end
 	for i = 0, B - 1 do
-		-- the chain link to the next slot
-		local p0, p1 = at(i).Position, at(i + 1).Position
-		local link = part(folder, "Chain", Vector3.new(0.07, 0.07, (p1 - p0).Magnitude), CFrame.lookAt((p0 + p1) / 2, p1))
-		link.Color = CHAIN
-		link.Material = Enum.Material.Metal
-		weld(head, link)
 		-- the bead
 		local own = i < lit
 		if own or band > 1 then

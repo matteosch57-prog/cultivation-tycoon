@@ -61,3 +61,16 @@ SurfaceGui (`src/server/AuraGlyph.luau`), a different figure per realm: ring and
 Two layers turn opposite ways on the client (`AuraSpin.client`, Motor6D Transforms, near and on
 screen only). Beads from the second colour (red) on: a soft glow in the band colour behind the halo and
 more sparkles; from the third (blue) light also rises off it.
+
+## v4 (owner 2026-10-23 07:21: "remove the bronze circle from beads", "search more online", "colour plus
+light intensity slightly higher", "more difference between each", "keep some of the aura we add before")
+
+Online search found no written description of the Warcraft 3 aura art (wikis list stats only), so the
+motifs come from the auras as they look in game (from memory, not a source): Devotion's sun ring of
+short rays, Endurance's arrows, Thorns' spikes, Brilliance's rune circle; and from Taoist formation
+arrays: the eight trigrams, the taiji, the 28 lunar mansions, a ring of seal characters, the lotus.
+Each realm now has its own silhouette: sun rays (2), square with arrows in (3), hexagram (4), lotus
+round the pentagram (5), trigrams round a taiji with seal script (6), thorns round two squares (7),
+28 mansions round trigrams (8), lotus in a crown of rays (9), the full array (10+). Lines are 1.4x
+bolder, a soft disc of the realm colour lights the ground under them, SurfaceGui brightness 3 to 4.5,
+and the v2 particle glow, counter ring and pulse are back under the lines. The beads lost their chain.
