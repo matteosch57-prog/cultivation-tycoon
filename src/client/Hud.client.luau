@@ -1204,7 +1204,9 @@ local function rebirthChip()
 	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
 	local held = player:GetAttribute("Qi") or 0
 	if not player:GetAttribute("RebirthOpen") then
-		ui.rebirth.Text = "Rebirth" -- opens when the next realm waits for a rebirth
+		-- closed: say what it waits for (Config.rebirthNeed, server attribute RebirthNeed)
+		local kind, n = string.match(player:GetAttribute("RebirthNeed") or "", "^(%a+):(%d+)$")
+		ui.rebirth.Text = kind == "realm" and "Realm " .. n or kind == "build" and "Build " .. n or "Rebirth"
 		return
 	end
 	ui.rebirth.Text = held >= price and "Rebirth!" or string.format("%d%%", math.floor(100 * held / math.max(price, 1)))
@@ -1363,7 +1365,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen", "RebirthNeed" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1453,13 +1455,7 @@ RunService.RenderStepped:Connect(function(dt)
 		goalAcc = 0
 		-- Roblox's touch controls appear and resize late (and on rotation): re-place around them
 		layout()
-		local best
-		for _, p in myPads() do
-			if not best or (p:GetAttribute("Cost") or 0) < (best:GetAttribute("Cost") or 0) then
-				best = p
-			end
-		end
-		goalPad = best
+		goalPad = Config.guidePick(myPads()) -- the recruiting building first, else the cheapest
 	end
 	if goalPad and goalPad.Parent then
 		put(ui.goal, "Visible", not state.modal)

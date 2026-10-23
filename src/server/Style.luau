@@ -409,8 +409,7 @@ end
 function Style.bambooGrove(parent, cf, seed)
 	local rng = Random.new(seed or 3)
 	local m = Instance.new("Model")
-	m.Name = "BambooGrove"
-	cylY(m, 0.4, 16, cf * CFrame.new(0, 0.2, 0), PAL.dirt)
+	m.Name = "BambooGrove" -- straight out of the grass (owner 2026-10-23: the dirt disc under it was ugly)
 	local greens = { Color3.fromHex("7FB55A"), Color3.fromHex("6AA14C"), Color3.fromHex("93C46A") }
 	for i = 1, 16 do
 		local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0, 6.5)

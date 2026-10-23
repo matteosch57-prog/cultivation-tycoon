@@ -550,10 +550,26 @@ local function addPad(pad)
 	if mine then
 		rec.card, rec.costText, rec.scale = makeCard(pad, kind)
 		rec.beacon = makeBeacon(pad)
+		-- the preview is its own Atomic model under the pad: with streaming it often arrives after the
+		-- pad (or streams out and back in), so it is picked up whenever it arrives (owner 2026-10-23:
+		-- "only a few have the preview")
+		local function hook(preview)
+			if preview.Name ~= "Preview" or not preview:IsA("Model") then
+				return
+			end
+			preparePreview(rec, preview)
+			preview.AncestryChanged:Connect(function()
+				if not preview:IsDescendantOf(pad) and rec.previewModel == preview then
+					rec.preview, rec.previewModel, rec.previewShown, rec.lift = nil, nil, false, nil
+				end
+			end)
+			rec.previewModel = preview
+		end
 		local preview = pad:FindFirstChild("Preview")
 		if preview then
-			preparePreview(rec, preview)
+			hook(preview)
 		end
+		pad.ChildAdded:Connect(hook)
 		setReady(rec, (player:GetAttribute("Qi") or 0) >= rec.cost)
 	else
 		setReady(rec, true) -- shop pads, and other players' pads (their qi is theirs)

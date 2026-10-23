@@ -1,6 +1,7 @@
 -- The guide trail (B01 step 5, mock A, Q2 picked 2026-10-21): jade chevrons painted on the ground
 -- from the player's feet to the next pad, the same pad the HUD "Next:" names (the cheapest open
--- one). Shown while the sect has fewer than GUIDE_BUILT buildings, and later only after GUIDE_IDLE
+-- one, or the recruiting building's while it waits: Config.guidePick, then shown always). Shown
+-- while the sect has fewer than GUIDE_BUILT buildings, and later only after GUIDE_IDLE
 -- seconds standing still. The chevrons are plain jade objects, never a light (RULES R3); they
 -- drift slowly toward the pad. Local to this player. A first-time tip (Tips.client, D50) takes the
 -- trail over by setting the local attribute TipTarget (a Vector3) while it is shown. A local
@@ -142,7 +143,7 @@ local function waypoint(fromWorld, toWorld)
 	return frame * (land + (land - foot).Unit * 2)
 end
 
-local target
+local target, priority
 local scan = 0
 local still, lastPos = 0, nil
 local offset = 0
@@ -152,13 +153,7 @@ RunService.RenderStepped:Connect(function(dt)
 	scan += dt
 	if scan > 0.5 then
 		scan = 0
-		local best
-		for _, p in myPads() do
-			if not best or (p:GetAttribute("Cost") or 0) < (best:GetAttribute("Cost") or 0) then
-				best = p
-			end
-		end
-		target = best
+		target, priority = Config.guidePick(myPads()) -- the recruiting building first (Config.GUIDE_PRIORITY)
 	end
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if hrp then
@@ -172,7 +167,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local early = (player:GetAttribute("Built") or 0) < Config.GUIDE_BUILT and (player:GetAttribute("Realm") or 1) == 1
 	local guideTo = player:GetAttribute("GuideTo") or player:GetAttribute("TipTarget")
 	local goalPos = guideTo or (target and target.Parent and target.Position)
-	local want = hrp and goalPos and (guideTo or early or still >= Config.GUIDE_IDLE)
+	local want = hrp and goalPos and (guideTo or early or priority or still >= Config.GUIDE_IDLE)
 	local from = hrp and Vector3.new(hrp.Position.X, 0, hrp.Position.Z)
 	local goal = goalPos and hrp and waypoint(hrp.Position, goalPos)
 	local to = goal and Vector3.new(goal.X, 0, goal.Z)

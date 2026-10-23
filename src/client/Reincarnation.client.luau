@@ -153,12 +153,26 @@ local function refresh()
 	ui.opens.Visible = need > done and need == done + 1
 	ui.opens.Text = "Opens " .. Config.realmName(realm + 1)
 
+	-- closed: what it waits for, on the button and spelled out under it (Config.rebirthNeed)
+	local kind, n = string.match(player:GetAttribute("RebirthNeed") or "", "^(%a+):(%d+)$")
+	n = tonumber(n)
+	local needText = kind == "realm" and "Reach Realm " .. n or kind == "build" and "Build " .. n .. " more" or nil
+	ui.need.Visible = needText ~= nil
+	if kind == "realm" then
+		ui.need.Text = "Opens in " .. Config.realmName(n)
+	elseif kind == "build" then
+		ui.need.Text = n == 1 and "Build the last building of this realm" or "Build every building of this realm"
+	end
+	if needText then
+		ui.opens.Visible = false
+	end
+
 	-- the button
 	local armed = os.clock() < armedUntil
 	if not ready then
 		ui.btn.BackgroundColor3 = LOCKED
 		-- closed until the next realm waits for a rebirth (Config.rebirthOpen): say what opens it
-		ui.btnLabel.Text = player:GetAttribute("RebirthOpen") and "Rebirth!" or "Not needed yet"
+		ui.btnLabel.Text = player:GetAttribute("RebirthOpen") and "Rebirth!" or needText or "Not needed yet"
 	elseif armed then
 		ui.btn.BackgroundColor3 = CONFIRM
 		ui.btnLabel.Text = "Sure? Tap again"
@@ -308,6 +322,7 @@ build = function()
 	ui.gain = amount(gains, "karma", px(22), KARMA, { LayoutOrder = 1 })
 	ui.opens = text(gains, "", px(18), GOLD, { LayoutOrder = 2 })
 
+	ui.need = text(body, "", px(18), Color3.fromHex("FFB3A8"), { LayoutOrder = 12, Visible = false })
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(48)), JADE, px(14))
 	bHolder.LayoutOrder = 15

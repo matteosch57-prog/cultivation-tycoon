@@ -758,6 +758,8 @@ local function publish(player)
 	player:SetAttribute("Rebirths", rebirths(d))
 	player:SetAttribute("RebirthPrice", Config.rebirthPrice(rebirths(d)))
 	player:SetAttribute("RebirthOpen", Config.rebirthOpen(d.realm, rebirths(d), d.owned)) -- the next realm waits for a rebirth
+	local needKind, needN = Config.rebirthNeed(d.realm, rebirths(d), d.owned) -- what a closed rebirth waits for
+	player:SetAttribute("RebirthNeed", needKind and (needKind .. ":" .. needN) or "")
 	player:SetAttribute("RebirthMult", Config.rebirthMult(rebirths(d)))
 	player:SetAttribute("NextRebirthMult", Config.rebirthMult(rebirths(d) + 1))
 	player:SetAttribute("RebirthKarma", karmaGain(d))

@@ -137,6 +137,29 @@ function Config.rebirthOpen(realm, rebirths, owned)
 	end
 	return true
 end
+-- what a closed rebirth waits for (owner 2026-10-23: "should indicate clearly what's missing"):
+-- nil when open; "realm", r = it opens in realm r (the realm before the next rebirth gate);
+-- "build", n = this realm is the gate, n required buildings still to build
+function Config.rebirthNeed(realm, rebirths, owned)
+	rebirths = rebirths or 0
+	if rebirths >= Config.rebirthsFor(realm + 1) then
+		local r = realm + 1
+		while rebirths >= Config.rebirthsFor(r + 1) and r < realm + 500 do
+			r += 1
+		end
+		return "realm", r
+	end
+	local n = 0
+	for _, pad in Config.PADS do
+		if Config.neededForBreakthrough(pad) and Config.padOpen(pad, realm) and not owned[pad.id] then
+			n += 1
+		end
+	end
+	if n > 0 then
+		return "build", n
+	end
+	return nil
+end
 -- rebirths needed to enter `realm` (the highest table entry at or below it, so the gates stack)
 function Config.rebirthsFor(realm)
 	local need, last = 0, 0
@@ -453,6 +476,30 @@ end
 -- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
 Config.GUIDE_BUILT = 5 -- always shown in realm 1 until this many buildings stand
 Config.GUIDE_IDLE = 20 -- afterwards only after this many seconds standing still
+-- the recruiting building comes first (owner 2026-10-23: "should push to do the recruiting building in
+-- priority"): once its pad or its bridge's is open, the HUD "Next" arrow and the guide trail lead
+-- there (bridges first, the hall last) before the cheapest pad, and the trail stays on until it stands
+Config.GUIDE_PRIORITY = { "bridge_fields", "bridge_disciples", "hall" }
+-- `pads`: the player's open pad parts (PadId, Cost attributes). Returns the pad to lead to, and
+-- whether it is the priority one
+function Config.guidePick(pads)
+	local byId, best = {}, nil
+	for _, p in pads do
+		byId[p:GetAttribute("PadId") or ""] = p
+		if not best or (p:GetAttribute("Cost") or 0) < (best:GetAttribute("Cost") or 0) then
+			best = p
+		end
+	end
+	local chain = Config.GUIDE_PRIORITY
+	if byId[chain[#chain]] or byId[chain[#chain - 1]] then
+		for _, id in chain do
+			if byId[id] then
+				return byId[id], true
+			end
+		end
+	end
+	return best, false
+end
 
 -- Features
 Config.PILL_INTERVAL = 180 -- seconds between pills from the Alchemy Furnace
