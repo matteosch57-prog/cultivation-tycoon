@@ -13,15 +13,12 @@ checked in Studio Play (ROADMAP).
   merges work: TECH "Branches and integration merges"; history = `git log`.
 - **Open forks:** Q1 music bed.
 - **Known risks:** phone numbers not measured yet (BACKLOG "Performance"); the store skybox (ART_BIBLE).
-
 - **B01 step 2 save safety:** in `integration`, extended by D26 (one save in flight, budgeted
   autosave, rejoin message on a failed load, ServerHealth; R17).
-
 - **B01 step 3 phone performance:** in `integration`. `Lowpoly` (D20, uploaded meshes) and the D26
   rules (R16: timed frame jobs, nothing animates off screen). Studio: a full peak with the new
   building Kit is ~192k triangles / 33 draw calls on a whole-peak view; Play 60 fps, every frame job
   under 0.1 ms. Not yet measured on the owner's phone (`/perf`, `/clouds`).
-
 - **Building kit** (`Kit.luau`, ART_BIBLE "The kit"): Main Hall levels 1 to 5, Disciple Hall and
   Quarters are assembled from kit pieces (on `integration`). Full peak measured
   192k triangles / 33 draw calls. Visual check report: `docs/research/2026-10-21_visual_check.md`.
@@ -74,6 +71,9 @@ checked in Studio Play (ROADMAP).
 - **Incense Blessing** (D57): a celadon incense-pot shrine left of the avenue; a visitor's 3 s blessing
   gives both players BLESS_SECONDS of income, once per sect a day, alt-proof. Checked in Studio Play
   with the BlessTest hook (the pot shrine on branch `shrine`). Left: a real 2-player test.
+- **Heavenly Altar** (D78, D79, on `integration`): a store arena mesh on a lotus-isle rock 36 up, moon
+  gates on the plaza teleport you up, Palm in the Recruit spot on phones, ~30 stud knock with a
+  ragdoll; hub island portals got a light column. Checked in Studio Play. Left: Palm on a real phone.
 
 ## Next action
 Phone test after the next publish: `/perf`, walk a full peak, `/clouds`, `/perf` again, send the

@@ -117,11 +117,15 @@ no qi). Collect opens any left. Event `IdleChest` (hours away, summons waiting, 
 don't move the pace (tools/sim_game.py).
 
 ## Heavenly Altar (server-wide, king of the hill)
-A floating jade altar above the hub cauldron (`src/server/Altar.luau`) opens `ALTAR_FIRST` s after the
-server starts, then every `ALTAR_INTERVAL` s, half a tide cycle after each tide; a toast warns
-`ALTAR_WARN` s before. Two Spirit Springs on the plaza throw players up while it is open. Stand on it
-alone for `ALTAR_HOLD` s to claim it (two or more pause the timer; eight rim braziers light as it
-runs). Palm Strike (button above Jump, F) knocks rivals back; a fall locks you out until the round
+A floating arena above the hub cauldron (`src/server/Altar.luau`; look D79: the store "Ancient
+Chinese Arena" mesh, `Config.ALTAR_ARENA`, on the lotus isles' rock islet, deck `ALTAR_HEIGHT` up,
+half side `ALTAR_RADIUS`, an invisible slab as the deck, a jade sigil and a lamp on each corner pole)
+opens `ALTAR_FIRST` s after the server starts, then every `ALTAR_INTERVAL` s, half a tide cycle after
+each tide; a toast warns `ALTAR_WARN` s before. Two moon gates on the plaza (`ALTAR_SPRING_X` either
+side of the cauldron) glow while it is open; stepping into one teleports you onto the deck. Stand on it
+alone for `ALTAR_HOLD` s to claim it (two or more pause the timer; the HUD beads show it). Palm Strike
+(on a phone in the Recruit seal's spot left of Jump, D78; F) knocks rivals ~30 studs with a short
+ragdoll; stepping off the deck locks you out until the round
 ends. Winner: `ALTAR_WIN_SECONDS` of their own income (`ALTAR_SOLO_SECONDS` if nobody else came) and
 a gold light aura (rim light and sparkles; D51) until the next round; everyone else who stood on it: `ALTAR_JOIN_SECONDS`. If nobody holds it
 within `ALTAR_WINDOW` s it fades (joiners are still paid). HUD: Workspace attributes `AltarNext`,
