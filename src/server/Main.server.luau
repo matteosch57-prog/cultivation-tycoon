@@ -892,9 +892,10 @@ local function shinySparkle(m)
 		Speed = NumberRange.new(3.5, 6),
 		ZOffset = 4,
 		Brightness = 1.5, -- v4 shot: 22 big sparks at full brightness summed into one white ball
+		-- final shot: the sparks start tiny and grow once spread out, so their spawn point is no round flash
 		SpreadAngle = Vector2.new(180, 180),
 		Rotation = NumberRange.new(0, 360),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.3), NumberSequenceKeypoint.new(0.4, 0.9), NumberSequenceKeypoint.new(1, 0) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(0.25, 0.9), NumberSequenceKeypoint.new(1, 0) }),
 		Color = ColorSequence.new(SHINY_WARM, SHINY_GOLD),
 	})
 	-- a thin gold outline that breathes (from look B, recheck 10:11: the burst alone hid in the auras);
