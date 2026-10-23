@@ -1,6 +1,6 @@
 -- The disciple index (D60, owner pick B + C 2026-10-22, mock docs/art/mocks/disciple_index_B.png with the
 -- stars of disciple_index_C.png): one tile per rarity and look (9 x 4), a dark shape until pulled, its
--- pulls in the corner and five stars under it (Config.INDEX_STARS). The foot shows the stars, the qi
+-- pulls in the corner and its star row under it (Config.INDEX_STARS, Toy.stars). The foot shows the stars, the qi
 -- they add (INDEX_STAR_BONUS each, forever) and the next summons step. Opened from the HUD disciples
 -- card (Player.IndexOpen); the server alone counts (data.index, published as the Index attribute).
 local Players = game:GetService("Players")
@@ -21,7 +21,6 @@ local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
 local GREY = Color3.fromHex("9A8FA8")
 local SHAPE = Color3.fromHex("241C2C")
-local STAR_OFF = Color3.fromHex("4A3F55")
 local JADE = Color3.fromHex("59D39F")
 local INK = Toy.INK
 
@@ -79,13 +78,13 @@ end
 
 -- One entry as a toy card (owner 2026-10-22: "make it sexier, the frames and add the auras"): a solid
 -- shadow, a face lit from the top in the rarity's colours, an ink rim, an inner rim in the rarity's
--- colour (gold once all five stars are in), the toy buttons' glass cap, and the disciple in its moving
+-- colour (the star colour of each full row of five: gold, red, blue), the toy buttons' glass cap, and the disciple in its moving
 -- rarity aura (Toy.aura). Never pulled: a slate card, the figure a dark shape and a "?".
 local function tile(parent, rarity, look, pulls, order)
 	local r = Config.rarity(rarity.name)
 	local stars = Config.indexStars(pulls)
 	local found = pulls > 0
-	local full = stars >= #Config.INDEX_STARS
+	local full = Config.STAR_COLORS[math.min(stars // Config.STAR_ROW, #Config.STAR_COLORS)] -- a full row's colour
 	local W, H, R = px(54), px(48), px(10)
 	local cell = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
 	Toy.list(cell, false, px(2))
@@ -111,11 +110,11 @@ local function tile(parent, rarity, look, pulls, order)
 		fig.ImageColor3 = SHAPE -- never pulled: a dark shape
 		text(face, "?", px(17), Color3.fromHex("A89BBB"), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), ZIndex = 3 })
 	end
-	-- the inner rim: the rarity's colour, gold with all five stars
+	-- the inner rim: the rarity's colour, the star colour once a row of five is full
 	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
 	Toy.corner(rim, UDim.new(0, R - px(3)))
 	local rs = Instance.new("UIStroke")
-	rs.Color = full and GOLD or (found and r.color:Lerp(Color3.new(1, 1, 1), 0.35) or Color3.fromHex("5E5270"))
+	rs.Color = full or (found and r.color:Lerp(Color3.new(1, 1, 1), 0.35) or Color3.fromHex("5E5270"))
 	rs.Thickness = full and px(3) or px(2)
 	rs.Parent = rim
 	if found then
@@ -136,14 +135,8 @@ local function tile(parent, rarity, look, pulls, order)
 		pad.Parent = tag
 		text(tag, "NEW", px(9), Color3.new(1, 1, 1), { ZIndex = 9 })
 	end
-	-- the five stars on a dark pill: lit gold, the rest dim
-	local row = pill(cell, { LayoutOrder = 2 })
-	if stars > 0 then
-		text(row, string.rep("★", stars), px(11), GOLD, { LayoutOrder = 1 })
-	end
-	if stars < #Config.INDEX_STARS then
-		text(row, string.rep("★", #Config.INDEX_STARS - stars), px(11), STAR_OFF, { LayoutOrder = 2 })
-	end
+	-- the stars on a dark pill (Toy.stars: gold, then red, then blue)
+	Toy.stars(pill(cell, { LayoutOrder = 2 }), stars, px(11))
 	local sc = Instance.new("UIScale")
 	sc.Name = "Pop"
 	sc.Parent = cell
@@ -219,11 +212,20 @@ local function build()
 	Toy.corner(fill, UDim.new(1, 0))
 	local barText = total >= max and "Every star found!" or string.format("%d / %d stars · then +%d free summons", total, math.min(nextAt, max), Config.INDEX_STEP_SUMMONS)
 	text(bar, barText, px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	local starsAt = {}
-	for _, at in Config.INDEX_STARS do
-		table.insert(starsAt, tostring(at))
+	-- "A star at 1, 3, 10, 30, 100 pulls of a disciple in one look, then red stars to 1000, blue to 5000"
+	local n, starsAt, later = Config.STAR_ROW, {}, {}
+	for i, at in Config.INDEX_STARS do
+		if i <= n then
+			table.insert(starsAt, tostring(at))
+		elseif i % n == 0 then
+			table.insert(later, string.format("%s to %d", ({ "", "red stars", "blue" })[i // n] or "more", at))
+		end
 	end
-	text(body, "A star at " .. table.concat(starsAt, ", ") .. " pulls of a disciple in one look", px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 5 })
+	local line = "A star at " .. table.concat(starsAt, ", ") .. " pulls of a disciple in one look"
+	if #later > 0 then
+		line ..= ", then " .. table.concat(later, ", ")
+	end
+	text(body, line, px(12), Color3.fromHex("E8E0F0"), { LayoutOrder = 5 })
 
 	-- close: the big X top right, as on the Shop
 	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
