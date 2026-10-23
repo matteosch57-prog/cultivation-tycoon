@@ -2635,6 +2635,15 @@ if game:GetService("RunService"):IsStudio() then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
 				return true
 			end
+			if key == "nopass" then
+				-- DebugSet:Invoke(player, "nopass") plays on as a player with no pass (Shop.debugNoPasses)
+				Shop.debugNoPasses(player, s)
+				s.plot.vip = nil
+				buildGrounds(s.plot, s.data.owned) -- the arch back to plain
+				buildDisciples(s) -- VIP's extra seat goes
+				publish(player)
+				return true
+			end
 			if key == "ride" then
 				SwordRide.debugRide(player, value) -- DebugSet:Invoke(player, "ride", "swordJade") rides (pass first); false steps off
 				return true

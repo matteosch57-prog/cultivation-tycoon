@@ -124,6 +124,17 @@ function Shop.debugPass(player, s, key)
 	end
 end
 
+-- Studio test hook (DebugSet "nopass"): drop every pass for this session. The Studio account is the
+-- game's creator, who owns every pass, so a free player can only be tested this way (tools/botsim)
+function Shop.debugNoPasses(player, s)
+	if STUDIO then
+		for key in s.passes do
+			player:SetAttribute("Pass_" .. key, nil)
+		end
+		table.clear(s.passes)
+	end
+end
+
 -- One item may grant several things (the Sect Starter Pack: a disciple, qi and 2x time); each field
 -- is handled on its own. The qi is counted before the disciple joins (the income it was bought at).
 local function grantProduct(player, s, it)
