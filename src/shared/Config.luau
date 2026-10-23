@@ -563,14 +563,14 @@ Config.STREAK = {
 -- Roblox badges (D58, docs/design/BADGES.md): the owner creates each in Creator Hub and pastes its
 -- id here; 0 = not created yet, nothing is awarded. Checked on every publish (Badges.luau).
 Config.BADGES = {
-	founder = 0, -- Sect Founder: first building
-	disciple = 0, -- First Disciple
+	founder = 510139726895395, -- Sect Founder: first building
+	disciple = 3978846889057343, -- First Disciple
 	realm2 = 0, -- Foundation Laid
-	realm3 = 0, -- Golden Core
-	streak7 = 0, -- Loyal Cultivator: day 7 of the Daily Blessing
+	realm3 = 145003760584492, -- Golden Core
+	streak7 = 4484698797029235, -- Loyal Cultivator: day 7 of the Daily Blessing
 	elder = 0, -- Elder's Favour: an Elder or rarer
 	realm4 = 0, -- Nascent Soul
-	friends = 0, -- Sect of Friends: a friend joins you in game (not just sharing a server)
+	friends = 569770625263835, -- Sect of Friends: a friend joins you in game (not just sharing a server)
 	realm8 = 0, -- Mahayana
 	reborn = 0, -- Reborn: first reincarnation
 }
