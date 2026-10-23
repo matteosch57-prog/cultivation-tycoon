@@ -168,7 +168,10 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   degrees into turns, pitched into climbs and dives): WASD / the thumbstick where the camera looks,
   Space / held Jump / gamepad A rises, Ctrl or Q / the phone's down arrow / B sinks, no input
   hovers with a bob. Speed `MOVE.walk` x 1.5 / 1.75 / 2 (42 / 49 / 56), rising and sinking at
-  `rise` of it. Near the ground it hovers a little over it. Jump never steps off.
+  `rise` of it. Near the ground it hovers a little over it. Jump never steps off. The climb eases off
+  over the last 8 studs under the ceiling. Stepping off in the air glides down (fall capped at 25
+  studs/s, Adopt Me's glide); over the void (no ground within 200 studs) the server refuses: "Fly over
+  land to step off".
 - The rider stands on the blade: `SwordPose.client` (every client, in each joint's Transform after
   the Animator, Motor6D and AnimationConstraint rigs alike) lifts the body `lift` studs and leans it
   `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at the real

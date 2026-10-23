@@ -28,6 +28,8 @@ local playerGui = player:WaitForChild("PlayerGui")
 local RIDE = Config.SWORD_RIDE
 local RISE = RIDE.rise -- share of the tier speed for rising and sinking
 local EASE = 5 -- 1/s: how fast the velocity follows the input
+local CEIL_EASE = 8 -- studs under the ceiling where the climb eases off
+local GLIDE = 25 -- studs/s: the fastest fall after stepping off in the air (Adopt Me's glide)
 local HOVER = 3.6 -- studs the root keeps over the ground (a walker's is ~3): the lifted feet and the sword stay clear
 
 local fly -- { char, hum, root, att, lv, ao, speed, vel, heading, bank }
@@ -159,6 +161,20 @@ local function stop()
 	if f.hum.Parent then
 		f.hum.PlatformStand = false
 		f.hum:ChangeState(Enum.HumanoidStateType.Freefall) -- the walk takes over (a soft landing: Movement.client)
+		-- off in the air: glide down, the fall capped at GLIDE until the feet touch something
+		local hum, root = f.hum, f.root
+		local glide
+		glide = RunService.PreSimulation:Connect(function()
+			local state = hum:GetState()
+			if fly or not root.Parent or hum.Health <= 0 or (state ~= Enum.HumanoidStateType.Freefall and state ~= Enum.HumanoidStateType.FallingDown) then
+				glide:Disconnect()
+				return
+			end
+			local v = root.AssemblyLinearVelocity
+			if v.Y < -GLIDE then
+				root.AssemblyLinearVelocity = Vector3.new(v.X, -GLIDE, v.Z)
+			end
+		end)
 	end
 end
 
@@ -233,8 +249,14 @@ RunService.PreSimulation:Connect(function(dt)
 	-- the limits: the ceiling, the map's edge, closed islets of my own peak, the ground under me
 	local pos = f.root.Position
 	local ceiling = workspace:GetAttribute("FlyCeiling") or math.huge
-	if pos.Y > ceiling and target.Y > 0 then
-		target = Vector3.new(target.X, math.min(0, (ceiling - pos.Y) * 4), target.Z)
+	-- the climb eases to nothing over the last CEIL_EASE studs (Studio 2026-10-23: W + Space looking up
+	-- overshot 126 to 134.5), and over it pulls back down
+	local room = ceiling - pos.Y
+	if room < CEIL_EASE and target.Y > 0 then
+		target = Vector3.new(target.X, target.Y * math.max(0, room / CEIL_EASE), target.Z)
+	end
+	if room < 0 then
+		target = Vector3.new(target.X, math.min(target.Y, room * 4), target.Z)
 	end
 	local bound = workspace:GetAttribute("FlyBound") or math.huge
 	local flat = Vector3.new(pos.X, 0, pos.Z)
@@ -268,6 +290,9 @@ RunService.PreSimulation:Connect(function(dt)
 	-- eased in and out
 	local k = 1 - math.exp(-EASE * dt)
 	f.vel = f.vel:Lerp(target, k)
+	if room < CEIL_EASE and f.vel.Y > 0 then
+		f.vel = Vector3.new(f.vel.X, math.min(f.vel.Y, math.max(0, room) / CEIL_EASE * f.speed * RISE), f.vel.Z) -- no momentum past it
+	end
 	f.lv.VectorVelocity = f.vel
 	-- facing: the way you fly (or the last way), banked into turns, pitched into climbs and dives
 	local hv = Vector3.new(f.vel.X, 0, f.vel.Z)

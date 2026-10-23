@@ -25,6 +25,7 @@ local SwordRide = {}
 
 local RIDE = Config.SWORD_RIDE
 local api -- { sessions, notify, remotes }
+local VOID_REACH = 200 -- studs of ray under a rider who asks to step off
 local rides = {} -- [player] = { key, tier, sword, hum, hip, walk, joint, c0, strikes, conns }
 
 local function tierOf(key)
@@ -178,6 +179,18 @@ function SwordRide.init(a)
 			return
 		end
 		if key == false then
+			-- no stepping off over the void: there must be ground within VOID_REACH under you
+			local char = player.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if rides[player] and hrp then
+				local params = RaycastParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances = { char }
+				if not workspace:Raycast(hrp.Position, Vector3.new(0, -VOID_REACH, 0), params) then
+					api.notify:FireClient(player, "swordNo", "void")
+					return
+				end
+			end
 			SwordRide.stop(player, "player")
 		elseif type(key) == "string" and #key <= 24 then
 			start(player, key)
