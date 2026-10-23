@@ -509,7 +509,7 @@ Config.ALTAR_SOLO_SECONDS = 120
 -- free Creator Store "Ancient Chinese Arena" mesh rebuilt by id on the lotus isles' rock islet
 -- (Config.SKY_MESH). Its square deck: ALTAR_RADIUS = half its side; the mesh draws, an invisible
 -- slab carries the players (open edges).
-Config.ALTAR_HEIGHT = 28 -- studs from the hub plaza up to the deck (was 15)
+Config.ALTAR_HEIGHT = 36 -- studs from the hub plaza up to the deck (was 15, then 28: owner "a bit higher")
 Config.ALTAR_RADIUS = 11 -- half the deck's side (was a 9 stud circle)
 Config.ALTAR_SPRING_X = 24 -- the Spirit Springs stand this far out on the plaza, either side (clear of the islet's rim)
 -- the arena mesh (asset 17609048910), in its own studs: the deck is DECK_HALF from the middle to an
@@ -521,6 +521,10 @@ Config.ALTAR_ARENA = {
 	deckHalf = 27.3,
 	deckTop = 7.73,
 	offsetX = -1.0,
+	-- the four corner poles (x, z) and their tops; they stand past the islet's rim, so a little magic
+	-- holds each one up (owner 2026-10-23: "the 4 corner pillars are holding into void")
+	poles = { Vector2.new(-41, -24.5), Vector2.new(-41, 24.5), Vector2.new(40, -24.5), Vector2.new(40, 24.5) },
+	poleTop = 34,
 }
 Config.ALTAR_PUSH_COOLDOWN = 2
 Config.ALTAR_PUSH_REACH = 10 -- studs in front of the striker

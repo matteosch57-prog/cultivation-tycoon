@@ -34,7 +34,8 @@ local lastPush = {}
 -- disciples' lotus isles float on (Config.SKY_MESH islet + its grass top, vines, spirit crystals,
 -- clouds trailing under it), its deck ALTAR_HEIGHT over the plaza. The meshes only draw: an invisible
 -- slab is the deck players stand on (every edge open for ring-outs) and the grass top catches whoever
--- falls short. A gold light warms the deck when someone wins. Two Spirit Springs on the plaza throw you
+-- falls short. Lamps on the corner poles light the deck, a jade sigil holds up each pole's foot, a gold
+-- light warms the deck when someone wins. Two Spirit Springs on the plaza throw you
 -- up while it is open.
 local function lightBrazier(b, on)
 	b.flame.Transparency = on and 0 or 1
@@ -133,6 +134,43 @@ local function dress(m, y, R)
 		arena.CanCollide, arena.CanQuery, arena.CanTouch = false, false, false
 		arena.Name = "Arena"
 		arena.Parent = m
+	end
+	-- the corner poles: a small jade sigil glowing under each foot (they stand past the islet's rim:
+	-- magic holds them, owner 2026-10-23) and a warm lamp at each top so the deck is never dark
+	-- (real lights, R3)
+	for _, pole in A.poles do
+		local x, z = (pole.X - A.offsetX) * k, pole.Y * k
+		local sigil = P(m, Vector3.new(0.12, 2.6, 2.6), CFrame.new(x, base - 0.15, z) * CFrame.Angles(0, 0, math.pi / 2), SPIRIT, Enum.Material.Neon, Enum.PartType.Cylinder)
+		sigil.Transparency = 0.35
+		sigil.CanCollide, sigil.CanQuery, sigil.CastShadow = false, false, false
+		local glow = Instance.new("PointLight")
+		glow.Color = SPIRIT
+		glow.Range = 7
+		glow.Brightness = 1.6
+		glow.Shadows = false
+		glow.Parent = sigil
+		local motes = Instance.new("ParticleEmitter") -- a few motes drifting down off the sigil
+		motes.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		motes.Color = ColorSequence.new(SPIRIT)
+		motes.LightEmission = 1
+		motes.LightInfluence = 0
+		motes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) })
+		motes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+		motes.Lifetime = NumberRange.new(1.2, 1.8)
+		motes.Rate = 3
+		motes.Speed = NumberRange.new(1, 2)
+		motes.SpreadAngle = Vector2.new(30, 30)
+		motes.EmissionDirection = Enum.NormalId.Left -- the cylinder's axis: -X points down
+		motes.Parent = sigil
+		local lamp = Instance.new("Attachment")
+		lamp.Position = Vector3.new(x, A.poleTop * k - 0.6, z) - sigil.Position
+		lamp.Parent = sigil
+		local warm = Instance.new("PointLight")
+		warm.Color = Color3.fromRGB(255, 190, 120)
+		warm.Range = 14
+		warm.Brightness = 1.2
+		warm.Shadows = false
+		warm.Parent = lamp
 	end
 end
 
