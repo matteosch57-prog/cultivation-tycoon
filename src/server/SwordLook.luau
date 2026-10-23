@@ -264,6 +264,30 @@ function SwordLook.template(tier)
 		motes(a, tier == 3 and Color3.fromHex("DFF3FF") or def.color, 2 + tier * 2, 0.16 + tier * 0.07)
 	end
 	auraEmitters(core, L, top, d and d.aura, 2 + tier)
+	if tier == 2 then
+		-- the Heavenly Sword's own gold glow (Studio 2026-10-23: its aura asset A2 is a hat mesh with no
+		-- emitters): a soft gold bloom hugging the blade and gold sparkles rising off it, between the
+		-- jade wisps of tier 1 and the halo of tier 3
+		for k = 1, 4 do
+			local a = attach(core, CFrame.new(0, top, L / 2 - (k - 0.5) / 4 * L))
+			local bloom = Instance.new("ParticleEmitter")
+			bloom.Texture = GLOW
+			bloom.Color = ColorSequence.new(Color3.fromHex("FFE38A"), Color3.fromHex("FFB52E"))
+			bloom.LightEmission = 1
+			bloom.LightInfluence = 0
+			bloom.Rate = 6
+			bloom.Lifetime = NumberRange.new(0.5, 0.8)
+			bloom.Speed = NumberRange.new(0, 0.1)
+			bloom.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.5, 1.1), NumberSequenceKeypoint.new(1, 0.7) })
+			bloom.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.55), NumberSequenceKeypoint.new(1, 1) })
+			bloom.LockedToPart = true
+			bloom.Parent = a
+			local rise = motes(a, GOLD, 4, 0.28, 0.8, 0.9)
+			rise.EmissionDirection = Enum.NormalId.Top
+			rise.SpreadAngle = Vector2.new(25, 25)
+			rise.Acceleration = Vector3.new(0, 1.5, 0)
+		end
+	end
 	-- the trail: a real Trail off the hilt (it streams only while the rider moves)
 	trail(core, L, def.color, def.trail, def.trailLife, def.trailWidth, ({ 0.15, 0.25, 0.45 })[tier], ({ 0.55, 0.75, 0.6 })[tier])
 	if tier >= 2 then

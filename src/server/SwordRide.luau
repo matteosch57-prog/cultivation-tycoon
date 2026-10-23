@@ -34,8 +34,11 @@ local function tierOf(key)
 	return nil, nil
 end
 
--- the rider's lean: the root joint (R15 LowerTorso.Root, R6 HumanoidRootPart.RootJoint) tilted
--- forward; the animations still play over it
+-- The rider's pose: HipHeight is NOT touched (Studio 2026-10-23: +1.2 HipHeight let a rider climb
+-- 3.5-stud ledges), so the step height stays the walker's. The hover is drawn instead: the root
+-- joint (R15 LowerTorso.Root, R6 RootJoint) lifts the body `lift` studs off the root and leans it
+-- forward, the waist (R15 UpperTorso.Waist) adds a little more lean, and the sword is welded under
+-- the lifted feet. The animations still play over the joints.
 local function rootJoint(char)
 	local lower = char:FindFirstChild("LowerTorso")
 	local j = lower and lower:FindFirstChild("Root")
@@ -43,6 +46,11 @@ local function rootJoint(char)
 		local hrp = char:FindFirstChild("HumanoidRootPart")
 		j = hrp and hrp:FindFirstChild("RootJoint")
 	end
+	return j and j:IsA("Motor6D") and j or nil
+end
+local function waistJoint(char)
+	local upper = char:FindFirstChild("UpperTorso")
+	local j = upper and upper:FindFirstChild("Waist")
 	return j and j:IsA("Motor6D") and j or nil
 end
 
@@ -59,11 +67,14 @@ function SwordRide.stop(player, reason)
 		r.sword:Destroy()
 	end
 	if r.hum and r.hum.Parent then
-		r.hum.HipHeight = r.hip
-		r.hum.WalkSpeed = r.walk
+		-- back to the walker's speed: Movement.client sets MOVE.walk on the client, so the server's own
+		-- copy of WalkSpeed (16) is not the one to restore (Studio 2026-10-23)
+		r.hum.WalkSpeed = Config.MOVE.walk
 	end
-	if r.joint and r.joint.Parent then
-		r.joint.C0 = r.c0
+	for joint, c0 in r.joints do
+		if joint.Parent then
+			joint.C0 = c0
+		end
 	end
 	player:SetAttribute("Riding", nil)
 	if reason and reason ~= "player" and reason ~= "gone" then
@@ -83,7 +94,8 @@ local function blocked(hrp)
 	local top = workspace:GetAttribute("AltarTop")
 	if top and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
 		local d = pos - top
-		if Vector2.new(d.X, d.Z).Magnitude < (Config.ALTAR_RADIUS or 12) + 6 and d.Y > -4 and d.Y < 20 then
+		-- the platform and the plaza ring under it (the Spirit Springs stand 13 studs out)
+		if Vector2.new(d.X, d.Z).Magnitude < Config.ALTAR_RADIUS + 9 and d.Y > -(Config.ALTAR_HEIGHT + 4) and d.Y < 20 then
 			return "altar"
 		end
 	end
@@ -111,11 +123,10 @@ local function start(player, key)
 	local sword = SwordLook.template(tier):Clone()
 	local core = sword.PrimaryPart
 	local top = sword:GetAttribute("Top") or 0.1
-	local hip = hum.HipHeight
 	local lift = RIDE.lift
-	-- the feet stay at hrp - (half its height + HipHeight) while the lift raises the root: the blade
+	-- the feet are drawn `lift` over where they walk (hrp - half its height - HipHeight): the blade
 	-- top goes there, so the rider stands on the sword and its underside floats `lift - 2*top` up
-	local feet = -(hrp.Size.Y / 2 + hip)
+	local feet = -(hrp.Size.Y / 2 + hum.HipHeight) + lift
 	-- the whole model moves before it is parented: its WeldConstraints lock each part where it is
 	-- when it enters the workspace (moving only the core would leave the blade at the template's spot)
 	sword:PivotTo(hrp.CFrame * CFrame.new(0, feet - top, 0))
@@ -124,13 +135,18 @@ local function start(player, key)
 	weld.C0 = CFrame.new(0, feet - top, 0)
 	weld.Parent = core
 	sword.Parent = char
-	local r = { key = key, tier = tier, sword = sword, hum = hum, hip = hip, walk = hum.WalkSpeed, strikes = 0, conns = {} }
-	hum.HipHeight = hip + lift
+	local r = { key = key, tier = tier, sword = sword, hum = hum, joints = {}, strikes = 0, conns = {} }
 	hum.WalkSpeed = Config.MOVE.walk * def.speed
-	local joint = rootJoint(char)
-	if joint then
-		r.joint, r.c0 = joint, joint.C0
-		joint.C0 = joint.C0 * CFrame.Angles(math.rad(-RIDE.lean), 0, 0)
+	local root = rootJoint(char)
+	if root then
+		-- in the root part's own axes (an R6 RootJoint's C0 is turned): up `lift`, leaned forward
+		r.joints[root] = root.C0
+		root.C0 = CFrame.new(0, lift, 0) * CFrame.Angles(math.rad(-RIDE.lean), 0, 0) * root.C0
+	end
+	local waist = waistJoint(char)
+	if waist then
+		r.joints[waist] = waist.C0
+		waist.C0 = waist.C0 * CFrame.Angles(math.rad(-RIDE.waistLean), 0, 0)
 	end
 	table.insert(r.conns, hum.Died:Connect(function()
 		SwordRide.stop(player, "gone")
