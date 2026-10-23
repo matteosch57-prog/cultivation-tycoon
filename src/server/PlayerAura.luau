@@ -190,15 +190,14 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Texture = TEX .. "sparkles_main.dds",
 			Color = ColorSequence.new(WHITE, pale),
 			Orientation = Enum.ParticleOrientation.VelocityParallel,
-			Shape = Enum.ParticleEmitterShape.Cylinder,
-			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			Shape = Enum.ParticleEmitterShape.Box, -- a cylinder surface threw them out sideways over the ground
 			Squash = NumberSequence.new(-1.6), -- tall and thin (-2.5 thinned them to nothing in daylight)
-			Size = seq(1.2, 1.8, 0.8),
-			Transparency = seq(0.3, 0, 1),
-			Brightness = 6,
+			Size = seq(0.9, 1.3, 0.6),
+			Transparency = seq(0.5, 0.25, 1),
+			Brightness = 3, -- 6 bloomed the glyph under it away (Play 2026-10-23)
 			Lifetime = NumberRange.new(1, 1.5),
 			Speed = NumberRange.new(7, 11),
-			Rate = 30 + 12 * (tier - 8),
+			Rate = 18 + 8 * (tier - 8),
 		})
 		emitter(shaft, {
 			Name = "Core",
@@ -208,8 +207,8 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Shape = Enum.ParticleEmitterShape.Box,
 			Squash = NumberSequence.new(-1.2),
 			Size = seq(3, 3.6, 2.6),
-			Transparency = seq(1, 0.4, 1),
-			Brightness = 4,
+			Transparency = seq(1, 0.62, 1),
+			Brightness = 2,
 			Lifetime = NumberRange.new(1.6, 2),
 			Speed = NumberRange.new(4, 5),
 			Rate = 7,
