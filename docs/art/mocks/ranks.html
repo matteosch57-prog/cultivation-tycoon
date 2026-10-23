@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rankings Options</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<style>
+/* phone 844x390; ?opt=A|B|C (tools/mock_hud_menus.py ranks) */
+:root{--ink:#1B1420;--gold:#FFD34D;--silver:#E6ECF2;--bronze:#E0A060;--jade:#3FD9A0;--cream:#FFF1D6;--f:"Fredoka",system-ui,sans-serif}
+html,body{margin:0;width:844px;height:390px;overflow:hidden;background:#2B2140;font-family:var(--f);color:#fff}
+[hidden]{display:none!important}
+.o{paint-order:stroke fill;-webkit-text-stroke:4px var(--ink)}
+.stage{position:absolute;inset:0;background:url(2026-10-22_rank_wall_v3_dusk.jpg) center/cover}
+.dim{position:absolute;inset:0;background:rgba(20,14,30,.55)}
+/* A: tabs painted on the wall boards */
+.flip{position:absolute;display:flex;gap:3px;font-weight:700;font-size:9px}
+.flip span{padding:1px 6px;border-radius:6px;border:2px solid var(--ink);background:#3a3044;color:#cbbfd6}
+.flip span.on{background:var(--gold);color:var(--ink)}
+.note{position:absolute;font-weight:700;font-size:11px;color:var(--cream)}
+.arrow{position:absolute;font-size:22px;font-weight:700;color:var(--gold)}
+/* B / C: the screen */
+.panel{position:absolute;left:150px;top:34px;width:544px;height:330px}
+.title{position:absolute;left:0;right:0;top:-6px;text-align:center;font-size:30px;font-weight:700;color:var(--gold)}
+.x{position:absolute;right:120px;top:-2px;width:34px;height:34px;border-radius:10px;background:#ff5a6a;border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink);display:grid;place-items:center;font-weight:700;font-size:20px}
+.tabs{position:absolute;left:0;top:44px;display:grid;gap:8px;width:118px}
+.tab{border:3px solid var(--ink);border-radius:14px;padding:6px 6px;background:#efe6f5;color:var(--ink);font-weight:700;font-size:13px;text-align:center;box-shadow:0 3px 0 var(--ink)}
+.tab.on{background:var(--gold)}
+.tab small{display:block;font-size:10px;font-weight:600;opacity:.75}
+.toggle{position:absolute;left:132px;top:44px;display:flex;gap:6px}
+.tg{border:3px solid var(--ink);border-radius:12px;padding:3px 12px;background:#efe6f5;color:var(--ink);font-weight:700;font-size:13px;box-shadow:0 3px 0 var(--ink)}
+.tg.on{background:var(--jade)}
+.reset{position:absolute;right:0;top:50px;font-size:12px;font-weight:600;color:var(--cream)}
+.list{position:absolute;left:132px;right:0;top:82px;height:206px;overflow:hidden;border:3px solid var(--ink);border-radius:14px;background:rgba(27,20,32,.82)}
+.row{display:flex;align-items:center;gap:8px;height:26px;padding:0 10px;font-weight:600;font-size:13px;border-bottom:1px solid rgba(255,255,255,.07)}
+.row .n{width:26px;font-weight:700}
+.row .h{width:20px;height:20px;border-radius:50%;background:#cfa;border:2px solid var(--ink)}
+.row .nm{flex:1}
+.row .v{font-weight:700;color:var(--jade)}
+.row.g1 .n,.row.g1 .nm{color:var(--gold)}.row.g2 .n,.row.g2 .nm{color:var(--silver)}.row.g3 .n,.row.g3 .nm{color:var(--bronze)}
+.me{position:absolute;left:132px;right:0;top:296px;height:32px;display:flex;align-items:center;gap:8px;padding:0 10px;border:3px solid var(--ink);border-radius:12px;background:var(--gold);color:var(--ink);font-weight:700;font-size:14px;box-shadow:0 3px 0 var(--ink)}
+.me .h{width:22px;height:22px;border-radius:50%;background:#9cf;border:2px solid var(--ink)}
+.me .nm{flex:1}
+.go{position:absolute;left:0;top:296px;width:118px;height:32px;border:3px solid var(--ink);border-radius:12px;background:var(--jade);color:var(--ink);font-weight:700;font-size:13px;display:grid;place-items:center;box-shadow:0 3px 0 var(--ink)}
+.flag{display:inline-block;width:14px;height:10px;margin-right:3px;vertical-align:-1px;background:linear-gradient(90deg,#2a4fd6 33%,#fff 33% 66%,#e23 66%);border:1px solid var(--ink)}
+</style></head><body>
+<div class="stage"></div>
+<div id="A" hidden>
+  <!-- tabs painted on each board (positions follow the 844x390 crop of the wall capture) -->
+  <div class="flip" style="left:372px;top:236px"><span class="on">All Time</span><span>This Week</span></div>
+  <div class="flip" style="left:172px;top:252px"><span>All Time</span><span class="on">This Week</span></div>
+  <div class="flip" style="left:592px;top:252px"><span class="on">All Time</span><span>This Week</span></div>
+  <div class="note o" style="left:250px;top:300px;font-size:14px">Each board flips between All Time and This Week every 8 s</div>
+  <div class="note o" style="left:250px;top:318px;font-size:14px">This Week board becomes Play Time (all time + weekly)</div>
+</div>
+<div id="BC" hidden>
+  <div class="dim"></div>
+  <div class="panel">
+    <div class="title o">Rankings</div><div class="x o">X</div>
+    <div class="tabs">
+      <div class="tab on">Greatest Sects<small>realms climbed</small></div>
+      <div class="tab">Richest Qi<small>best qi/s</small></div>
+      <div class="tab">Play Time<small>hours played</small></div>
+    </div>
+    <div class="toggle" id="tgB"><div class="tg on">All Time</div><div class="tg">This Week</div></div>
+    <div class="toggle" id="tgC" hidden><div class="tg on">Global</div><div class="tg"><span class="flag"></span>France</div><div class="tg">Friends</div></div>
+    <div class="reset o" id="rs">Week resets in 3d 4h</div>
+    <div class="list" id="list"></div>
+    <div class="go">Go to the wall</div>
+    <div class="me"><span>#142</span><span class="h"></span><span class="nm">You (Matteo)</span><span>12 realms · 2 lives</span></div>
+  </div>
+</div>
+<script>
+const opt=new URLSearchParams(location.search).get("opt")||"A";
+if(opt==="A"){document.getElementById("A").hidden=false}
+else{
+  document.getElementById("BC").hidden=false
+  if(opt==="C"){document.getElementById("tgB").hidden=true;document.getElementById("tgC").hidden=false;document.getElementById("rs").textContent="Scroll to 100"}
+  const names=["JadeLotus","SkyRiverSect","CraneOfDawn","MoonDragon","PeachBlossom","IronPalm","StormCrane","QuietPine"]
+  const vals=[[307,10],[284,9],[261,8],[238,8],[215,7],[192,6],[169,6],[146,5]]
+  document.getElementById("list").innerHTML=names.map((n,i)=>`<div class="row g${i+1}"><span class="n">${i+1}</span><span class="h"></span><span class="nm">${n}</span><span class="v">${vals[i][0]} realms · ${vals[i][1]} lives</span></div>`).join("")
+}
+</script>
+</body></html>

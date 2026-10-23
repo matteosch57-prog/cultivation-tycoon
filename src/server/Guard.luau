@@ -28,6 +28,7 @@ local LIMITS = {
 	OfferShown = { 1, 3 },
 	AltarPush = { 2, 4 },
 	Teleport = { 1, 3 },
+	Rankings = { 2, 6 },
 	Breakthrough = { 1, 3 },
 	SwordRide = { 2, 4 },
 }

@@ -525,3 +525,14 @@ the log as a D-number.
   (Teleport "altarGate", checked on the server). The gates then moved in to `ALTAR_SPRING_X` 15 (owner: "more
   to the center"), and the hub's island portals took mock B's look: a light column with gold arrows
   climbing it (`Portals.pad` opts.column; the islands' portals back to the hub are unchanged).
+- **D80** Rankings screen and lighter ranking saves (audit 2026-10-23; owner pick C, mock
+  `docs/art/mocks/ranks_C.jpg`; "Richest Qi ignores short boosts"). The Ranks chip opens a screen
+  (`Ranks.client`): the wall's three boards as tabs, Global / your country / Friends, the top 100 with
+  head shots and your own row pinned ("100+" past the list); "Go to the wall" is the old teleport.
+  Lists come on demand from `Remotes.Rankings` (`Ranks.fetch`, Guard `Rankings`); the unused
+  `Rank_*` Workspace attributes are gone. Friends = up to `RANK_FRIENDS` friends, one GetAsync each on
+  the global store, cached `RANK_REFRESH` s. Saves: one per player per `RANK_WRITE_GAP` s (and on
+  leave) instead of every 60 s (6 writes per player per minute, over Roblox's 5). Richest Qi ranks
+  `data.peakSteady` (rate without pill, Spirit Tide, friends) in a new store `RanksQi2`: the old field
+  counted them and a stored counter is never redefined. Why: the audit found country boards written
+  but never shown and a write rate the budget could not hold with a full server.

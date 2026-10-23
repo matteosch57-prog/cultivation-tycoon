@@ -377,7 +377,7 @@ end
 
 local OPEN_SOURCES = { hud = true, pad = true, pill = true, short = true } -- short = the Get Qi offer on a pad out of reach
 local lastOpen = {}
-local MENUS = { disciples = true, reinc = true, karma = true, group = true, index = true } -- MenuOpened keys
+local MENUS = { disciples = true, reinc = true, karma = true, group = true, index = true, ranks = true } -- MenuOpened keys
 local lastMenu = {} -- [player] = { [menu] = os.clock() }
 
 -- World shop (D33, research 2026-10-21_shop_placement): every item stands where it acts. The

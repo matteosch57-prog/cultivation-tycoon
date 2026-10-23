@@ -95,6 +95,9 @@ teleportEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
 breakthroughFn.Parent = remotes
+local rankingsFn = Instance.new("RemoteFunction")
+rankingsFn.Name = "Rankings" -- the Rankings screen asks for one board: Global, Country or Friends (Ranks.fetch)
+rankingsFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -485,7 +488,7 @@ end
 local function defaultData()
 	-- lives/karma/soulPeak/lifeStart: reincarnation (lifeStart = playSec when this life began)
 	-- workers = { [building id] = workers hired there } (Config.WORKERS)
-	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, climbed = 0, peakRate = 0, week = 0, weekSec = 0, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
+	return { qi = 0, realm = 1, owned = {}, disciples = {}, recruited = 0, last = os.time(), best = 1, climbed = 0, peakRate = 0, peakSteady = 0, week = 0, weekSec = 0, lives = 1, karma = 0, soulPeak = 0, lifeStart = 0, dao = {}, workers = {} }
 end
 
 -- Each disciple keeps the look it was rolled with (D60): data.discLooks[i] goes with data.disciples[i]
@@ -2216,6 +2219,17 @@ inviteEv.OnServerEvent:Connect(function(player)
 	Telemetry.custom(player, "Social", "invite", tostring(friendCount(s)))
 end)
 
+-- the Rankings screen (Ranks.client): a board's top RANK_READ for one scope, and your own row
+rankingsFn.OnServerInvoke = function(player, key, scope)
+	if not Guard.allow(player, "Rankings") or type(key) ~= "string" or not Config.RANKS[key] then
+		return nil
+	end
+	if scope ~= "global" and scope ~= "country" and scope ~= "friends" then
+		return nil
+	end
+	return Ranks.fetch(player, key, scope)
+end
+
 -- HUD teleports: the server picks the spot (R9), the client only names where
 teleportEv.OnServerEvent:Connect(function(player, where)
 	if not Guard.allow(player, "Teleport") then
@@ -2778,6 +2792,7 @@ while true do
 			end
 			d.weekSec = (d.weekSec or 0) + dt
 			d.peakRate = math.max(d.peakRate or 0, gain / math.max(dt, 1e-3))
+			d.peakSteady = math.max(d.peakSteady or 0, rate(s, true)) -- Richest Qi: no pill, tide or friends (owner 2026-10-23)
 			s.rankIn = (s.rankIn or 0) - dt
 			if s.rankIn <= 0 then
 				s.rankIn = Config.RANK_TICK

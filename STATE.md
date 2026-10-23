@@ -63,7 +63,8 @@ checked in Studio Play (ROADMAP).
   Celestial Azure), lanterns and motes grow with lives, the Main Hall grows 8% / 15% in lives 2 / 3,
   a status title over other players' heads; hub ranking wall (Greatest Sects, Richest Qi, This Week,
   global + per country stores), Lives in the player list. Checked in Studio Play (skins, hall,
-  wall with sample rows via `Ranks.debugRows`). Left: the country-tab screen (BACKLOG).
+  wall with sample rows via `Ranks.debugRows`). The Ranks chip opens the Rankings screen (D80:
+  Global / Country / Friends, top 100, your row pinned; Go to the wall teleports).
   Bigger boards, a bigger hub and portals to every island and back (D70, checked in Studio Play).
 
 - **Sky Islets** (D42, on `integration`): home island + Fields / Alchemy / Disciples / Summit islets

@@ -318,6 +318,16 @@ local function teleportTo(where)
 	wipeGui:Destroy()
 end
 
+-- the Rankings screen's "Go to the wall" (Ranks.client) travels with the same wipe
+local travelEvent = Instance.new("BindableEvent")
+travelEvent.Name = "TravelTo"
+travelEvent.Parent = player -- not PlayerGui: the first LoadCharacter empties it
+travelEvent.Event:Connect(function(where)
+	if where == "ranks" or where == "home" then
+		teleportTo(where)
+	end
+end)
+
 -- Portals (server Portals.luau): stepping onto one travels to its `Where`; you step off and on again
 -- to go back, so landing beside a portal never bounces you
 task.spawn(function()
@@ -472,11 +482,18 @@ local function build()
 		b.Name = caption .. "Button"
 		text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 		b.Activated:Connect(function()
-			teleportTo(where)
+			local screen = where == "ranks" and player:FindFirstChild("RanksOpen")
+			if screen then
+				screen:Fire()
+			else
+				teleportTo(where)
+			end
 		end)
 		return c
 	end
 	travelChip(1, "hall", "Base", Color3.fromHex("6FE0B4"), "home")
+	-- Ranks opens the Rankings screen (Ranks.client, owner pick C 2026-10-23); its "Go to the wall"
+	-- comes back to teleportTo through TravelTo
 	travelChip(3, "trophy", "Ranks", Color3.fromHex("FFD36B"), "ranks")
 
 	-- right stack: under the next goal, right-aligned (layout() places it, or lays it in a row when

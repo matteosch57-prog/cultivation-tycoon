@@ -5,25 +5,30 @@
 -- (LocalizationService), one key per player:
 --   sects: realms climbed in every life * 1000 + lives (`data.climbed`, one per breakthrough,
 --          monotonic: a reset can never raise it, lesson "index on the monotonic peak")
---   qi:    the best qi per second ever reached (`data.peakRate`, monotonic)
+--   qi:    the best steady qi per second ever reached (`data.peakSteady`, monotonic; owner
+--          2026-10-23: no pill, Spirit Tide or friends bonus, so a short stack sets no record)
 --   week:  seconds played this week (`data.weekSec` for `data.week`); a new week is a new store
--- Writes are batched (one round every RANK_WRITE_EVERY s, and on leave) and reads come once per
--- RANK_REFRESH s per board (global + each country with a player here), only with request budget to
--- spare (ServerHealth watches GetSorted / SetSorted). Boards reach clients as Workspace attributes
--- `Rank_<key>` and `Rank_<key>_<CC>`: JSON rows { userId, name, value, extra, country }, no remote.
+-- Writes: a changed score is saved at most once per RANK_WRITE_GAP s per player, and on leave
+-- (audit 2026-10-23: every 60 s wrote 6 per player per minute, over Roblox's 5). Reads: the top
+-- RANK_READ of each board once per RANK_REFRESH s (global + each country with a player here), only
+-- with request budget to spare (ServerHealth watches GetSorted / SetSorted). The hub wall shows the
+-- top RANK_TOP (Ranks.top / Ranks.changed); the Rankings screen (Ranks.client, owner pick C
+-- 2026-10-23, mock docs/art/mocks/ranks_C.jpg) asks Ranks.fetch through Remotes.Rankings for
+-- Global, Country or Friends. Friends' scores are GetAsync on the global store, cached per server.
 -- Studio with the mock save (Config.MOCK_DATASTORE) ranks only the players on this server.
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local LocalizationService = game:GetService("LocalizationService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserService = game:GetService("UserService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Ranks = {}
-Ranks.top = {} -- [key] = global rows, best first
+Ranks.top = {} -- [key] = global rows, best first, cut to RANK_TOP (the wall)
 local changed = Instance.new("BindableEvent")
-Ranks.changed = changed.Event -- (key, rows) when a global board changes
+Ranks.changed = changed.Event -- (key, rows) when the top of a global board changes
 
 local mock = Config.MOCK_DATASTORE and RunService:IsStudio()
 local suffix = RunService:IsStudio() and "_studio" or ""
@@ -34,7 +39,7 @@ local function score(key, d)
 	if key == "sects" then
 		return (d.climbed or 0) * 1000 + math.clamp(d.lives or 1, 1, 999)
 	elseif key == "qi" then
-		return math.floor(math.clamp(d.peakRate or 0, 0, MAX_SCORE))
+		return math.floor(math.clamp(d.peakSteady or 0, 0, MAX_SCORE))
 	elseif key == "week" then
 		return d.week == Config.rankWeek() and math.floor(d.weekSec or 0) or 0
 	end
@@ -46,7 +51,10 @@ Ranks.score = score
 local stores = {}
 local function board(key, scope)
 	local def = Config.RANKS[key]
-	local name = def.store .. (def.weekly and ("_w" .. Config.rankWeek()) or "") .. (scope == "" and "" or "_" .. scope) .. suffix
+	local name = def.store
+		.. (def.weekly and ("_w" .. Config.rankWeek()) or "")
+		.. (scope == "" and "" or "_" .. scope)
+		.. suffix
 	local id = key .. "/" .. scope
 	local b = stores[id]
 	if not b or b.name ~= name then -- a new week opens a new store
@@ -65,26 +73,45 @@ end
 
 local pending = {} -- [userId] = { [key] = score not yet written }
 local written = {} -- [userId] = { [key] = last score written }
-local names = {} -- [userId] = name (cache: GetNameFromUserIdAsync is a web call)
+local wroteAt = {} -- [userId] = os.clock() of the last write round that saved something
+local names = {} -- [userId] = display name (GetUserInfosByUserIdsAsync, batched)
 local countries = {} -- [userId] = "FR" or false (players met on this server)
 local here = {} -- [userId] = { [key] = live score } of players on this server
+local merged = {} -- [key .. "/" .. scope] = { { userId, score } } best first, cut to RANK_READ
 
 local function budget(rt)
 	return DataStoreService:GetRequestBudgetForRequestType(rt) >= Config.RANK_MIN_BUDGET
 end
 
+-- fetch the display names of `ids` that have none yet, up to 200 a call (one web call, not one each)
+local function learnNames(ids)
+	local missing = {}
+	for _, id in ids do
+		if names[id] == nil and id > 0 then
+			local plr = Players:GetPlayerByUserId(id)
+			if plr then
+				names[id] = plr.DisplayName
+			elseif #missing < 200 then
+				table.insert(missing, id)
+			end
+		end
+	end
+	if #missing == 0 then
+		return
+	end
+	local ok, infos = pcall(UserService.GetUserInfosByUserIdsAsync, UserService, missing)
+	if ok and type(infos) == "table" then
+		for _, info in infos do
+			names[info.Id] = info.DisplayName
+		end
+	end
+	for _, id in missing do
+		names[id] = names[id] or false -- unknown: shown as "Sect <id>", never asked again
+	end
+end
+
 local function nameOf(userId)
-	if names[userId] then
-		return names[userId]
-	end
-	local plr = Players:GetPlayerByUserId(userId)
-	if plr then
-		names[userId] = plr.DisplayName
-		return names[userId]
-	end
-	local ok, n = pcall(Players.GetNameFromUserIdAsync, Players, userId)
-	names[userId] = ok and n or "Unknown Sect"
-	return names[userId]
+	return names[userId] or ("Sect " .. userId)
 end
 
 local function countryOf(player)
@@ -100,6 +127,7 @@ function Ranks.submit(player, d)
 	local id = player.UserId
 	here[id] = here[id] or {}
 	written[id] = written[id] or {}
+	names[id] = player.DisplayName
 	task.spawn(countryOf, player)
 	for key in Config.RANKS do
 		local s = score(key, d)
@@ -111,11 +139,16 @@ function Ranks.submit(player, d)
 	end
 end
 
-local function write(userId)
+-- save `userId`'s pending scores; not within RANK_WRITE_GAP of the last save unless `now` (leave)
+local function write(userId, now)
 	local p = pending[userId]
 	if not p or mock then
 		return
 	end
+	if not now and os.clock() - (wroteAt[userId] or -math.huge) < Config.RANK_WRITE_GAP then
+		return
+	end
+	wroteAt[userId] = os.clock()
 	for key, s in p do
 		if not budget(Enum.DataStoreRequestType.SetIncrementSortedAsync) then
 			return -- the rest waits for the next round
@@ -163,11 +196,12 @@ function Ranks.leave(player, d)
 		end
 	end
 	here[id] = nil
-	task.spawn(write, id)
+	task.spawn(write, id, true)
 end
 
-local function row(key, userId, s)
-	local r = { userId = userId, name = nameOf(userId), country = countries[userId] or nil }
+-- the row a client or the wall draws
+local function row(key, userId, s, rank)
+	local r = { userId = userId, name = nameOf(userId), rank = rank }
 	if key == "sects" then
 		r.value, r.extra = s // 1000, s % 1000 -- realms climbed, lives
 	else
@@ -176,7 +210,7 @@ local function row(key, userId, s)
 	return r
 end
 
--- cached page + the live scores of players here (of that country), best first, cut to RANK_TOP
+-- cached page + the live scores of players here (of that country), best first, cut to RANK_READ
 local function merge(key, scope)
 	local rows, at = {}, {}
 	for _, r in board(key, scope).rows do
@@ -196,15 +230,17 @@ local function merge(key, scope)
 	table.sort(rows, function(a, b)
 		return a.score > b.score
 	end)
-	local list = {}
-	for i = 1, math.min(#rows, Config.RANK_TOP) do
-		table.insert(list, row(key, rows[i].userId, rows[i].score))
+	while #rows > Config.RANK_READ do
+		table.remove(rows)
 	end
-	local attr = "Rank_" .. key .. (scope == "" and "" or "_" .. scope)
-	local json = HttpService:JSONEncode(list)
-	if json ~= workspace:GetAttribute(attr) then
-		workspace:SetAttribute(attr, json)
-		if scope == "" then
+	merged[key .. "/" .. scope] = rows
+	if scope == "" then
+		local list = {}
+		for i = 1, math.min(#rows, Config.RANK_TOP) do
+			table.insert(list, row(key, rows[i].userId, rows[i].score, i))
+		end
+		local was = Ranks.top[key]
+		if not was or HttpService:JSONEncode(was) ~= HttpService:JSONEncode(list) then
 			Ranks.top[key] = list
 			changed:Fire(key, list)
 		end
@@ -217,19 +253,22 @@ local function read(key, scope)
 		return
 	end
 	local ok, page = pcall(function()
-		return b.store:GetSortedAsync(false, Config.RANK_TOP):GetCurrentPage()
+		return b.store:GetSortedAsync(false, Config.RANK_READ):GetCurrentPage()
 	end)
 	if not ok then
 		warn("[Tycoon][ranks] read failed")
 		return
 	end
 	b.rows = {}
+	local ids = {}
 	for _, e in page do
 		local id = tonumber(e.key)
 		if id then
 			table.insert(b.rows, { userId = id, score = e.value })
+			table.insert(ids, id)
 		end
 	end
+	learnNames(ids)
 end
 
 -- the scopes this server shows: global and the countries of the players here
@@ -256,6 +295,113 @@ local function redraw(due)
 	end
 end
 
+-- Friends: [userId] = { at = os.clock(), ids = { friend ids, you first } } (GetFriendsAsync pages)
+local friendLists = {}
+local function friendsOf(player)
+	local f = friendLists[player.UserId]
+	if f and os.clock() - f.at < Config.RANK_REFRESH then
+		return f.ids
+	end
+	local ids = { player.UserId }
+	local ok, pages = pcall(Players.GetFriendsAsync, Players, player.UserId)
+	while ok and pages and #ids <= Config.RANK_FRIENDS do
+		for _, info in pages:GetCurrentPage() do
+			if #ids > Config.RANK_FRIENDS then
+				break
+			end
+			table.insert(ids, info.Id)
+			if names[info.Id] == nil and type(info.DisplayName) == "string" then
+				names[info.Id] = info.DisplayName
+			end
+		end
+		if pages.IsFinished then
+			break
+		end
+		ok = pcall(pages.AdvanceToNextPageAsync, pages)
+	end
+	friendLists[player.UserId] = { at = os.clock(), ids = ids }
+	return ids
+end
+
+-- a friend's stored score on a global board: [key] = { [userId] = { score, at } }, kept RANK_REFRESH s
+local friendScores = {}
+local function storedScore(key, userId)
+	friendScores[key] = friendScores[key] or {}
+	local c = friendScores[key][userId]
+	if c and os.clock() - c.at < Config.RANK_REFRESH then
+		return c.score
+	end
+	local b = board(key, "")
+	if not b.store or not budget(Enum.DataStoreRequestType.GetAsync) then
+		return c and c.score or 0
+	end
+	local ok, v = pcall(b.store.GetAsync, b.store, tostring(userId))
+	if not ok then
+		return c and c.score or 0
+	end
+	friendScores[key][userId] = { score = tonumber(v) or 0, at = os.clock() }
+	return friendScores[key][userId].score
+end
+
+-- the list for the Rankings screen: scope "global" | "country" | "friends"
+-- returns { rows = { row }, me = row or nil (rank nil = past RANK_READ), country = "FR" or nil }
+function Ranks.fetch(player, key, scope)
+	local id = player.UserId
+	local cc = countryOf(player)
+	local list = {}
+	if scope == "friends" then
+		local ids = friendsOf(player)
+		local scores = {}
+		local left = #ids
+		for _, fid in ids do
+			task.spawn(function()
+				local live = here[fid] and here[fid][key]
+				scores[fid] = live or storedScore(key, fid)
+				left -= 1
+			end)
+		end
+		local t = os.clock()
+		while left > 0 and os.clock() - t < 8 do
+			task.wait(0.1)
+		end
+		for fid, s in scores do
+			if s > 0 then
+				table.insert(list, { userId = fid, score = s })
+			end
+		end
+		table.sort(list, function(a, b)
+			return a.score > b.score
+		end)
+	else
+		local sc = scope == "country" and cc or ""
+		if scope == "country" and not cc then
+			return { rows = {}, country = nil }
+		end
+		if not merged[key .. "/" .. sc] then
+			merge(key, sc)
+		end
+		list = merged[key .. "/" .. sc]
+	end
+	local ids = {}
+	for i = 1, math.min(#list, Config.RANK_READ) do
+		table.insert(ids, list[i].userId)
+	end
+	learnNames(ids)
+	local rows, me = {}, nil
+	for i = 1, math.min(#list, Config.RANK_READ) do
+		local r = row(key, list[i].userId, list[i].score, i)
+		table.insert(rows, r)
+		if r.userId == id then
+			me = r
+		end
+	end
+	if not me then
+		local s = (here[id] and here[id][key]) or 0
+		me = row(key, id, s, nil)
+	end
+	return { rows = rows, me = me, country = cc }
+end
+
 function Ranks.start()
 	task.spawn(function()
 		local sinceRead = math.huge
@@ -271,6 +417,9 @@ function Ranks.start()
 			task.wait(Config.RANK_WRITE_EVERY)
 			sinceRead += Config.RANK_WRITE_EVERY
 		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		friendLists[player.UserId] = nil
 	end)
 end
 

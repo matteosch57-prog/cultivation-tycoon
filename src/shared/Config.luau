@@ -823,14 +823,16 @@ Config.PALETTES = {
 -- Hub rankings (src/server/Ranks.luau): one OrderedDataStore per board (+ one per country)
 Config.RANKS = {
 	sects = { store = "Ranks1", title = "Greatest Sects", order = 2 }, -- realms climbed * 1000 + lives
-	qi = { store = "RanksQi1", title = "Richest Qi", order = 1 }, -- best qi/s ever
+	qi = { store = "RanksQi2", title = "Richest Qi", order = 1 }, -- best steady qi/s ever (no pill, tide, friends; RanksQi1 counted them)
 	week = { store = "RanksWeek1", title = "This Week", order = 3, weekly = true }, -- seconds played this week
 }
 -- the week number (weeks start Monday 00:00 UTC; day 0 = 1970-01-01, a Thursday)
 function Config.rankWeek(t)
 	return math.floor((math.floor((t or os.time()) / 86400) + 3) / 7)
 end
-Config.RANK_TOP = 10 -- rows read and shown
+Config.RANK_TOP = 10 -- rows on the hub wall
+Config.RANK_READ = 100 -- rows read per board and listed on the Rankings screen (GetSortedAsync max)
+Config.RANK_FRIENDS = 50 -- friends looked up for the Friends tab (one GetAsync each, cached RANK_REFRESH s)
 Config.RANK_WALL_GAP = 5 -- the hub gap (between bridges 5 and 6) where the wall stands
 Config.RANK_WALL_R = 25 -- studs from the hub centre
 -- HUD teleports (owner 2026-10-22: "MY BASE" and "RANKINGS" at the top of the HUD): seconds between two
@@ -887,7 +889,8 @@ Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.38
 	{ mesh = "rbxassetid://7280531958", texture = "rbxassetid://7280532422", size = Vector3.new(38.665, 48.388, 28.576), at = CFrame.new(0, 24.1921, 0) },
 } }
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
-Config.RANK_WRITE_EVERY = 60 -- s between write rounds (one SetAsync per changed score)
+Config.RANK_WRITE_EVERY = 60 -- s between write rounds
+Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)
 Config.RANK_TICK = 30 -- s between a session's score reports (play time, rate)
 Config.RANK_MIN_BUDGET = 10 -- requests of that type left before the board may spend one
 
