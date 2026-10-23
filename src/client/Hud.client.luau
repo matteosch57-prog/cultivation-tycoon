@@ -1119,7 +1119,7 @@ local function layout()
 	ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
 	local hasHall = player:GetAttribute("HasHall") == true
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
-	ui.dCol.Visible = hasHall
+	ui.dCol.Visible = true -- always there (owner 2026-10-23), the Disciple Hall or not: the book and the sect to look at
 	ui.pCol.Visible = hasFurnace
 	ui.gCol.Visible = true -- the gift always shows its next reward (owner pick B)
 	ui.karmaRow.Visible = (player:GetAttribute("Karma") or 0) > 0 or (player:GetAttribute("Lives") or 1) > 1
@@ -1130,11 +1130,7 @@ local function layout()
 	ui.top.Visible = not modal
 	ui.left.Visible = not modal -- the Shop button is always there otherwise
 	ui.right.Visible = not modal
-	ui.cardBox.Visible = state.discOpen and hasHall and not modal
-	if not hasHall then
-		state.discOpen = false
-		ui.cardBox.Visible = false
-	end
+	ui.cardBox.Visible = state.discOpen and not modal
 	-- recruit: left of the phone jump button, or above it when the progress bar is in the way
 	-- (positions in the root's own units: a phone check scales the root, AbsolutePosition does not)
 	local unscale = rootScale and rootScale.Scale or 1

@@ -594,6 +594,9 @@ function Shop.init(a)
 		s.data.qi += gain
 		Telemetry.custom(player, "Shop", "free", "", realm(s))
 		api.publish(player)
+		-- the reward moment (BuyMoment.client, as a qi pack): what it gave, then the qi pours into
+		-- the counter (owner 2026-10-23: "Shop daily gift has no popup screen showing what they got")
+		api.notify:FireClient(player, "shopQi", gain, "Daily Gift", "gift")
 		return gain
 	end
 
