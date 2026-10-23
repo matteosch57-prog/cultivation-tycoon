@@ -1110,7 +1110,7 @@ end
 -- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
 -- by row, in the mock's ORDER. Robux is Roblox's own icon (ROBUX_ICON, ships with the client).
 Config.ICON_ATLAS = {
-	image = "rbxassetid://88666296128668", -- 31 icons (+ trophy for Ranks), uploaded 2026-10-22
+	image = "rbxassetid://117949315010532", -- 35 icons (trophy, bell, three swords added), uploaded 2026-10-23
 	cell = 128,
 	keys = {
 		-- cell 4 (disciple) is unused: Toy draws the disciple atlas figure
@@ -1119,12 +1119,9 @@ Config.ICON_ATLAS = {
 		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
 		sworn = 24, seat = 25, isles = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
 		bag = 3, -- the shop's qi pouch
-		-- the Tide Bell: its own bell is cell 31 of art/ui/icon_atlas.png (docs/art/mocks/icons.js, key
-		-- "bell"); the tide wave stands in until the owner uploads it, then set tidebell = 31 with the new id
-		tidebell = 7,
-		-- the three Flying Swords (D76) are cells 32 / 33 / 34 of the same new sheet: until it is
-		-- uploaded Toy.icon draws a toy sword glyph for them; then add swordJade = 32,
-		-- swordHeavenly = 33, swordCelestial = 34 here
+		tidebell = 31, -- the Tide Bell's own bell (docs/art/mocks/icons.js, key "bell")
+		-- the three Flying Swords (D76); a sword key missing here falls back to Toy's drawn glyph
+		swordJade = 32, swordHeavenly = 33, swordCelestial = 34,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
