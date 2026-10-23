@@ -660,6 +660,7 @@ local function publish(player)
 	player:SetAttribute("GiftQi", at and math.floor(rate(s, true) * Config.GIFT_VALUE[gi]) or 0)
 	player:SetAttribute("GiftSummons", at and Config.GIFT_SUMMONS[gi] or 0)
 	player:SetAttribute("GiftPill", at and Config.GIFT_PILL[gi] or 0)
+	player:SetAttribute("GiftPlay", math.floor(d.giftPlay or 0)) -- seconds played today (the Free Gifts page's timers)
 	player:SetAttribute("GiftRarity", at and Config.GIFT_RARITY[gi] ~= "" and Config.GIFT_RARITY[gi] or nil)
 	player:SetAttribute("GiftResetIn", (Config.giftDay() + 1) * 86400 - os.time())
 	local built = 0

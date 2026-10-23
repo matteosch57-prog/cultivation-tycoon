@@ -201,7 +201,7 @@ local function ladder()
 	if n == 0 or not Config.GIFT_TIMES[n] then
 		return 0, last
 	end
-	return n, Config.GIFT_TIMES[n] - (player:GetAttribute("GiftIn") or 0)
+	return n, player:GetAttribute("GiftPlay") or (Config.GIFT_TIMES[n] - (player:GetAttribute("GiftIn") or 0))
 end
 
 local open = false
@@ -341,6 +341,7 @@ local function show()
 		local line = frame(row, { Size = UDim2.new(1, -STATUS_W, 1, 0) })
 		local ll = Toy.list(line, true, px(6))
 		ll.VerticalAlignment = Enum.VerticalAlignment.Center
+		ll.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		local lp = Instance.new("UIPadding")
 		lp.PaddingLeft = UDim.new(0, px(10))
 		lp.Parent = line
