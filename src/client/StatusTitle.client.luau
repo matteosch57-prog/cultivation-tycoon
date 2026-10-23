@@ -3,6 +3,8 @@
 -- the realm name in the realm colour (Config.realmColor) and, from the 2nd life, "3rd Life" and the
 -- sect's skin grade under it. Drawn here from the player attributes Realm and Lives the server
 -- already sets, so the server sends nothing new. Hidden past Config.TITLE_SEE and over your own head.
+-- A VIP Sect owner (attribute Pass_vip, Shop.luau) gets the gold VIP icon before the realm name
+-- (owner pick 2026-10-23, like Pet Simulator 99 / Bee Swarm's VIP tag; chat tag in VipTag.client).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -20,7 +22,19 @@ local function draw(plr, gui)
 	end
 	local lives = plr:GetAttribute("Lives") or 1
 	Toy.list(gui, false, 0, { HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Bottom })
-	Toy.text(gui, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 1 })
+	if plr:GetAttribute("Pass_vip") then
+		local row = Instance.new("Frame")
+		row.BackgroundTransparency = 1
+		row.AutomaticSize = Enum.AutomaticSize.XY
+		row.Size = UDim2.new()
+		row.LayoutOrder = 1
+		Toy.list(row, true, 4)
+		Toy.icon(row, "vip", 26, { LayoutOrder = 1 })
+		Toy.text(row, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 2 })
+		row.Parent = gui
+	else
+		Toy.text(gui, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 1 })
+	end
 	if lives > 1 then
 		Toy.text(gui, Config.ordinal(lives) .. " Life · " .. Config.skinName(realm, lives), 14, CREAM, { LayoutOrder = 2 })
 	end
@@ -48,6 +62,9 @@ local function attach(plr, char)
 			draw(plr, gui)
 		end),
 		plr:GetAttributeChangedSignal("Lives"):Connect(function()
+			draw(plr, gui)
+		end),
+		plr:GetAttributeChangedSignal("Pass_vip"):Connect(function()
 			draw(plr, gui)
 		end),
 		gui.AncestryChanged:Connect(function()
