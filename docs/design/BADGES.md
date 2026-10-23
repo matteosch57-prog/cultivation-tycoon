@@ -18,13 +18,12 @@ each badge goes in `Config.BADGES` after you create it (0 = not created yet, not
 | 5 | Loyal Cultivator | Return for 7 days of Daily Blessings. | Day 7 of the login streak | Seven lit lanterns |
 | 6 | Elder's Favour | Recruit an Elder or rarer. | First Elder+ disciple | Purple-aura Elder |
 | 7 | Nascent Soul | Awaken your Nascent Soul. | Reach realm 4 | A small glowing spirit over a hall |
-| 8 | Sect of Friends | Cultivate beside a friend. | Play on a server with a friend | Two disciples back to back |
+| 8 | Sect of Friends | Have a friend join you in game. | A Roblox friend joins the server while you play (not you joining them) | Two disciples back to back |
 | 9 | Mahayana | Reach the Great Vehicle. | Reach realm 8 | Main Hall level 5 at dusk |
-| 11 | True Immortal | Ascend to True Immortal, the tenth realm. | Reach realm 10 | The grand hall at dusk (was Mahayana's icon) |
 | 10 | Reborn | Start a new life through reincarnation. | First reincarnation | A phoenix ring around the qi drop |
 
 **Launch set (owner 2026-10-23, 5 free creations):** Sect Founder and First Disciple (easy), Golden Core and
-Loyal Cultivator (medium), True Immortal (super hard). The other five keep id 0 for now.
+Loyal Cultivator (medium), Sect of Friends (a friend joins you; it replaced a True Immortal idea). The other five keep id 0 for now.
 
 **Icons (2026-10-23):** `art/badges/<key>.png`, 512 x 512, in the shop icons' glossy-disc language
 (gold ring, painted subject, filling the circle Roblox crops to). Generator

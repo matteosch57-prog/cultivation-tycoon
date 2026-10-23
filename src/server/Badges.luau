@@ -32,9 +32,6 @@ local GOALS = {
 	realm8 = function(s)
 		return (s.data.best or 1) >= 8
 	end,
-	realm10 = function(s)
-		return (s.data.best or 1) >= 10
-	end,
 	streak7 = function(s)
 		return ((s.data.streak or {}).total or 0) >= 7
 	end,
@@ -47,7 +44,7 @@ local GOALS = {
 		return false
 	end,
 	friends = function(s)
-		return (s.friendsPeak or 0) > 0
+		return s.friendJoined == true -- a Roblox friend joined the server while this player was in it (Main onJoin)
 	end,
 	reborn = function(s)
 		return (s.data.lives or 1) > 1

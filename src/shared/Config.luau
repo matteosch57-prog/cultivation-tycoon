@@ -570,13 +570,12 @@ Config.BADGES = {
 	streak7 = 0, -- Loyal Cultivator: day 7 of the Daily Blessing
 	elder = 0, -- Elder's Favour: an Elder or rarer
 	realm4 = 0, -- Nascent Soul
-	friends = 0, -- Sect of Friends: a friend on the server
+	friends = 0, -- Sect of Friends: a friend joins you in game (not just sharing a server)
 	realm8 = 0, -- Mahayana
 	reborn = 0, -- Reborn: first reincarnation
-	realm10 = 0, -- True Immortal: reach realm 10 (the hard one)
 }
--- Launch set (owner 2026-10-23: "only 5 free, 2 easy, 2 medium and 1 super hard"): founder, disciple,
--- realm3, streak7, realm10. The others stay 0 until they are created.
+-- Launch set (owner 2026-10-23: "only 5 free, 2 easy, 2 medium and 1 super hard", then the hard one
+-- swapped for a friend joining you): founder, disciple, realm3, streak7, friends. The others stay 0.
 function Config.giftDay(t)
 	return math.floor((t or os.time()) / 86400)
 end

@@ -125,12 +125,12 @@ const BADGES = [
       <g opacity=".95">${figure(256, 160, .78, '#e8fbff', '#8fd8ff', { halo: true })}</g>
       <path d="M256 290 C236 320 270 340 250 372" stroke="#cfeaff" stroke-width="8" fill="none" stroke-linecap="round" opacity=".6"/>
       ${star(392, 110, 26)}${star(120, 140, 16)}` },
-  { key: 'friends', name: 'Sect of Friends', desc: 'Cultivate beside a friend.',
+  { key: 'friends', name: 'Sect of Friends', desc: 'Have a friend join you in game.',
     disc: ['#ffe8c4', '#ff9a2e', '#8a3b05'],
     art: () => `${rays(12, 300, .07, '#fff1d6', .4)}${figure(178, 204, .98, '#33c79a', '#0a6a50')}${figure(334, 204, .98, '#ff6a52', '#8e1f1a')}
       <g filter="url(#shadow)"><path d="M256 132 C240 110 206 118 210 146 C214 170 256 188 256 188 C256 188 298 170 302 146 C306 118 272 110 256 132Z" fill="#ff5a6e" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/></g>
       ${star(410, 110, 22)}${star(100, 130, 16)}` },
-  { key: 'realm10', name: 'True Immortal', desc: 'Ascend to True Immortal, the tenth realm.',
+  { key: 'realm8', name: 'Mahayana', desc: 'Reach the Great Vehicle.',
     disc: ['#ffc88a', '#c2457e', '#2a1452'], dusk: true,
     art: () => `<circle cx="256" cy="250" r="150" fill="#ffd27a" opacity=".6" filter="url(#bloom)"/>${rays(14, 300, .05, '#ffe6b0', .3, 256, 300)}
       ${twinkles(8, 11, '#fff6d0', .7)}

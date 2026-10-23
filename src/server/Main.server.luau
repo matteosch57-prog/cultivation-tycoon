@@ -1573,6 +1573,13 @@ local function onJoin(player)
 	if not player.Parent then
 		return
 	end
+	-- a friend joined someone already playing: their Sect of Friends badge (Badges.luau `friends`;
+	-- owner 2026-10-23: a friend joining you, not just inviting or landing on a friend's server)
+	for other in friends do
+		if sessions[other] then
+			sessions[other].friendJoined = true
+		end
+	end
 	local plot, nextDoor = freePlot(friends)
 	if not plot then
 		warn("[Tycoon] no free peak for", player.Name)

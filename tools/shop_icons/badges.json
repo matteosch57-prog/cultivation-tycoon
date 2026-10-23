@@ -37,12 +37,12 @@
   {
     "key": "friends",
     "name": "Sect of Friends",
-    "desc": "Cultivate beside a friend."
+    "desc": "Have a friend join you in game."
   },
   {
-    "key": "realm10",
-    "name": "True Immortal",
-    "desc": "Ascend to True Immortal, the tenth realm."
+    "key": "realm8",
+    "name": "Mahayana",
+    "desc": "Reach the Great Vehicle."
   },
   {
     "key": "reborn",
