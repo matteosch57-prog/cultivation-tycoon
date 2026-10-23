@@ -1080,7 +1080,7 @@ end
 -- Breakthrough, Odds, the return chest and the Friends card too). Gifts and Streak stay Enabled and
 -- empty their children when closed, so a screen counts while it is Enabled AND draws something; the
 -- Friends gui always holds its HUD row, so only its card counts (Friends.client names it "Card")
-local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index", "Disciples", "Gifts", "Streak", "Breakthrough", "RecruitOdds", "IdleChest", "Friends", "Settings" }
+local MODALS = { "Shop", "Reincarnation", "WelcomeOffer", "StarterOffer", "Index", "Disciples", "Gifts", "Streak", "Breakthrough", "RecruitOdds", "IdleChest", "Friends", "Settings", "Rankings" }
 local MODAL_PART = { Friends = "Card" }
 local function modalOpen()
 	for _, name in MODALS do
@@ -1385,7 +1385,9 @@ player:GetAttributeChangedSignal("Qi"):Connect(function()
 	state.lastQi = q
 	rebirthChip()
 	if gain > 0 and gain <= (player:GetAttribute("Rate") or 0) * 1.6 + 1 then
-		popGain(gain) -- passive income tick (not a purchase refund or a big grant)
+		if not modalOpen() then -- no "+qi" floating over a full screen (Play check 2026-10-23)
+			popGain(gain) -- passive income tick (not a purchase refund or a big grant)
+		end
 	end
 end)
 
