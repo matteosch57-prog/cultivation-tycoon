@@ -244,22 +244,32 @@ local function template(look, tier, poseName)
 	end
 	pending[key] = {}
 	local ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, describe(look, tier), Enum.HumanoidRigType.R15)
+	local err
 	if ok then
-		local hum = m:FindFirstChildOfClass("Humanoid")
-		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-		hum.RequiresNeck = false
-		hum.BreakJointsOnDeath = false
-		m:PivotTo(CFrame.identity)
-		pose(m, POSES[poseName])
-		-- sit the lowest point of the folded legs on the cushion (a flyer's feet on its sword)
-		local low = math.huge
-		for _, p in m:GetDescendants() do
-			if p:IsA("BasePart") and p.Name ~= "Handle" then
-				low = math.min(low, p.Position.Y - p.Size.Y / 2)
+		-- an error here must still wake the waiters below, or every later figure of this key hangs
+		ok, err = pcall(function()
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			hum.RequiresNeck = false
+			hum.BreakJointsOnDeath = false
+			m:PivotTo(CFrame.identity)
+			pose(m, POSES[poseName])
+			-- sit the lowest point of the folded legs on the cushion (a flyer's feet on its sword)
+			local low = math.huge
+			for _, p in m:GetDescendants() do
+				if p:IsA("BasePart") and p.Name ~= "Handle" then
+					low = math.min(low, p.Position.Y - p.Size.Y / 2)
+				end
 			end
+			m:PivotTo(m:GetPivot() + Vector3.new(0, (poseName == "fly" and 0 or SEAT) - low, 0))
+		end)
+		if ok then
+			templates[key] = m
+		else
+			warn("[Cultivators] avatar pose failed", look, tier, err)
+			m:Destroy()
+			m = nil
 		end
-		m:PivotTo(m:GetPivot() + Vector3.new(0, (poseName == "fly" and 0 or SEAT) - low, 0))
-		templates[key] = m
 	else
 		warn("[Cultivators] avatar build failed", look, tier, m)
 		m = nil

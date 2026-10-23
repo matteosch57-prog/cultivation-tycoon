@@ -123,7 +123,11 @@ end
 function Rig.chain(joints, names, rot)
 	local cf = CFrame.identity
 	for _, name in names do
-		local c0, c1 = frames(joints[name])
+		local j = joints[name]
+		if not j or (not j:IsA("Motor6D") and not (j.Attachment0 and j.Attachment1)) then
+			return CFrame.identity -- a rig missing a joint: no reach, rather than an error every frame
+		end
+		local c0, c1 = frames(j)
 		cf = cf * c0 * (rot[name] or CFrame.identity) * c1:Inverse()
 	end
 	return cf

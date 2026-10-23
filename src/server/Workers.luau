@@ -179,22 +179,32 @@ local function template(job, li, tool)
 		Enum.HumanoidRigType.R15
 	)
 	if ok then
-		local hum = m:FindFirstChildOfClass("Humanoid")
-		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-		hum.RequiresNeck = false
-		hum.BreakJointsOnDeath = false
-		m:PivotTo(CFrame.identity)
-		arm(m, tool)
-		Rig.live(m)
-		-- feet on the ground (y = 0 of the template)
-		local low = math.huge
-		for _, p in m:GetDescendants() do
-			if p:IsA("BasePart") and p.Name ~= "Handle" and p.Parent == m then
-				low = math.min(low, p.Position.Y - p.Size.Y / 2)
+		-- an error here must still wake the waiters below, or every later worker of this key hangs
+		local err
+		ok, err = pcall(function()
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			hum.RequiresNeck = false
+			hum.BreakJointsOnDeath = false
+			m:PivotTo(CFrame.identity)
+			arm(m, tool)
+			Rig.live(m)
+			-- feet on the ground (y = 0 of the template)
+			local low = math.huge
+			for _, p in m:GetDescendants() do
+				if p:IsA("BasePart") and p.Name ~= "Handle" and p.Parent == m then
+					low = math.min(low, p.Position.Y - p.Size.Y / 2)
+				end
 			end
+			m:PivotTo(m:GetPivot() + Vector3.new(0, -low, 0)) -- the root carries the body on its joints
+		end)
+		if ok then
+			templates[key] = m
+		else
+			warn("[Workers] avatar rig failed", job, li, err)
+			m:Destroy()
+			m = nil
 		end
-		m:PivotTo(m:GetPivot() + Vector3.new(0, -low, 0)) -- the root carries the body on its joints
-		templates[key] = m
 	else
 		warn("[Workers] avatar build failed", job, li, m)
 		m = nil

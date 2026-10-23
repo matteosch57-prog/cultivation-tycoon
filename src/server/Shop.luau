@@ -50,19 +50,35 @@ function Shop.onJoin(player, s)
 			player:SetAttribute("Limit_" .. it.key, true)
 		end
 	end
+	local failed = {}
 	for _, it in Config.SHOP_PASSES do
 		if it.id ~= 0 and player.Parent then
 			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, it.id)
 			if ok and owns then
 				s.passes[it.key] = true
 				player:SetAttribute("Pass_" .. it.key, true)
-				if it.key == "vip" then
-					s.plot.vip = true -- the arch is drawn by rebuild on join
+				if it.key == "vip" and player.Parent and s.plot.owner == player then
+					s.plot.vip = true -- the arch is drawn by rebuild on join (not if they left: the next owner's peak)
 				end
 			elseif not ok then
 				warn("[Tycoon][shop] pass check failed", it.key)
+				table.insert(failed, it)
 			end
 		end
+	end
+	-- a failed check is asked again once the join is done: an owner must not play a session without it
+	if #failed > 0 then
+		task.delay(10, function()
+			for _, it in failed do
+				if api.sessions[player] ~= s or not player.Parent then
+					return
+				end
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, it.id)
+				if ok and owns and api.sessions[player] == s then
+					setPass(player, s, it.key)
+				end
+			end
+		end)
 	end
 end
 
@@ -132,13 +148,18 @@ end
 local function processReceipt(info)
 	local player = Players:GetPlayerByUserId(info.PlayerId)
 	local s = player and api.sessions[player]
-	if not s or not s.loaded or s.released then
+	-- s.ready: the join is done (passes known, offline time read, peak built); Roblox retries until then
+	if not s or not s.loaded or s.released or not s.ready then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local d = s.data
 	d.receipts = d.receipts or {}
 	if table.find(d.receipts, info.PurchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- granted before (retry after a slow save)
+		-- granted before, but maybe never saved: only a landed save tells Roblox to stop retrying
+		if not api.canSave() then
+			return STUDIO and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		return api.save(s) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local it = itemById(Config.SHOP_PRODUCTS, info.ProductId)
 	if not it then
@@ -525,6 +546,14 @@ function Shop.init(a)
 			setPass(player, s, it.key)
 			api.notify:FireClient(player, "shopPass", it.name, it.key)
 			print(string.format("[Tycoon][shop] pass %s bought by %d", it.key, player.UserId))
+		elseif not s.passes[it.key] then
+			-- Roblox answers "already owned" with purchased = false: an owner whose join check failed
+			task.spawn(function()
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
+				if ok and owns and api.sessions[player] == s then
+					setPass(player, s, it.key)
+				end
+			end)
 		end
 	end)
 	MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, purchased)

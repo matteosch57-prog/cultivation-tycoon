@@ -1081,7 +1081,13 @@ local function buyPad(s, part, info)
 	info.busy = true
 	s.padData[part] = nil
 	s.data.qi -= info.cost
-	info.onBuy()
+	local ok, err = pcall(info.onBuy)
+	if not ok then
+		-- the pad is gone and paid: offer the next pads anyway, or the player waits for a rejoin
+		warn("[Tycoon] pad build failed:", err)
+		pcall(refreshPads, s.player, s)
+		publish(s.player)
+	end
 end
 
 -- The breakthrough pad (and Heavenly Hands on it) only opens the confirm screen: the reset happens
@@ -1622,6 +1628,17 @@ local function onJoin(player)
 		end
 		data.indexSteps = Config.indexTotalStars(data.index) // Config.INDEX_STEP_STARS
 	end
+	-- Daily Blessing: disciple days were stored as numeric keys ({[2] = true}), a sparse table no
+	-- DataStore write accepts; they are string keys now
+	if data.streak and data.streak.got then
+		local got = {}
+		for k, v in data.streak.got do
+			got[tostring(k)] = v
+		end
+		data.streak.got = got
+	end
+	-- read before anything can save: a save (autosave, a receipt) stamps `last` with now
+	local lastSeen = data.last
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
 	sessions[player] = s
 	Ranks.submit(player, s.data)
@@ -1656,7 +1673,7 @@ local function onJoin(player)
 	local hasChest = data.owned.platform == true
 
 	-- offline qi
-	local away = math.clamp(os.time() - (data.last or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
+	local away = math.clamp(os.time() - (lastSeen or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
 	local offlineGain = 0
 	if away > 60 then
 		offlineGain = math.floor(rate(s, true) * away * Config.OFFLINE_RATE)
@@ -1693,6 +1710,7 @@ local function onJoin(player)
 	refreshPads(player, s)
 	publish(player)
 	publishFriends(player)
+	s.ready = true -- receipts wait for this (Shop processReceipt): passes known, peak built
 	if showChest then
 		task.delay(3, function()
 			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
@@ -2095,14 +2113,14 @@ streakFn.OnServerInvoke = function(player)
 	local day = st.day or 1
 	local step = Config.STREAK[day] or Config.STREAK[1]
 	st.got = st.got or {}
-	local pay = (step.rarity and st.got[day]) and step.again or step
+	local pay = (step.rarity and st.got[tostring(day)]) and step.again or step
 	local gain = math.floor(rate(s, true) * (pay.qiSec or 0))
 	local summons = pay.summons or 0
 	local rarity = pay.rarity
 	st.last, st.total = today, (st.total or 0) + 1
 	st.day = day % #Config.STREAK + 1
 	if step.rarity then
-		st.got[day] = true
+		st.got[tostring(day)] = true -- a string key: DataStore rejects a sparse numeric table
 	end
 	d.qi += gain
 	if gain > 0 then
@@ -2656,7 +2674,10 @@ task.spawn(function()
 		for player, s in sessions do
 			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				checkOrbs(player, s, hrp)
+				local okOrb, orbErr = pcall(checkOrbs, player, s, hrp) -- an error here would stop pad buying for all
+				if not okOrb then
+					warn("[Tycoon] orb check failed:", orbErr)
+				end
 			end
 		end
 	end
@@ -2695,48 +2716,54 @@ while true do
 		warn("[Tycoon] spirit tide tick failed:", tideErr)
 	end
 	for player, s in sessions do
-		local d = s.data
-		local gain = rate(s) * dt
-		d.qi += gain
-		s.earned = (s.earned or 0) + gain
-		s.playTime = (s.playTime or 0) + dt
-		d.playSec = (d.playSec or 0) + dt
-		-- daily gifts (D49): play time today; a new UTC day restarts the ladder
-		local today = Config.giftDay()
-		if d.giftDay ~= today then
-			d.giftDay, d.giftPlay, d.giftIdx = today, 0, 1
-		end
-		d.giftPlay = (d.giftPlay or 0) + dt
-		-- hub rankings: this week's play time and the best rate ever, reported every RANK_TICK s
-		local week = Config.rankWeek()
-		if d.week ~= week then
-			d.week, d.weekSec = week, 0
-		end
-		d.weekSec = (d.weekSec or 0) + dt
-		d.peakRate = math.max(d.peakRate or 0, gain / math.max(dt, 1e-3))
-		s.rankIn = (s.rankIn or 0) - dt
-		if s.rankIn <= 0 then
-			s.rankIn = Config.RANK_TICK
-			Ranks.submit(player, d)
-		end
-		Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
-		-- Alchemy Furnace brews a pill while none is waiting
-		if d.owned.furnace and not d.pillReady then
-			d.pillTimer = (d.pillTimer or 0) + dt
-			if d.pillTimer >= Config.PILL_INTERVAL then
-				d.pillReady = true
-				notify:FireClient(player, "pill")
+		-- one player's error must not stop this loop: it pays everyone's qi and runs every autosave
+		local okTick, tickErr = pcall(function()
+			local d = s.data
+			local gain = rate(s) * dt
+			d.qi += gain
+			s.earned = (s.earned or 0) + gain
+			s.playTime = (s.playTime or 0) + dt
+			d.playSec = (d.playSec or 0) + dt
+			-- daily gifts (D49): play time today; a new UTC day restarts the ladder
+			local today = Config.giftDay()
+			if d.giftDay ~= today then
+				d.giftDay, d.giftPlay, d.giftIdx = today, 0, 1
 			end
-		end
-		-- Qi Gathering Array drops an orb every ORB_INTERVAL
-		if d.owned.array then
-			s.orbTimer = (s.orbTimer or 0) + dt
-			if s.orbTimer >= Config.ORB_INTERVAL then
-				s.orbTimer = 0
-				spawnOrb(s)
+			d.giftPlay = (d.giftPlay or 0) + dt
+			-- hub rankings: this week's play time and the best rate ever, reported every RANK_TICK s
+			local week = Config.rankWeek()
+			if d.week ~= week then
+				d.week, d.weekSec = week, 0
 			end
+			d.weekSec = (d.weekSec or 0) + dt
+			d.peakRate = math.max(d.peakRate or 0, gain / math.max(dt, 1e-3))
+			s.rankIn = (s.rankIn or 0) - dt
+			if s.rankIn <= 0 then
+				s.rankIn = Config.RANK_TICK
+				Ranks.submit(player, d)
+			end
+			Journal.tick(player, player.Character and player.Character:FindFirstChild("HumanoidRootPart"), dt)
+			-- Alchemy Furnace brews a pill while none is waiting
+			if d.owned.furnace and not d.pillReady then
+				d.pillTimer = (d.pillTimer or 0) + dt
+				if d.pillTimer >= Config.PILL_INTERVAL then
+					d.pillReady = true
+					notify:FireClient(player, "pill")
+				end
+			end
+			-- Qi Gathering Array drops an orb every ORB_INTERVAL
+			if d.owned.array then
+				s.orbTimer = (s.orbTimer or 0) + dt
+				if s.orbTimer >= Config.ORB_INTERVAL then
+					s.orbTimer = 0
+					spawnOrb(s)
+				end
+			end
+			publish(player)
+		end)
+		if not okTick then
+			warn("[Tycoon] income tick failed:", tickErr)
 		end
-		publish(player)
 	end
 	if sinceSave >= Config.AUTOSAVE then
 		sinceSave = 0
