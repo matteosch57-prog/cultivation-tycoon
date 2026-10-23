@@ -162,6 +162,53 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Rate = 10 + 10 * k,
 		})
 	end
+	local runes = Config.AURA_TEX.runes
+	if tier >= 5 and runes ~= 0 then
+		-- runes floating up off the glyph's rim (the reference pack's rune aura), from realm 6
+		emitter(rim, {
+			Name = "Runes",
+			Texture = "rbxassetid://" .. runes,
+			FlipbookLayout = Enum.ParticleFlipbookLayout.Grid2x2,
+			FlipbookMode = Enum.ParticleFlipbookMode.Random,
+			Color = ColorSequence.new(WHITE, pale),
+			Shape = Enum.ParticleEmitterShape.Cylinder,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			Size = seq(0.6, 1 + 0.4 * k, 0.4),
+			Transparency = seq(1, 0.1, 1),
+			Brightness = 2,
+			Lifetime = NumberRange.new(1.6, 2.4),
+			Speed = NumberRange.new(1.5, 2.5),
+			Rate = 2 + 3 * k,
+		})
+	end
+	local column = Config.AURA_TEX.column
+	if tier >= 8 and column ~= 0 then
+		-- a column of light standing on the glyph, from realm 9
+		local a0 = Instance.new("Attachment")
+		a0.Name = "ColumnBase"
+		a0.CFrame = CFrame.new(0, 0.2, 0)
+		a0.Parent = ground
+		local a1 = Instance.new("Attachment")
+		a1.Name = "ColumnTop"
+		a1.CFrame = CFrame.new(0, 12, 0)
+		a1.Parent = ground
+		local b = Instance.new("Beam")
+		b.Name = "Column"
+		b.Attachment0 = a0
+		b.Attachment1 = a1
+		b.Texture = "rbxassetid://" .. column
+		b.TextureMode = Enum.TextureMode.Stretch
+		b.TextureSpeed = 0
+		b.FaceCamera = true
+		b.Width0 = R * 0.55
+		b.Width1 = R * 0.45
+		b.Color = ColorSequence.new(pale, color)
+		b.LightEmission = 1
+		b.LightInfluence = 0
+		b.Brightness = 1.5
+		b.Transparency = NumberSequence.new(0.25)
+		b.Parent = ground
+	end
 	if tier >= 7 then
 		-- flames licking up the body
 		local base = holder(folder, hrp, "AuraFlames", Vector3.new(3.2, 0.1, 3.2), feet * CFrame.new(0, 0.3, 0))
