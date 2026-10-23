@@ -40,7 +40,7 @@ KINDS = {
 PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
 
 
-def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10):
+def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10, events=None):
     slot_seats = {p["id"]: int(p.get("seats", 1)) for p in C["PADS"]}  # a slot pad's seats (Config.maxDisciples)
     """policy: gated = rebirth only when the next realm's gate blocks (sim_game.py's rule);
     eager = rebirth `react` s after qi first holds the price (the gold wobbling chip);
@@ -71,6 +71,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     def pay(k, v):
         sink[k] = sink.get(k, 0) + v
         S["qi"] -= v
+        if events is not None:  # tools/botsim_compare.py: every spend, to line up with the Studio bot
+            events.append((clock["play"], k, v, S["realm"], S["lives"]))
 
     def lvl(k):
         return S["dao"].get(k, 0)
@@ -277,6 +279,21 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
 
                 # --- rebirth (the HUD chip): eager presses it once the price is held
                 built = all_built()
+                if events is not None:  # waiting: qi under the cheapest thing on offer (botsim's rule)
+                    offer = []
+                    if built:
+                        if S["lives"] - 1 < gate(S["realm"] + 1):
+                            offer.append(rebirth_price())
+                        else:
+                            offer.append(math.floor(cache["price"] * C["BREAKTHROUGH_SECONDS"]))
+                    else:
+                        offer += [pad_cost(p) for p in open_pads()]
+                        if "hall" in S["owned"]:
+                            offer.append(sum(recruit_cost(S["rr"] + i) for i in range(batch)))
+                        offer += [P[i]["cost"] * C["WORKER_COST"][S["workers"].get(i, 0)] * cmult() for i in C["WORKER_PADS"]
+                                  if i in S["owned"] and S["workers"].get(i, 0) < C["WORKER_MAX"]]
+                    if offer and S["qi"] < min(offer):
+                        events.append((clock["play"], "wait", 0, S["realm"], S["lives"]))
                 eager = policy == "eager" or (policy == "hybrid" and S["lives"] - 1 < gate(S["realm"] + 2))
                 # D66: the server opens a rebirth only when the next realm waits for one (Config.rebirthOpen),
                 # so a press is refused otherwise: eager / hybrid only model the pre-D66 build (--pre-d66)
