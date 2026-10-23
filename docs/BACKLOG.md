@@ -20,6 +20,7 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 
 ## Feel
 - The music bed is not picked yet (DECISIONS Q1).
+- HUD gift button: the prize picture on its corner (`ui.giftBadge`, 22 px) is hard to read; the name under it carries the prize. Try a bigger figure without the aura.
 
 ## Docs
 - No doc gate script yet (Gladiator's `tools/check_docs.py` is the model).

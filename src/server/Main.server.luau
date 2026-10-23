@@ -676,6 +676,9 @@ local function publish(player)
 	player:SetAttribute("GiftNext", at and gi or 0)
 	player:SetAttribute("GiftQi", at and math.floor(rate(s, true) * Config.GIFT_VALUE[gi]) or 0)
 	player:SetAttribute("GiftSummons", at and Config.GIFT_SUMMONS[gi] or 0)
+	player:SetAttribute("GiftPill", at and Config.GIFT_PILL[gi] or 0)
+	player:SetAttribute("GiftPlay", math.floor(d.giftPlay or 0)) -- seconds played today (the Free Gifts page's timers)
+	player:SetAttribute("GiftRarity", at and Config.GIFT_RARITY[gi] ~= "" and Config.GIFT_RARITY[gi] or nil)
 	player:SetAttribute("GiftResetIn", (Config.giftDay() + 1) * 86400 - os.time())
 	local built = 0
 	for _, pad in Config.PADS do
@@ -1843,7 +1846,8 @@ pillFn.OnServerInvoke = function(player)
 	s.data.pillTimer = 0
 	s.data.tips = s.data.tips or {}
 	s.data.tips.pill = true
-	s.data.boostUntil = workspace:GetServerTimeNow() + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
+	-- a pill adds to one still running (a gift's 2x Qi pill, D49, is not cut short)
+	s.data.boostUntil = math.max(workspace:GetServerTimeNow(), s.data.boostUntil or 0) + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
 	return true
@@ -1865,17 +1869,25 @@ giftFn.OnServerInvoke = function(player)
 	end
 	local gain = math.floor(rate(s, true) * Config.GIFT_VALUE[gi])
 	local summons = Config.GIFT_SUMMONS[gi] or 0
+	local pill = Config.GIFT_PILL[gi] or 0
+	local rarity = Config.GIFT_RARITY[gi] ~= "" and Config.GIFT_RARITY[gi] or nil
 	d.giftIdx = gi + 1
 	d.qi += gain
 	if summons > 0 then -- free summons wait in the idle chest's pool (ChestSummon reveals them)
 		d.chestSummons = (d.chestSummons or 0) + summons
 		player:SetAttribute("ChestSummons", d.chestSummons)
 	end
+	if pill > 0 then -- a 2x Qi pill: adds to one already running
+		d.boostUntil = math.max(workspace:GetServerTimeNow(), d.boostUntil or 0) + pill
+	end
+	if rarity then
+		addDisciple(s, rarity, true) -- a gift: never turned away
+	end
 	Telemetry.source(player, d, gain, "gift", true)
 	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(d.realm))
 	publish(player)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
-	return { qi = gain, summons = summons }
+	return { qi = gain, summons = summons, pill = pill, rarity = rarity }
 end
 
 -- Daily Blessing (D58): one claim per UTC day; the ladder only moves on a claim, so a missed day

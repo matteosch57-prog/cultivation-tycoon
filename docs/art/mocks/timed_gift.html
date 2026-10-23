@@ -1,0 +1,127 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Timed gift mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Playtime gifts page (owner 2026-10-22: "way more explicit with the reward, attractive, click it
+     opens a juicy page with all timed rewards, make them interesting"). Phone 844x390 over 18_peak_wide.jpg.
+     ?A1..C2 = option, frame (1 = HUD chip, 2 = page open). Rendered by tools/mock_loading.py timed_gift. -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:844px;height:390px;overflow:hidden;font-family:Fredoka,sans-serif}
+.scene{position:relative;width:844px;height:390px;overflow:hidden;background:url(../captures/18_peak_wide.jpg) center/cover}
+.t{color:#fff;font-weight:700;-webkit-text-stroke:4px #1b1420;paint-order:stroke fill;line-height:1.05;white-space:nowrap}
+.abs{position:absolute}
+.toy{border:3px solid #1b1420;border-radius:14px;box-shadow:0 4px 0 #1b1420;position:relative}
+.lbl{position:absolute;left:8px;bottom:8px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.65);padding:4px 10px;border-radius:6px;z-index:50}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.62)}
+.rays{position:absolute;border-radius:50%;background:repeating-conic-gradient(rgba(255,230,140,.55) 0 10deg,transparent 10deg 20deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.dot{position:absolute;width:18px;height:18px;border-radius:50%;background:#ff3b3b;border:3px solid #1b1420}
+</style></head>
+<body><div class="scene" id="s"></div>
+<script>
+const q = location.search.slice(1) || "A1";
+const opt = q[0], fr = +q[1];
+const INK = "#1b1420", QI = "#6fd6ae", QIP = "#e8fff4", GOLD = "#ffd34d", JADE = "#59d39f";
+const qi = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><path d="M32 4C44 16 54 26 54 38a22 22 0 0 1-44 0C10 26 20 16 32 4z" fill="${QI}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M32 22c7 6 11 11 11 17a11 11 0 0 1-15 10c6-2 8-8 4-13-3-4-2-9 0-14z" fill="${QIP}"/></svg>`;
+const orb = s => `<svg width="${s}" height="${s}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#c59bff" stroke="${INK}" stroke-width="6"/><circle cx="50" cy="50" r="22" fill="#e9dcff"/><circle cx="38" cy="38" r="7" fill="#fff"/></svg>`;
+const pill = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><g transform="rotate(-35 32 32)"><rect x="8" y="22" width="48" height="20" rx="10" fill="#fff" stroke="${INK}" stroke-width="5"/><path d="M32 22h14a10 10 0 0 1 0 20H32z" fill="#ff6b5e" stroke="${INK}" stroke-width="5"/></g></svg>`;
+const chest = s => `<svg width="${s}" height="${s * .9}" viewBox="0 0 68 60"><rect x="6" y="22" width="56" height="34" rx="4" fill="#ffd34d" stroke="${INK}" stroke-width="5"/><path d="M6 24c0-16 56-16 56 0z" fill="#ffe58a" stroke="${INK}" stroke-width="5"/><rect x="28" y="24" width="12" height="14" rx="2" fill="#ff6b5e" stroke="${INK}" stroke-width="3"/></svg>`;
+const gift = s => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect x="8" y="26" width="48" height="32" rx="4" fill="#ff8fb1" stroke="${INK}" stroke-width="5"/><rect x="4" y="16" width="56" height="13" rx="4" fill="#ffb3cb" stroke="${INK}" stroke-width="5"/><rect x="27" y="16" width="10" height="42" fill="${GOLD}" stroke="${INK}" stroke-width="4"/><path d="M32 16c-10-14-22-6-14 0zM32 16c10-14 22-6 14 0z" fill="${GOLD}" stroke="${INK}" stroke-width="4"/></svg>`;
+// a disciple bust in the rarity colour (the build uses the real portrait)
+const dis = (s, c) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="${c}" stroke="${INK}" stroke-width="4"/><path d="M14 58c2-14 10-19 18-19s16 5 18 19" fill="#3a4a8a" stroke="${INK}" stroke-width="4"/><circle cx="32" cy="27" r="11" fill="#ffd9b8" stroke="${INK}" stroke-width="4"/><path d="M21 25c0-10 22-10 22 0-4-4-18-4-22 0z" fill="#2a1f2e" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="12" r="5" fill="#2a1f2e" stroke="${INK}" stroke-width="3"/></svg>`;
+const ELDER = "#be64ff", IMM = "#ffc83c";
+// the ladder (times = Config.GIFT_TIMES; rewards are placeholders until the economy sim)
+const G = [
+  ["5 min", qi, "+2 min Qi", null],
+  ["10 min", orb, "1 Summon", null],
+  ["20 min", pill, "2x Qi Pill", null],
+  ["30 min", orb, "3 Summons", null],
+  ["45 min", s => dis(s, ELDER), "Elder", ELDER],
+  ["60 min", qi, "+10 min Qi", null],
+  ["90 min", orb, "5 Summons", null],
+  ["2 hours", s => dis(s, IMM), "Immortal", IMM],
+];
+const claimed = 3, ready = 4; // gifts 1-3 taken, gift 4 ready now, gift 5 counts down
+const left = i => i === ready ? "READY" : i < ready ? "" : i === 5 ? "4:12" : ["", "", "", "", "", "", "19:12", "49:12", "1h19"][i];
+const check = `<svg class="abs" style="right:-8px;top:-8px" width="26" height="26"><circle cx="13" cy="13" r="11" fill="#fff" stroke="${INK}" stroke-width="3"/><path d="M8 13l3 3 7-7" fill="none" stroke="#2a9d6a" stroke-width="3"/></svg>`;
+const hudPill = `<div class="abs toy" style="left:24px;top:150px;width:60px;height:60px;border-radius:16px;background:#ffe08a;display:flex;align-items:center;justify-content:center">${pill(38)}</div>`;
+const hudTop = `<div class="abs" style="left:50%;top:10px;transform:translateX(-50%);display:flex;align-items:center;gap:6px">${qi(40)}<span class="t" style="font-size:32px">19,863</span></div>`;
+let h = "", lbl = ""; // the capture already carries the HUD
+
+if (opt === "A") {
+  // A: Pet Simulator 99's Free Gifts copied: a grid of every gift, each tile shows its prize and its timer
+  const tile = i => {
+    const [time, ic, txt, rc] = G[i - 1];
+    const done = i <= claimed, now = i === ready, big = i === 8;
+    const bg = done ? "#cfeedd" : now ? GOLD : rc ? rc + "40" : "#f3ecff";
+    return `<div class="toy" style="width:136px;height:118px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:5px 0 6px;${now ? "box-shadow:0 0 0 4px #fff,0 0 26px #ffd34d;transform:scale(1.06)" : ""}${big ? ";border-color:" + IMM : ""}">
+      ${(now || big) ? `<div class="rays" style="width:150px;height:150px;left:-10px;top:-24px;opacity:${now ? 1 : .5}"></div>` : ""}
+      <span class="t" style="font-size:17px;position:relative;color:${rc || "#fff"}">${txt}</span>
+      <div style="position:relative;${done ? "opacity:.45" : ""}">${ic(now || big ? 50 : 44)}</div>
+      <span class="t" style="font-size:16px;position:relative;color:${now ? "#fff" : done ? "#8fd8b3" : "#e8e0f0"}">${done ? "Claimed" : now ? "CLAIM!" : left(i)}</span>
+      ${done ? check : ""}</div>`;
+  };
+  const chip = `<div class="abs" style="right:22px;top:128px;display:flex;flex-direction:column;align-items:center;gap:2px">
+    <div class="toy" style="width:70px;height:70px;border-radius:18px;background:#ff9fb0;display:flex;align-items:center;justify-content:center">${gift(46)}
+      <div class="abs toy" style="position:absolute;right:-14px;bottom:-12px;border-radius:50%;background:#fff;padding:2px;box-shadow:none">${dis(30, ELDER)}</div></div>
+    <span class="t" style="font-size:16px;color:${ELDER}">Elder</span><span class="t" style="font-size:16px">4:12</span></div>`;
+  h += chip;
+  if (fr === 2) h += `<div class="veil"></div><div class="abs" style="left:50%;top:14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">${gift(40)}<span class="t" style="font-size:34px;color:${GOLD}">Free Gifts</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,136px);gap:10px">${[1, 2, 3, 4, 5, 6, 7, 8].map(tile).join("")}</div>
+    <span style="font:600 14px Fredoka;color:#cbbfd6">Play time today 32 min · new gifts in 6h20</span></div>
+    <div class="abs toy" style="position:absolute;right:40px;top:16px;width:40px;height:40px;border-radius:50%;background:#ff6b5e;display:flex;align-items:center;justify-content:center"><span class="t" style="font-size:22px">X</span></div>`;
+  lbl = fr === 1 ? "A1: the chip shows the next prize (Elder) and its timer" : "A2: tap it: Pet Sim 99 Free Gifts grid, every prize and timer, ready one glows";
+} else if (opt === "B") {
+  // B: a reward track (battle-pass style): one road, a bar fills with today's play, the Immortal at the end
+  const chip = `<div class="abs" style="right:18px;top:128px;display:flex;align-items:center;gap:8px">
+    <div style="display:flex;flex-direction:column;align-items:flex-end"><span class="t" style="font-size:14px;color:#ffe08a">Next gift</span><span class="t" style="font-size:20px;color:${ELDER}">Elder</span></div>
+    <div style="position:relative;width:74px;height:74px">
+      <svg class="abs" width="74" height="74" viewBox="0 0 74 74"><circle cx="37" cy="37" r="32" fill="#2b2233" stroke="${INK}" stroke-width="6"/><circle cx="37" cy="37" r="30" fill="none" stroke="${GOLD}" stroke-width="7" stroke-dasharray="${188 * 0.72} 188" transform="rotate(-90 37 37)" stroke-linecap="round"/></svg>
+      <div class="abs" style="left:13px;top:13px">${dis(48, ELDER)}</div></div>
+    <span class="t abs" style="right:6px;top:78px;font-size:16px">4:12</span></div>`;
+  h += chip;
+  if (fr === 2) {
+    const fill = 0.52; // 32 min of the bar
+    const stops = G.map(([time, ic, txt, rc], k) => {
+      const i = k + 1, done = i <= claimed, now = i === ready, big = i === 8;
+      const sz = big ? 74 : 56;
+      return `<div style="display:flex;flex-direction:column;align-items:center;width:88px;gap:3px">
+        <span class="t" style="font-size:14px;color:${rc || "#fff"}">${txt}</span>
+        <div class="toy" style="width:${sz + 10}px;height:${sz + 10}px;border-radius:50%;background:${done ? "#cfeedd" : now ? GOLD : big ? "#fff3c9" : "#f3ecff"};display:flex;align-items:center;justify-content:center;${now ? "box-shadow:0 0 0 4px #fff,0 0 24px #ffd34d" : ""}">
+          ${(now || big) ? `<div class="rays" style="width:${sz + 50}px;height:${sz + 50}px;left:-23px;top:-23px"></div>` : ""}<div style="position:relative;${done ? "opacity:.45" : ""}">${ic(sz - 8)}</div>${done ? check : ""}</div>
+        <span class="t" style="font-size:13px;color:${now ? GOLD : "#e8e0f0"}">${now ? "CLAIM!" : time}</span></div>`;
+    }).join("");
+    h += `<div class="veil"></div><div class="abs" style="left:0;right:0;top:30px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <span class="t" style="font-size:34px;color:${GOLD}">Gifts of the Day</span>
+      <div style="position:relative;width:780px">
+        <div class="abs toy" style="left:30px;right:30px;top:76px;height:16px;border-radius:999px;background:#3a3044;box-shadow:none"><div style="width:${fill * 100}%;height:100%;border-radius:999px;background:linear-gradient(90deg,${JADE},${GOLD})"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;position:relative">${stops}</div></div>
+      <span style="font:600 14px Fredoka;color:#cbbfd6">Play time today 32 min · the road restarts in 6h20</span></div>`;
+  }
+  lbl = fr === 1 ? "B1: the next prize itself on the HUD, a ring fills as you play" : "B2: tap it: one road, the bar fills with today's play, the Immortal waits at the end";
+} else {
+  // C: the grand prize up front (Anime Defenders style): a big hero card for the 2 h Immortal, the rest in a column
+  const chip = `<div class="abs toy" style="position:absolute;width:max-content;right:18px;top:128px;background:linear-gradient(#ffb3cb,#ff8fb1);padding:6px 12px 6px 8px;border-radius:16px;display:flex;align-items:center;gap:8px">
+    ${gift(40)}<div style="display:flex;flex-direction:column"><span class="t" style="font-size:14px">Free gift in 4:12</span>
+    <div style="display:flex;align-items:center;gap:4px">${dis(24, ELDER)}<span class="t" style="font-size:19px;color:${ELDER}">Elder</span></div></div></div>`;
+  h += chip;
+  if (fr === 2) {
+    const row = i => {
+      const [time, ic, txt, rc] = G[i - 1];
+      const done = i <= claimed, now = i === ready;
+      return `<div class="toy" style="width:300px;height:38px;border-radius:10px;background:${done ? "#cfeedd" : now ? GOLD : "#f3ecff"};display:flex;align-items:center;gap:8px;padding:0 10px;box-shadow:0 3px 0 ${INK}">
+        <span style="font:700 14px Fredoka;color:${INK};width:54px">${time}</span>${ic(26)}<span class="t" style="font-size:16px;flex:1;color:${rc || "#fff"}">${txt}</span>
+        <span class="t" style="font-size:14px;color:${now ? "#fff" : done ? "#2a9d6a" : "#e8e0f0"};${done ? "-webkit-text-stroke:0" : ""}">${done ? "✓" : now ? "CLAIM!" : left(i)}</span></div>`;
+    };
+    h += `<div class="veil"></div><div class="abs" style="left:50px;top:22px;display:flex;gap:18px;align-items:flex-start">
+      <div class="toy" style="width:300px;height:340px;background:linear-gradient(#3b2a12,#1d1520);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:6px;overflow:hidden">
+        <span class="t" style="font-size:18px;color:#ffe08a">Play 2 hours today</span>
+        <div style="position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center"><div class="rays" style="width:280px;height:280px;left:-50px;top:-50px"></div><div style="position:relative">${dis(150, IMM)}</div></div>
+        <span class="t" style="font-size:34px;color:${IMM}">Immortal</span><span class="t" style="font-size:18px">+400% Qi disciple</span>
+        <div class="toy" style="width:240px;height:22px;border-radius:999px;background:#3a3044;box-shadow:none;margin-top:4px"><div style="width:27%;height:100%;border-radius:999px;background:${GOLD}"></div><span class="t abs" style="left:0;right:0;top:1px;text-align:center;font-size:14px">32 / 120 min</span></div></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><span class="t" style="font-size:26px;color:${GOLD}">Free Gifts</span>${[1, 2, 3, 4, 5, 6, 7].map(row).join("")}</div></div>`;
+  }
+  lbl = fr === 1 ? "C1: a wide chip: timer + the next prize with its picture" : "C2: tap it: the 2 h grand prize as a big hero card, the other 7 in a list";
+}
+document.getElementById("s").innerHTML = h + `<div class="lbl">${lbl}</div>`;
+</script></body></html>

@@ -512,19 +512,31 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 -- Playtime gifts, D49 (owner 2026-10-22: "always show the next reward, reset daily, up to 2 h
 -- online"): gift i is claimable after GIFT_TIMES[i] seconds of play TODAY (UTC day, summed over
 -- every session; the ladder restarts at 00:00 UTC). Each pays GIFT_VALUE[i] seconds of income (no
--- tide, no pill) and GIFT_SUMMONS[i] free summons (into the idle chest's summons). Simmed: no
--- change to the pace, gifts are ~9% of a regular player's qi (tools/sim_game.py GIFT_DAILY).
+-- tide, no pill), GIFT_SUMMONS[i] free summons (into the idle chest's summons), GIFT_PILL[i] s of
+-- 2x qi and a GIFT_RARITY[i] disciple (owner: "make them interesting": an Elder at 45 min, an
+-- Immortal at 2 h). Simmed 2026-10-22 (tools/sim_game.py): every player kind's lives end on the
+-- same days as before, within a minute or two of play.
 Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
 -- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
 -- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
 -- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's (unclaimed
 -- group gift) lights at most once per DOT_GROUP_SECONDS.
-Config.DOT_SHOP_FIRST = 600
+Config.DOT_SHOP_FIRST = 120
 Config.SHOP_FREE_SECONDS = 300
 Config.DOT_GROUP_SECONDS = 24 * 3600
-Config.GIFT_VALUE = { 120, 180, 240, 300, 420, 540, 720, 900 }
-Config.GIFT_SUMMONS = { 0, 0, 1, 0, 1, 0, 2, 3 }
+Config.GIFT_VALUE = { 180, 120, 0, 300, 0, 900, 0, 0 }
+Config.GIFT_SUMMONS = { 0, 1, 0, 3, 0, 0, 5, 0 }
+Config.GIFT_PILL = { 0, 0, 300, 0, 0, 0, 0, 0 } -- seconds of 2x qi (adds to a running pill)
+Config.GIFT_RARITY = { "", "", "", "", "Elder", "", "", "Immortal" } -- a disciple of that rarity
 Config.GIFT_DAILY = true -- read by the sim
+-- what gift i pays (the HUD chip and the Free Gifts page draw it)
+function Config.giftPrize(i)
+	if not Config.GIFT_TIMES[i] then
+		return nil
+	end
+	local r = Config.GIFT_RARITY[i]
+	return { at = Config.GIFT_TIMES[i], qiSec = Config.GIFT_VALUE[i] or 0, summons = Config.GIFT_SUMMONS[i] or 0, pill = Config.GIFT_PILL[i] or 0, rarity = r ~= "" and r or nil }
+end
 -- Daily Blessing (login streak, D58, owner pick A: "elder d7 is super late, should be day 2 at
 -- least. I'd say even one tier more day 2"): one claim per UTC day (Config.giftDay); a missed day
 -- PAUSES the ladder (owner), it never resets. After day 7 it starts again at day 1. A day gives
