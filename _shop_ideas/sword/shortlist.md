@@ -88,3 +88,18 @@ Triangle counts are the whole model (aura packs include their demo dummy). Conta
 - Aura packs: take one ParticleEmitter set from the pack and drop the demo dummy.
 - Votes are near zero on most of the store; `Glowing Light Sword` (80 up), `Axoie's Auras` (98 up) and `Aura Pack Premium` (88 up) are the rated ones.
 - Nothing here is a fake light (R3): auras and trails are effects on the sword, the owner's call for paid cosmetics.
+
+## Blade-only auras (owner 2026-10-23: "aura only on sword i meant tho")
+
+Effects made for a blade, an alternative source for the per-tier glow (the mock tools/mock_swords_tiers.luau puts any aura's emitters on the blade).
+
+| asset id | name | creator | votes up/down | triangles | scripts | what it is |
+|---|---|---|---|---|---|---|
+| 129830115 | Sparkles your sword! | TheElitePower | 0/0 | 0 | 0 | sparkles for any sword (effect only) |
+| 9897434031 | Sword With particles | rhemgee702 | 0/0 | 0 | 0 | sword with particles on the blade |
+| 17033307456 | Flame Sword Effect | Adventurer Of Dawn | 0/0 | 24 | 0 | flame sword effect (24 tris) |
+| 16228071670 | Sword slash particle | Kingdom504 | 0/0 | 0 | 0 | sword slash particle |
+| 154741609 | Sapphire Sparkle Time Sword Pack | mothmage | 609/91 | 2212 | 0 | sapphire sword with sparkle aura, the best rated (609 up) |
+| 2914189061 | Lightning Sword Model | mond1412mond | 17/3 | 1062 | 0 | lightning sword, crackle on the blade |
+| 17544028481 | POF:RE Aura Excalibur | dashlingiceboy123 | 0/0 | 6673 | 0 | POF:RE Excalibur aura (gold light) |
+| 153790189 | Golden Sparkle Time Sword Pack | sarveshamsandwich | 0/0 | 1456 | 0 | golden sparkle sword |
