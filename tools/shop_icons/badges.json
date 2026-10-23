@@ -1,0 +1,52 @@
+[
+  {
+    "key": "founder",
+    "name": "Sect Founder",
+    "desc": "Raise the first building of your sect."
+  },
+  {
+    "key": "disciple",
+    "name": "First Disciple",
+    "desc": "Welcome your first disciple."
+  },
+  {
+    "key": "realm2",
+    "name": "Foundation Laid",
+    "desc": "Break through to Foundation Establishment."
+  },
+  {
+    "key": "realm3",
+    "name": "Golden Core",
+    "desc": "Form your Golden Core."
+  },
+  {
+    "key": "streak7",
+    "name": "Loyal Cultivator",
+    "desc": "Return for 7 days of Daily Blessings."
+  },
+  {
+    "key": "elder",
+    "name": "Elder's Favour",
+    "desc": "Recruit an Elder or rarer."
+  },
+  {
+    "key": "realm4",
+    "name": "Nascent Soul",
+    "desc": "Awaken your Nascent Soul."
+  },
+  {
+    "key": "friends",
+    "name": "Sect of Friends",
+    "desc": "Cultivate beside a friend."
+  },
+  {
+    "key": "realm8",
+    "name": "Mahayana",
+    "desc": "Reach the Great Vehicle."
+  },
+  {
+    "key": "reborn",
+    "name": "Reborn",
+    "desc": "Start a new life through reincarnation."
+  }
+]

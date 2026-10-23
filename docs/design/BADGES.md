@@ -22,6 +22,6 @@ each badge goes in `Config.BADGES` after you create it (0 = not created yet, not
 | 9 | Mahayana | Reach the Great Vehicle. | Reach realm 8 | Main Hall level 5 at dusk |
 | 10 | Reborn | Start a new life through reincarnation. | First reincarnation | A phoenix ring around the qi drop |
 
-**Icons:** 512 x 512 PNG, Roblox crops them to a circle (keep the subject in the middle 70%).
-Made the way the store art is made: hero shots staged in Studio Play, finished with
-`tools/store_post.py` (rays, rim light), not flat drawn vectors.
+**Icons (2026-10-23):** `art/badges/<key>.png`, 512 x 512, in the shop icons' glossy-disc language
+(gold ring, painted subject, filling the circle Roblox crops to). Generator
+`tools/shop_icons/badge_icons.js` (names and descriptions also in `badges.json`); render as its header says.
