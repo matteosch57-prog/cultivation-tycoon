@@ -11,6 +11,7 @@
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
 -- neon beads only. Phone budget at the top: 11 emitters a player, ~130 live particles, 20 beads,
 -- ~150 UI lines on the two glyph layers.
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local AuraGlyph = require(script.Parent:WaitForChild("AuraGlyph"))
@@ -185,7 +186,7 @@ local function realmAura(folder, hrp, hum, tier, color)
 		-- a column of light standing on the glyph, from realm 9 (owner: the flat Beam pane "needs to be done
 		-- better"): thin streaks of light shooting up round a soft glowing core, all particles, no edges
 		local shaft = holder(folder, hrp, "AuraColumn", Vector3.new(R * 0.45, 0.1, R * 0.45), feet)
-		emitter(shaft, {
+		local streaks = emitter(shaft, {
 			Name = "Streaks",
 			Texture = TEX .. "sparkles_main.dds",
 			Color = ColorSequence.new(WHITE, pale),
@@ -194,12 +195,16 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Squash = NumberSequence.new(-1.6), -- tall and thin (-2.5 thinned them to nothing in daylight)
 			Size = seq(0.9, 1.3, 0.6),
 			Transparency = seq(0.5, 0.25, 1),
-			Brightness = 3, -- 6 bloomed the glyph under it away (Play 2026-10-23)
+			Brightness = 3, -- 6 bloomed the glyph under it away at night (Play 2026-10-23)
 			Lifetime = NumberRange.new(1, 1.5),
 			Speed = NumberRange.new(7, 11),
 			Rate = 18 + 8 * (tier - 8),
 		})
-		emitter(shaft, {
+		-- the values above read well at night but vanish in daylight (Play v9): AuraSpin.client blends to these by day
+		streaks:SetAttribute("DayBrightness", 5.5)
+		streaks:SetAttribute("DayTransparency", seq(0.3, 0.05, 1))
+		CollectionService:AddTag(streaks, "AuraDaylight")
+		local core = emitter(shaft, {
 			Name = "Core",
 			Texture = TEX .. "smoke_main.dds",
 			Color = ColorSequence.new(pale, color),
@@ -213,6 +218,9 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Speed = NumberRange.new(4, 5),
 			Rate = 7,
 		})
+		core:SetAttribute("DayBrightness", 3.5)
+		core:SetAttribute("DayTransparency", seq(1, 0.45, 1))
+		CollectionService:AddTag(core, "AuraDaylight")
 	end
 	if tier >= 7 then
 		-- flames licking up the body

@@ -1,9 +1,11 @@
 -- Turns the ground glyphs of the player auras (src/server/AuraGlyph.luau): each layer's Motor6D
 -- (tag "AuraSpin") gets a Transform about the vertical by its Spin attribute (degrees a second).
 -- Only glyphs near and on screen turn (R16); the rest hold still where they are. Also preloads the
--- aura textures (Config.AURA_TEX).
+-- aura textures (Config.AURA_TEX), and blends emitters tagged "AuraDaylight" (the light column) from their
+-- night look to their DayBrightness / DayTransparency attributes by day (DayNight.client's NightWeight).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
@@ -62,4 +64,51 @@ RunService.PreSimulation:Connect(function()
 		end
 	end
 	PerfMark.finish("auraSpin", t0)
+end)
+
+-- day/night look of the light column: night values are what the server set, day values its attributes
+local daylit = {}
+local function nightWeight()
+	return Lighting:GetAttribute("NightWeight") or 0
+end
+local function mix(a, b, k)
+	local ka, kb, out = a.Keypoints, b.Keypoints, {}
+	if #ka ~= #kb then
+		return k < 0.5 and b or a
+	end
+	for i, p in ka do
+		table.insert(out, NumberSequenceKeypoint.new(p.Time, kb[i].Value + (p.Value - kb[i].Value) * k))
+	end
+	return NumberSequence.new(out)
+end
+local function apply(pe, d, k)
+	pe.Brightness = d.dayB + (d.nightB - d.dayB) * k
+	pe.Transparency = mix(d.nightT, d.dayT, k)
+end
+local function addLit(pe)
+	if not pe:IsA("ParticleEmitter") or daylit[pe] then
+		return
+	end
+	local d = {
+		nightB = pe.Brightness,
+		nightT = pe.Transparency,
+		dayB = pe:GetAttribute("DayBrightness") or pe.Brightness,
+		dayT = pe:GetAttribute("DayTransparency") or pe.Transparency,
+	}
+	daylit[pe] = d
+	apply(pe, d, nightWeight())
+end
+for _, pe in CollectionService:GetTagged("AuraDaylight") do
+	addLit(pe)
+end
+CollectionService:GetInstanceAddedSignal("AuraDaylight"):Connect(addLit)
+CollectionService:GetInstanceRemovedSignal("AuraDaylight"):Connect(function(pe)
+	daylit[pe] = nil
+end)
+-- NightWeight changes only during the 20 s fades, so this runs rarely (R16 rule 4)
+Lighting:GetAttributeChangedSignal("NightWeight"):Connect(function()
+	local k = nightWeight()
+	for pe, d in daylit do
+		apply(pe, d, k)
+	end
 end)

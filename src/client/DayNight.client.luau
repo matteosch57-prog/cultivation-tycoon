@@ -93,5 +93,6 @@ RunService.Heartbeat:Connect(function()
 		Sfx.birds.Volume = Sfx.birdsVol * (1 - k)
 	end
 	crickets.Volume = Config.NIGHT_BED.vol * k
+	Lighting:SetAttribute("NightWeight", k) -- local only: read by AuraSpin.client (day-bright aura column)
 	PerfMark.finish("daynight", t0)
 end)
