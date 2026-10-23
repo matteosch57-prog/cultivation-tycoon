@@ -26,9 +26,6 @@ local playerGui = player:WaitForChild("PlayerGui")
 local PANEL = Color3.fromHex("1E1726")
 local CARD_S = 5 -- seconds a tapped card stays
 local CROWN_FAR = 60 -- studs: the crowns hide beyond this
--- an unlit star gem: dark glass with a gold rim (a lit one takes its Config.STAR_COLORS band colour)
-local DARK = { top = Color3.fromHex("463A56"), bottom = Color3.fromHex("241C2E"), rim = Color3.fromHex("C8A050") }
-local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
 local ARC = { -68, -34, 0, 34, 68 } -- degrees: the five stars on an arc over the head
 
 -- the Index attribute of a player: "Elder|lotus=3;..." -> { [key] = pulls }
@@ -157,12 +154,10 @@ local function show(m)
 	shownModel, shownAt = m, os.clock()
 end
 
--- one star gem of a crown at `x`, `y` (scale of the crown), `size` (scale of its height), lit in
--- `color` (nil = dark glass)
+-- one star gem of a crown (Toy.starGem) at `x`, `y` (scale of the crown), `size` (scale of its
+-- height), lit in `color` (nil = dark glass); a lit one glows like the beads' neon
 local function gem(parent, x, y, size, color)
-	local c = color and { top = color:Lerp(WHITE, 0.6), bottom = color, rim = color:Lerp(BLACK, 0.5), glow = color:Lerp(WHITE, 0.25) } or DARK
 	if color then
-		-- the glow: a soft bigger star behind, like the beads' neon
 		local glow = Instance.new("TextLabel")
 		glow.BackgroundTransparency = 1
 		glow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -171,31 +166,11 @@ local function gem(parent, x, y, size, color)
 		glow.FontFace = Toy.FONT
 		glow.Text = "★"
 		glow.TextScaled = true
-		glow.TextColor3 = c.glow
+		glow.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.25)
 		glow.TextTransparency = 0.6
 		glow.Parent = parent
 	end
-	local star = Instance.new("TextLabel")
-	star.BackgroundTransparency = 1
-	star.AnchorPoint = Vector2.new(0.5, 0.5)
-	star.Position = UDim2.fromScale(x, y)
-	star.Size = UDim2.fromScale(size * 0.6, size)
-	star.FontFace = Toy.FONT
-	star.Text = "★"
-	star.TextScaled = true
-	star.TextColor3 = Color3.new(1, 1, 1)
-	star.ZIndex = 2
-	local grad = Instance.new("UIGradient")
-	grad.Color = ColorSequence.new(c.top, c.bottom)
-	grad.Rotation = 90
-	grad.Parent = star
-	local rim = Instance.new("UIStroke")
-	rim.Color = c.rim
-	rim.Thickness = color and 1.5 or 1
-	rim.LineJoinMode = Enum.LineJoinMode.Round
-	rim.Parent = star
-	star.Parent = parent
-	return star
+	return Toy.starGem(parent, color, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(x, y), AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.fromScale(size * 0.6, size), TextScaled = true, ZIndex = 2 })
 end
 
 -- the crown over every seated disciple, kept in step with the disciples and the stars
