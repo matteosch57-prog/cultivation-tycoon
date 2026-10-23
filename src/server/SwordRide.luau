@@ -59,7 +59,7 @@ function SwordRide.stop(player, reason)
 		r.hum.WalkSpeed = Config.MOVE.walk
 	end
 	player:SetAttribute("Riding", nil)
-	if reason and reason ~= "player" and reason ~= "gone" then
+	if reason and reason ~= "player" and reason ~= "gone" and reason ~= "switch" then -- a tier switch from the picker is no "Off the sword"
 		api.notify:FireClient(player, "swordOff", reason)
 	end
 end

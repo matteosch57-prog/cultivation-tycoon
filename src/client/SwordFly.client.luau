@@ -90,23 +90,23 @@ local function placeSink()
 	sinkBtn = btn
 end
 
-local controls -- the PlayerModule's controls (the raw move vector: thumbstick or WASD)
-local function moveVector()
-	if not controls then
-		local ok, pm = pcall(function()
-			return require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-		end)
-		controls = ok and pm:GetControls() or false
+-- the PlayerModule's controls (the raw move vector: thumbstick or WASD), looked up once and never
+-- from the frame loop: Studio Play had no PlayerModule in PlayerScripts (only StarterPlayer's copy,
+-- which must not be required: it would build a second set of controls), and a WaitForChild in
+-- PreSimulation yielded every frame, so the sword never flew (Studio 2026-10-23)
+local controls = nil
+task.spawn(function()
+	local scripts = player:WaitForChild("PlayerScripts", 10)
+	local pm = scripts and scripts:WaitForChild("PlayerModule", 30)
+	if not pm then
+		return
 	end
-	if controls then
-		local ok, v = pcall(controls.GetMoveVector, controls)
-		if ok then
-			return v
-		end
+	local ok, mod = pcall(require, pm)
+	if ok and type(mod) == "table" and mod.GetControls then
+		local ok2, c = pcall(mod.GetControls, mod)
+		controls = ok2 and c or nil
 	end
-	return Vector3.zero
-end
-
+end)
 local function keyDown(...)
 	for _, k in { ... } do
 		if UserInputService:IsKeyDown(k) then
@@ -115,6 +115,29 @@ local function keyDown(...)
 	end
 	return false
 end
+-- the move vector in the camera's flat frame (x right, z back), never yielding: the controls when
+-- they give one, else WASD / arrows, else the humanoid's MoveDirection turned into the camera's yaw
+local function moveVector(hum)
+	if controls then
+		local ok, v = pcall(controls.GetMoveVector, controls)
+		if ok and typeof(v) == "Vector3" and v.Magnitude > 0.01 then
+			return v
+		end
+	end
+	local x = (keyDown(Enum.KeyCode.D, Enum.KeyCode.Right) and 1 or 0) - (keyDown(Enum.KeyCode.A, Enum.KeyCode.Left) and 1 or 0)
+	local z = (keyDown(Enum.KeyCode.S, Enum.KeyCode.Down) and 1 or 0) - (keyDown(Enum.KeyCode.W, Enum.KeyCode.Up) and 1 or 0)
+	if x ~= 0 or z ~= 0 then
+		return Vector3.new(x, 0, z).Unit
+	end
+	local md = hum and hum.MoveDirection or Vector3.zero
+	if md.Magnitude > 0.01 then
+		local look = workspace.CurrentCamera.CFrame.LookVector
+		local yaw = CFrame.lookAt(Vector3.zero, Vector3.new(look.X, 0, look.Z) + Vector3.new(0, 0, 1e-4))
+		return yaw:VectorToObjectSpace(md)
+	end
+	return Vector3.zero
+end
+
 local function padDown(button)
 	local ok, down = pcall(UserInputService.IsGamepadButtonDown, UserInputService, Enum.UserInputType.Gamepad1, button)
 	return ok and down
@@ -197,7 +220,7 @@ RunService.PreSimulation:Connect(function(dt)
 	f.hum.PlatformStand = true
 	-- the input: camera-relative move (with the camera's pitch), rise / sink held
 	local cam = workspace.CurrentCamera
-	local mv = moveVector()
+	local mv = moveVector(f.hum)
 	local dir = cam.CFrame:VectorToWorldSpace(Vector3.new(mv.X, 0, mv.Z))
 	local amount = math.min(1, mv.Magnitude)
 	local rise = (keyDown(Enum.KeyCode.Space) or padDown(Enum.KeyCode.ButtonA) or f.hum.Jump) and 1 or 0
