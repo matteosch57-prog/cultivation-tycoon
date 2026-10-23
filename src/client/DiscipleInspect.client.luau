@@ -260,3 +260,49 @@ RunService.Heartbeat:Connect(function(dt)
 		refreshCrowns()
 	end
 end)
+
+-- Studio test hooks (no mouse input in tests): player attribute InspectCard = a rarity name opens that
+-- seated disciple's card ("" closes it); StarAudit = true prints every star row on screen (the crowns,
+-- the card, the index book, a recruit reveal) as its colours, one line per row, then clears itself.
+if RunService:IsStudio() then
+	player:GetAttributeChangedSignal("InspectCard"):Connect(function()
+		local want = player:GetAttribute("InspectCard")
+		for _, m in disciples() do
+			if want and want ~= "" and string.match(m:GetAttribute("Disciple"), "^(.-)|") == want then
+				show(m)
+				refreshCrowns()
+				return
+			end
+		end
+		hide()
+		refreshCrowns()
+	end)
+	local NAMES = { [Config.STAR_COLORS[1]:ToHex()] = "gold", [Config.STAR_COLORS[2]:ToHex()] = "red", [Config.STAR_COLORS[3]:ToHex()] = "blue" }
+	player:GetAttributeChangedSignal("StarAudit"):Connect(function()
+		if not player:GetAttribute("StarAudit") then
+			return
+		end
+		local rows = {}
+		for _, d in playerGui:GetDescendants() do
+			local grad = d:IsA("TextLabel") and d.Text == "★" and d:FindFirstChildOfClass("UIGradient")
+			if grad then
+				local key = d.Parent
+				rows[key] = rows[key] or {}
+				local hex = grad.Color.Keypoints[#grad.Color.Keypoints].Value:ToHex()
+				table.insert(rows[key], { order = d.LayoutOrder + d.Position.X.Scale, name = NAMES[hex] or "empty" })
+			end
+		end
+		for parent, list in rows do
+			table.sort(list, function(a, b)
+				return a.order < b.order
+			end)
+			local names = {}
+			for _, s in list do
+				table.insert(names, s.name)
+			end
+			local root = parent:FindFirstAncestorWhichIsA("LayerCollector")
+			print(string.format("[StarAudit] %s (%s): %s", root and root.Name or "?", root and root.Enabled and "shown" or "hidden", table.concat(names, " ")))
+		end
+		player:SetAttribute("StarAudit", nil)
+	end)
+end
