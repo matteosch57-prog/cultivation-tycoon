@@ -101,7 +101,7 @@ local function fillSect(body)
 		local own = looks[i] and pulls[Config.indexKey(names[i], looks[i])]
 		total += Config.discBonus(names[i], shiny[i] == "1") * Config.discipleStarMult(own)
 	end
-	Toy.list(body, false, px(6), { HorizontalAlignment = Enum.HorizontalAlignment.Center })
+	Toy.list(body, false, px(6), { VerticalAlignment = Enum.VerticalAlignment.Top })
 	text(body, string.format("%d / %d seats · +%s%% Qi · the strongest %d meditate on the platform", working, max, commas(math.floor(total * 100 + 0.5)), math.min(onPlatform, working)), px(14), WHITE, { LayoutOrder = 1 })
 	local grid = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local layout = Instance.new("UIGridLayout")
@@ -205,7 +205,7 @@ local function open(tab)
 		Size = UDim2.new(1, -px(120), 1, -(px(20) + inset)),
 	})
 	local head = frame(book, { Size = UDim2.new(1, 0, 0, px(48)) })
-	text(head, "Disciples", px(28), GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Rotation = -2 })
+	text(head, "Disciples", px(28), GOLD, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -px(60), 0.5, 0), Rotation = -2 }) -- right of the tabs, clear of the X
 	local strip = frame(head, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), AutomaticSize = Enum.AutomaticSize.XY })
 	Toy.list(strip, true, px(8))
 	ui.tabs = {}
@@ -241,7 +241,7 @@ local function open(tab)
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(10)), UDim.new(0, px(10))
 	pad.Parent = scroll
-	Toy.list(scroll, false, 0, { HorizontalAlignment = Enum.HorizontalAlignment.Center })
+	Toy.list(scroll, false, 0, { VerticalAlignment = Enum.VerticalAlignment.Top }) -- Toy.list centres: a tall page spilled off the top
 	ui.scroll, ui.body = scroll, scroll
 	local xHolder, xBtn = Toy.button(gui, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF6B5E"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
