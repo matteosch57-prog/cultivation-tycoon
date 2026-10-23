@@ -27,7 +27,7 @@ fling other players. They cannot change server values, other players' data or th
 | SocialInvite | nothing | Guard, 10 s per player; telemetry only, grants nothing | Safe |
 | Bless (ProximityPrompt) | prompt trigger | not your own shrine, once per sect a UTC day, give/get caps, 1 s busy flag; owner's share needs a real account (age + play time). No Guard (a prompt, not a remote) and the hold time is client side | Safe: an instant trigger gains nothing the caps allow |
 | DaoBuy | node key | string, node exists, price, cap | Safe |
-| Reincarnate | nothing | gate realm AND a new record depth (`soulPeak + 1`, as the page shows) inside the one shared function | **Fixed** (audit 2026-10-22): the realm-only gate let a fired remote repeat it for free lives once a life landed on realm 2 |
+| Reincarnate | nothing | the qi price AND `Config.rebirthOpen` (a realm gate that still needs this rebirth, its breakthrough pads all built) inside the one shared function (D63; `soulPeak` is kept for the record only) | **Fixed** (audit 2026-10-22): the realm-only gate let a fired remote repeat it for free lives once a life landed on realm 2 |
 | ShopBuy / ShopOpened | item key / source | string, length, 1 s, realm gate, limit / whitelist | Safe |
 | SwordRide (D76) | sword key or false | Guard budget, string length, the pass owned (`s.passes`), live character, not within `padRadius` of a pad nor on a running altar; the server welds the sword and sets HipHeight / WalkSpeed, and switches it off on a pad, the altar, death, or `speedStrikes` checks over `speedSlack` x the tier's speed; pads ignore a rider | Safe: a ride buys and pays nothing |
 | ProcessReceipt | (Roblox) | PurchaseId de-dup in the save, grant then save, `NotProcessedYet` on a failed save | Safe |
