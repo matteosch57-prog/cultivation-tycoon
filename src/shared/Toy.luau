@@ -725,6 +725,21 @@ function Toy.disciple(parent, size, rarityName, props, noAura)
 	return well(parent, size, idx, props)
 end
 
+-- a row of the STAR_ROW index stars for `stars` (Config.starRow: gold, then red, then blue over the
+-- band before; empty slots dim). Returns the row.
+local STAR_OFF = Color3.fromHex("4A3F55")
+function Toy.stars(parent, stars, size, props)
+	local row = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
+	for k, v in props or {} do
+		row[k] = v
+	end
+	Toy.list(row, true, 0)
+	for i, color in Config.starRow(stars) do
+		Toy.text(row, "★", size, color or STAR_OFF, { LayoutOrder = i, ZIndex = row.ZIndex })
+	end
+	return row
+end
+
 -- Currency marks (owner rule: every price or amount shows its currency's icon)
 function Toy.qiIcon(parent, size, props)
 	return Toy.icon(parent, "qi", size, props)

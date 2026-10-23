@@ -600,12 +600,17 @@ Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "
 -- each, giving a qi boost, low but good to get. Some summons at each step"): one entry per rarity and
 -- look; a star at each of INDEX_STARS pulls of it, INDEX_STAR_BONUS income per star (forever, every
 -- life), INDEX_STEP_SUMMONS free summons each INDEX_STEP_STARS stars. Numbers: the economy pass.
-Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
+-- Owner 2026-10-23 ("show some with red and blue stars like the beads, we'll let them grow that far"):
+-- 15 stars, shown five at a time like the life beads: gold 1-5, then red 6-10 over the gold, then
+-- blue 11-15 (Config.STAR_COLORS, Config.starRow)
+Config.INDEX_STARS = { 1, 3, 10, 30, 100, 200, 300, 500, 700, 1000, 1500, 2000, 3000, 4000, 5000 }
+Config.STAR_ROW = 5
+Config.STAR_COLORS = { Color3.fromHex("FFD34D"), Color3.fromHex("FF4A4A"), Color3.fromHex("4AA8FF") }
 Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
 Config.INDEX_STEP_STARS = 10
 -- A disciple's own stars (owner 2026-10-22: "stars should count on their performance too. And they
 -- could show when you look at them"): a working disciple's bonus x (1 + this x the stars of its index
--- entry), so a five-star disciple works twice as hard. Bee Swarm Simulator's gifted bee, per seat.
+-- entry), so a five-star disciple works twice as hard (fifteen stars: four times). Bee Swarm Simulator's gifted bee, per seat.
 -- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
 Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
@@ -1026,6 +1031,18 @@ function Config.indexTotalStars(index)
 	end
 	return n
 end
+-- the STAR_ROW slots that show `stars`: each slot's colour, nil for an empty slot. The band's colour
+-- fills from the left over the band before (6 stars = one red, four gold), like the life beads.
+function Config.starRow(stars)
+	local n, row = Config.STAR_ROW, {}
+	local band = math.max(1, math.ceil((stars or 0) / n))
+	local lit = (stars or 0) - (band - 1) * n
+	for i = 1, n do
+		row[i] = i <= lit and Config.STAR_COLORS[band] or Config.STAR_COLORS[band - 1]
+	end
+	return row
+end
+
 -- a working disciple's bonus multiplier from its own entry's stars (`count` = that entry's pulls)
 function Config.discipleStarMult(count)
 	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)

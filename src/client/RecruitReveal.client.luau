@@ -118,7 +118,7 @@ local function sparkle(parent, size)
 	return s
 end
 
--- the disciple index line under a reveal card (D60): its look and the entry's five stars, and a gold
+-- the disciple index line under a reveal card (D60): its look and the entry's star row, and a gold
 -- "New index star!" when this pull lit one. `one` = a recruit result { look, stars, newStar }.
 local function indexLine(card, one, order)
 	if not (one and one.look) then
@@ -128,13 +128,7 @@ local function indexLine(card, one, order)
 	local row = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
 	Toy.list(row, true, px(4))
 	Toy.text(row, Config.LOOK_NAMES[one.look] or "", px(18), WHITE, { LayoutOrder = 1 })
-	local stars = one.stars or 0
-	if stars > 0 then
-		Toy.text(row, string.rep("★", stars), px(16), Color3.fromHex("FFD34D"), { LayoutOrder = 2 })
-	end
-	if stars < #Config.INDEX_STARS then
-		Toy.text(row, string.rep("★", #Config.INDEX_STARS - stars), px(16), Color3.fromHex("4A3F55"), { LayoutOrder = 3 })
-	end
+	Toy.stars(row, one.stars or 0, px(16), { LayoutOrder = 2 })
 	if one.newStar then
 		Toy.text(card, "New index star!", px(18), Color3.fromHex("FFD34D"), { LayoutOrder = order + 1 })
 	end
