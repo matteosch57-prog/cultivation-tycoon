@@ -74,7 +74,7 @@ function SaveStore.load(store, userId, sessionId, stillHere, onLocked)
 					return nil -- cancel: newer format or another live session holds it
 				end
 				rec.lock = { id = sessionId, t = os.time() }
-				return rec
+				return rec, { userId } -- tag the key with its player (GDPR erasure, Creator Hub data tools)
 			end)
 		end)
 		if not ok then
@@ -120,7 +120,7 @@ function SaveStore.save(store, userId, sessionId, data, release)
 			rec.v = Config.DATA_VERSION
 			rec.data = data
 			rec.lock = if release then nil else { id = sessionId, t = os.time() }
-			return rec
+			return rec, { userId }
 		end)
 	end)
 	if not ok then
