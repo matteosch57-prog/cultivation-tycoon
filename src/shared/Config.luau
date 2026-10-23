@@ -58,6 +58,7 @@ Config.ROCK_MESH = { "", "", "", "" }
 Config.SKY_MESH = {
 	cloud = "rbxassetid://4862430258",
 	islet = "rbxassetid://5564853241",
+	isletTop = "rbxassetid://5564879293", -- the same model's grass top
 	ding = "rbxassetid://84550079612246",
 	lantern = "rbxassetid://131650726315765",
 	lanternTex = "rbxassetid://130929930789056",
@@ -1100,5 +1101,56 @@ function Config.requiredPads(realm)
 	end
 	return n
 end
+
+-- Ambience pack (owner 2026-10-22 "let's do it all", research docs/research/2026-10-22_ambience_and_perf_easy_wins.md).
+-- Wind (Ambience.client): workspace.GlobalWind = WIND_BASE, plus a gust every WIND_GUST_GAP s that swells to
+-- WIND_GUST over WIND_GUST_RISE s and falls back as slowly; grass, Fire, smoke and every emitter with
+-- WindAffectsDrag (petals, leaves, clouds, mist) lean with it. The wind bed swells with each gust.
+Config.WIND_BASE = Vector3.new(5, 0, 2.5) -- studs/s
+Config.WIND_GUST = 1.8 -- x WIND_BASE at a gust's peak
+Config.WIND_GUST_RISE = 3 -- s up, and again down
+Config.WIND_GUST_GAP = { 7, 16 } -- s of calm between two gusts
+Config.WIND_BED = { id = 9114057128, vol = 0.06, gustVol = 0.14 } -- Desert Wind Whistley Light Gusts 2 (92 s loop)
+-- Place reverb: under a roof (a ray up from the camera's subject hits a building within INDOOR_ROOF studs)
+-- the hall reverb and a muffled outdoor bed; outside the open-air reverb.
+Config.INDOOR_ROOF = 40
+Config.REVERB_OUT = Enum.ReverbType.Plain
+Config.REVERB_IN = Enum.ReverbType.StoneRoom
+Config.INDOOR_MUFFLE = -14 -- dB on the Ambience group's high band indoors (Equalizer)
+-- Music ducking: the Music group's compressor listens to the SFX group, so a gong or a hall bell lowers the
+-- music under it for a moment (CompressorSoundEffect SideChain)
+Config.DUCK = { threshold = -22, ratio = 3, attack = 0.04, release = 0.8 }
+-- Footsteps (Footsteps.client, ported from Gladiator RNG D247): the Kenney CC0 step atlas the owner already
+-- uploaded on this account; regions in seconds of the file. Steps/s = base + perSpeed x ground speed.
+Config.STEPS = {
+	atlas = "rbxassetid://139087376065421",
+	range = 60, -- studs from the camera
+	volume = 0.5,
+	pitchJitter = 0.07,
+	volumeJitter = 0.15,
+	cadenceBase = 1.6,
+	cadencePerSpeed = 0.045,
+	firstStep = 0.6,
+	minSpeed = 3,
+	landMinAir = 0.3,
+	landVolume = 1.4,
+	rollOffMin = 10,
+	sets = {
+		stone = { { 0.0460, 0.1558 }, { 0.4518, 0.5634 }, { 0.8594, 0.9761 }, { 1.2721, 1.3865 }, { 1.6825, 1.8008 } },
+		wood = { { 2.0968, 2.2147 }, { 2.5107, 2.6084 }, { 2.9044, 3.0111 }, { 3.3071, 3.4213 }, { 3.7173, 3.8346 } },
+		sand = { { 4.1306, 4.3386 }, { 4.6346, 4.8483 }, { 5.1443, 5.3579 }, { 5.6539, 5.8622 }, { 6.1582, 6.3674 } },
+		grass = { { 6.6634, 6.8017 }, { 7.0977, 7.2734 }, { 7.5694, 7.7484 }, { 8.0444, 8.1625 }, { 8.4585, 8.5927 } },
+	},
+	-- surface = { atlas set, pitch, gain }; a material not listed steps as stone
+	surfaces = {
+		stone = { "stone", 1, 1 },
+		wood = { "wood", 1, 1 },
+		grass = { "grass", 1, 1.1 },
+		dirt = { "sand", 0.82, 0.9 },
+	},
+	materials = {
+		Wood = "wood", WoodPlanks = "wood", Grass = "grass", LeafyGrass = "grass", Ground = "dirt", Mud = "dirt", Sand = "dirt",
+	},
+}
 
 return Config

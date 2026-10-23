@@ -6,6 +6,8 @@
 -- PlaybackLoudness (thunder starts 1.45 s in, the temple bell 0.94 s). `to` = when it fades out.
 local SoundService = game:GetService("SoundService")
 local ContentProvider = game:GetService("ContentProvider")
+local TweenService = game:GetService("TweenService")
+local Config = require(script.Parent:WaitForChild("Config"))
 
 local Sfx = {}
 
@@ -79,6 +81,19 @@ function Sfx.init()
 	group("SFX", 1)
 	group("Music", 1)
 	group("Ambience", 1)
+	-- the music ducks under the SFX: a gong or a hall bell lowers it for a moment (Config.DUCK)
+	local duck = Instance.new("CompressorSoundEffect")
+	duck.Threshold = Config.DUCK.threshold
+	duck.Ratio = Config.DUCK.ratio
+	duck.Attack = Config.DUCK.attack
+	duck.Release = Config.DUCK.release
+	duck.SideChain = groups.SFX
+	duck.Parent = groups.Music
+	-- indoors the outdoor beds lose their highs (Sfx.setIndoor)
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.LowGain, eq.MidGain, eq.HighGain = 0, 0, 0
+	eq.Parent = groups.Ambience
+	Sfx.muffle = eq
 	local holder = Instance.new("Folder")
 	holder.Name = "SfxPool"
 	holder.Parent = SoundService
@@ -163,6 +178,17 @@ function Sfx.play(name, opts)
 		end)
 	end
 	return s
+end
+
+-- under a roof: the hall reverb and muffled outdoor beds; outside: open air (Ambience.client)
+function Sfx.setIndoor(on)
+	SoundService.AmbientReverb = on and Config.REVERB_IN or Config.REVERB_OUT
+	if Sfx.muffle then
+		TweenService:Create(Sfx.muffle, TweenInfo.new(0.8), {
+			HighGain = on and Config.INDOOR_MUFFLE or 0,
+			MidGain = on and Config.INDOOR_MUFFLE / 3 or 0,
+		}):Play()
+	end
 end
 
 -- a looping positional sound inside `part` (waterfalls)

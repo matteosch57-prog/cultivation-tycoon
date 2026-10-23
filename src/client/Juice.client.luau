@@ -227,10 +227,20 @@ local function hookWaterfall(m)
 	if m:GetAttribute("Sounding") then
 		return
 	end
-	local part = m:FindFirstChildWhichIsA("BasePart")
-	if part then
+	if m:FindFirstChildWhichIsA("BasePart") then
 		m:SetAttribute("Sounding", true)
-		Sfx.loopAt(part, Sfx.WATERFALL, 0.5, 80)
+		-- a sound in a block part plays from its whole volume: an invisible box over the falling water
+		-- makes the rush fill the fall instead of coming from one point (research 2026-10-22 A1)
+		local cf, size = m:GetBoundingBox()
+		local box = Instance.new("Part")
+		box.Name = "WaterfallSound"
+		box.Anchored = true
+		box.CanCollide, box.CanQuery, box.CanTouch = false, false, false
+		box.Transparency = 1
+		box.Size = Vector3.new(math.min(size.X, 40), math.min(size.Y, 80), math.min(size.Z, 40))
+		box.CFrame = cf
+		box.Parent = m -- client-made under the streamed model: it goes when the model streams out
+		Sfx.loopAt(box, Sfx.WATERFALL, 0.5, 90)
 	end
 end
 sect.DescendantAdded:Connect(function(d)
