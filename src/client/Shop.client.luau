@@ -26,7 +26,7 @@ local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
 local BUY = Color3.fromHex("47D16C")
 local GREY = Color3.fromHex("C9C2D3")
-local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B", starter = "FFB3A8", tidebell = "9FD0FF" }
+local TILE = { x2 = "9FF5C8", auto = "9FD0FF", vip = "FFD36B", pill = "FFB3A8", pack1 = "C9FFE4", pack2 = "B9F0D6", pack3 = "A6E8C8", welcome = "FFD36B", starter = "FFB3A8", tidebell = "9FD0FF", swordJade = "B9F5DC", swordHeavenly = "FFE29A", swordCelestial = "BFE4FF" }
 -- a disciple sold on its own (the Welcome Pouch and the Starter Pack also hold one, inside a bundle)
 local function soldDisciple(it)
 	return it ~= nil and it.rarity ~= nil and not it.qiBonus and not it.seconds
@@ -145,7 +145,7 @@ end
 local close -- forward
 
 local BEST = "pack3" -- the one "Best value" ribbon (the most qi per Robux)
-local NEW = { tidebell = true } -- tiles wearing the "New" tag (drop a key once the item is not new)
+local NEW = { tidebell = true, swordJade = true, swordHeavenly = true, swordCelestial = true } -- tiles wearing the "New" tag (drop a key once the item is not new)
 
 local function tile(parent, key, order, name, line)
 	local col = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order, Rotation = TILT[(order - 1) % #TILT + 1] })
@@ -415,7 +415,10 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local WATCH = { "AwayRate", "Realm", "Pass_x2", "Pass_auto", "Pass_vip", "ShopFreeIn" }
+local WATCH = { "AwayRate", "Realm", "ShopFreeIn" }
+for _, it in Config.SHOP_PASSES do
+	table.insert(WATCH, "Pass_" .. it.key)
+end
 for _, it in Config.SHOP_PRODUCTS do
 	if it.limit then
 		table.insert(WATCH, "Limit_" .. it.key)

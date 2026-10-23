@@ -80,6 +80,10 @@ Telemetry.EVENTS = {
 		},
 		question = "Where do players open the shop, which items get a prompt, and how many prompts end in a buy?",
 	},
+	Sword = {
+		fields = { "ride (a mount from the HUD button)", "sword key (Config.SWORD_RIDE tiers)", "realm (realmBucket)" },
+		question = "Do sword owners actually ride, and which sword do they pick (D76)?",
+	},
 	Build = {
 		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "In what order and how fast do players build, and which buildings do they skip?",

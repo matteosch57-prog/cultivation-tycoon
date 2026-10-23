@@ -155,3 +155,28 @@ realm gates ("Realm 3" ... "Realm 9"). Not checked: billboard cards (the Studio 
 BillboardGuis), a real purchase (ids still 0), tab taps (no mouse input through the MCP).
 Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.jpg`,
 `shop_disciples_tab_play.jpg`.
+
+## Flying Swords (D76, owner pick "Hover ride, faster each level", 2026-10-23; PS99's hoverboards)
+- Three game passes (`SHOP_PASSES` keys `swordJade` / `swordHeavenly` / `swordCelestial`, field
+  `ride` = tier; suggested 199 / 399 / 1,199): each is a sword to ride, kept forever; owning a higher
+  one keeps the lower ones. Three "New" tiles in the Boosts tab (icons: cells 32 to 34 of the next
+  icon sheet, the palm strike until it is uploaded).
+- **A hover ride, not flight** (`Config.SWORD_RIDE`, `src/server/SwordRide.luau`): the server welds
+  the tier's sword under the feet, raises HipHeight by `lift` and sets WalkSpeed to `MOVE.walk` x
+  1.5 / 1.75 / 2; the Humanoid keeps walking, so stairs, slopes and walls work as on foot and the
+  light stairs and locked isles stay closed. The rider leans forward (the root joint). Everyone
+  sees it. No qi, so the economy does not move.
+- HUD: a sword button on the left rail (after Friends) once one is owned: tap = ride the last one
+  (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker.
+- Off by itself near any pad (`padRadius`; a pad also ignores a rider, so a ride never buys), on the
+  Heavenly Altar while a round runs, on death or reset, and when the server sees the root faster than
+  the tier allows (`speedSlack`, `speedStrikes`). A short line says why.
+- The look (`src/server/SwordLook.luau`) is the owner-reviewed Studio mock v9
+  (`tools/mock_swords_tiers.luau`, mock branch): the Creator Store blades 74897223654299 /
+  13467141475 / 5131677948 with a Highlight in the tier colour, wound ribbons (1 / 2 / 3), motes, a
+  shimmer and a second trail (tiers 2-3), sparks off the hilt, the double gold halo over the front
+  half of the tier 3 blade (moved off the rider's legs), real Trails off the hilt. Effects hang on
+  the sword only. The blades and aura emitters ship as data (`src/server/SwordData.luau`, dumped in
+  Studio by `tools/dump_swords.luau`); until that dump lands, a plain built blade stands in.
+- Studio test: `DebugSet "pass", "swordJade"` then `DebugSet "ride", "swordJade"` (false steps off).
+  Telemetry `Sword` "ride" with the key.

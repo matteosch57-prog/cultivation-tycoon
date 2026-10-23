@@ -477,3 +477,11 @@ the log as a D-number.
   list and the save. Whether bought disciples count in `priceRate` stays the owner's open decision.
   Sims (`sim_game.py`, `sim_check.py`) unchanged: both items are bought, not simulated.
   Design: MONETIZATION "Tide Bell", "Sect Starter Pack"; list: SHOP_ITEMS.
+- **D76** Flying Swords (owner 2026-10-23: "we need some real better sword, so we can sell 3 levels,
+  the trail and aura getting better"; "aura only on sword"; picked "Hover ride, faster each level"
+  over real flight, which would skip the light stairs and locked isles). PS99's hoverboards copied
+  as is: three passes (Jade Jian, Heavenly Sword, Celestial Crystal Sword), a HUD button to ride the
+  picked one at 1.5x / 1.75x / 2x walk speed hovering a stud over the ground with normal walking
+  physics, off near pads (never buys), on the altar, on death and on a speed check. Looks = the
+  Studio mock v9 on the sword only; the Creator Store blades ship as dumped data, not as place edits
+  (Ctrl+S is Matteo's). Design: MONETIZATION "Flying Swords"; list: SHOP_ITEMS.

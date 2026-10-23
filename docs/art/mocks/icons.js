@@ -126,11 +126,25 @@ NEW.trophy = [{ d: "M19 14 C8 13 7 30 21 33", c: C.gold, k: "line", w: 5, ol: tr
 NEW.bell = [{ d: "M6 57 C14 53 18 61 26 57 C34 53 38 61 46 57 C52 54 56 59 58 57", c: C.tide, k: "line", w: 4.5, ol: true },
   { d: rr(28, 3, 8, 8, 2), c: C.gold }, { d: "M32 9 C20 9 16 17 16 27 V37 C16 40 13 41 11 42 V47 H53 V42 C51 41 48 40 48 37 V27 C48 17 44 9 32 9 Z", c: C.gold },
   { d: circ(32, 50, 4.5), c: C.jade }, { d: "M21 19 C20 24 20 31 21 37", c: "#FFF3C4", k: "line", w: 3 }];
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell"];
+// Flying Swords (D76): one jian per tier, nose to the top right. Cells 32 to 34
+const swordIcon = (blade, edge, guard) => [
+  { d: "M28.5 1 L35.5 1 L37 39 L32 44.5 L27 39 Z", c: blade, tr: "rotate(45 32 32)" },
+  { d: "M32 6 L32 36", c: edge, k: "line", w: 2.4, tr: "rotate(45 32 32)" },
+  { d: rr(18.5, 40, 27, 6.5, 3), c: guard, tr: "rotate(45 32 32)" },
+  { d: rr(29, 46, 6, 12, 2.5), c: C.red, tr: "rotate(45 32 32)" },
+  { d: circ(32, 60.5, 3.6), c: guard, tr: "rotate(45 32 32)" },
+];
+NEW.swordJade = swordIcon("#CFF7E6", "#FFFFFF", C.jade);
+NEW.swordHeavenly = swordIcon(C.gold, "#FFF6CC", C.red);
+NEW.swordCelestial = swordIcon("#9FD8FF", "#FFFFFF", C.gold);
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial"];
 const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
 LABEL.bell = "Bell";
+LABEL.swordJade = "Jade";
+LABEL.swordHeavenly = "Heavenly";
+LABEL.swordCelestial = "Celestial";
 let uid = 0;
 function shade(c, f) { // f < 1 darker, > 1 lighter
   const n = parseInt(c.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
