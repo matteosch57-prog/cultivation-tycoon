@@ -61,7 +61,7 @@ return function()
 	local TIERS = {
 		{ name = "Jade Jian 199", length = 12.5, glow = 0.6, alpha = 0.15, trail = 4537267850, back = 14, width = 2.2, light = 0.55, color = Color3.fromHex("8FF5D0"), points = 4, size = 0.35, rate = 0.6 },
 		{ name = "Heavenly Sword 399", glow = 0.75, alpha = 0.25, trail = 6480618759, back = 18, width = 3, light = 0.75, color = Color3.fromHex("FFD34D"), points = 6, size = 0.45, rate = 0.85 },
-		{ name = "Celestial Crystal Sword 1,199", glow = 0.7, alpha = 0.45, trail = 94214927232934, back = 22, width = 3.4, light = 0.6, color = Color3.fromHex("9FD8FF"), points = 8, size = 0.55, rate = 1.1 },
+		{ name = "Celestial Crystal Sword 1,199", glow = 0.7, alpha = 0.45, trail = 94214927232934, back = 22, width = 2.6, light = 0.6, color = Color3.fromHex("9FD8FF"), points = 8, size = 0.55, rate = 1.1 },
 	}
 
 	local old = workspace:FindFirstChild("_SwordMock")
@@ -360,15 +360,15 @@ return function()
 		end
 		if i >= 2 then
 			-- a shimmer running hilt to tip over the blade
-			local sh = beam(holder, hilt, tip, Color3.new(1, 1, 1), size.X * 0.9, size.X * 0.3, 1, 0)
+			local sh = beam(holder, hilt, tip, Color3.new(1, 1, 1), 0.45, 0.15, 1, 0) -- v8: narrow (size.X counts the guard: v7 drew a wide pale band)
 			sh.Texture = "rbxassetid://" .. t.trail
 			sh.TextureMode = Enum.TextureMode.Stretch
 			sh.TextureSpeed = 2.5
-			sh.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(0.5, 0.25), NumberSequenceKeypoint.new(1, 0.8) })
+			sh.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.35), NumberSequenceKeypoint.new(0.8, 0.35), NumberSequenceKeypoint.new(1, 1) })
 			-- a second trail layer, ember gold (2) or a wide soft cloud (3), under the bright one
 			local back = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2 + t.back * 0.85))
 			local base = attach(holder, cf * CFrame.new(0, -0.3, size.Z / 2))
-			local soft = beam(holder, base, back, i == 2 and Color3.fromHex("FF9A2E") or Color3.fromHex("CFE9FF"), t.width * (i == 2 and 1.3 or 2), t.width * 0.4, i == 2 and 0.8 or 0.5, 0)
+			local soft = beam(holder, base, back, i == 2 and Color3.fromHex("FF9A2E") or Color3.fromHex("CFE9FF"), t.width * (i == 2 and 1.3 or 1.5), t.width * 0.3, i == 2 and 0.8 or 0.5, 0)
 			soft.FaceCamera = true
 			soft.Texture = "rbxassetid://" .. t.trail -- the trail texture fades at its edges, the glow did not
 			soft.TextureMode = Enum.TextureMode.Stretch
