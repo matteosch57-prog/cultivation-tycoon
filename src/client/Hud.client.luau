@@ -960,7 +960,14 @@ local function tideBanner(name)
 	if banner then
 		banner:Destroy()
 	end
-	local plate = frame(bannerGui, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.3), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("4C9BFF"), ZIndex = 21 })
+	-- at the top, just under the qi counter and its rate line (mock), never over the middle of the screen
+	local at = UDim2.new(0.5, 0, 0, px(150))
+	local counter = ui.counter
+	if counter and counter.AbsoluteSize.Y > 0 then
+		local below = counter.AbsolutePosition.Y + counter.AbsoluteSize.Y - bannerGui.AbsolutePosition.Y
+		at = UDim2.new(0.5, 0, 0, below + px(8)) -- the counter block holds the rate and tide lines
+	end
+	local plate = frame(bannerGui, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0), Position = at, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("4C9BFF"), ZIndex = 21 })
 	banner = plate
 	Toy.corner(plate, UDim.new(0, px(16)))
 	local st = Instance.new("UIStroke")
@@ -1002,7 +1009,7 @@ local function tideBanner(name)
 		if plate.Parent then
 			-- settle into the tide row (its countdown carries on there), or rise and fade
 			local row = ui.tideRow
-			local goal = UDim2.fromScale(0.5, 0.27)
+			local goal = at - UDim2.fromOffset(0, px(20))
 			if row and row.Visible and row.AbsoluteSize.X > 0 then
 				local c = row.AbsolutePosition + row.AbsoluteSize / 2 - bannerGui.AbsolutePosition
 				goal = UDim2.fromOffset(c.X, c.Y)
