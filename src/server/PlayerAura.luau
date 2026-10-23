@@ -72,7 +72,7 @@ local function realmAura(folder, hrp, hum, tier, color)
 	local feet = hrp.CFrame * CFrame.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.15, 0)
 	local k = (tier - 1) / (MAX_TIER - 1) -- 0 at realm 2, 1 at realm 10
 	local pale = color:Lerp(WHITE, 0.55)
-	local R = 8 + 0.6 * (tier - 1) -- glyph diameter, studs
+	local R = 8 + 0.25 * (tier - 1) -- glyph diameter, studs: 8 to 10 (12.8 covered the floor round a crowd)
 	-- the glyph (AuraGlyph): a crisp array of this realm's own figure, two layers turning apart
 	AuraGlyph.build(folder, hrp, tier + 1, hrp.CFrame:ToObjectSpace(feet), R, color, pale, 1.6 + k)
 	-- motes rising from the circle's edge
