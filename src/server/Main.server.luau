@@ -822,23 +822,72 @@ end
 -- takes a free seat, or the seat of the one it pushed to the bench.
 -- a Shiny disciple's seat: the Shiny attribute (DiscipleInspect's card) and a few white sparkles
 -- drifting off it (built-in texture, low rate: the client's aura range switches emitters off far away)
+-- Shiny in the 3D world (owner pick C "Glint ring", mock tools/mock_shiny.luau, made bolder and gold
+-- after the Studio captures 2026-10-23 so it beats every rarity's own aura): gold glints rise from a
+-- ring around the cushion, and a gold star bursts over the head every 2 s
+local SHINY_GOLD = Color3.fromHex("FFD34D")
+local SHINY_WARM = Color3.fromRGB(255, 244, 196)
 local function shinySparkle(m)
 	m:SetAttribute("Shiny", true)
 	local at = m:FindFirstChild("Cushion") or m.PrimaryPart
 	if not at then
 		return
 	end
-	local e = Instance.new("ParticleEmitter")
-	e.Name = "ShinySparkle"
-	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	e.Rate = 4
-	e.Lifetime = NumberRange.new(0.8, 1.4)
-	e.Speed = NumberRange.new(1, 2)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.45), NumberSequenceKeypoint.new(1, 0) })
-	e.LightEmission = 1
-	e.Color = ColorSequence.new(Color3.fromRGB(255, 250, 220))
-	e.Parent = at
+	local ring = Instance.new("Part")
+	ring.Name = "ShinyRing"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.Transparency = 1
+	ring.Size = Vector3.new(4.6, 0.2, 4.6)
+	ring.CFrame = CFrame.new(at.Position) * CFrame.new(0, 0.4, 0)
+	ring.Parent = m
+	local function emitter(parent, props)
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.LightEmission = 1
+		e.LightInfluence = 0
+		e.Brightness = 2
+		for k, v in props do
+			e[k] = v
+		end
+		e.Parent = parent
+		return e
+	end
+	emitter(ring, {
+		Name = "ShinySparkle",
+		Shape = Enum.ParticleEmitterShape.Cylinder,
+		ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		EmissionDirection = Enum.NormalId.Top,
+		Rate = 22,
+		Lifetime = NumberRange.new(1, 1.4),
+		Speed = NumberRange.new(1.4, 2.2),
+		SpreadAngle = Vector2.new(0, 0),
+		Rotation = NumberRange.new(0, 360),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
+		Color = ColorSequence.new(SHINY_GOLD),
+	})
+	local top = Instance.new("Attachment")
+	top.Position = Vector3.new(0, 5.6, 0)
+	top.Parent = ring
+	local burst = emitter(top, {
+		Name = "ShinyBurst",
+		Rate = 0,
+		Lifetime = NumberRange.new(0.5, 0.8),
+		Speed = NumberRange.new(2.5, 4),
+		SpreadAngle = Vector2.new(180, 180),
+		Rotation = NumberRange.new(0, 360),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) }),
+		Color = ColorSequence.new(SHINY_WARM, SHINY_GOLD),
+	})
+	task.spawn(function()
+		task.wait(math.random() * 2) -- Shiny neighbours don't burst in step
+		while burst.Parent and m.Parent do
+			burst:Emit(9)
+			task.wait(2)
+		end
+	end)
 end
 
 local function buildDisciples(s, newcomer)
