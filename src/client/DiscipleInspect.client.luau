@@ -1,14 +1,13 @@
 -- Look at a seated disciple and see its stars (owner 2026-10-22: "stars should count on their
--- performance too. And they could show when you look at them"). Its card floats over its head: the
--- rarity and look in the rarity's colour, its five index stars (gold / dim), and the qi it adds now,
--- its rarity's bonus raised by those stars (Config.discipleStarMult, the server's discipleMult).
--- Three ways to show it, mocked for the owner's pick (workspace attribute InspectMock):
---   "tap"  Bee Swarm Simulator: tap or click a bee in the hive and its card opens; tap again or away
---          to close (it also closes after CARD_S seconds)
---   "tag"  "tap", plus a small star row always over every seated disciple's head (tower defense
---          units' star badges, Anime Defenders)
---   "near" Grow a Garden: hover a plant (mouse) or stand next to one (touch) and its card shows
--- Works on every peak: the owner's Index attribute replicates, so a visitor sees a friend's stars too.
+-- performance too. And they could show when you look at them"; pick B 2026-10-23: "Ok for B but let's
+-- use something better like the beads on the other thread but as stars"). Every seated disciple wears
+-- a crown of five stars over its head, styled like the player's life beads (PlayerAura): glowing gold
+-- gems for its index stars, dark glass for the rest, a twinkle once all five are in. Tap or click
+-- one and its card takes the crown's place (Bee Swarm Simulator's bee card): the rarity and look in
+-- the rarity's colour, the stars, the qi it adds now (its rarity's bonus raised by its stars,
+-- Config.discipleStarMult, the server's discipleMult) and the next star. Tap again, elsewhere, or
+-- wait CARD_S seconds to close it. Works on every peak: the owner's Index attribute replicates, so a
+-- visitor sees a friend's stars too.
 -- Each BillboardGui sits in PlayerGui with ResetOnSpawn = false (the first spawn empties PlayerGui
 -- after client scripts ran), adorned to the disciple's cushion (the avatar loads later).
 local CollectionService = game:GetService("CollectionService")
@@ -26,12 +25,11 @@ local GOLD = Color3.fromHex("FFD34D")
 local STAR_OFF = Color3.fromHex("4A3F55")
 local PANEL = Color3.fromHex("1E1726")
 local CARD_S = 5 -- seconds a tapped card stays
-local NEAR = 9 -- studs: "near" on touch shows the closest disciple this close
-local TAG_FAR = 60 -- studs: the star tags hide beyond this
-
-local function mode()
-	return workspace:GetAttribute("InspectMock") or "tap"
-end
+local CROWN_FAR = 60 -- studs: the crowns hide beyond this
+-- the star gems: lit like the gold life beads (Config.AURA_BEAD_COLORS[1]), unlit dark glass
+local LIT = { top = Color3.fromHex("FFF6AA"), bottom = Color3.fromHex("FFAA1E"), rim = Color3.fromHex("8C500A"), glow = Color3.fromHex("FFE150") }
+local DARK = { top = Color3.fromHex("463A56"), bottom = Color3.fromHex("241C2E"), rim = Color3.fromHex("C8A050") }
+local ARC = { -68, -34, 0, 34, 68 } -- degrees: the five stars on an arc over the head
 
 -- the Index attribute of a player: "Elder|lotus=3;..." -> { [key] = pulls }
 local function readIndex(p)
@@ -142,7 +140,7 @@ local function card(m)
 	Toy.list(box, false, 2)
 	Toy.text(box, info.rarity.name .. " · " .. info.look, 17, info.rarity.color, { LayoutOrder = 1 })
 	starRow(box, info.stars, 22, 2)
-	local row, label = Toy.amount(box, "qi", 18, Color3.new(1, 1, 1), { LayoutOrder = 3 })
+	local _, label = Toy.amount(box, "qi", 18, Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	label.Text = string.format("+%d%% qi", math.floor(info.bonus * 100 + 0.5))
 	if info.nextAt then
 		Toy.text(box, string.format("Next ★ at %d pulls (%d/%d)", info.nextAt, info.pulls, info.nextAt), 12, Color3.fromHex("C8C0D0"), { LayoutOrder = 4 })
@@ -152,7 +150,7 @@ local function card(m)
 	scale.Scale = 0.6
 	scale.Parent = box
 	game:GetService("TweenService"):Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	return b, row
+	return b
 end
 
 local shown, shownModel, shownAt = nil, nil, 0
@@ -171,39 +169,90 @@ local function show(m)
 	shownModel, shownAt = m, os.clock()
 end
 
--- "tag": a star row over every seated disciple, kept in step with the disciples and the stars
-local tags = {}
-local function refreshTags()
-	local want = mode() == "tag"
-	local seen = {}
-	if want then
-		for _, m in disciples() do
-			seen[m] = true
-			local stars = infoOf(m).stars
-			local t = tags[m]
-			if t and t:GetAttribute("Stars") ~= stars then
-				t:Destroy()
-				t = nil
-			end
-			if not t then
-				t = billboard(m, UDim2.fromOffset(110, 30), Vector3.new(0, 6.2, 0))
-				t.MaxDistance = TAG_FAR
-				t:SetAttribute("Stars", stars)
-				local pill = Toy.frame(t, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.25, BackgroundColor3 = PANEL })
-				Toy.corner(pill, UDim.new(1, 0))
-				local pad = Instance.new("UIPadding")
-				pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 6), UDim.new(0, 6)
-				pad.Parent = pill
-				Toy.list(pill, true, 0)
-				starRow(pill, stars, 16, 1)
-				tags[m] = t
-			end
-		end
+-- one star gem of a crown at `x`, `y` (scale of the crown), `size` (scale of its height)
+local function gem(parent, x, y, size, lit)
+	local c = lit and LIT or DARK
+	if lit then
+		-- the glow: a soft bigger star behind, like the beads' neon
+		local glow = Instance.new("TextLabel")
+		glow.BackgroundTransparency = 1
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.Position = UDim2.fromScale(x, y)
+		glow.Size = UDim2.fromScale(size * 0.9, size * 1.6)
+		glow.FontFace = Toy.FONT
+		glow.Text = "★"
+		glow.TextScaled = true
+		glow.TextColor3 = c.glow
+		glow.TextTransparency = 0.6
+		glow.Parent = parent
 	end
-	for m, t in tags do
+	local star = Instance.new("TextLabel")
+	star.BackgroundTransparency = 1
+	star.AnchorPoint = Vector2.new(0.5, 0.5)
+	star.Position = UDim2.fromScale(x, y)
+	star.Size = UDim2.fromScale(size * 0.6, size)
+	star.FontFace = Toy.FONT
+	star.Text = "★"
+	star.TextScaled = true
+	star.TextColor3 = Color3.new(1, 1, 1)
+	star.ZIndex = 2
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new(c.top, c.bottom)
+	grad.Rotation = 90
+	grad.Parent = star
+	local rim = Instance.new("UIStroke")
+	rim.Color = c.rim
+	rim.Thickness = lit and 2 or 1.5
+	rim.LineJoinMode = Enum.LineJoinMode.Round
+	rim.Parent = star
+	star.Parent = parent
+	return star
+end
+
+-- the crown over every seated disciple, kept in step with the disciples and the stars
+local crowns = {}
+local function refreshCrowns()
+	local seen = {}
+	for _, m in disciples() do
+		seen[m] = true
+		local stars = infoOf(m).stars
+		local t = crowns[m]
+		if t and t:GetAttribute("Stars") ~= stars then
+			t:Destroy()
+			t = nil
+		end
+		if not t then
+			-- sized in studs (scale), so it reads like a halo in the world, not a screen label
+			t = billboard(m, UDim2.fromScale(4.4, 2.4), Vector3.new(0, 6.6, 0))
+			t.MaxDistance = CROWN_FAR
+			t:SetAttribute("Stars", stars)
+			for i, deg in ARC do
+				local a = math.rad(deg)
+				gem(t, 0.5 + math.sin(a) * 0.36, 0.86 - math.cos(a) * 0.58, i == 3 and 0.42 or 0.36, i <= stars)
+			end
+			if stars >= #Config.INDEX_STARS then
+				-- all five: a twinkle over the crown
+				local tw = Instance.new("TextLabel")
+				tw.BackgroundTransparency = 1
+				tw.AnchorPoint = Vector2.new(0.5, 0.5)
+				tw.Position = UDim2.fromScale(0.62, 0.12)
+				tw.Size = UDim2.fromScale(0.16, 0.26)
+				tw.FontFace = Toy.FONT
+				tw.Text = "✦"
+				tw.TextScaled = true
+				tw.TextColor3 = Color3.new(1, 1, 1)
+				tw.ZIndex = 3
+				tw.Parent = t
+				game:GetService("TweenService"):Create(tw, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { TextTransparency = 1 }):Play()
+			end
+			crowns[m] = t
+		end
+		t.Enabled = m ~= shownModel -- the open card takes the crown's place
+	end
+	for m, t in crowns do
 		if not seen[m] or not m.Parent then
 			t:Destroy()
-			tags[m] = nil
+			crowns[m] = nil
 		end
 	end
 end
@@ -217,9 +266,9 @@ local function pick(pos)
 	return hit and discipleOf(hit.Instance)
 end
 
--- "tap" / "tag": a tap or click on a disciple opens its card, again (or elsewhere) closes it
+-- a tap or click on a disciple opens its card, again (or elsewhere) closes it
 UserInputService.InputEnded:Connect(function(input, processed)
-	if processed or mode() == "near" then
+	if processed then
 		return
 	end
 	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
@@ -231,40 +280,18 @@ UserInputService.InputEnded:Connect(function(input, processed)
 	elseif shown then
 		hide()
 	end
+	refreshCrowns()
 end)
 
 local tick = 0
 RunService.Heartbeat:Connect(function(dt)
 	tick += dt
+	if (shownModel and not shownModel.Parent) or (shown and os.clock() - shownAt > CARD_S) then
+		hide()
+		refreshCrowns()
+	end
 	if tick > 0.5 then
 		tick = 0
-		refreshTags()
-	end
-	if shownModel and not shownModel.Parent then
-		hide()
-	end
-	if mode() == "near" then
-		-- "near": the hovered disciple (mouse), else the closest within NEAR studs
-		local m
-		if UserInputService.MouseEnabled then
-			m = pick(UserInputService:GetMouseLocation() - game:GetService("GuiService"):GetGuiInset())
-		end
-		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not m and root then
-			local best = NEAR
-			for _, d in disciples() do
-				local dist = (d.Cushion.Position - root.Position).Magnitude
-				if dist < best then
-					best, m = dist, d
-				end
-			end
-		end
-		if m then
-			show(m)
-		elseif shown then
-			hide()
-		end
-	elseif shown and os.clock() - shownAt > CARD_S then
-		hide()
+		refreshCrowns()
 	end
 end)
