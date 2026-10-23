@@ -151,7 +151,7 @@ local function refresh()
 	local done = player:GetAttribute("Rebirths") or 0
 	local realm = player:GetAttribute("Realm") or 1
 	ui.opens.Visible = need > done and need == done + 1
-	ui.opens.Text = "Opens " .. Config.realmName(realm + 1)
+	ui.opens.Text = "Opens Realm " .. (realm + 1) .. ": " .. Config.realmName(realm + 1) -- the number too (owner 2026-10-23)
 
 	-- closed: what it waits for, on the button and spelled out under it (Config.rebirthNeed)
 	local kind, n = string.match(player:GetAttribute("RebirthNeed") or "", "^(%a+):(%d+)$")
@@ -159,7 +159,7 @@ local function refresh()
 	local needText = kind == "realm" and "Reach Realm " .. n or kind == "build" and "Build " .. n .. " more" or nil
 	ui.need.Visible = needText ~= nil
 	if kind == "realm" then
-		ui.need.Text = "Opens in " .. Config.realmName(n)
+		ui.need.Text = "Opens in Realm " .. n .. ": " .. Config.realmName(n)
 	elseif kind == "build" then
 		ui.need.Text = n == 1 and "Build the last building of this realm" or "Build every building of this realm"
 	end
