@@ -522,15 +522,23 @@ local function karmaGain(d)
 	return math.floor(Config.rebirthKarma(rebirths(d)) * (1 + Config.DAO_ECHO * dao(d, "echo")))
 end
 
-local function discipleMult(s)
+-- Each working disciple adds its rarity's bonus, raised by its own index stars (owner 2026-10-22:
+-- "stars should count on their performance too"; Config.discipleStarMult). `price` leaves the stars
+-- out, like the index's sect-wide boost (priceRate).
+local function discipleMult(s, price)
 	local data = s.data
 	local m = 1
 	local max = maxDisciples(s)
+	local looks = discLooks(data)
 	for i, name in data.disciples do
 		if i > max then
 			break
 		end
-		m += Config.rarity(name).bonus
+		local bonus = Config.rarity(name).bonus
+		if not price then
+			bonus *= Config.discipleStarMult((data.index or {})[Config.indexKey(name, looks[i])])
+		end
+		m += bonus
 	end
 	return m
 end
@@ -583,7 +591,7 @@ end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
 -- realm and the disciples. Not a pill, the tide, friends, the group, the rebirth boost, Harmony (D67:
--- inside it the floor ate most of its +20%), the index or a paid multiplier (2x Qi pass, Welcome
+-- inside it the floor ate most of its +20%), the index (nor a disciple's own stars) or a paid multiplier (2x Qi pass, Welcome
 -- Pouch), so those make every goal come sooner instead of raising its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
 local function priceRate(s)
 	local data = s.data
@@ -594,7 +602,7 @@ local function priceRate(s)
 			base += pad.income * (1 + Config.WORKER_BONUS * ((data.workers or {})[id] or 0)) * Config.districtMult(data.owned, pad)
 		end
 	end
-	return base * Config.incomeMult(data.realm) * discipleMult(s)
+	return base * Config.incomeMult(data.realm) * discipleMult(s, true)
 end
 
 local function publish(player)
