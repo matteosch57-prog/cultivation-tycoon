@@ -237,6 +237,8 @@ function SwordLook.template(tier)
 	local thick = d and dataParts(blade, d, L) or fallbackParts(blade, tier, L)
 	local top = thick / 2
 	m:SetAttribute("Top", top) -- SwordRide puts the rider's feet on it
+	local bladeTop = attach(core, CFrame.new(0, top, 0))
+	bladeTop.Name = "BladeTop" -- SwordPose.client measures the feet against it
 	for _, p in blade:GetChildren() do
 		local w = Instance.new("WeldConstraint")
 		w.Part0, w.Part1 = core, p

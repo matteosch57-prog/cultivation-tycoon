@@ -177,7 +177,8 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   Animate's tracks); the stock idle and fall when an avatar has none (owner: "ON SWORD I SHOULD HAVE my
   animations too").
 - The rider stands on the blade: `SwordPose.client` (every client, in each joint's Transform after
-  the Animator, Motor6D and AnimationConstraint rigs alike) lifts the body `lift` studs and leans it
+  the Animator, Motor6D and AnimationConstraint rigs alike) lifts the body `lift` studs (a per-rider correction of up to +-1.5 eases the lowest foot
+  onto the sword's BladeTop every frame, so any animation pack stands on the blade) and leans it
   `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at the real
   feet when a rig has no root joint). Everyone sees it. No qi, so the economy does not move.
 - Progression and limits (server, R9, `SwordRide.luau`): under `ceiling` (world Y, the highest Lotus
