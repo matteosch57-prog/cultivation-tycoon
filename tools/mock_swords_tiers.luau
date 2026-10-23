@@ -6,7 +6,7 @@
 --   tier  sword (shortlist id)                    trail texture (image id)          blade aura from
 --   1     1Sa Jian 74897223654299 (2,399 tris)    1Ta wind2 -> 4537267850           1Aa POF:RE Lunar Flames 8517247103
 --   2     2Sa Heavenly sword 13467141475 (1,576)  2Ta skill wind blue 2 -> 6480618759  2Aa Golden Crown Aura 17781650714
---   3     3Sc crystal sword 5131677948 (2,408)    3Ta Unicorns Light Energy -> 94214927232934  3Aa "the aura" 80960525975597
+--   3     3Sc crystal sword 5131677948 (2,408)    3Ta Unicorns Light Energy -> 94214927232934  blade-only Sapphire Sparkle 154741609 (was 3Aa 80960525975597: a floor swirl)
 --
 -- STEP 1, Edit mode (the Studio session, once): put the six assets in ServerStorage._SwordAssets as
 -- S1 S2 S3 (swords) and A1 A2 A3 (auras), every script deleted (R12). Either insert each id with the
@@ -17,7 +17,7 @@ local SS = game:GetService("ServerStorage")
 local box = SS:FindFirstChild("_SwordAssets") or Instance.new("Folder")
 box.Name = "_SwordAssets"
 box.Parent = SS
-for name, id in { S1 = 74897223654299, S2 = 13467141475, S3 = 5131677948, A1 = 8517247103, A2 = 17781650714, A3 = 80960525975597 } do
+for name, id in { S1 = 74897223654299, S2 = 13467141475, S3 = 5131677948, A1 = 8517247103, A2 = 17781650714, A3 = 154741609 } do
 	local old = box:FindFirstChild(name)
 	if old then old:Destroy() end
 	local ok, objs = pcall(function() return game:GetObjects("rbxassetid://" .. id) end)
@@ -55,12 +55,12 @@ return function()
 	assert(assets, "[SwordMock] run step 1 first: ServerStorage._SwordAssets is missing")
 
 	local ORIGIN = CFrame.new(400, 900, 0)
-	local LENGTH = 11 -- studs, every blade
-	local FLIP = { false, false, false }
+	local LENGTH = 11 -- studs, every blade (TIERS[i].length overrides)
+	local FLIP = { false, false, true } -- Studio 2026-10-23: the crystal sword landed hilt forward
 	local TIERS = {
-		{ name = "Jade Jian 199", trail = 4537267850, back = 14, width = 2.2, light = 0.55, color = Color3.fromHex("8FF5D0"), points = 4, size = 0.35, rate = 0.6 },
-		{ name = "Heavenly Sword 399", trail = 6480618759, back = 18, width = 3, light = 0.75, color = Color3.fromHex("FFD34D"), points = 6, size = 0.45, rate = 0.85 },
-		{ name = "Celestial Crystal Sword 1,199", trail = 94214927232934, back = 22, width = 4, light = 1, color = Color3.fromHex("9FD8FF"), points = 8, size = 0.55, rate = 1.1 },
+		{ name = "Jade Jian 199", length = 12.5, glow = 0.6, alpha = 0.15, trail = 4537267850, back = 14, width = 2.2, light = 0.55, color = Color3.fromHex("8FF5D0"), points = 4, size = 0.35, rate = 0.6 },
+		{ name = "Heavenly Sword 399", glow = 0.75, alpha = 0.25, trail = 6480618759, back = 18, width = 3, light = 0.75, color = Color3.fromHex("FFD34D"), points = 6, size = 0.45, rate = 0.85 },
+		{ name = "Celestial Crystal Sword 1,199", glow = 0.7, alpha = 0.45, trail = 94214927232934, back = 22, width = 3.4, light = 0.6, color = Color3.fromHex("9FD8FF"), points = 8, size = 0.55, rate = 1.1 },
 	}
 
 	local old = workspace:FindFirstChild("_SwordMock")
@@ -86,7 +86,7 @@ return function()
 
 	-- The sword laid flat: longest box axis along -Z (the nose), thinnest axis up (the flat of the
 	-- blade faces the sky, the edge cuts forward), scaled to LENGTH, its box centred on `at`.
-	local function laySword(src, at, flip)
+	local function laySword(src, at, flip, length)
 		local m = Instance.new("Model")
 		m.Name = "Sword"
 		for _, c in src:GetChildren() do
@@ -122,7 +122,7 @@ return function()
 		-- the pivot becomes the blade's own frame (box centre), so scaling keeps it centred and the
 		-- bounding box below is measured in `at`'s axes
 		m.WorldPivot = CFrame.fromMatrix(centre, right, up, back)
-		m:ScaleTo(LENGTH / axes[1][2])
+		m:ScaleTo((length or LENGTH) / axes[1][2])
 		m:PivotTo(at)
 		local _, size2 = m:GetBoundingBox()
 		return m, size2 -- in `at`'s frame: X width, Y thickness, Z length (hilt at +Z)
@@ -130,8 +130,8 @@ return function()
 
 	local function attach(parent, cf)
 		local a = Instance.new("Attachment")
+		a.Parent = parent -- parent first: WorldCFrame on a loose attachment is read as its local CFrame
 		a.WorldCFrame = cf
-		a.Parent = parent
 		return a
 	end
 
@@ -197,17 +197,19 @@ return function()
 			b.Width1 = t.width * 0.25
 			b.LightEmission = t.light
 			b.LightInfluence = 0
-			b.Brightness = 1 + t.light
+			b.Brightness = 1 + t.light * 0.5
 			b.Color = ColorSequence.new(Color3.new(1, 1, 1), t.color)
-			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.6, 0.45), NumberSequenceKeypoint.new(1, 1) })
+			b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, t.alpha), NumberSequenceKeypoint.new(0.6, 0.5 + t.alpha / 2), NumberSequenceKeypoint.new(1, 1) })
 			b.Parent = holder
 		end
 	end
 
-	local function scaleSeq(seq, k)
+	-- scaled by k and capped at `cap` studs, so no emitter grows past the blade
+	local function scaleSeq(seq, k, cap)
 		local kps = {}
 		for _, kp in seq.Keypoints do
-			table.insert(kps, NumberSequenceKeypoint.new(kp.Time, kp.Value * k, kp.Envelope * k))
+			local v = math.min(kp.Value * k, cap or math.huge)
+			table.insert(kps, NumberSequenceKeypoint.new(kp.Time, v, math.min(kp.Envelope * k, v)))
 		end
 		return NumberSequence.new(kps)
 	end
@@ -247,8 +249,10 @@ return function()
 		for _, e in emitters do
 			for _, a in points do
 				local c = e:Clone()
-				c.Size = scaleSeq(e.Size, t.size)
-				c.Speed = NumberRange.new(e.Speed.Min * t.size, e.Speed.Max * t.size)
+				c.Size = scaleSeq(e.Size, t.size, math.max(size.X, 1) * 1.2)
+				c.Speed = NumberRange.new(math.min(e.Speed.Min * t.size, 1), math.min(e.Speed.Max * t.size, 2))
+				c.Lifetime = NumberRange.new(math.min(e.Lifetime.Min, 1), math.min(e.Lifetime.Max, 1.2))
+				c.Orientation = Enum.ParticleOrientation.FacingCamera -- flat ground rings never lie on the floor
 				c.Rate = math.max(1, e.Rate * t.rate / #points)
 				c.LockedToPart = true
 				c.Enabled = true
@@ -256,6 +260,9 @@ return function()
 			end
 		end
 		for _, b in beams do
+			if b.Width0 * t.size > size.X * 2 then
+				continue -- a wide aura Beam is a floor ring, not a blade glow
+			end
 			local c = b:Clone()
 			c.Attachment0, c.Attachment1 = points[1], points[#points]
 			c.Width0 = b.Width0 * t.size
@@ -292,7 +299,14 @@ return function()
 			warn("[SwordMock] missing S" .. i)
 			continue
 		end
-		local _, size = laySword(s, cf, FLIP[i])
+		local sword, size = laySword(s, cf, FLIP[i], t.length)
+		-- the blade edge glow in the tier colour, so a slim blade still reads at distance
+		local h = Instance.new("Highlight")
+		h.FillColor, h.OutlineColor = t.color, t.color
+		h.FillTransparency = t.glow
+		h.OutlineTransparency = 0.2
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Parent = sword
 		local top = cf * CFrame.new(0, size.Y / 2, 0)
 		rider(top * CFrame.new(0, 0, 0.5))
 		trail(cf * CFrame.new(0, 0, size.Z / 2), t)
