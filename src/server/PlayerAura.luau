@@ -9,7 +9,7 @@
 -- Config.AURA_BEAD_BAND rebirths the beads change colour (Config.AURA_BEAD_COLORS: gold, crimson,
 -- azure, violet, white jade), the new colour filling over the old, and grow, and the halo shines more.
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
--- neon beads only. Phone budget at the top: 9 emitters a player, ~130 live particles, 20 beads,
+-- neon beads only. Phone budget at the top: 11 emitters a player, ~130 live particles, 20 beads,
 -- ~150 UI lines on the two glyph layers.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
@@ -181,35 +181,39 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Rate = 2 + 3 * k,
 		})
 	end
-	local column = Config.AURA_TEX.column
-	if tier >= 8 and column ~= 0 then
-		-- a column of light standing on the glyph, from realm 9
-		local a0 = Instance.new("Attachment")
-		a0.Name = "ColumnBase"
-		a0.CFrame = CFrame.new(0, 0.2, 0)
-		a0.Parent = ground
-		local a1 = Instance.new("Attachment")
-		a1.Name = "ColumnTop"
-		a1.CFrame = CFrame.new(0, 12, 0)
-		a1.Parent = ground
-		local b = Instance.new("Beam")
-		b.Name = "Column"
-		b.Attachment0 = a0
-		b.Attachment1 = a1
-		b.Texture = "rbxassetid://" .. column
-		b.TextureMode = Enum.TextureMode.Stretch
-		b.TextureSpeed = 0
-		b.FaceCamera = true
-		b.Width0 = R * 0.55
-		b.Width1 = R * 0.45
-		b.Color = ColorSequence.new(pale, color)
-		b.LightEmission = 1
-		b.LightInfluence = 0
-		b.Brightness = 1.5
-		-- fading up its length here (the texture only shapes it across): one way round in Play showed a
-		-- bright top and hard sides
-		b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.6, 0.6), NumberSequenceKeypoint.new(1, 1) })
-		b.Parent = ground
+	if tier >= 8 then
+		-- a column of light standing on the glyph, from realm 9 (owner: the flat Beam pane "needs to be done
+		-- better"): thin streaks of light shooting up round a soft glowing core, all particles, no edges
+		local shaft = holder(folder, hrp, "AuraColumn", Vector3.new(R * 0.45, 0.1, R * 0.45), feet)
+		emitter(shaft, {
+			Name = "Streaks",
+			Texture = TEX .. "sparkles_main.dds",
+			Color = ColorSequence.new(WHITE, pale),
+			Orientation = Enum.ParticleOrientation.VelocityParallel,
+			Shape = Enum.ParticleEmitterShape.Cylinder,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			Squash = NumberSequence.new(-2.5), -- tall and thin
+			Size = seq(0.5, 0.9, 0.3),
+			Transparency = seq(0.6, 0.15, 1),
+			Brightness = 3,
+			Lifetime = NumberRange.new(1, 1.5),
+			Speed = NumberRange.new(7, 11),
+			Rate = 18 + 8 * (tier - 8),
+		})
+		emitter(shaft, {
+			Name = "Core",
+			Texture = TEX .. "smoke_main.dds",
+			Color = ColorSequence.new(pale, color),
+			Orientation = Enum.ParticleOrientation.VelocityParallel,
+			Shape = Enum.ParticleEmitterShape.Box,
+			Squash = NumberSequence.new(-1.5),
+			Size = seq(2.2, 3, 2),
+			Transparency = seq(1, 0.72, 1),
+			Brightness = 2,
+			Lifetime = NumberRange.new(1.6, 2),
+			Speed = NumberRange.new(4, 5),
+			Rate = 4,
+		})
 	end
 	if tier >= 7 then
 		-- flames licking up the body

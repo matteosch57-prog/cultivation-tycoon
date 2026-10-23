@@ -862,7 +862,7 @@ Config.TITLE_SEE = 110 -- studs: farther titles are hidden
 -- column from realm 9 need their own ids.
 Config.AURA_TEX = {
 	glow = 97261261909185, -- aura_glow.png
-	column = 136175245864583, -- aura_column.png
+	column = 136175245864583, -- aura_column.png (unused since 2026-10-23: the column is particles now)
 	runes = 105666316409518, -- aura_runes_2x2.png (a 2 x 2 flipbook)
 	realms = { -- realm = { aura_r<n>_a.png, aura_r<n>_b.png }
 		[2] = { 101462076907885, 116445156630131 },
