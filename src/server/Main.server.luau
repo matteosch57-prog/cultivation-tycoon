@@ -161,6 +161,10 @@ local function buildHub()
 			-- the Ranks teleport lands in front of the wall, facing it
 			local front = at + (Vector3.new(0, BASE_Y, 0) - at).Unit * Config.TELEPORT_RANK_FRONT
 			rankStand = CFrame.lookAt(front + Vector3.new(0, 4, 0), at + Vector3.new(0, 4, 0))
+		elseif i == (Config.RANK_WALL_GAP + Config.PLOT_COUNT / 2 - 1) % Config.PLOT_COUNT + 1 then
+			-- the top 3 podium stands across the hub from the wall, facing the plaza (RankBoard.podium)
+			local at = Vector3.new(math.cos(mid) * Config.RANK_PODIUM.r, BASE_Y, math.sin(mid) * Config.RANK_PODIUM.r)
+			RankBoard.podium(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)))
 		elseif i % 2 == 0 then
 			Style.sakura(folder, CFrame.new(math.cos(mid) * r, BASE_Y, math.sin(mid) * r), i)
 		else
