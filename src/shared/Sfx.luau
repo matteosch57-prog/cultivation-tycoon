@@ -115,6 +115,8 @@ function Sfx.init()
 	local amb = makeSound(AMBIENCE.id, AMBIENCE.vol, holder, groups.Ambience)
 	amb.Looped = true
 	amb:Play()
+	Sfx.birds = amb -- DayNight.client fades it out at night
+	Sfx.birdsVol = AMBIENCE.vol
 	-- music
 	Sfx.musicSound = makeSound(Sfx.MUSIC[1].id, Sfx.MUSIC[1].vol, holder, groups.Music)
 	Sfx.musicSound.Looped = true

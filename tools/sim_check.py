@@ -142,12 +142,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return max(p["cost"] * cmult(), fl)
 
     def needed(p):
-        return not (C.get("DECOR_OPTIONAL") and p["kind"] in ("path", "grove"))
+        return p["kind"] != "isle" and not (C.get("DECOR_OPTIONAL") and p["kind"] in ("path", "grove"))
 
     def open_pads():
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and RO[p["id"]] <= S["realm"]
-                and n >= p["unlock"] and all(r in S["owned"] for r in p["req"])]
+                and n >= p["unlock"] and all(r in S["owned"] for r in p["req"]) and (p["kind"] != "isle" or lvl("isles") > 0)]
 
     def all_built():
         return not any(needed(p) and RO[p["id"]] <= S["realm"] and p["id"] not in S["owned"] for p in C["PADS"])
@@ -175,7 +175,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         S.update(realm=1, qi=0.0, workers={}, rr=0, pill=False, pill_t=0, boost=0)
         S["owned"] = {p["id"] for p in C["PADS"] if RO[p["id"]] <= 1}
         S.pop("bt", None)
-        for k in ("hands", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
+        for k in ("hands", "isles", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
             costs = C["DAO"].get(k, [])
             while lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
                 S["karma"] -= costs[lvl(k)]

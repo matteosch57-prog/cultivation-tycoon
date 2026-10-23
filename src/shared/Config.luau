@@ -3,7 +3,7 @@ local Config = {}
 
 Config.PLOT_COUNT = 6
 Config.PLOT_RADIUS = 280 -- distance from the hub to each peak centre (room for the sky islets, Config.ISLETS)
-Config.ISLAND_RADIUS = 66 -- the home island (the heart islet); expansions add lobes to islets (ISLAND_LOBES)
+Config.ISLAND_RADIUS = 72 -- the home island (the heart islet); expansions add lobes to islets (ISLAND_LOBES). 66 until 2026-10-23 (owner: "more space, slightly bigger", room for the Floating Lotus Isles at its sides)
 Config.HUB_RADIUS = 44 -- owner 2026-10-22: "central space can be slightly bigger" (was 36)
 
 Config.BASE_RATE = 1 -- qi/s with nothing built
@@ -165,6 +165,9 @@ Config.DAO = {
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
 	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
+	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
+	-- "isle") are offered every life from then on, and are built with qi like any pad
+	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12 } },
 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
@@ -235,9 +238,9 @@ Config.PADS = {
 	-- jade lotus discs on rock islets floating over the Meditation Platform, each seating `seats` more
 	-- disciples; floating stepping stones let the player jump up to each, one after the other
 	-- (Builders.lotusIsle). The model floats over the platform; `x`/`z` place only the buy pad.
-	{ id = "lotus1", name = "Floating Lotus Isle", cost = 9000, income = 20, unlock = 12, req = { "platform", "expand1" }, x = -24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4 },
-	{ id = "lotus2", name = "Twin Lotus Isle", cost = 19000, income = 40, unlock = 16, req = { "lotus1", "expand2" }, x = 24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4 },
-	{ id = "lotus3", name = "Heavenly Lotus Isle", cost = 31000, income = 60, unlock = 21, req = { "lotus2" }, x = 0, z = -19, feature = "+4 disciple seats", district = "heart", seats = 4 },
+	{ id = "lotus1", name = "Floating Lotus Isle", cost = 9000, income = 20, unlock = 12, req = { "platform", "expand1" }, x = -24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
+	{ id = "lotus2", name = "Twin Lotus Isle", cost = 19000, income = 40, unlock = 16, req = { "lotus1", "expand2" }, x = 24, z = -8, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
+	{ id = "lotus3", name = "Heavenly Lotus Isle", cost = 31000, income = 60, unlock = 21, req = { "lotus2" }, x = 0, z = -19, feature = "+4 disciple seats", district = "heart", seats = 4, kind = "isle" },
 	{ id = "mainhall5", name = "Celestial Palace", cost = 30000, income = 300, unlock = 20, req = { "mainhall4", "expand2" }, x = 0, z = -30, feature = "Hall level 5", district = "heart" },
 	-- District resources (option C, owner 2026-10-21): more copies and new types. Economy sim
 	-- 2026-10-21: incomes halved from the first pass (realm 10 on day 16 regular, day 33 casual; D25 kept).
@@ -285,7 +288,7 @@ Config.PADS = {
 -- Islets and lobes stay 13+ studs clear of the neighbour peaks at PLOT_RADIUS 280 (checked by
 -- the layout script in that research note).
 Config.ISLETS = {
-	heart = { x = 0, z = 0, r = 66 },
+	heart = { x = 0, z = 0, r = 72 }, -- = ISLAND_RADIUS
 	fields = { x = -124, z = -60, r = 54, from = "heart", bridge = "bridge_fields" },
 	dao = { x = 126, z = -64, r = 56, from = "heart", bridge = "bridge_dao" },
 	disciples = { x = -100, z = -172, r = 44, from = "fields", bridge = "bridge_disciples" },
@@ -364,6 +367,9 @@ Config.HARMONY_MAX = 0.2
 -- they added 14 walk-and-buy steps a realm): a breakthrough and the "built" count skip them.
 Config.DECOR_OPTIONAL = true
 function Config.neededForBreakthrough(pad)
+	if pad.kind == "isle" then
+		return false -- the Lotus Isles are a karma unlock: never what a breakthrough waits on
+	end
 	return not (Config.DECOR_OPTIONAL and (pad.kind == "path" or pad.kind == "grove"))
 end
 function Config.harmonyMult(owned)
@@ -604,6 +610,11 @@ Config.LOOK_NAMES = { sword = "Sword", lotus = "Lotus", monk = "Monk", elder = "
 Config.INDEX_STARS = { 1, 3, 10, 30, 100 }
 Config.INDEX_STAR_BONUS = 0.0025 -- +0.25% a star (economy pass 2026-10-22: 0.005 sped the climb up by 2-3 days)
 Config.INDEX_STEP_STARS = 10
+-- A disciple's own stars (owner 2026-10-22: "stars should count on their performance too. And they
+-- could show when you look at them"): a working disciple's bonus x (1 + this x the stars of its index
+-- entry), so a five-star disciple works twice as hard. Bee Swarm Simulator's gifted bee, per seat.
+-- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
+Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
 Config.DISCIPLE_CAP = 21 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
@@ -988,7 +999,7 @@ Config.ICON_ATLAS = {
 		qi = 0, karma = 1, shop = 3, pill = 5, gift = 6, tide = 7,
 		hall = 8, goal = 9, x2 = 10, auto = 11, vip = 12, hands = 13, rebirth = 14, like = 15,
 		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
-		sworn = 24, seat = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
+		sworn = 24, seat = 25, isles = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
 		bag = 3, -- the shop's qi pouch
 	},
 }
@@ -1027,6 +1038,10 @@ function Config.indexTotalStars(index)
 		n += Config.indexStars(count)
 	end
 	return n
+end
+-- a working disciple's bonus multiplier from its own entry's stars (`count` = that entry's pulls)
+function Config.discipleStarMult(count)
+	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)
 end
 function Config.indexMult(index)
 	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
@@ -1152,5 +1167,26 @@ Config.STEPS = {
 		Wood = "wood", WoodPlanks = "wood", Grass = "grass", LeafyGrass = "grass", Ground = "dirt", Mud = "dirt", Sand = "dirt",
 	},
 }
+
+-- Day and night (owner 2026-10-23: light C by day, "N2: 10-4m"): DAY_SECONDS of the place's own Lighting
+-- (light C, authored in Edit), then NIGHT_SECONDS of the NIGHT look (blue hour just after sunset, mock
+-- docs/art/mocks/2026-10-23_night_N2_*), each change a NIGHT_FADE s blend. Every client computes the phase
+-- from the server clock, so all players see the same hour with nothing replicated (DayNight.client).
+Config.DAY_SECONDS = 600
+Config.NIGHT_SECONDS = 240
+Config.NIGHT_FADE = 20
+Config.NIGHT = {
+	ClockTime = 18.35,
+	Brightness = 1.8,
+	Ambient = Color3.fromRGB(100, 92, 130),
+	OutdoorAmbient = Color3.fromRGB(140, 125, 170),
+	ColorShift_Top = Color3.fromRGB(255, 165, 135),
+	ExposureCompensation = 0.15,
+	atmosphere = { Color = Color3.fromRGB(205, 150, 165), Decay = Color3.fromRGB(75, 85, 145), Glare = 0.1, Haze = 1.6 },
+	color = { TintColor = Color3.fromRGB(235, 228, 255), Brightness = 0, Saturation = 0.05, Contrast = 0.1 },
+	bloom = { Threshold = 1.3, Intensity = 0.45 },
+	sunRays = { Intensity = 0.1 },
+}
+Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: the birds fade out, the crickets in
 
 return Config

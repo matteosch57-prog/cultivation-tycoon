@@ -335,10 +335,11 @@ end
 -- the platform (isle 1) or the isle before (owner: "make sure we can jump on them one per one"):
 -- each step rises at most ISLE_STEP_RISE and lies at most ISLE_STEP_GAP from the last (jump 8.5 studs,
 -- walk 28, Config.MOVE), so every step is a plain jump. Meshes: Config.SKY_MESH (Lowpoly.sky).
-local ISLES = { -- centre of the lawn's top, peak frame space (the platform is at 0, 0)
-	{ x = -24, y = 14, z = 8 }, -- out past the platform: its stones start in the seat-free arc
-	{ x = 17, y = 17, z = -3 },
-	{ x = 0, y = 25, z = -14 },
+local ISLES = { -- centre of the deck's top, peak frame space (the platform is at 0, 0). Out to the
+	-- sides of the platform, clear of the Main Hall (0, -30) as seen from the gate (owner 2026-10-23)
+	{ x = -30, y = 18, z = 8 },
+	{ x = 30, y = 22, z = 8 },
+	{ x = 32, y = 30, z = -26 },
 }
 -- owner 2026-10-22 ("the stone looks a bit cheap; more space for each disciple, bigger aura"): the
 -- isles are small floating islands in the peaks' own look (Style.island: lawn, dirt band, a light
@@ -347,6 +348,7 @@ local ISLES = { -- centre of the lawn's top, peak frame space (the platform is a
 local ISLE_R = 10 -- the jade deck's radius
 local ISLE_SEAT_R = 3.6 -- seat + its 1.25x aura rings (r ~6.3) stay inside ISLE_R
 local ISLE_SCALE = 1.25
+local ISLE_FLOAT = 1.6 -- isle disciples hover this high over the deck
 local ISLE_STEP_RISE, ISLE_STEP_GAP = 4.5, 7
 local PLATFORM_TOP = 1.3 -- the platform deck's top: a seat's y is measured from it (Builders.disciple)
 local CLOUD_WHITE, CLOUD_LILAC = Color3.fromRGB(255, 252, 255), Color3.fromRGB(214, 206, 240)
@@ -392,7 +394,7 @@ local function deco(ctx, size, cf, color, material, shape)
 end
 
 -- owner pick A 2026-10-22 ("the islet I liked, done better"): the rock floating islet (Config.SKY_MESH,
--- model 5565039117) in a carved rock material, its own grass rim, a lotus in bloom fanning out under a
+-- model 5565039117) in a carved rock material, its own grass rim (no lotus: owner "horrible"), under a
 -- jade deck with a gold band; vines and crystals under it. Only the deck collides.
 local ROCK = Color3.fromHex("9A8672")
 local function isleBody(ctx, at, r, rng)
@@ -407,14 +409,6 @@ local function isleBody(ctx, at, r, rng)
 		rim.Material = Enum.Material.LeafyGrass
 		rim.Color = LAWN
 	end
-	local k = (w + 6) / LOTUS.native.X
-	local lotus = part(ctx, Vector3.new(w + 6, LOTUS.native.Y * k * 0.26, w + 6), CFrame.new(at.X, at.Y - 1.1, at.Z), Color3.new(1, 1, 1), nil, { CanCollide = false, CanQuery = false })
-	local sm = Instance.new("SpecialMesh")
-	sm.MeshType = Enum.MeshType.FileMesh
-	sm.MeshId = LOTUS.mesh
-	sm.TextureId = LOTUS.tex
-	sm.Scale = Vector3.new(k, k * 0.26, k)
-	sm.Parent = lotus
 	cyl(ctx, 1.6, r * 2, CFrame.new(at.X, at.Y - 0.8, at.Z), SP.jade, Enum.Material.Marble) -- the deck (thick: a thin one reads as a ladder rung)
 	cyl(ctx, 0.3, r * 2 + 0.5, CFrame.new(at.X, at.Y - 0.6, at.Z), SP.gold, Enum.Material.Metal).CanCollide = false
 	-- vines hanging off the rim, spirit crystals under the rock
@@ -531,9 +525,16 @@ function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
 		face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
 	end
 	local m = Cultivators.build(ctx.folder, ctx.frame * face, look or slot, rarity, Config.RARITIES, { arrive = arrive })
-	if isle then -- drawn larger, aura included, standing on the same spot
+	if isle then -- drawn larger, aura included, and levitating over the deck with no cushion (owner 2026-10-23)
 		m.WorldPivot = ctx.frame * face -- scale about the floor point
 		m:ScaleTo(ISLE_SCALE)
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") and d.Name == "Cushion" then
+				d.Transparency = 1 -- kept (the inspect card and the idle read it), just not drawn
+				d.CanCollide = false
+			end
+		end
+		m:PivotTo(m:GetPivot() * CFrame.new(0, ISLE_FLOAT, 0))
 	end
 	m.Name = "Disciple" .. slot
 	return m

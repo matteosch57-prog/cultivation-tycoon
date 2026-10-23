@@ -1121,6 +1121,15 @@ refreshStatic = function()
 	ui.recruitLabel.Text = n == 1 and "Recruit" or ("Recruit x" .. n)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
+	local looksRaw = player:GetAttribute("DiscLooks") or ""
+	local looks = looksRaw == "" and {} or string.split(looksRaw, ",")
+	local pulls = {} -- the index (D60): "key=pulls;..."; a disciple's own stars raise its bonus
+	for _, pair in string.split(player:GetAttribute("Index") or "", ";") do
+		local key, n = string.match(pair, "^(.-)=(%d+)$")
+		if key then
+			pulls[key] = tonumber(n)
+		end
+	end
 	local pulledRaw = player:GetAttribute("Pulled") or ""
 	local pulled = pulledRaw == "" and {} or string.split(pulledRaw, ",")
 	for _, c in ui.card:GetChildren() do
@@ -1159,7 +1168,8 @@ refreshStatic = function()
 			ds.Thickness = px(2)
 			ds.Parent = dot
 		end
-		text(cell, string.format("+%d%%", r.bonus * 100), px(11), r.color, { LayoutOrder = 2 })
+		local own = looks[i] and pulls[Config.indexKey(name, looks[i])]
+		text(cell, string.format("+%d%%", math.floor(r.bonus * Config.discipleStarMult(own) * 100 + 0.5)), px(11), r.color, { LayoutOrder = 2 })
 	end
 	-- the disciple index (D60, IndexBook.client): a gold book button at the end of the card, with a red
 	-- dot while a star is new (local attribute IndexNew, set by IndexBook where the stars change)
@@ -1213,7 +1223,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()

@@ -159,7 +159,7 @@ KINDS = {
     "regular+passes": dict(play="active", session=30, per_day=2, passes=("2x", "vip", "orbs")),
     "regular+social": dict(play="active", session=30, per_day=2, friends=2, altar=0.25),
 }
-DAO_ORDER = ["hands", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
+DAO_ORDER = ["hands", "isles", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
 
 
 def simulate(C, kind, seed, days, lives=99, trace=False):
@@ -210,8 +210,14 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def max_disc():
         return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(int(pad_seats.get(p, 1)) for p in C["SLOT_PADS"] if p in S["owned"])
 
-    def dmult():
-        return 1 + sum(sorted(S["disciples"], reverse=True)[:max_disc()])
+    def dmult(price=False):
+        seated = sorted(S["disciples"], reverse=True)[:max_disc()]
+        # DISCIPLE_STAR_BONUS (stars on the disciple, owner 2026-10-22): a seated disciple's bonus x
+        # (1 + this x its own index entry's stars); outside the price income unless DISCIPLE_STAR_IN_PRICE
+        per = C.get("DISCIPLE_STAR_BONUS", 0)
+        if not per or (price and not C.get("DISCIPLE_STAR_IN_PRICE")):
+            return 1 + sum(seated)
+        return 1 + sum(d * (1 + per * star_of(getattr(d, "key", None))) for d in seated)
 
     def dist(i):
         p = pads[i]
@@ -239,9 +245,16 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def idx_mult():
         return 1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]
 
+    def star_of(key):  # Config.indexStars: the stars of one entry
+        n = idx["pulls"].get(key, 0)
+        return sum(1 for at in C.get("INDEX_STARS", []) if n >= at)
+
+    class Disc(float):  # a disciple's bonus that remembers its index entry (rarity, look)
+        key = None
+
     def idx_record(i):
         if not C.get("INDEX_STARS"):
-            return
+            return None
         key = (i, rng.randrange(int(C.get("INDEX_LOOKS", 4))))
         n = idx["pulls"].get(key, 0) + 1
         idx["pulls"][key] = n
@@ -254,6 +267,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     S["disciples"].append(roll())
                 S["disciples"].sort(reverse=True)
                 del S["disciples"][C["DISCIPLE_CAP"] + vip:]
+        return key
 
     def price_base():  # Main priceRate: base() without the paid 2x pass, the index, rebirth and Harmony boosts
         rb = 1
@@ -262,17 +276,19 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
         if not C.get("HARMONY_IN_PRICE"):  # D67: Harmony is left out of prices (Main priceRate)
             rb *= harm
-        return base() / (x2 * idx_mult() * rb)
+        return base() / (x2 * idx_mult() * rb) * dmult(True) / dmult()
 
     def roll():
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
         for i, (w, b) in enumerate(C["RARITIES"]):
             x -= w
             if x <= 0:
-                idx_record(i)
-                return b
-        idx_record(0)
-        return C["RARITIES"][0][1]
+                d = Disc(b)
+                d.key = idx_record(i)
+                return d
+        d = Disc(C["RARITIES"][0][1])
+        d.key = idx_record(0)
+        return d
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
     # the first REALM_PADS[r] pads of the ladder (sorted by unlock, then list order); the rest wait
@@ -291,10 +307,10 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     def open_pads():
         n = len(S["owned"])
         return [p for p in C["PADS"] if p["id"] not in S["owned"] and n >= p["unlock"] and in_realm(p)
-                and all(r in S["owned"] for r in p["req"])]
+                and all(r in S["owned"] for r in p["req"]) and (p.get("kind") != "isle" or lvl("isles") > 0)]
 
     def needed(p):  # Config.neededForBreakthrough: paths and groves are optional when DECOR_OPTIONAL
-        return not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
+        return p.get("kind") != "isle" and not (C.get("DECOR_OPTIONAL") and p.get("kind") in ("path", "grove"))
 
     def hires():
         if not st["workers"]:
