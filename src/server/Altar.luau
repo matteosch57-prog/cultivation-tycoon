@@ -210,21 +210,23 @@ local function build(parent)
 		local dais = P(m, Vector3.new(0.5, 8, 8), CFrame.new(c + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, 0, math.pi / 2), PAL.stoneLight, nil, Enum.PartType.Cylinder)
 		dais.Name = "Gate"
 		dais:SetAttribute("Spring", true) -- Altar.client finds the gates by this (the springs' old key)
-		local n = 24
+		-- the round marble ring: many short overlapping blocks read as one smooth circle (owner: "round
+		-- marble is good", the bars on top went), and two marble feet seat it on the dais
+		local n = 40
 		for k = 0, n - 1 do
 			local a = k / n * math.pi * 2
-			local b = P(m, Vector3.new(1.4, 1.4, 1.1), face * CFrame.new(math.cos(a) * 3.6, 4.2 + math.sin(a) * 3.6, 0) * CFrame.Angles(0, 0, a), PAL.jade, Enum.Material.Marble)
+			local b = P(m, Vector3.new(1.4, 0.75, 1.1), face * CFrame.new(math.cos(a) * 3.65, 4.2 + math.sin(a) * 3.65, 0) * CFrame.Angles(0, 0, a), PAL.jade, Enum.Material.Marble)
 			b.CanCollide, b.CanQuery = false, false
+		end
+		for _, fx in { -1, 1 } do
+			local foot = P(m, Vector3.new(1.6, 0.9, 1.6), face * CFrame.new(fx * 2.4, 0.95, 0), PAL.jade, Enum.Material.Marble)
+			foot.CanCollide, foot.CanQuery = false, false
 		end
 		local ring = P(m, Vector3.new(0.3, 8.6, 8.6), face * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.pi / 2, 0), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)
 		ring.CanCollide, ring.CanQuery = false, false
 		local door = P(m, Vector3.new(0.4, 6.4, 6.4), face * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.pi / 2, 0), GATE_GLOW, Enum.Material.Neon, Enum.PartType.Cylinder)
 		door.Name = "Door"
 		door.CanCollide, door.CanQuery, door.CastShadow = false, false, false
-		local roof = P(m, Vector3.new(10, 0.6, 1.6), face * CFrame.new(0, 8.4, 0), PAL.tile)
-		roof.CanCollide, roof.CanQuery = false, false
-		local trim = P(m, Vector3.new(9, 0.3, 1.4), face * CFrame.new(0, 8, 0), PAL.gold, Enum.Material.Metal)
-		trim.CanCollide, trim.CanQuery = false, false
 		local light = Instance.new("PointLight") -- R3: the glowing door is a real lamp
 		light.Color = GATE_GLOW
 		light.Range = 14
