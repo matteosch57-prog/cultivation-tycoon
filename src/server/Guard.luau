@@ -28,6 +28,7 @@ local LIMITS = {
 	AltarPush = { 2, 4 },
 	Teleport = { 1, 3 },
 	Breakthrough = { 1, 3 },
+	SwordRide = { 2, 4 },
 }
 
 local buckets = {} -- [player] = { [remote] = { tokens, at } }

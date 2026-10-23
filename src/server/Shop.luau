@@ -549,7 +549,7 @@ function Shop.init(a)
 			for _, player in Players:GetPlayers() do
 				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 				local here = nil
-				if hrp then
+				if hrp and not player:GetAttribute("Riding") then -- a sword rider never buys (D76)
 					for _, p in CollectionService:GetTagged("StepPad") do
 						local d = hrp.Position - p.Position
 						if p:GetAttribute("PadKind") == "shop" and Vector2.new(d.X, d.Z).Magnitude < PAD_REACH and d.Y > -1 and d.Y < 7 then

@@ -592,6 +592,31 @@ Config.SHOP_PASSES = {
 	{ key = "x2", id = 2045637564, name = "2x Qi", line = "Double income forever" },
 	{ key = "auto", id = 2047412977, name = "Auto Orbs", line = "Orbs fly to you" },
 	{ key = "vip", id = 2048210735, name = "VIP Sect", line = "+1 disciple, gold name" },
+	-- Flying Swords (owner 2026-10-23, picked "Hover ride, faster each level"; PS99's hoverboards copied
+	-- as is): three passes, each a sword to ride (Config.SWORD_RIDE, src/server/SwordRide.luau).
+	-- Owning a higher one keeps the lower ones; the HUD's sword button picks which to ride.
+	{ key = "swordJade", id = 0, name = "Jade Jian", line = "Ride a sword, x1.5 speed", ride = 1 },
+	{ key = "swordHeavenly", id = 0, name = "Heavenly Sword", line = "Ride a sword, x1.75 speed", ride = 2 },
+	{ key = "swordCelestial", id = 0, name = "Celestial Crystal Sword", line = "Ride a sword, x2 speed", ride = 3 },
+}
+-- The sword ride (D76): a hover ride, NOT flight. The sword is welded under the feet, HipHeight rises
+-- by `lift` (you float ~1 stud over the ground and still walk: stairs, slopes and walls work as on
+-- foot, so the light stairs and the locked isles stay closed), WalkSpeed = MOVE.walk x the tier's
+-- `speed`. Jump or the button again steps off. It switches itself off within `padRadius` studs of
+-- any pad (it never buys anything), on the Heavenly Altar while a round runs, on death or reset, and
+-- when the server sees a speed over `speedSlack` x the tier's for `speedStrikes` checks. No qi.
+Config.SWORD_RIDE = {
+	lift = 1.2, -- studs added to HipHeight (the blade's own thickness included)
+	length = 9, -- studs, every blade under the rider
+	lean = 8, -- degrees the rider leans forward
+	padRadius = 7,
+	speedSlack = 1.5,
+	speedStrikes = 3,
+	tiers = {
+		{ key = "swordJade", speed = 1.5, color = Color3.fromHex("8FF5D0"), trail = 4537267850, trailLife = 0.45, trailWidth = 1.6 },
+		{ key = "swordHeavenly", speed = 1.75, color = Color3.fromHex("FFD34D"), trail = 6480618759, trailLife = 0.6, trailWidth = 2.1 },
+		{ key = "swordCelestial", speed = 2, color = Color3.fromHex("9FD8FF"), trail = 94214927232934, trailLife = 0.75, trailWidth = 2.4 },
+	},
 }
 Config.SHOP_PRODUCTS = {
 	-- the entry door (owner 2026-10-21, research 2026-10-22_cheap_buys): 5 Robux, once per player, an
@@ -1096,6 +1121,11 @@ Config.ICON_ATLAS = {
 		-- the Tide Bell: its own bell is cell 31 of art/ui/icon_atlas.png (docs/art/mocks/icons.js, key
 		-- "bell"); the tide wave stands in until the owner uploads it, then set tidebell = 31 with the new id
 		tidebell = 7,
+		-- the three Flying Swords (D76): cells 32 / 33 / 34 of the same new sheet; the palm strike
+		-- stands in until it is uploaded, then set swordJade = 32, swordHeavenly = 33, swordCelestial = 34
+		swordJade = 18,
+		swordHeavenly = 18,
+		swordCelestial = 18,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"

@@ -14,6 +14,7 @@ local Kit = require(script.Parent:WaitForChild("Kit"))
 local SaveStore = require(script.Parent:WaitForChild("SaveStore"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local Shop = require(script.Parent:WaitForChild("Shop"))
+local SwordRide = require(script.Parent:WaitForChild("SwordRide"))
 local Dots = require(script.Parent:WaitForChild("Dots"))
 local Cultivators = require(script.Parent:WaitForChild("Cultivators"))
 local Workers = require(script.Parent:WaitForChild("Workers"))
@@ -1098,7 +1099,8 @@ local function checkPads()
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hrp and hum and hum.Health > 0 and s.padData then
+		-- a sword rider never buys (D76): the ride switches off near pads, and a pad ignores a rider
+		if hrp and hum and hum.Health > 0 and s.padData and not player:GetAttribute("Riding") then
 			-- After a buy, every pad waits until the player stands on none of them: the step-out
 			-- move (or a new pad spawning underfoot) once landed on the next pad and chained 5 buys.
 			local onAny = false
@@ -1628,6 +1630,7 @@ local function onJoin(player)
 	Bless.mark(player, s)
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
+	SwordRide.onJoin(player, s)
 	if Config.GROUP_ID > 0 then
 		local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID) -- yields; before the offline qi
 		s.inGroup = okG and member == true
@@ -2505,6 +2508,10 @@ if game:GetService("RunService"):IsStudio() then
 				Shop.debugPass(player, s, value) -- DebugSet:Invoke(player, "pass", "x2")
 				return true
 			end
+			if key == "ride" then
+				SwordRide.debugRide(player, value) -- DebugSet:Invoke(player, "ride", "swordJade") rides (pass first); false steps off
+				return true
+			end
 			if key == "buy" then
 				-- DebugSet:Invoke(player, "buy", "starter") runs a product's prompt checks and grants it
 				-- as its receipt would (no purchase); false = refused
@@ -2575,6 +2582,7 @@ Altar.init({
 	style = Style,
 	baseY = BASE_Y,
 }, world)
+SwordRide.init({ sessions = sessions, notify = notify, remotes = remotes })
 Shop.init({
 	sessions = sessions,
 	rate = rate,
