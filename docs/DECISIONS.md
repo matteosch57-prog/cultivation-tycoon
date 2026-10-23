@@ -508,3 +508,12 @@ the log as a D-number.
   left of Jump while you stand on the altar (Player attribute `AltarPalm` hides the seal). The knock
   drives ~24 studs (`ALTAR_PUSH_SPEED`, `ALTAR_PUSH_TIME`) with an `ALTAR_RAGDOLL` tumble, a thump and
   a camera kick; the striker gets a smaller kick. Flying Swords stay off over the deck and springs.
+- **D79** The altar's look, redone (owner 2026-10-23 on D78's Lei Tai: "It's so ugly.... use the bottom
+  of the disciple island, but the top needs an existing asset, try to find a nice open arena"). Three
+  free Creator Store arenas staged on an island base in Studio Edit
+  (docs/art/mocks/altar_store_arenas.jpg); owner picked A, "Ancient Chinese Arena" (asset 17609048910),
+  on the lotus isles' rock islet rather than the peak island's underside ("horrible"), preview
+  docs/art/mocks/altar_arena_isle_preview.jpg. The mesh is rebuilt by id (`Config.ALTAR_ARENA`, no
+  inserted scripts) and only draws; an invisible slab is the deck, so props, stairs and poles never
+  block a push. Stepping off the deck onto the islet's grass counts as out. Springs moved to
+  `ALTAR_SPRING_X` 24, clear of the islet. D78's push, Palm spot and sword rule stay.

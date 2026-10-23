@@ -504,11 +504,24 @@ Config.ALTAR_HOLD = 20
 Config.ALTAR_WIN_SECONDS = 300
 Config.ALTAR_JOIN_SECONDS = 60
 Config.ALTAR_SOLO_SECONDS = 120
--- The stage is a Lei Tai (owner pick B 2026-10-23, docs/art/mocks/altar_arena_all.jpg: "higher, more
--- premium"): a square deck, ALTAR_RADIUS = half its side, open edges, banners on the corner posts.
-Config.ALTAR_HEIGHT = 28 -- studs above the hub plaza (was 15)
+-- The stage (owner 2026-10-23: the built Lei Tai was "so ugly"; "use the bottom of the disciple
+-- island, the top needs an existing asset"; picked A of docs/art/mocks/altar_store_arenas.jpg): the
+-- free Creator Store "Ancient Chinese Arena" mesh rebuilt by id on the lotus isles' rock islet
+-- (Config.SKY_MESH). Its square deck: ALTAR_RADIUS = half its side; the mesh draws, an invisible
+-- slab carries the players (open edges).
+Config.ALTAR_HEIGHT = 28 -- studs from the hub plaza up to the deck (was 15)
 Config.ALTAR_RADIUS = 11 -- half the deck's side (was a 9 stud circle)
-Config.ALTAR_SPRING_X = 18 -- the Spirit Springs stand this far out on the plaza, either side (clear of the deck's underside)
+Config.ALTAR_SPRING_X = 24 -- the Spirit Springs stand this far out on the plaza, either side (clear of the islet's rim)
+-- the arena mesh (asset 17609048910), in its own studs: the deck is DECK_HALF from the middle to an
+-- edge and DECK_TOP above the mesh's bottom, its middle OFFSET_X from the mesh's (Studio rays 2026-10-23)
+Config.ALTAR_ARENA = {
+	mesh = "rbxassetid://17609048713",
+	texture = "rbxassetid://17609048840",
+	native = Vector3.new(85.338, 35.609, 74.559),
+	deckHalf = 27.3,
+	deckTop = 7.73,
+	offsetX = -1.0,
+}
 Config.ALTAR_PUSH_COOLDOWN = 2
 Config.ALTAR_PUSH_REACH = 10 -- studs in front of the striker
 -- owner 2026-10-23 "make sure it pushes enough": ~24 studs sideways (was ~14 at 62 for 0.22 s), with a

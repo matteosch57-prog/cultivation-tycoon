@@ -1,6 +1,6 @@
 -- Heavenly Altar: king of the hill over the hub (Config ALTAR_*, mock A, owner idea 2026-10-21; the
--- stage is a Lei Tai since owner pick B 2026-10-23). A floating square duel stage above the cauldron
--- opens every ALTAR_INTERVAL s; two Spirit Springs on the
+-- stage is a store arena on a lotus-isle rock since 2026-10-23). A floating square duel stage above
+-- the cauldron opens every ALTAR_INTERVAL s; two Spirit Springs on the
 -- plaza throw players up to it. Stand on it ALONE for ALTAR_HOLD s to claim it; two or more on it
 -- pause the timer. Palm Strike knocks rivals off; whoever falls off is out until the round ends.
 -- The server decides everything (R9): who stands on it is read from positions every tick, the
@@ -9,8 +9,10 @@
 -- (display name or ""), AltarHold (s held), AltarCrowd (players on it); player attribute AltarOut.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local AssetService = game:GetService("AssetService")
 
 local Guard = require(script.Parent:WaitForChild("Guard"))
+local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Altar = {}
@@ -28,16 +30,112 @@ local BRONZE = Color3.fromHex("7A5A3A")
 local FLAME = Color3.fromRGB(255, 190, 110)
 
 ---------------------------------------------------------------------------------------------
--- The altar: a Lei Tai, the square duel stage (owner pick B 2026-10-23, mock
--- docs/art/mocks/altar_arena_all.jpg), floating ALTAR_HEIGHT over the plaza on a rock: a timber deck
--- with a jade and gold seal, a red lacquer apron with gold trim and medallions, four corner posts
--- with gold finials and hanging banners. Eight bronze braziers on the deck's edge stay dark until a
--- holder's timer lights them (real fire, R3). Posts, banners and braziers never collide: the edges stay
--- open for ring-outs. Two Spirit Springs on the plaza throw you up while it is open.
+-- The altar (owner 2026-10-23, picked A of docs/art/mocks/altar_store_arenas.jpg on the lotus isles'
+-- base, preview docs/art/mocks/altar_arena_isle_preview.jpg): the free Creator Store "Ancient Chinese
+-- Arena" (Config.ALTAR_ARENA, rebuilt by mesh id, never inserted) standing on the rock islet the
+-- disciples' lotus isles float on (Config.SKY_MESH islet + its grass top, vines, spirit crystals,
+-- clouds trailing under it), its deck ALTAR_HEIGHT over the plaza. The meshes only draw: an invisible
+-- slab is the deck players stand on (every edge open for ring-outs) and the grass top catches whoever
+-- falls short. Eight bronze braziers on the deck's edge stay dark until a holder's timer lights them
+-- (real fire, R3). Two Spirit Springs on the plaza throw you up while it is open.
 local function lightBrazier(b, on)
 	b.flame.Transparency = on and 0 or 1
 	b.fire.Enabled = on
 	b.light.Enabled = on
+end
+
+local SPIRIT = Color3.fromHex("6FF2C8")
+local LAWN = Color3.fromHex("7DAA5C")
+local ROCK = Color3.fromHex("9A8672")
+local CLOUD_NATIVE = Vector3.new(13.76, 9.09, 24.67)
+
+-- the arena mesh, fetched once (a fetch can time out: try again), nil when it never loads
+local function arenaMesh()
+	local A = Config.ALTAR_ARENA
+	for try = 1, 3 do
+		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, A.mesh, {
+			CollisionFidelity = Enum.CollisionFidelity.Box,
+			RenderFidelity = Enum.RenderFidelity.Automatic,
+		})
+		if ok and mp then
+			mp.TextureID = A.texture
+			return mp
+		end
+		task.wait(try)
+	end
+	warn("[Tycoon][perf] event=altar_arena_load_failed")
+	return nil
+end
+
+-- the meshes (arena, islet, grass top) arrive off the boot: Main must not wait on four fetches
+local function dress(m, y, R)
+	local A = Config.ALTAR_ARENA
+	local k = R / A.deckHalf -- arena studs per mesh stud
+	local base = y - A.deckTop * k -- the arena mesh's bottom, on the islet's grass
+	-- the islet: wide enough that the arena's corner poles stand on its grass, flat enough (0.45 tall)
+	-- that its point stays well over the cauldron
+	local w = R * 3.3
+	local rng = Random.new(78)
+	local function sky(name, size, cf)
+		local p = Lowpoly.sky(name)
+		if p then
+			p:ClearAllChildren()
+			p.Size = size
+			p.CFrame = cf
+			p.CanCollide = name == "isletTop" -- the grass top catches a short fall
+			p.CanQuery = p.CanCollide
+			p.CanTouch = false
+			p.Parent = m
+		end
+		return p
+	end
+	Lowpoly.skyReady(10)
+	local rock = sky("islet", Vector3.new(w, w * 0.45, w), CFrame.new(0, base - 0.8 - w * 0.225, 0) * CFrame.Angles(0, 0.6, 0))
+	if rock then
+		rock.Material = Enum.Material.Rock
+		rock.Color = ROCK
+	end
+	local grass = sky("isletTop", Vector3.new(w + 0.6, 0.8, w + 0.6), CFrame.new(0, base - 0.5, 0) * CFrame.Angles(0, 0.6, 0))
+	if grass then
+		grass.Material = Enum.Material.LeafyGrass
+		grass.Color = LAWN
+	end
+	-- vines off the rim, spirit crystals under the rock (as the lotus isles, Builders.isleBody)
+	local P = ctx.style.P
+	for _ = 1, 8 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local len = rng:NextNumber(4, 8)
+		local v = P(m, Vector3.new(0.4, len, 0.4), CFrame.new(math.cos(a) * w * 0.46, base - 1.6 - len / 2, math.sin(a) * w * 0.46), ctx.style.PAL.grassDark, Enum.Material.LeafyGrass)
+		v.CanCollide, v.CanQuery = false, false
+	end
+	for _ = 1, 4 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(1, w * 0.15)
+		local gem = P(m, Vector3.new(0.9, rng:NextNumber(2.6, 4.2), 0.9), CFrame.new(math.cos(a) * d, base - 0.8 - w * 0.42, math.sin(a) * d) * CFrame.Angles(0, math.rad(45), rng:NextNumber(-0.3, 0.3)), SPIRIT, Enum.Material.Glass)
+		gem.CanCollide, gem.CanQuery, gem.CastShadow = false, false, false
+	end
+	-- clouds trailing under the rim
+	for i = 1, 6 do
+		local a, r = i / 6 * math.pi * 2 + rng:NextNumber(-0.3, 0.3), rng:NextNumber(14, 18)
+		local cw = rng:NextNumber(9, 13)
+		local size = Vector3.new(cw * 0.56, cw * 0.37, cw)
+		local c = P(m, size, CFrame.new(math.cos(a) * r, base - rng:NextNumber(9, 15), math.sin(a) * r) * CFrame.Angles(0, rng:NextNumber(0, 6), 0), Color3.fromRGB(255, 252, 255))
+		c.CanCollide, c.CanQuery, c.CastShadow = false, false, false
+		local sm = Instance.new("SpecialMesh")
+		sm.MeshType = Enum.MeshType.FileMesh
+		sm.MeshId = Config.SKY_MESH.cloud
+		sm.Scale = size / CLOUD_NATIVE
+		sm.Parent = c
+	end
+	-- the arena itself: draws only (its gong, rack, stairs and corner poles never block a push)
+	local arena = arenaMesh()
+	if arena then
+		arena.Anchored = true
+		arena.Size = A.native * k
+		arena.CFrame = CFrame.new(-A.offsetX * k, base + arena.Size.Y / 2, 0)
+		arena.CanCollide, arena.CanQuery, arena.CanTouch = false, false, false
+		arena.Name = "Arena"
+		arena.Parent = m
+	end
 end
 
 local function build(parent)
@@ -45,7 +143,6 @@ local function build(parent)
 	local m = Instance.new("Model")
 	m.Name = "HeavenlyAltar"
 	local R = Config.ALTAR_RADIUS
-	local S = R * 2 -- the deck's side
 	local y = ctx.baseY + Config.ALTAR_HEIGHT
 	top = Vector3.new(0, y, 0)
 	local props = {} -- parts that must not collide
@@ -53,82 +150,12 @@ local function build(parent)
 		table.insert(props, p)
 		return p
 	end
-	local function disc(h, dia, cy, color, mat)
-		return P(
-			m,
-			Vector3.new(h, dia, dia),
-			CFrame.new(0, cy, 0) * CFrame.Angles(0, 0, math.pi / 2),
-			color,
-			mat,
-			Enum.PartType.Cylinder
-		)
-	end
-	-- underside: stacked rock rings tapering to a point, like the floating peaks
-	local rng = Random.new(77)
-	for i = 0, 4 do
-		local r = R * 1.05 * (1 - i * 0.18)
-		for k = 0, 7 do
-			local a = k / 8 * math.pi * 2 + i * 0.4
-			local s = r * rng:NextNumber(0.55, 0.75)
-			-- chunky blocks (slabs read as a thin pale column from the plaza, Play check 2026-10-23)
-			P(
-				m,
-				Vector3.new(s, s * 0.6, s),
-				CFrame.new(math.cos(a) * r * 0.45, y - 3.4 - s * 0.3 - i * 2.6, math.sin(a) * r * 0.45)
-					* CFrame.Angles(0, a, rng:NextNumber(-0.2, 0.2)),
-				i % 2 == 0 and PAL.rock or Color3.fromHex("6E655E")
-			)
-		end
-	end
-	-- the apron: red lacquer, gold bands top and bottom, three gold medallions a side
-	P(m, Vector3.new(S + 1.2, 3, S + 1.2), CFrame.new(0, y - 1.7, 0), PAL.vermilion)
-	P(m, Vector3.new(S + 1.6, 0.5, S + 1.6), CFrame.new(0, y - 3.1, 0), PAL.gold, Enum.Material.Metal)
-	P(m, Vector3.new(S + 1.6, 0.4, S + 1.6), CFrame.new(0, y - 0.25, 0), PAL.gold, Enum.Material.Metal)
-	for side = 0, 3 do
-		local face = CFrame.Angles(0, side * math.pi / 2, 0)
-		for _, o in { -S / 3, 0, S / 3 } do
-			P(
-				m,
-				Vector3.new(0.15, 1.8, 1.8),
-				face * CFrame.new(o, y - 1.7, S / 2 + 0.65) * CFrame.Angles(0, math.pi / 2, 0),
-				PAL.gold,
-				Enum.Material.Metal,
-				Enum.PartType.Cylinder
-			)
-		end
-	end
-	-- the deck: timber boards (alternating tones), the floor everyone stands on
-	local field = P(m, Vector3.new(S, 0.4, S), CFrame.new(0, y - 0.2, 0), PAL.timber)
-	field.Name = "Floor"
-	local BOARDS = 11
-	for i = 0, BOARDS - 1 do
-		P(
-			m,
-			Vector3.new(S - 0.2, 0.1, S / BOARDS - 0.1),
-			CFrame.new(0, y + 0.05, -S / 2 + (i + 0.5) * S / BOARDS),
-			i % 2 == 0 and Color3.fromHex("9A6644") or Color3.fromHex("8A5A3A")
-		)
-	end
-	-- the seal in the middle: gold ring, dark timber, jade, a gold heart
-	disc(0.16, 8.4, y + 0.12, PAL.gold, Enum.Material.Metal)
-	disc(0.18, 7.4, y + 0.13, PAL.timberDark)
-	disc(0.2, 6.4, y + 0.14, PAL.jade)
-	disc(0.22, 3.2, y + 0.15, PAL.gold, Enum.Material.Metal)
-	disc(0.24, 2.6, y + 0.16, Color3.fromHex("8FD3B8"))
-	-- the corner posts: vermilion, a gold foot and finial, a crossbar with a banner hanging outward
-	for _, c in { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } } do
-		local x, z = c[1] * (R - 0.2), c[2] * (R - 0.2)
-		prop(P(m, Vector3.new(1.1, 9, 1.1), CFrame.new(x, y + 4.5, z), PAL.vermilion))
-		prop(P(m, Vector3.new(1.6, 0.5, 1.6), CFrame.new(x, y + 0.25, z), PAL.gold, Enum.Material.Metal))
-		prop(P(m, Vector3.new(1.5, 0.4, 1.5), CFrame.new(x, y + 9.2, z), PAL.gold, Enum.Material.Metal))
-		prop(P(m, Vector3.new(1, 1, 1), CFrame.new(x, y + 9.9, z), PAL.gold, Enum.Material.Metal, Enum.PartType.Ball))
-		local out = CFrame.lookAt(Vector3.new(x, y + 8.2, z), Vector3.new(x * 2, y + 8.2, z * 2)) -- -Z points outward
-		prop(P(m, Vector3.new(0.3, 0.3, 2.6), out * CFrame.new(0, 0, -1.2), PAL.gold, Enum.Material.Metal))
-		prop(P(m, Vector3.new(0.15, 5.5, 1.9), out * CFrame.new(0, -2.9, -1.7), PAL.plaster))
-		prop(P(m, Vector3.new(0.17, 4.6, 0.5), out * CFrame.new(0, -2.9, -1.7), PAL.vermilion))
-		prop(P(m, Vector3.new(0.8, 0.3, 0.8), out * CFrame.new(0, -5.8, -1.7), PAL.gold, Enum.Material.Metal))
-		prop(P(m, Vector3.new(0.12, 1.2, 0.12), out * CFrame.new(0, -6.5, -1.7), PAL.vermilion)) -- tassel
-	end
+	-- the deck players stand on: invisible, the arena mesh draws it
+	local floor = P(m, Vector3.new(R * 2, 1, R * 2), CFrame.new(0, y - 0.5, 0), Color3.new(1, 1, 1))
+	floor.Name = "Floor"
+	floor.Transparency = 1
+	floor.CastShadow = false
+	task.spawn(dress, m, y, R)
 	-- braziers: two on each edge of the deck
 	for k = 0, Config.ALTAR_BRAZIERS - 1 do
 		local side, slot = k % 4, k // 4
@@ -477,7 +504,10 @@ local function tick(dt)
 			end
 		elseif round.joined[player] and not round.out[player] then
 			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if not hrp or hrp.Position.Y < top.Y - 3 then
+			-- off the deck = out: below it, or past its edge (the islet's grass round the deck sits only
+			-- ~3 studs lower and catches a short fall: standing there is out too)
+			local off = hrp and Vector2.new(math.abs(hrp.Position.X - top.X), math.abs(hrp.Position.Z - top.Z))
+			if not hrp or hrp.Position.Y < top.Y - 1.5 or math.max(off.X, off.Y) > Config.ALTAR_RADIUS + 1.5 then
 				round.out[player] = true
 				player:SetAttribute("AltarOut", true)
 				ctx.notify:FireClient(player, "altarOut")
