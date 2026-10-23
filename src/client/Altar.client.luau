@@ -594,7 +594,7 @@ remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, a, b, c)
 		toast("The Heavenly Altar opens in " .. tostring(a) .. " s at the hub!", GOLD)
 	elseif kind == "altarOpen" then
 		Sfx.play("gong", { volume = 0.7 })
-		toast("The Heavenly Altar is open! Hold it 20 s", GOLD)
+		toast("The Heavenly Altar is open! Hold it " .. Config.ALTAR_HOLD .. " s", GOLD)
 	elseif kind == "altarKnock" then
 		knock(a)
 	elseif kind == "altarPalm" then
