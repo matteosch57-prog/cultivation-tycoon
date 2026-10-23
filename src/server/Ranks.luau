@@ -377,9 +377,7 @@ function Ranks.fetch(player, key, scope)
 		if scope == "country" and not cc then
 			return { rows = {}, country = nil }
 		end
-		if not merged[key .. "/" .. sc] then
-			merge(key, sc)
-		end
+		merge(key, sc) -- cached page + the live scores here now (no store call)
 		list = merged[key .. "/" .. sc]
 	end
 	local ids = {}
