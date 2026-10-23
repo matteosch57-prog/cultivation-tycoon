@@ -511,7 +511,7 @@ Config.ALTAR_SOLO_SECONDS = 120
 -- slab carries the players (open edges).
 Config.ALTAR_HEIGHT = 36 -- studs from the hub plaza up to the deck (was 15, then 28: owner "a bit higher")
 Config.ALTAR_RADIUS = 11 -- half the deck's side (was a 9 stud circle)
-Config.ALTAR_SPRING_X = 24 -- the Spirit Springs stand this far out on the plaza, either side (clear of the islet's rim)
+Config.ALTAR_SPRING_X = 15 -- the moon gates stand this far out on the plaza, either side of the cauldron (owner: "more to the center")
 -- the arena mesh (asset 17609048910), in its own studs: the deck is DECK_HALF from the middle to an
 -- edge and DECK_TOP above the mesh's bottom, its middle OFFSET_X from the mesh's (Studio rays 2026-10-23)
 Config.ALTAR_ARENA = {

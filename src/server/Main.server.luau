@@ -174,7 +174,7 @@ local function buildHub()
 		local pa = (toWall < 0 and toWall > -math.pi / 3) and a + 0.26 or a - 0.26
 		local pr = Config.HUB_RADIUS - 6
 		local at = Vector3.new(math.cos(pa) * pr, BASE_Y, math.sin(pa) * pr)
-		local label, pad = Portals.pad(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)) * CFrame.Angles(0, math.pi, 0), "isle" .. i, "Unclaimed Peak")
+		local label, pad = Portals.pad(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)) * CFrame.Angles(0, math.pi, 0), "isle" .. i, "Unclaimed Peak", { column = true })
 		Portals.setOpen(label, pad, false, "Unclaimed Peak")
 		local back = Vector3.new(math.cos(a), 0, math.sin(a)) * (Config.HUB_RADIUS - 14) + Vector3.new(0, BASE_Y + 4, 0)
 		hubPortals[i] = { at = at, label = label, pad = pad, arrive = CFrame.lookAt(back, Vector3.new(0, BASE_Y + 4, 0)) }

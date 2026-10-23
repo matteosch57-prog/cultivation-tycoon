@@ -522,4 +522,6 @@ the log as a D-number.
   under each corner pole's foot (they stand past the islet's rim: magic holds them), warm lamps at the
   pole tops; two moon gates (owner pick C, docs/art/mocks/altar_tp_pads.jpg) replace the Spirit Springs
   (their arc could not reach 36 up): stepping into a gate's glowing door teleports you onto the deck
-  (Teleport "altarGate", checked on the server).
+  (Teleport "altarGate", checked on the server). The gates then moved in to `ALTAR_SPRING_X` 15 (owner: "more
+  to the center"), and the hub's island portals took mock B's look: a light column with gold arrows
+  climbing it (`Portals.pad` opts.column; the islands' portals back to the hub are unchanged).

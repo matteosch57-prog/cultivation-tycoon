@@ -207,7 +207,8 @@ local function build(parent)
 	for _, sx in { -1, 1 } do
 		local c = Vector3.new(sx * Config.ALTAR_SPRING_X, ctx.baseY, -2)
 		local face = CFrame.new(c) * CFrame.Angles(0, math.pi / 2, 0) -- local Z runs along world X
-		local dais = P(m, Vector3.new(0.5, 8, 8), CFrame.new(c + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, 0, math.pi / 2), PAL.stoneLight, nil, Enum.PartType.Cylinder)
+		-- (its top sits over the plaza stone's: the gate stands half on the plaza since D79's move in)
+		local dais = P(m, Vector3.new(0.7, 8, 8), CFrame.new(c + Vector3.new(0, 0.35, 0)) * CFrame.Angles(0, 0, math.pi / 2), PAL.stoneLight, nil, Enum.PartType.Cylinder)
 		dais.Name = "Gate"
 		dais:SetAttribute("Spring", true) -- Altar.client finds the gates by this (the springs' old key)
 		-- the round marble ring: many short overlapping blocks read as one smooth circle (owner: "round
@@ -219,7 +220,7 @@ local function build(parent)
 			b.CanCollide, b.CanQuery = false, false
 		end
 		for _, fx in { -1, 1 } do
-			local foot = P(m, Vector3.new(1.6, 0.9, 1.6), face * CFrame.new(fx * 2.4, 0.95, 0), PAL.jade, Enum.Material.Marble)
+			local foot = P(m, Vector3.new(1.6, 0.9, 1.6), face * CFrame.new(fx * 2.4, 1.15, 0), PAL.jade, Enum.Material.Marble)
 			foot.CanCollide, foot.CanQuery = false, false
 		end
 		local ring = P(m, Vector3.new(0.3, 8.6, 8.6), face * CFrame.new(0, 4.2, 0) * CFrame.Angles(0, math.pi / 2, 0), PAL.gold, Enum.Material.Metal, Enum.PartType.Cylinder)

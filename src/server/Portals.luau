@@ -11,8 +11,14 @@ local Portals = {}
 local P, PAL = Style.P, Style.PAL
 local GLOW = Color3.fromHex("8FF3CF")
 
--- `cf` = the pad's centre on the ground, its +Z toward whoever walks up; returns the name label
-function Portals.pad(parent, cf, where, title)
+local GOLD_LIGHT = Color3.fromHex("FFE29A")
+local COLUMN_H = 20
+
+-- `cf` = the pad's centre on the ground, its +Z toward whoever walks up; returns the name label.
+-- `opts.column`: the hub's portals (owner pick B 2026-10-23, docs/art/mocks/altar_tp_pads.jpg) also
+-- raise a column of light with gold arrows climbing it, so a pad reads as "this takes you away" from
+-- across the hub. The column never collides and goes dark with the pad (setOpen).
+function Portals.pad(parent, cf, where, title, opts)
 	local m = Instance.new("Model")
 	m.Name = "Portal"
 	local flat = CFrame.Angles(0, 0, math.pi / 2)
@@ -41,6 +47,30 @@ function Portals.pad(parent, cf, where, title)
 	motes.SpreadAngle = Vector2.new(12, 12)
 	motes.EmissionDirection = Enum.NormalId.Right -- the cylinder's axis (X) points up
 	motes.Parent = pad
+	if opts and opts.column then
+		local col = Instance.new("Folder")
+		col.Name = "Column"
+		col.Parent = m
+		local function glow(size, at, color, alpha, shape)
+			local p = P(col, size, at, color, Enum.Material.Neon, shape)
+			p.Transparency = alpha
+			p:SetAttribute("Alpha", alpha)
+			p.CanCollide, p.CanQuery, p.CastShadow = false, false, false
+			return p
+		end
+		glow(Vector3.new(COLUMN_H, 5, 5), cf * CFrame.new(0, 0.7 + COLUMN_H / 2, 0) * flat, GLOW, 0.82, Enum.PartType.Cylinder)
+		glow(Vector3.new(COLUMN_H, 1.4, 1.4), cf * CFrame.new(0, 0.7 + COLUMN_H / 2, 0) * flat, Color3.new(1, 1, 1), 0.55, Enum.PartType.Cylinder)
+		-- up-arrows standing round the column at three heights, each a "^" of two bars
+		for h = 0, 2 do
+			for k = 0, 3 do
+				local a = k / 4 * math.pi * 2 + h * 0.4
+				local at = cf * CFrame.new(math.cos(a) * 3.2, 3 + h * 4, math.sin(a) * 3.2) * CFrame.Angles(0, -a + math.pi / 2, 0)
+				for _, sx in { -1, 1 } do
+					glow(Vector3.new(0.3, 1.5, 0.3), at * CFrame.new(sx * 0.45, 0, 0) * CFrame.Angles(0, 0, sx * math.rad(45)), GOLD_LIGHT, 0)
+				end
+			end
+		end
+	end
 	-- a little gate behind the pad carrying where it goes
 	for _, sx in { -1, 1 } do
 		P(m, Vector3.new(0.6, 6.2, 0.6), cf * CFrame.new(sx * 2.9, 3.1, -3.4), PAL.vermilion)
@@ -73,6 +103,12 @@ function Portals.setOpen(label, pad, open, title)
 	pad.Transparency = open and 0.15 or 0.6
 	pad.PointLight.Enabled = open
 	pad.ParticleEmitter.Enabled = open
+	local col = pad.Parent and pad.Parent:FindFirstChild("Column")
+	if col then
+		for _, p in col:GetChildren() do
+			p.Transparency = open and p:GetAttribute("Alpha") or 1
+		end
+	end
 end
 
 return Portals
