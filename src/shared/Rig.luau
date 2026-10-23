@@ -183,4 +183,26 @@ function Rig.reach(joints, side, target, pole, rot)
 	rot[side .. "Wrist"] = CFrame.identity
 end
 
+
+-- A character's root and waist joints (Motor6D or AnimationConstraint: new avatars carry the latter,
+-- Studio 2026-10-23), for the sword rider's pose (SwordPose.client, SwordRide.luau). nil when absent.
+function Rig.rideJoints(char)
+	local root, waist
+	for _, d in char:GetDescendants() do
+		if isBodyJoint(d) then
+			if d.Name == "Root" or d.Name == "RootJoint" then
+				root = d
+			elseif d.Name == "Waist" then
+				waist = d
+			end
+		end
+	end
+	return root, waist
+end
+
+-- a joint's frame on its parent part (Motor6D C0 / AnimationConstraint Attachment0)
+function Rig.parentFrame(j)
+	return (frames(j))
+end
+
 return Rig

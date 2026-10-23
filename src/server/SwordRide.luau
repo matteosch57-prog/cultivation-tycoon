@@ -18,6 +18,7 @@ local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Co
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Telemetry = require(script.Parent:WaitForChild("Telemetry"))
 local SwordLook = require(script.Parent:WaitForChild("SwordLook"))
+local Rig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Rig"))
 
 local SwordRide = {}
 
@@ -35,25 +36,10 @@ local function tierOf(key)
 end
 
 -- The rider's pose: HipHeight is NOT touched (Studio 2026-10-23: +1.2 HipHeight let a rider climb
--- 3.5-stud ledges), so the step height stays the walker's. The hover is drawn instead: the root
--- joint (R15 LowerTorso.Root, R6 RootJoint) lifts the body `lift` studs off the root and leans it
--- forward, the waist (R15 UpperTorso.Waist) adds a little more lean, and the sword is welded under
--- the lifted feet. The animations still play over the joints.
-local function rootJoint(char)
-	local lower = char:FindFirstChild("LowerTorso")
-	local j = lower and lower:FindFirstChild("Root")
-	if not j then
-		local hrp = char:FindFirstChild("HumanoidRootPart")
-		j = hrp and hrp:FindFirstChild("RootJoint")
-	end
-	return j and j:IsA("Motor6D") and j or nil
-end
-local function waistJoint(char)
-	local upper = char:FindFirstChild("UpperTorso")
-	local j = upper and upper:FindFirstChild("Waist")
-	return j and j:IsA("Motor6D") and j or nil
-end
-
+-- 3.5-stud ledges), so the step height stays the walker's. The hover is drawn on every client by
+-- SwordPose.client (the root joint lifts the body `lift` studs and leans it, the waist leans more,
+-- through each joint's Transform: Motor6D and AnimationConstraint rigs alike). The sword is welded
+-- under the lifted feet, or at the real feet when the rig has no root joint to lift.
 function SwordRide.stop(player, reason)
 	local r = rides[player]
 	if not r then
@@ -70,11 +56,6 @@ function SwordRide.stop(player, reason)
 		-- back to the walker's speed: Movement.client sets MOVE.walk on the client, so the server's own
 		-- copy of WalkSpeed (16) is not the one to restore (Studio 2026-10-23)
 		r.hum.WalkSpeed = Config.MOVE.walk
-	end
-	for joint, c0 in r.joints do
-		if joint.Parent then
-			joint.C0 = c0
-		end
 	end
 	player:SetAttribute("Riding", nil)
 	if reason and reason ~= "player" and reason ~= "gone" then
@@ -126,6 +107,9 @@ local function start(player, key)
 	local lift = RIDE.lift
 	-- the feet are drawn `lift` over where they walk (hrp - half its height - HipHeight): the blade
 	-- top goes there, so the rider stands on the sword and its underside floats `lift - 2*top` up
+	if not Rig.rideJoints(char) then
+		lift = 0 -- nothing lifts the body: the blade goes at the real feet, never through the legs
+	end
 	local feet = -(hrp.Size.Y / 2 + hum.HipHeight) + lift
 	-- the whole model moves before it is parented: its WeldConstraints lock each part where it is
 	-- when it enters the workspace (moving only the core would leave the blade at the template's spot)
@@ -135,19 +119,8 @@ local function start(player, key)
 	weld.C0 = CFrame.new(0, feet - top, 0)
 	weld.Parent = core
 	sword.Parent = char
-	local r = { key = key, tier = tier, sword = sword, hum = hum, joints = {}, strikes = 0, conns = {} }
+	local r = { key = key, tier = tier, sword = sword, hum = hum, strikes = 0, conns = {} }
 	hum.WalkSpeed = Config.MOVE.walk * def.speed
-	local root = rootJoint(char)
-	if root then
-		-- in the root part's own axes (an R6 RootJoint's C0 is turned): up `lift`, leaned forward
-		r.joints[root] = root.C0
-		root.C0 = CFrame.new(0, lift, 0) * CFrame.Angles(math.rad(-RIDE.lean), 0, 0) * root.C0
-	end
-	local waist = waistJoint(char)
-	if waist then
-		r.joints[waist] = waist.C0
-		waist.C0 = waist.C0 * CFrame.Angles(math.rad(-RIDE.waistLean), 0, 0)
-	end
 	table.insert(r.conns, hum.Died:Connect(function()
 		SwordRide.stop(player, "gone")
 	end))

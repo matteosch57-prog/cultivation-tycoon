@@ -1,4 +1,5 @@
--- The Flying Sword button (D76): a row of the HUD's left rail (Player.HudSlots.Left, after Friends),
+-- The Flying Sword button (D76): a row of the HUD's right stack (Player.HudSlots.Right, after the gift,
+-- the pill and the altar row; the left rail wraps at 4 rows on a 749 x 381 phone, Studio 2026-10-23),
 -- shown once the player owns a sword pass. Tap: ride the last sword (SwordPick); tap again to step
 -- off. Owning several: the first tap opens a small picker of the owned swords (the last one ridden
 -- first, in gold). Jumping also steps off. The server mounts, checks and switches it off (R9,
@@ -72,7 +73,7 @@ local function ride(key)
 end
 
 -- the picker: one toy tile per owned sword beside the button, the last ridden first and gold-rimmed.
--- It floats in this script's own gui at the button's right (Studio 2026-10-23: inside the rail it
+-- It floats in this script's own gui at the button's left (Studio 2026-10-23: inside a rail it
 -- widened the row and pushed the HUD's other buttons 160 px over)
 local function openPicker(list, anchor)
 	closePicker()
@@ -86,8 +87,8 @@ local function openPicker(list, anchor)
 	local at = anchor.AbsolutePosition - gui.AbsolutePosition
 	picker = frame(gui, {
 		AutomaticSize = Enum.AutomaticSize.XY,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.fromOffset(at.X + anchor.AbsoluteSize.X + px(12), at.Y + anchor.AbsoluteSize.Y / 2),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.fromOffset(at.X - px(12), at.Y + anchor.AbsoluteSize.Y / 2),
 		ZIndex = 5,
 	})
 	Toy.list(picker, true, px(8))
@@ -120,7 +121,7 @@ local function draw()
 	if #list == 0 then
 		return
 	end
-	root = frame(gui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
+	root = frame(gui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 5 })
 	root.Name = "SwordRow"
 	Toy.list(root, false, px(1))
 	local face = riding and RIDING or FACE
@@ -145,17 +146,17 @@ local function draw()
 	placeRow()
 end
 
--- the row lives in the HUD's left rail (Player.HudSlots, D54); its own corner only if the HUD is missing
-local function leftRail()
+-- the row lives in the HUD's right stack (Player.HudSlots, D54); its own corner only if the HUD is missing
+local function rightStack()
 	local slots = player:FindFirstChild("HudSlots")
-	local left = slots and slots:FindFirstChild("Left")
-	return left and left.Value
+	local right = slots and slots:FindFirstChild("Right")
+	return right and right.Value
 end
 placeRow = function()
 	if not root then
 		return
 	end
-	local rail = leftRail()
+	local rail = rightStack()
 	if rail then
 		if root.Parent ~= rail then
 			root.AnchorPoint = Vector2.new(0, 0)
@@ -163,8 +164,8 @@ placeRow = function()
 			root.Parent = rail
 		end
 	elseif root.Parent ~= gui then
-		root.AnchorPoint = Vector2.new(0, 0)
-		root.Position = UDim2.fromOffset(px(12), GuiService.TopbarInset.Max.Y + px(260))
+		root.AnchorPoint = Vector2.new(1, 0)
+		root.Position = UDim2.new(1, -px(16), 0, GuiService.TopbarInset.Max.Y + px(200))
 		root.Parent = gui
 	end
 end

@@ -165,11 +165,14 @@ Captures: `docs/art/captures/shop_island_play.jpg`, `shop_island_disciples_play.
   the tier's sword under the feet and sets WalkSpeed to `MOVE.walk` x 1.5 / 1.75 / 2 (back to
   `MOVE.walk` on every stop). HipHeight is untouched, so the step height stays the walker's and a
   2.5-stud ledge blocks as on foot (a +1.2 HipHeight let riders climb 3.5-stud ledges in Play); the
-  hover is drawn: the root joint lifts the body `lift` studs and leans it `lean` degrees (the waist
-  `waistLean` more), the sword is welded under the lifted feet. Stairs, slopes and walls work as on
+  hover is drawn on every client (`SwordPose.client`, in each joint's Transform after the Animator:
+  Motor6D and the new AnimationConstraint rigs alike): the root joint lifts the body `lift` studs and
+  leans it `lean` degrees, the waist `waistLean` more; the sword is welded under the lifted feet (at
+  the real feet when a rig has no root joint, so the blade never cuts the legs). Stairs, slopes and walls work as on
   foot; the light stairs and locked isles stay closed. Everyone sees it. No qi, so the economy does
   not move.
-- HUD: a sword button on the left rail (after Friends) once one is owned: tap = ride the last one
+- HUD: a sword button in the right stack (after the gift, the pill and the altar row; the left rail
+  wraps at 4 rows on a 749 x 381 phone) once one is owned: tap = ride the last one
   (`data.swordPick`), tap again or jump = step off; several owned = the first tap opens a picker that
   floats beside the button (outside the rail, so it never shoves the other buttons).
 - Off by itself near any pad (`padRadius`; a pad also ignores a rider, so a ride never buys), on the
