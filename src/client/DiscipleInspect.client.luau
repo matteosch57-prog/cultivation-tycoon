@@ -304,7 +304,7 @@ if RunService:IsStudio() then
 			for _, s in list do
 				table.insert(names, s.name)
 			end
-			local root = parent:FindFirstAncestorWhichIsA("LayerCollector")
+			local root = parent:IsA("LayerCollector") and parent or parent:FindFirstAncestorWhichIsA("LayerCollector")
 			print(string.format("[StarAudit] %s (%s): %s", root and root.Name or "?", root and root.Enabled and "shown" or "hidden", table.concat(names, " ")))
 		end
 		player:SetAttribute("StarAudit", nil)
