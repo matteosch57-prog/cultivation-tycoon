@@ -1043,6 +1043,11 @@ function Config.starRow(stars)
 	return row
 end
 
+-- the colour of star number `n` (1..#INDEX_STARS): gold, red or blue (Config.STAR_COLORS)
+function Config.starColor(n)
+	return Config.STAR_COLORS[math.clamp(math.ceil((n or 1) / Config.STAR_ROW), 1, #Config.STAR_COLORS)]
+end
+
 -- a working disciple's bonus multiplier from its own entry's stars (`count` = that entry's pulls)
 function Config.discipleStarMult(count)
 	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)

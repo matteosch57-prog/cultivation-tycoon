@@ -83,8 +83,13 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     def seats():  # Config.maxDisciples + Disciple Seat
         return C["MAX_DISCIPLES"] + vip + lvl("seat") + sum(slot_seats.get(i, 1) for i in C.get("SLOT_PADS", SLOT_PADS) if i in S["owned"])
 
-    def dmult():
-        return 1 + sum(sorted(S["disc"], reverse=True)[:seats()])
+    class Disc(float):  # a disciple's bonus that remembers its index entry (addDisciple: name + look)
+        key = None
+
+    def dmult(price=False):  # discipleMult: a working disciple's bonus x Config.discipleStarMult (not in priceRate)
+        seated = sorted(S["disc"], reverse=True)[:seats()]
+        per = 0 if price else C.get("DISCIPLE_STAR_BONUS", 0)
+        return 1 + sum(d * (1 + per * sum(1 for at in C["INDEX_STARS"] if S["index"].get(getattr(d, "key", None), 0) >= at)) for d in seated)
 
     def roll():
         x = rng.uniform(0, wsum)
@@ -95,12 +100,14 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return 0
 
     def seat(i):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
-        S["disc"].append(rar[i][1])
+        # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
+        key = (i, rng.randrange(4))
+        d = Disc(rar[i][1])
+        d.key = key
+        S["disc"].append(d)
         S["disc"].sort(reverse=True)
         keep = int(C["DISCIPLE_CAP"]) + len(S["bought"])
         del S["disc"][keep:]
-        # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
-        key = (i, rng.randrange(4))
         n = S["index"].get(key, 0) + 1
         S["index"][key] = n
         if n in C["INDEX_STARS"]:
@@ -131,11 +138,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     cache = {}
 
     def recalc():
-        price = base_income() * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult()  # priceRate (D67: no Harmony)
+        price = base_income() * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult(True)  # priceRate (D67: no Harmony, no disciple stars)
         cache["price"] = price * (harmony() if C.get("HARMONY_IN_PRICE") else 1)
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)  # Config.rebirthMult
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
-        cache["away"] = price * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
+        cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
 
     def pad_cost(p):  # Config.padCost
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0

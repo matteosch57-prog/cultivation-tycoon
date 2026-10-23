@@ -725,9 +725,37 @@ function Toy.disciple(parent, size, rarityName, props, noAura)
 	return well(parent, size, idx, props)
 end
 
+-- One index star, the same gem everywhere (the crowns over the disciples, their cards, the index book,
+-- the recruit reveal; owner 2026-10-23 "make sure the stars are the same everywhere"): lit in `color`
+-- (Config.STAR_COLORS) with a light top and a darker rim, like the life beads; nil = dark glass with a
+-- gold rim. `props` sets its size (TextSize, or Size + TextScaled) and place.
+local STAR_DARK = { Color3.fromHex("463A56"), Color3.fromHex("241C2E"), Color3.fromHex("C8A050") }
+function Toy.starGem(parent, color, props)
+	local star = Instance.new("TextLabel")
+	star.BackgroundTransparency = 1
+	star.FontFace = Toy.FONT
+	star.Text = "★"
+	star.TextColor3 = Color3.new(1, 1, 1)
+	star.AutomaticSize = Enum.AutomaticSize.XY
+	star.Size = UDim2.new()
+	for k, v in props or {} do
+		star[k] = v
+	end
+	local grad = Instance.new("UIGradient")
+	grad.Color = color and ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.6), color) or ColorSequence.new(STAR_DARK[1], STAR_DARK[2])
+	grad.Rotation = 90
+	grad.Parent = star
+	local rim = Instance.new("UIStroke")
+	rim.Color = color and color:Lerp(Color3.new(0, 0, 0), 0.5) or STAR_DARK[3]
+	rim.Thickness = math.max(1, (star.TextScaled and 12 or star.TextSize) * 0.08)
+	rim.LineJoinMode = Enum.LineJoinMode.Round
+	rim.Parent = star
+	star.Parent = parent
+	return star
+end
+
 -- a row of the STAR_ROW index stars for `stars` (Config.starRow: gold, then red, then blue over the
--- band before; empty slots dim). Returns the row.
-local STAR_OFF = Color3.fromHex("4A3F55")
+-- band before; empty slots dark glass). Returns the row.
 function Toy.stars(parent, stars, size, props)
 	local row = Toy.frame(parent, { AutomaticSize = Enum.AutomaticSize.XY })
 	for k, v in props or {} do
@@ -735,7 +763,7 @@ function Toy.stars(parent, stars, size, props)
 	end
 	Toy.list(row, true, 0)
 	for i, color in Config.starRow(stars) do
-		Toy.text(row, "★", size, color or STAR_OFF, { LayoutOrder = i, ZIndex = row.ZIndex })
+		Toy.starGem(row, color, { TextSize = size, LayoutOrder = i, ZIndex = row.ZIndex })
 	end
 	return row
 end

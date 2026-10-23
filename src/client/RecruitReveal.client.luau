@@ -130,7 +130,7 @@ local function indexLine(card, one, order)
 	Toy.text(row, Config.LOOK_NAMES[one.look] or "", px(18), WHITE, { LayoutOrder = 1 })
 	Toy.stars(row, one.stars or 0, px(16), { LayoutOrder = 2 })
 	if one.newStar then
-		Toy.text(card, "New index star!", px(18), Color3.fromHex("FFD34D"), { LayoutOrder = order + 1 })
+		Toy.text(card, "New index star!", px(18), Config.starColor(one.stars), { LayoutOrder = order + 1 })
 	end
 end
 
@@ -482,8 +482,8 @@ local function startMulti(results)
 		tst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		tst.Parent = it.tile
 		Toy.disciple(it.tile, size, r.rarity, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true)
-		if r.newStar then -- this pull lit an index star (D60): a gold star in the tile's corner
-			Toy.text(it.tile, "★", math.max(px(10), size * 0.34), Color3.fromHex("FFD34D"), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(1), 0, 0), ZIndex = 7 })
+		if r.newStar then -- this pull lit an index star (D60): that star, in its colour, in the tile's corner
+			Toy.text(it.tile, "★", math.max(px(10), size * 0.34), Config.starColor(r.stars), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(1), 0, 0), ZIndex = 7 })
 		end
 		it.scale = Instance.new("UIScale")
 		it.scale.Parent = it.tile
