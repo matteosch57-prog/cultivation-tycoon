@@ -896,6 +896,24 @@ local function shinySparkle(m)
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.6), NumberSequenceKeypoint.new(0.4, 1.6), NumberSequenceKeypoint.new(1, 0) }),
 		Color = ColorSequence.new(SHINY_WARM, SHINY_GOLD),
 	})
+	-- a thin gold outline that breathes (from look B, recheck 10:11: the burst alone hid in the auras);
+	-- only the seated figure, and Shiny is 1 in 100, so few Highlights ever exist at once
+	task.spawn(function()
+		local avatar = m:WaitForChild("Avatar", 10) -- Cultivators.build adds the figure a moment later
+		if not avatar or not m.Parent then
+			return
+		end
+		local h = Instance.new("Highlight")
+		h.Name = "ShinyOutline"
+		h.Adornee = avatar
+		h.FillColor = SHINY_GOLD
+		h.FillTransparency = 0.9
+		h.OutlineColor = SHINY_GOLD
+		h.OutlineTransparency = 0.1
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Parent = m
+		game:GetService("TweenService"):Create(h, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { OutlineTransparency = 0.55 }):Play()
+	end)
 	local light = Instance.new("PointLight")
 	light.Name = "ShinyLight"
 	light.Color = SHINY_GOLD
