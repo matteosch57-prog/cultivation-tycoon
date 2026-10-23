@@ -596,9 +596,9 @@ Config.SHOP_PASSES = {
 	-- Flying Swords (owner 2026-10-23, picked "Hover ride, faster each level"; PS99's hoverboards copied
 	-- as is): three passes, each a sword to ride (Config.SWORD_RIDE, src/server/SwordRide.luau).
 	-- Owning a higher one keeps the lower ones; the HUD's sword button picks which to ride.
-	{ key = "swordJade", id = 2053738987, name = "Jade Jian", line = "Ride a sword, x1.5 speed", ride = 1 },
-	{ key = "swordHeavenly", id = 2052916966, name = "Heavenly Sword", line = "Ride a sword, x1.75 speed", ride = 2 },
-	{ key = "swordCelestial", id = 2055358863, name = "Celestial Crystal Sword", line = "Ride a sword, x2 speed", ride = 3 },
+	{ key = "swordJade", id = 2053738987, name = "Jade Jian", line = "Fly a sword, x1.5 speed", ride = 1 },
+	{ key = "swordHeavenly", id = 2052916966, name = "Heavenly Sword", line = "Fly a sword, x1.75 speed", ride = 2 },
+	{ key = "swordCelestial", id = 2055358863, name = "Celestial Crystal Sword", line = "Fly a sword, x2 speed", ride = 3 },
 }
 -- The sword ride (D76; v2 2026-10-23, owner after trying the hover ride: "i cant fly with them? When i
 -- jump they got removed? this is bad"): real flight, Adopt Me's flying pets copied. The sword is welded
