@@ -1,6 +1,8 @@
 -- Studio mock (2026-10-22): the player aura of src/server/PlayerAura.luau on clones of your avatar,
--- for screenshots only. Run in Play, in the Server datamodel, with PlayerAura's source in a temporary
--- ModuleScript (`mod`): local run = <this file>; run(mod, "realms") or run(mod, "beads").
+-- for screenshots only. Run in Play, in the Server datamodel, with the sources of PlayerAura and
+-- AuraGlyph in two temporary ModuleScripts side by side in one folder (`mod` = the PlayerAura one):
+-- local run = <this file>; run(mod, "realms") or run(mod, "beads"). The glyphs only turn with
+-- AuraSpin.client running; the stills do not need it.
 -- Builds workspace._AuraMock: one row of 10 figures on a stone floor high in the sky away from every
 -- pad, 9 studs apart along +X, facing +Z, a label under each; the player's own avatar is never moved.
 --   realms: realms 1 to 10 in the first life

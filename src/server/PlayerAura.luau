@@ -1,17 +1,19 @@
 -- The player's own aura (owner pick B 2026-10-22: realm aura + life beads, "make auras way better,
 -- a bit like Warcraft 3 style"; research docs/research/2026-10-22_player_auras.md).
 -- Realm aura: Super Power Fighting Simulator's rank aura (nobody buys it, none at the first rank,
--- it grows at every rank after) drawn the Warcraft 3 way: a glyph circle turning slowly on the
--- ground under the hero, light rising from it, in the realm colour the status title uses
--- (Config.realmColor). Each realm adds a layer: glyph and rising motes from realm 2, a counter-turning
--- rim ring from 3, rising wisps from 4, pulses spreading out from 6, flames up the body from 8.
+-- it grows at every rank after) drawn the Warcraft 3 way: a crisp glyph array turning under the
+-- hero's feet, a different figure each realm (AuraGlyph), light rising from it, in the realm colour
+-- the status title uses (Config.realmColor). Rising motes from realm 2, wisps up the body from 4,
+-- flames from 8.
 -- Life beads: one bead per rebirth on a gold prayer-bead halo behind the head, kept forever. Every
 -- Config.AURA_BEAD_BAND rebirths the beads change colour (Config.AURA_BEAD_COLORS: gold, crimson,
 -- azure, violet, white jade), the new colour filling over the old, and grow, and the halo shines more.
 -- No Highlight (the altar winner's gold rim stays its own) and no Light (R3): glowing particles and
--- neon beads only. Phone budget at the top: 7 emitters a player, ~110 live particles, 40 small parts.
+-- neon beads only. Phone budget at the top: 6 emitters a player, ~120 live particles, 42 small parts,
+-- ~150 UI lines on the two glyph layers.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local AuraGlyph = require(script.Parent:WaitForChild("AuraGlyph"))
 
 local PlayerAura = {}
 
@@ -23,9 +25,6 @@ local MAX_TIER = 9 -- realm 10 and up
 local function seq(a, b, c)
 	return NumberSequence.new({ NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(0.5, b), NumberSequenceKeypoint.new(1, c) })
 end
-
--- fades in, holds, fades out: a flat glyph that is always there while two overlap
-local HOLD = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.25, 0.1), NumberSequenceKeypoint.new(0.75, 0.1), NumberSequenceKeypoint.new(1, 1) })
 
 local function weld(a, b)
 	local w = Instance.new("WeldConstraint")
@@ -68,34 +67,14 @@ local function emitter(parent, props)
 	return pe
 end
 
--- a flat emitter lying on the ground (particles face up: VelocityPerpendicular with a tiny upward speed)
-local function flat(parent, props)
-	props.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
-	props.Speed = NumberRange.new(0.01)
-	return emitter(parent, props)
-end
-
 -- the realm aura: tier 0 (realm 1) none, up to MAX_TIER
 local function realmAura(folder, hrp, hum, tier, color)
 	local feet = hrp.CFrame * CFrame.new(0, -(hrp.Size.Y / 2 + hum.HipHeight) + 0.15, 0)
 	local k = (tier - 1) / (MAX_TIER - 1) -- 0 at realm 2, 1 at realm 10
 	local pale = color:Lerp(WHITE, 0.55)
-	local R = 7 + 4 * k -- glyph diameter, studs
-	local ground = holder(folder, hrp, "AuraGround", Vector3.new(1, 0.1, 1), feet)
-	-- the glyph: two overlapping at any time, turning slowly
-	local glyph = flat(ground, {
-		Name = "Glyph",
-		Texture = TEX .. "forcefield_vortex_main.dds",
-		Color = ColorSequence.new(color, pale),
-		Size = NumberSequence.new(R),
-		Transparency = HOLD,
-		Brightness = 2.5 + k,
-		Lifetime = NumberRange.new(4),
-		Rate = 0.6,
-		Rotation = NumberRange.new(0, 360),
-		RotSpeed = NumberRange.new(25),
-	})
-	task.defer(glyph.Emit, glyph, 1) -- on screen at once, not after the first emit tick (realms 2-3 looked empty)
+	local R = 8 + 0.6 * (tier - 1) -- glyph diameter, studs
+	-- the glyph (AuraGlyph): a crisp array of this realm's own figure, two layers turning apart
+	AuraGlyph.build(folder, hrp, tier + 1, hrp.CFrame:ToObjectSpace(feet), R, color, pale, 1.6 + k)
 	-- motes rising from the circle's edge
 	local rim = holder(folder, hrp, "AuraRim", Vector3.new(R * 0.8, 0.1, R * 0.8), feet)
 	emitter(rim, {
@@ -112,21 +91,6 @@ local function realmAura(folder, hrp, hum, tier, color)
 		Drag = 0.6,
 		Rate = 8 + 10 * k,
 	})
-	if tier >= 2 then
-		-- a wider ring turning the other way
-		flat(ground, {
-			Name = "Ring",
-			Texture = TEX .. "explosion01_shockwave_main.dds",
-			Color = ColorSequence.new(pale),
-			Size = NumberSequence.new(R * 1.25),
-			Transparency = HOLD,
-			Brightness = 1.5,
-			Lifetime = NumberRange.new(5),
-			Rate = 0.45,
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-15),
-		})
-	end
 	if tier >= 3 then
 		-- soft wisps rising round the body (Warcraft 3's Unholy Aura)
 		local body = holder(folder, hrp, "AuraWisps", Vector3.new(3.6, 0.1, 3.6), feet)
@@ -145,19 +109,6 @@ local function realmAura(folder, hrp, hum, tier, color)
 			Rotation = NumberRange.new(0, 360),
 			RotSpeed = NumberRange.new(-40, 40),
 			Rate = 10 + 10 * k,
-		})
-	end
-	if tier >= 5 then
-		-- a pulse spreading out over the ground
-		flat(ground, {
-			Name = "Pulse",
-			Texture = TEX .. "explosion01_shockwave_main.dds",
-			Color = ColorSequence.new(color),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, R * 1.6) }),
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
-			Brightness = 2,
-			Lifetime = NumberRange.new(1.4),
-			Rate = 0.7,
 		})
 	end
 	if tier >= 7 then
@@ -226,21 +177,52 @@ local function halo(folder, head, rebirths)
 		end
 	end
 	if band >= 2 then
-		-- the halo shines more each band
+		-- from the second colour on (owner: "beads can get more aura starting red already") the halo
+		-- glows in its colour, sparkles, and from the third colour light rises off it
+		local c = colors[band]
 		local box = holder(folder, head, "HaloShine", Vector3.new(R * 2, R * 2, 0.2), centre)
+		emitter(box, {
+			Name = "Glow",
+			Texture = TEX .. "smoke_main.dds",
+			Color = ColorSequence.new(c),
+			Shape = Enum.ParticleEmitterShape.Box,
+			Size = seq(R * 1.2, R * (1.3 + 0.15 * band), R * 1.2),
+			Transparency = seq(1, 0.55 - 0.05 * band, 1),
+			Brightness = 1.5,
+			Lifetime = NumberRange.new(1.6, 2.2),
+			Speed = NumberRange.new(0),
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-20, 20),
+			Rate = 2.5,
+		})
 		emitter(box, {
 			Name = "Shine",
 			Texture = TEX .. "sparkles_main.dds",
-			Color = ColorSequence.new(WHITE, colors[band]),
+			Color = ColorSequence.new(WHITE, c),
 			Shape = Enum.ParticleEmitterShape.Box,
-			Size = seq(0, 0.5 + 0.12 * band, 0),
+			Size = seq(0, 0.6 + 0.15 * band, 0),
 			Transparency = NumberSequence.new(0.05),
-			Brightness = 2,
+			Brightness = 2.5,
 			Lifetime = NumberRange.new(0.6, 1),
 			Speed = NumberRange.new(0.2, 0.6),
 			Rotation = NumberRange.new(0, 360),
-			Rate = 3 * band,
+			Rate = 5 * band,
 		})
+		if band >= 3 then
+			emitter(box, {
+				Name = "Rise",
+				Texture = TEX .. "sparkles_main.dds",
+				Color = ColorSequence.new(c, WHITE),
+				Shape = Enum.ParticleEmitterShape.Box,
+				Size = seq(0.5, 0.35, 0),
+				Transparency = NumberSequence.new(0.1),
+				Brightness = 2,
+				Lifetime = NumberRange.new(1, 1.6),
+				Speed = NumberRange.new(1.5, 3),
+				Acceleration = Vector3.new(0, 2, 0),
+				Rate = 3 * band,
+			})
+		end
 	end
 end
 

@@ -50,3 +50,14 @@ Beads (owner: "premium... 20 yellow then 20 red then 20 blue and with more aura 
 100"): a gold-chain prayer-bead halo of 20 slots behind the head. Rebirths 1-20 fill it gold, 21-40
 re-fill it crimson over the gold, then azure, violet and white jade up to 100. Each band the beads
 grow and the halo sparkles more. Past 100 it stays full white jade.
+
+## v3 (owner 2026-10-23: "beads can get more aura starting red already", "the ground ones are too
+blurry, Warcraft 3 has different shapes")
+
+The blurry particle glyph is replaced by a crisp array drawn with UI lines and circles on a flat
+SurfaceGui (`src/server/AuraGlyph.luau`), a different figure per realm: ring and ticks (2), the square
+(3), the hexagram (4), lotus round a pentagram (5), the eight trigrams (6), two squares turning apart
+(7), trigrams round a hexagram (8), the great lotus and nine-point star (9), the full array (10+).
+Two layers turn opposite ways on the client (`AuraSpin.client`, Motor6D Transforms, near and on
+screen only). Beads from the second colour (red) on: a soft glow in the band colour behind the halo and
+more sparkles; from the third (blue) light also rises off it.
