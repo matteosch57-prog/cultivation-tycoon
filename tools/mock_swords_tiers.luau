@@ -431,7 +431,9 @@ return function()
 		local top = cf * CFrame.new(0, size.Y / 2, 0)
 		rider(top * CFrame.new(0, 0, 0.5))
 		trail(cf * CFrame.new(0, 0, size.Z / 2), t)
-		if a then
+		if i == 3 then
+			-- the A3 asset read as round orbs around the hilt (Studio 2026-10-23): tier 3's premium layers replace it
+		elseif a then
 			aura(a, cf, size, t)
 		else
 			warn("[SwordMock] missing A" .. i)
