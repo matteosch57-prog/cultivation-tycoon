@@ -2232,7 +2232,7 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 		s.teleportAt = os.clock()
 		local root = char:FindFirstChild("HumanoidRootPart")
 		local sx = root and root.Position.X < 0 and -1 or 1
-		local at = Vector3.new(sx * 18, BASE_Y + 3, -2)
+		local at = Vector3.new(sx * (Config.ALTAR_SPRING_X + 5), BASE_Y + 3, -2)
 		char:PivotTo(CFrame.lookAt(at, Vector3.new(0, BASE_Y + 3, -2)))
 	elseif type(where) == "string" then
 		-- a portal (Portals.luau): only from where you stand on it, to a claimed island or the hub

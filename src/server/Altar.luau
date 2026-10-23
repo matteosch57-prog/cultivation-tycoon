@@ -1,5 +1,6 @@
--- Heavenly Altar: king of the hill over the hub (Config ALTAR_*, mock A, owner idea 2026-10-21).
--- A floating jade altar above the cauldron opens every ALTAR_INTERVAL s; two Spirit Springs on the
+-- Heavenly Altar: king of the hill over the hub (Config ALTAR_*, mock A, owner idea 2026-10-21; the
+-- stage is a Lei Tai since owner pick B 2026-10-23). A floating square duel stage above the cauldron
+-- opens every ALTAR_INTERVAL s; two Spirit Springs on the
 -- plaza throw players up to it. Stand on it ALONE for ALTAR_HOLD s to claim it; two or more on it
 -- pause the timer. Palm Strike knocks rivals off; whoever falls off is out until the round ends.
 -- The server decides everything (R9): who stands on it is read from positions every tick, the
@@ -27,9 +28,12 @@ local BRONZE = Color3.fromHex("7A5A3A")
 local FLAME = Color3.fromRGB(255, 190, 110)
 
 ---------------------------------------------------------------------------------------------
--- The altar: a floating island disc (rock underside, stone rim, jade floor with a gold inlay),
--- eight bronze braziers on the rim that stay dark until a holder's timer lights them (real fire,
--- R3), and two Spirit Springs on the plaza: carved rings that throw you up while it is open.
+-- The altar: a Lei Tai, the square duel stage (owner pick B 2026-10-23, mock
+-- docs/art/mocks/altar_arena_all.jpg), floating ALTAR_HEIGHT over the plaza on a rock: a timber deck
+-- with a jade and gold seal, a red lacquer apron with gold trim and medallions, four corner posts
+-- with gold finials and hanging banners. Eight bronze braziers on the deck's edge stay dark until a
+-- holder's timer lights them (real fire, R3). Posts, banners and braziers never collide: the edges stay
+-- open for ring-outs. Two Spirit Springs on the plaza throw you up while it is open.
 local function lightBrazier(b, on)
 	b.flame.Transparency = on and 0 or 1
 	b.fire.Enabled = on
@@ -41,8 +45,14 @@ local function build(parent)
 	local m = Instance.new("Model")
 	m.Name = "HeavenlyAltar"
 	local R = Config.ALTAR_RADIUS
+	local S = R * 2 -- the deck's side
 	local y = ctx.baseY + Config.ALTAR_HEIGHT
 	top = Vector3.new(0, y, 0)
+	local props = {} -- parts that must not collide
+	local function prop(p)
+		table.insert(props, p)
+		return p
+	end
 	local function disc(h, dia, cy, color, mat)
 		return P(
 			m,
@@ -56,91 +66,101 @@ local function build(parent)
 	-- underside: stacked rock rings tapering to a point, like the floating peaks
 	local rng = Random.new(77)
 	for i = 0, 4 do
-		local r = R * (1 - i * 0.19)
+		local r = R * 1.05 * (1 - i * 0.18)
 		for k = 0, 7 do
 			local a = k / 8 * math.pi * 2 + i * 0.4
 			local s = r * rng:NextNumber(0.55, 0.75)
 			P(
 				m,
-				Vector3.new(s, 1.6 + i * 0.3, s),
-				CFrame.new(math.cos(a) * r * 0.45, y - 1.4 - i * 1.5, math.sin(a) * r * 0.45)
+				Vector3.new(s, 1.8 + i * 0.4, s),
+				CFrame.new(math.cos(a) * r * 0.45, y - 4 - i * 1.9, math.sin(a) * r * 0.45)
 					* CFrame.Angles(0, a, rng:NextNumber(-0.2, 0.2)),
 				PAL.rock
 			)
 		end
 	end
-	-- floor: stone rim, jade field, gold inlay rings and eight spokes
-	disc(1.4, R * 2 + 1, y - 0.7, PAL.stone)
-	disc(1.45, R * 2 - 0.6, y - 0.68, PAL.stoneLight)
-	local field = disc(1.5, R * 2 - 3, y - 0.66, PAL.jade)
-	field.Name = "Floor"
-	disc(1.52, R * 2 - 3.6, y - 0.65, PAL.gold, Enum.Material.Metal)
-	disc(1.54, R * 2 - 4.4, y - 0.64, PAL.jade)
-	disc(1.56, 5, y - 0.63, PAL.gold, Enum.Material.Metal)
-	disc(1.58, 4.2, y - 0.62, Color3.fromHex("8FD3B8"))
-	for k = 0, 7 do
-		local a = k / 8 * math.pi * 2
-		local mid = (2.6 + (R - 2.2)) / 2
-		P(
-			m,
-			Vector3.new(0.4, 0.08, R - 4.8),
-			CFrame.new(math.cos(a) * mid, y + 0.1, math.sin(a) * mid) * CFrame.Angles(0, -a + math.pi / 2, 0),
-			PAL.gold,
-			Enum.Material.Metal
-		)
-	end
-	-- low balustrade posts between the braziers (rails would trap pushes: posts only)
-	for k = 0, 15 do
-		if k % 2 == 1 then
-			local a = k / 16 * math.pi * 2
+	-- the apron: red lacquer, gold bands top and bottom, three gold medallions a side
+	P(m, Vector3.new(S + 1.2, 3, S + 1.2), CFrame.new(0, y - 1.7, 0), PAL.vermilion)
+	P(m, Vector3.new(S + 1.6, 0.5, S + 1.6), CFrame.new(0, y - 3.1, 0), PAL.gold, Enum.Material.Metal)
+	P(m, Vector3.new(S + 1.6, 0.4, S + 1.6), CFrame.new(0, y - 0.25, 0), PAL.gold, Enum.Material.Metal)
+	for side = 0, 3 do
+		local face = CFrame.Angles(0, side * math.pi / 2, 0)
+		for _, o in { -S / 3, 0, S / 3 } do
 			P(
 				m,
-				Vector3.new(0.6, 1.1, 0.6),
-				CFrame.new(math.cos(a) * (R - 0.1), y + 0.55, math.sin(a) * (R - 0.1)),
-				PAL.vermilion
-			)
-			P(
-				m,
-				Vector3.new(0.8, 0.25, 0.8),
-				CFrame.new(math.cos(a) * (R - 0.1), y + 1.2, math.sin(a) * (R - 0.1)),
+				Vector3.new(0.15, 1.8, 1.8),
+				face * CFrame.new(o, y - 1.7, S / 2 + 0.65) * CFrame.Angles(0, math.pi / 2, 0),
 				PAL.gold,
-				Enum.Material.Metal
+				Enum.Material.Metal,
+				Enum.PartType.Cylinder
 			)
 		end
 	end
-	-- braziers on the rim
+	-- the deck: timber boards (alternating tones), the floor everyone stands on
+	local field = P(m, Vector3.new(S, 0.4, S), CFrame.new(0, y - 0.2, 0), PAL.timber)
+	field.Name = "Floor"
+	local BOARDS = 11
+	for i = 0, BOARDS - 1 do
+		P(
+			m,
+			Vector3.new(S - 0.2, 0.1, S / BOARDS - 0.1),
+			CFrame.new(0, y + 0.05, -S / 2 + (i + 0.5) * S / BOARDS),
+			i % 2 == 0 and Color3.fromHex("9A6644") or Color3.fromHex("8A5A3A")
+		)
+	end
+	-- the seal in the middle: gold ring, dark timber, jade, a gold heart
+	disc(0.16, 8.4, y + 0.12, PAL.gold, Enum.Material.Metal)
+	disc(0.18, 7.4, y + 0.13, PAL.timberDark)
+	disc(0.2, 6.4, y + 0.14, PAL.jade)
+	disc(0.22, 3.2, y + 0.15, PAL.gold, Enum.Material.Metal)
+	disc(0.24, 2.6, y + 0.16, Color3.fromHex("8FD3B8"))
+	-- the corner posts: vermilion, a gold foot and finial, a crossbar with a banner hanging outward
+	for _, c in { { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } } do
+		local x, z = c[1] * (R - 0.2), c[2] * (R - 0.2)
+		prop(P(m, Vector3.new(1.1, 9, 1.1), CFrame.new(x, y + 4.5, z), PAL.vermilion))
+		prop(P(m, Vector3.new(1.6, 0.5, 1.6), CFrame.new(x, y + 0.25, z), PAL.gold, Enum.Material.Metal))
+		prop(P(m, Vector3.new(1.5, 0.4, 1.5), CFrame.new(x, y + 9.2, z), PAL.gold, Enum.Material.Metal))
+		prop(P(m, Vector3.new(1, 1, 1), CFrame.new(x, y + 9.9, z), PAL.gold, Enum.Material.Metal, Enum.PartType.Ball))
+		local out = CFrame.lookAt(Vector3.new(x, y + 8.2, z), Vector3.new(x * 2, y + 8.2, z * 2)) -- -Z points outward
+		prop(P(m, Vector3.new(0.3, 0.3, 2.6), out * CFrame.new(0, 0, -1.2), PAL.gold, Enum.Material.Metal))
+		prop(P(m, Vector3.new(0.15, 5.5, 1.9), out * CFrame.new(0, -2.9, -1.7), PAL.plaster))
+		prop(P(m, Vector3.new(0.17, 4.6, 0.5), out * CFrame.new(0, -2.9, -1.7), PAL.vermilion))
+		prop(P(m, Vector3.new(0.8, 0.3, 0.8), out * CFrame.new(0, -5.8, -1.7), PAL.gold, Enum.Material.Metal))
+		prop(P(m, Vector3.new(0.12, 1.2, 0.12), out * CFrame.new(0, -6.5, -1.7), PAL.vermilion)) -- tassel
+	end
+	-- braziers: two on each edge of the deck
 	for k = 0, Config.ALTAR_BRAZIERS - 1 do
-		local a = k / Config.ALTAR_BRAZIERS * math.pi * 2
-		local c = Vector3.new(math.cos(a) * (R - 0.2), y, math.sin(a) * (R - 0.2))
+		local side, slot = k % 4, k // 4
+		local face = CFrame.Angles(0, side * math.pi / 2, 0)
+		local c = (face * CFrame.new((slot == 0 and -1 or 1) * R * 0.5, y, R - 1)).Position
 		for _, t in { 0, 2.1, 4.2 } do
-			P(
+			prop(P(
 				m,
 				Vector3.new(0.25, 1.6, 0.25),
 				CFrame.new(c + Vector3.new(math.cos(t) * 0.55, 0.8, math.sin(t) * 0.55))
 					* CFrame.Angles(math.cos(t) * 0.25, 0, -math.sin(t) * 0.25),
 				BRONZE,
 				Enum.Material.Metal
-			)
+			))
 		end
-		P(
+		prop(P(
 			m,
 			Vector3.new(0.5, 1.5, 1.5),
 			CFrame.new(c + Vector3.new(0, 1.75, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			BRONZE,
 			Enum.Material.Metal,
 			Enum.PartType.Cylinder
-		)
-		P(
+		))
+		prop(P(
 			m,
 			Vector3.new(0.2, 1.7, 1.7),
 			CFrame.new(c + Vector3.new(0, 2.05, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			GOLD,
 			Enum.Material.Metal,
 			Enum.PartType.Cylinder
-		)
+		))
 		local flame =
-			P(m, Vector3.new(0.8, 0.9, 0.8), CFrame.new(c + Vector3.new(0, 2.4, 0)), FLAME, Enum.Material.Neon)
-		flame.CanCollide = false
+			prop(P(m, Vector3.new(0.8, 0.9, 0.8), CFrame.new(c + Vector3.new(0, 2.4, 0)), FLAME, Enum.Material.Neon))
 		local fire = Instance.new("Fire")
 		fire.Size = 2.2
 		fire.Heat = 7
@@ -157,9 +177,14 @@ local function build(parent)
 		lightBrazier(b, false)
 		table.insert(braziers, b)
 	end
-	-- Spirit Springs on the plaza, either side of the cauldron (clear of the spawn at z = 9)
+	for _, p in props do
+		p.CanCollide = false
+		p.CanQuery = false
+	end
+	-- Spirit Springs on the plaza, either side of the cauldron (clear of the spawn at z = 9 and out
+	-- past the deck, so the arc clears the apron)
 	for _, sx in { -1, 1 } do
-		local c = Vector3.new(sx * 13, ctx.baseY + 0.45, -2) -- outside the rim: the arc must clear the underside
+		local c = Vector3.new(sx * Config.ALTAR_SPRING_X, ctx.baseY + 0.45, -2)
 		local ring = P(
 			m,
 			Vector3.new(0.3, 4.6, 4.6),
@@ -295,19 +320,19 @@ local function knockWait(player)
 	local ok, ping = pcall(player.GetNetworkPing, player)
 	return KNOCK_CHECK + 2 * (if ok and type(ping) == "number" then math.clamp(ping, 0, KNOCK_PING_CAP) else 0)
 end
-local KNOCK_MIN_MOVE = 5 -- studs; a real knock carries the body ~14 studs sideways
+local KNOCK_MIN_MOVE = 5 -- studs; a real knock carries the body ~24 studs sideways
 
 ---------------------------------------------------------------------------------------------
--- Who stands on the altar: a body inside the floor circle, from just below the floor to a jump
--- above it (positions only, read on the server).
+-- Who stands on the altar: a body over the square deck, from just below the floor to a jump above
+-- it (positions only, read on the server). The client's copy is Altar.client amOnTop.
 local function onTop(player)
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not hrp then
 		return false
 	end
 	local p = hrp.Position
-	local flat = Vector2.new(p.X - top.X, p.Z - top.Z).Magnitude
-	return flat <= Config.ALTAR_RADIUS + 0.5 and p.Y > top.Y - 1 and p.Y < top.Y + 12
+	local half = Config.ALTAR_RADIUS + 0.5
+	return math.abs(p.X - top.X) <= half and math.abs(p.Z - top.Z) <= half and p.Y > top.Y - 1 and p.Y < top.Y + 12
 end
 
 local function reward(player, seconds, sku)
@@ -419,7 +444,7 @@ local function tick(dt)
 	local clock = os.clock()
 	for _, player in Players:GetPlayers() do
 		-- The knockback runs on the struck player's own client (it owns its character), so a cheat
-		-- can simply drop it and never fall. A real knock moves the body ~14 studs in 0.22 s; a body
+		-- can simply drop it and never fall. A real knock moves the body ~24 studs in 0.3 s; a body
 		-- that is still on the altar and has barely moved KNOCK_CHECK s later ignored it, and counts
 		-- as fallen (security pass 2026-10-22).
 		local k = round.knocked[player]
@@ -443,7 +468,7 @@ local function tick(dt)
 					away = Vector3.new(0, 0, 1)
 				end
 				player.Character:PivotTo(
-					CFrame.new(away * (Config.ALTAR_RADIUS + 4) + Vector3.new(0, ctx.baseY + 3, 0))
+					CFrame.new(away * (Config.ALTAR_RADIUS * 1.5 + 4) + Vector3.new(0, ctx.baseY + 3, 0)) -- past the deck's corners
 				)
 			else
 				table.insert(crowd, player)
@@ -514,7 +539,7 @@ local function strike(player)
 			local d = (o - hrp.Position) * Vector3.new(1, 0, 1)
 			if d.Magnitude <= Config.ALTAR_PUSH_REACH and (d.Magnitude < 2.5 or d.Unit:Dot(look) > 0.25) then
 				local dir = d.Magnitude > 0.1 and d.Unit or look
-				ctx.notify:FireClient(other, "altarKnock", dir * Config.ALTAR_PUSH_SPEED + Vector3.new(0, 34, 0))
+				ctx.notify:FireClient(other, "altarKnock", dir * Config.ALTAR_PUSH_SPEED + Vector3.new(0, 30, 0))
 				round.knocked[other] = { t = os.clock(), at = o }
 				hit += 1
 			end

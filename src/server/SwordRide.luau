@@ -77,8 +77,10 @@ local function blocked(hrp)
 	local top = workspace:GetAttribute("AltarTop")
 	if top and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
 		local d = pos - top
-		-- the platform and the plaza ring under it (the Spirit Springs stand 13 studs out)
-		if Vector2.new(d.X, d.Z).Magnitude < Config.ALTAR_RADIUS + 9 and d.Y > -(Config.ALTAR_HEIGHT + 4) and d.Y < 20 then
+		-- the square deck (corners ~1.42 x its half side out), the plaza under it and the Spirit Springs
+		-- (ALTAR_SPRING_X out)
+		local reach = math.max(Config.ALTAR_RADIUS * 1.5, Config.ALTAR_SPRING_X) + 4
+		if Vector2.new(d.X, d.Z).Magnitude < reach and d.Y > -(Config.ALTAR_HEIGHT + 4) and d.Y < 20 then
 			return "altar"
 		end
 	end

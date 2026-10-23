@@ -504,11 +504,18 @@ Config.ALTAR_HOLD = 20
 Config.ALTAR_WIN_SECONDS = 300
 Config.ALTAR_JOIN_SECONDS = 60
 Config.ALTAR_SOLO_SECONDS = 120
-Config.ALTAR_HEIGHT = 15 -- studs above the hub plaza
-Config.ALTAR_RADIUS = 9
+-- The stage is a Lei Tai (owner pick B 2026-10-23, docs/art/mocks/altar_arena_all.jpg: "higher, more
+-- premium"): a square deck, ALTAR_RADIUS = half its side, open edges, banners on the corner posts.
+Config.ALTAR_HEIGHT = 28 -- studs above the hub plaza (was 15)
+Config.ALTAR_RADIUS = 11 -- half the deck's side (was a 9 stud circle)
+Config.ALTAR_SPRING_X = 18 -- the Spirit Springs stand this far out on the plaza, either side (clear of the deck's underside)
 Config.ALTAR_PUSH_COOLDOWN = 2
-Config.ALTAR_PUSH_REACH = 9 -- studs in front of the striker
-Config.ALTAR_PUSH_SPEED = 62 -- knockback, studs/s (sideways), plus a hop
+Config.ALTAR_PUSH_REACH = 10 -- studs in front of the striker
+-- owner 2026-10-23 "make sure it pushes enough": ~24 studs sideways (was ~14 at 62 for 0.22 s), with a
+-- short ragdoll so the body cannot walk the knock back
+Config.ALTAR_PUSH_SPEED = 80 -- knockback, studs/s (sideways), plus a hop
+Config.ALTAR_PUSH_TIME = 0.3 -- s the knockback drives the body
+Config.ALTAR_RAGDOLL = 0.6 -- s the struck body tumbles (PlatformStand) before it gets up
 Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's timer runs
 -- Playtime gifts, D49 (owner 2026-10-22: "always show the next reward, reset daily, up to 2 h
 -- online"): gift i is claimable after GIFT_TIMES[i] seconds of play TODAY (UTC day, summed over

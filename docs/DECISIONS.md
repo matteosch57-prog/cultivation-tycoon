@@ -497,3 +497,14 @@ the log as a D-number.
   packs, Starter Pack) are not sold; recruits, free summons and every other item stay. Rejected:
   locking qi recruits there (cuts the core loop) and launching without a check. Design: MONETIZATION
   "Rules for any new product".
+- **D78** Heavenly Altar review (owner 2026-10-23: "Make a higher more premium place, place the punch
+  button better, and make sure it pushes enough"; research: Roblox's own doc places a custom action
+  button beside Jump, Slap Battles ragdolls on a hit). Mocks docs/art/mocks/altar_arena_all.jpg and
+  altar_phone_buttons.jpg (`tools/mock_altar_arena.py`); owner picked B and 1. The altar is a Lei Tai,
+  the square duel stage (red lacquer apron, timber deck, jade and gold seal, banners on the 4 corner
+  posts, which never collide so every edge is a ring-out), `ALTAR_HEIGHT` 28 (was 15), half side
+  `ALTAR_RADIUS` 11; the Spirit Springs moved out to `ALTAR_SPRING_X` and throw a higher arc; the
+  altar row's trail leads to the nearest spring. Palm Strike on a phone takes the Recruit seal's spot
+  left of Jump while you stand on the altar (Player attribute `AltarPalm` hides the seal). The knock
+  drives ~24 studs (`ALTAR_PUSH_SPEED`, `ALTAR_PUSH_TIME`) with an `ALTAR_RAGDOLL` tumble, a thump and
+  a camera kick; the striker gets a smaller kick. Flying Swords stay off over the deck and springs.

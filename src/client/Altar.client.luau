@@ -1,9 +1,11 @@
 -- Heavenly Altar on the client (mock A, docs/art/mocks/altar_A_phone.jpg): while a round is open, a
 -- small altar button in the HUD's right stack (owner 2026-10-22: the ring in the middle was "too
 -- invasive"; docs/art/mocks/fight_options.jpg): beads around it fill as the holder's timer runs, a
--- tap draws the guide trail to the altar, its X hides it until the next round. The Palm Strike
--- button above Jump (F on a keyboard) while you stand on the altar, the Spirit Springs that throw
--- you up, the knockback, toasts and sounds. In the last ALERT_SECS of a round a bouncing "!" sits on the
+-- tap draws the guide trail to the nearest Spirit Spring, its X hides it until the next round. The
+-- Palm Strike button while you stand on the altar (owner pick 1 2026-10-23,
+-- docs/art/mocks/altar_phone_buttons.jpg: on a phone it takes the Recruit seal's spot left of Jump and
+-- the seal steps aside through the Player attribute AltarPalm; F on a keyboard), the Spirit Springs
+-- that throw you up, the knockback (a short ragdoll, a camera kick), toasts and sounds. In the last ALERT_SECS of a round a bouncing "!" sits on the
 -- button's other corner (owner 2026-10-23): a tap teleports you beside a Spirit Spring at the hub.
 -- The server decides who holds and who wins (src/server/Altar.luau); this only draws and asks.
 local Players = game:GetService("Players")
@@ -126,9 +128,33 @@ local function placeRow()
 	end
 end
 
--- a tap on the altar button: the guide trail to the altar (again = off)
+-- a tap on the altar button: the guide trail to the nearest Spirit Spring, which throws you up (the
+-- deck floats ALTAR_HEIGHT over the plaza: a trail at the altar itself would point at the sky)
+local springs = {}
+local function findSprings()
+	table.clear(springs)
+	local m = workspace:FindFirstChild("Sect") and workspace.Sect:FindFirstChild("HeavenlyAltar")
+	if m then
+		for _, p in m:GetChildren() do
+			if p:GetAttribute("Spring") then
+				table.insert(springs, p)
+			end
+		end
+	end
+end
+-- from Config, not the parts: far from the hub the altar model has not streamed in
+local function nearestSpring()
+	local top = workspace:GetAttribute("AltarTop")
+	if not top then
+		return nil
+	end
+	local c = player.Character
+	local hrp = c and c:FindFirstChild("HumanoidRootPart")
+	local sx = hrp and hrp.Position.X < top.X and -1 or 1
+	return Vector3.new(top.X + sx * Config.ALTAR_SPRING_X, top.Y - Config.ALTAR_HEIGHT + 0.5, top.Z - 2)
+end
 local function guideToAltar(on)
-	player:SetAttribute("GuideTo", on and workspace:GetAttribute("AltarTop") or nil)
+	player:SetAttribute("GuideTo", on and nearestSpring() or nil)
 end
 
 local function build()
@@ -227,20 +253,18 @@ local function build()
 		guideToAltar(true) -- the trail from the spring up
 	end)
 	placeRow()
-	-- Palm Strike: above Jump on a phone, bottom right on a computer (key F)
-	local size = px(isPhone() and 74 or 64)
+	-- Palm Strike: on a phone in the Recruit seal's spot, left of Jump with their bottoms level (the
+	-- seal steps aside while this shows: Hud reads AltarPalm); bottom right on a computer (key F),
+	-- where the seal also sits
+	local size = px(isPhone() and 78 or 64)
 	local holder, btn = Toy.button(gui, UDim2.fromOffset(size, size), PALM, size / 2)
 	holder.AnchorPoint = Vector2.new(1, 1)
 	local jump = jumpButton()
 	if jump then
-		local vp = workspace.CurrentCamera.ViewportSize
 		holder.Position = UDim2.fromOffset(
-			jump.AbsolutePosition.X + jump.AbsoluteSize.X - gui.AbsolutePosition.X,
-			jump.AbsolutePosition.Y - gui.AbsolutePosition.Y - px(24)
+			jump.AbsolutePosition.X - gui.AbsolutePosition.X - px(12),
+			jump.AbsolutePosition.Y + jump.AbsoluteSize.Y - gui.AbsolutePosition.Y
 		)
-		if holder.Position.X.Offset > vp.X - px(8) then
-			holder.Position = UDim2.new(1, -px(12), 0, jump.AbsolutePosition.Y - gui.AbsolutePosition.Y - px(24))
-		end
 	else
 		holder.Position = UDim2.new(1, -px(24), 1, -px(96))
 	end
@@ -257,12 +281,14 @@ local function build()
 		ZIndex = 6,
 	})
 	Toy.corner(ui.cool, UDim.new(0, size / 2))
+	-- the name sits on the button's bottom edge (the button's bottom is level with Jump's, near the
+	-- screen edge)
 	text(
 		holder,
-		isPhone() and "Palm Strike" or "Palm Strike (F)",
-		px(13),
+		isPhone() and "Palm" or "Palm (F)",
+		px(14),
 		Color3.new(1, 1, 1),
-		{ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, px(4)) }
+		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 8 }
 	)
 	btn.Activated:Connect(function()
 		ui.strike()
@@ -320,7 +346,9 @@ local function amOnTop()
 		return false
 	end
 	local p = hrp.Position
-	return Vector2.new(p.X - top.X, p.Z - top.Z).Magnitude <= Config.ALTAR_RADIUS + 0.5
+	local half = Config.ALTAR_RADIUS + 0.5 -- the square deck (server: Altar.luau onTop)
+	return math.abs(p.X - top.X) <= half
+		and math.abs(p.Z - top.Z) <= half
 		and p.Y > top.Y - 1
 		and p.Y < top.Y + 12
 end
@@ -357,13 +385,51 @@ ContextActionService:BindAction("AltarPalm", function(_, state)
 	return Enum.ContextActionResult.Pass
 end, false, Enum.KeyCode.F, Enum.KeyCode.ButtonX)
 
--- knockback from a rival's palm: a short, strong push on my own body (I own its physics)
+-- a camera kick: the view widens and shakes a moment (a hit taken, or a hit landed)
+local kickToken = 0
+local function kick(strength)
+	local cam = workspace.CurrentCamera
+	local _, hum = root()
+	if not cam or not hum then
+		return
+	end
+	kickToken += 1
+	local my = kickToken
+	local fov = cam.FieldOfView
+	cam.FieldOfView = fov + 6 * strength
+	TweenService:Create(cam, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = fov }):Play()
+	task.spawn(function()
+		local t0 = os.clock()
+		while os.clock() - t0 < 0.22 and kickToken == my do
+			local k = (1 - (os.clock() - t0) / 0.22) * 0.35 * strength
+			hum.CameraOffset = Vector3.new((math.random() - 0.5) * k, (math.random() - 0.5) * k, 0)
+			RunService.RenderStepped:Wait()
+		end
+		if kickToken == my then
+			hum.CameraOffset = Vector3.zero
+		end
+	end)
+end
+
+-- knockback from a rival's palm: a strong push on my own body (I own its physics), ALTAR_PUSH_TIME s
+-- of drive and ALTAR_RAGDOLL s of tumble (PlatformStand: the stick cannot walk the knock back), a low
+-- thump and a camera kick
 local function knock(vel)
 	local hrp, hum = root()
 	if not hrp or not hum then
 		return
 	end
 	hum:ChangeState(Enum.HumanoidStateType.Freefall)
+	hum.PlatformStand = true
+	task.delay(Config.ALTAR_RAGDOLL, function()
+		if hum.Parent then
+			hum.PlatformStand = false
+			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+	Sfx.play("padSnap", { volume = 1.3 })
+	Sfx.play("expand", { volume = 0.5 })
+	kick(1)
 	local att = hrp:FindFirstChild("RootAttachment")
 	if not att then
 		hrp.AssemblyLinearVelocity = vel
@@ -375,25 +441,12 @@ local function knock(vel)
 	lv.VectorVelocity = vel
 	lv.RelativeTo = Enum.ActuatorRelativeTo.World
 	lv.Parent = hrp
-	task.delay(0.22, function()
+	task.delay(Config.ALTAR_PUSH_TIME, function()
 		lv:Destroy()
 	end)
-	Sfx.play("padSnap", { volume = 1.2 })
 end
 
 -- Spirit Springs: standing on one while the altar is open (and I'm not out) throws me up onto it
-local springs = {}
-local function findSprings()
-	table.clear(springs)
-	local m = workspace:FindFirstChild("Sect") and workspace.Sect:FindFirstChild("HeavenlyAltar")
-	if m then
-		for _, p in m:GetChildren() do
-			if p:GetAttribute("Spring") then
-				table.insert(springs, p)
-			end
-		end
-	end
-end
 local lastLaunch = 0
 local function checkSprings()
 	if not isOpen() or player:GetAttribute("AltarOut") or os.clock() - lastLaunch < 1.2 then
@@ -412,8 +465,9 @@ local function checkSprings()
 		if Vector2.new(d.X, d.Z).Magnitude < 3.2 and d.Y > -1 and d.Y < 6 then
 			lastLaunch = os.clock()
 			-- ballistic arc landing a third of the way in from the rim, T seconds from now
-			local land = Vector3.new(sp.Position.X * 0.35, top.Y + 3.2, sp.Position.Z * 0.35)
-			local T = 0.95
+			-- (the deck is ALTAR_HEIGHT up and the spring stands out past its apron: a high arc)
+			local land = Vector3.new(top.X + (sp.Position.X - top.X) * 0.3, top.Y + 3.2, top.Z + (sp.Position.Z - top.Z) * 0.3)
+			local T = 1.1
 			local g = Vector3.new(0, -workspace.Gravity, 0)
 			local v = (land - hrp.Position - 0.5 * g * T * T) / T
 			hum:ChangeState(Enum.HumanoidStateType.Freefall)
@@ -467,6 +521,9 @@ RunService.Heartbeat:Connect(function(dt)
 	local out = player:GetAttribute("AltarOut")
 	local onTop = amOnTop()
 	ui.palm.Visible = open and not out and onTop
+	if (player:GetAttribute("AltarPalm") == true) ~= ui.palm.Visible then
+		player:SetAttribute("AltarPalm", ui.palm.Visible or nil) -- Hud: the Recruit seal steps aside
+	end
 	ui.alert.Visible = false
 	-- the trail stops once you are up there, or when the round ends
 	if player:GetAttribute("GuideTo") and (not open or onTop) then
@@ -565,6 +622,9 @@ remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, a, b, c)
 		if hrp and top and (hrp.Position - top).Magnitude < 90 then
 			shockwave(a)
 			Sfx.play(b and b > 0 and "padSnap" or "gather", { volume = 0.8 })
+			if c == player.UserId and b and b > 0 then
+				kick(0.5) -- my palm landed
+			end
 		end
 	elseif kind == "altarOut" then
 		Sfx.play("deny")
