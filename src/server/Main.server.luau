@@ -1579,11 +1579,27 @@ local function publishFriends(player)
 	end
 end
 
+-- turn the player's camera to look where its avatar was just placed (SpawnFacing.client): the follow
+-- camera keeps its old direction through a PivotTo (owner 2026-10-24: a new player looked at the
+-- bridge first, "hard to understand what to do")
+local function faceCamera(player, cf)
+	player:SetAttribute("FaceAt", cf.Position)
+	player:SetAttribute("FaceLook", cf.LookVector)
+	player:SetAttribute("FaceTurn", (player:GetAttribute("FaceTurn") or 0) + 1)
+end
+
+-- on the peak's hub-side rim, facing into the island
+local function peakStand(plot)
+	return plot.frame * CFrame.new(0, 4, (plot.radius or Config.ISLAND_RADIUS) - 8)
+end
+
 local function placeOnPeak(player)
 	local s = sessions[player]
 	local char = player.Character
 	if s and char then
-		char:PivotTo(s.plot.frame * CFrame.new(0, 4, (s.plot.radius or Config.ISLAND_RADIUS) - 8))
+		local at = peakStand(s.plot)
+		char:PivotTo(at)
+		faceCamera(player, at)
 	end
 end
 
@@ -1785,7 +1801,7 @@ local function onJoin(player)
 		placeOnPeak(player)
 		watchDeath(player, char)
 	end)
-	pcall(player.RequestStreamAroundAsync, player, (s.plot.frame * CFrame.new(0, 4, (s.plot.radius or Config.ISLAND_RADIUS) - 8)).Position, 5)
+	pcall(player.RequestStreamAroundAsync, player, peakStand(s.plot).Position, 5)
 	if player.Parent and not player.Character then
 		player:LoadCharacter()
 	elseif player.Character then
@@ -2331,6 +2347,7 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 	elseif where == "ranks" and rankStand then
 		s.teleportAt = os.clock()
 		char:PivotTo(rankStand)
+		faceCamera(player, rankStand)
 	elseif where == "altar" and (workspace:GetAttribute("AltarUntil") or 0) > workspace:GetServerTimeNow() then
 		-- the altar "!" (Altar.client, last 30 s of a round): beside the moon gate on your side
 		-- of the plaza, facing it, so one step forward takes you up
@@ -2364,8 +2381,9 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 		local hp = i and hubPortals[i]
 		if hp and plots[i] and plots[i].owner and near(hp.at) then
 			s.teleportAt = os.clock()
-			local plot = plots[i]
-			char:PivotTo(plot.frame * CFrame.new(0, 4, (plot.radius or Config.ISLAND_RADIUS) - 8))
+			local at = peakStand(plots[i])
+			char:PivotTo(at)
+			faceCamera(player, at)
 		elseif where == "hub" then
 			for k, plot in plots do
 				if near(plot.portalAt) and hubPortals[k] then
