@@ -668,6 +668,48 @@ local function priceRate(s)
 	return base * Config.incomeMult(data.realm) * discipleMult(s, true)
 end
 
+-- The income pad prices are measured against (Config.PAD_SECONDS): the away rate (no pill, tide or
+-- friends) without anything paid for (2x Qi pass, Welcome Pouch, Robux disciples) and without the
+-- rebirth boost. Free disciples count (owner 2026-10-24: "free disciples should be taken in account").
+local function padRate(s)
+	local data = s.data
+	local r = rate(s, true)
+	if s.passes and s.passes.x2 then
+		r /= Config.PASS_QI_MULT
+	end
+	r /= 1 + (data.qiBonus or 0)
+	r /= Config.rebirthMult(rebirths(data))
+	local dm = discipleMult(s)
+	local paid = 0
+	for name, n in data.boughtDisciples or {} do
+		paid += Config.discBonus(name) * n
+	end
+	return r / dm * math.max(1, dm - paid)
+end
+
+-- s.padPrice[id] for every open pad in `ids` that has none yet: ranked by catalogue cost among all
+-- of them (Config.padPrice). Cleared after every buy, so the next prices follow the new income.
+local function pricePads(s, ids)
+	s.padPrice = s.padPrice or {}
+	local open = {}
+	for _, id in ids do
+		table.insert(open, Config.padById(id))
+	end
+	table.sort(open, function(a, b)
+		if a.cost ~= b.cost then
+			return a.cost < b.cost
+		end
+		return a.id < b.id
+	end)
+	local income
+	for i, pad in open do
+		if not s.padPrice[pad.id] then
+			income = income or padRate(s)
+			s.padPrice[pad.id] = Config.padPrice(pad, s.data.realm, income, i, #open)
+		end
+	end
+end
+
 local function publish(player)
 	local s = sessions[player]
 	if not s then
@@ -677,13 +719,12 @@ local function publish(player)
 	player:SetAttribute("Qi", math.floor(d.qi))
 	player:SetAttribute("Rate", rate(s))
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
-	-- D44: the realm's open pads cost at least PRICE_FLOOR_S s of income; reprice them as it grows
-	local away = priceRate(s)
+	-- the open pads' prices (pricePads; set again after a buy)
 	for id, part in s.pads or {} do
 		local pad = Config.padById(id)
 		local info = s.padData and s.padData[part]
-		if pad and info and not info.busy then
-			local cost = Config.padCost(pad, d.realm, away, d.lives)
+		local cost = s.padPrice and s.padPrice[id]
+		if pad and info and cost and not info.busy then
 			if cost ~= info.cost then
 				info.cost = cost
 				part:SetAttribute("Cost", cost)
@@ -1277,6 +1318,13 @@ refreshPads = function(player, s)
 	if all then
 		wanted.breakthrough = true
 	end
+	local ready = {}
+	for _, pad in Config.PADS do
+		if wanted[pad.id] then
+			table.insert(ready, pad.id)
+		end
+	end
+	pricePads(s, ready)
 	-- the idle chest's green pad: while it holds something the player has not been shown yet (and
 	-- only once the chest stands, with the Meditation Platform)
 	if s.data.owned.platform and ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
@@ -1298,11 +1346,12 @@ refreshPads = function(player, s)
 		if not s.data.owned[pad.id] then
 			local ready = wanted[pad.id]
 			if ready and not s.pads[pad.id] then
-				local cost = Config.padCost(pad, s.data.realm, priceRate(s), s.data.lives)
+				local cost = s.padPrice[pad.id]
 				local income = pad.income * Config.incomeMult(s.data.realm)
 				local part
 				part = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
+					s.padPrice = nil -- every open pad is priced again from the new income
 					Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, pad.id)
 					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
 					Telemetry.funnel(player, s.data)
@@ -1391,6 +1440,7 @@ refreshPads = function(player, s)
 			local p = makePad(player, s, { id = key, x = spec.x, z = spec.z }, cost, spec.name, income, function()
 				s.data.workers = s.data.workers or {}
 				s.data.workers[id] = n
+				s.padPrice = nil
 				Telemetry.sink(player, s.data, cost, key)
 				-- the next hire costs more: a fresh pad (its card shows one more dot)
 				if s.pads[key] then
@@ -1426,8 +1476,9 @@ refreshPads = function(player, s)
 			Ranks.touch()
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
-			s.data.owned = {}
+			s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)
 			s.data.workers = {}
+			s.padPrice = nil
 			s.data.qi = 0
 			s.data.pillReady = false
 			s.data.pillTimer = 0
@@ -2432,6 +2483,7 @@ local function reincarnate(player, s)
 	d.realm = 1
 	d.owned = {}
 	d.workers = {}
+	s.padPrice = nil
 	for _, pad in Config.PADS do
 		if Config.padOpen(pad, d.realm) then
 			d.owned[pad.id] = true

@@ -360,6 +360,9 @@ local function makeCard(pad, kind)
 	Toy.icon(row, "qi", 30, { LayoutOrder = 2 })
 	local amount = part(3, "")
 	local more = part(4, "more")
+	-- a red pad says how long until you can afford it at your income now (Plan 1, owner pick 2026-10-24)
+	local eta = text(5, 20, PadLook.TEXT.wait)
+	eta.Visible = false
 	local costText = { need = need, amount = amount, more = more }
 	local free = pad:GetAttribute("FreeText") -- a free pad (the idle chest) says what it does instead of a price
 	if free then
@@ -370,7 +373,18 @@ local function makeCard(pad, kind)
 	sc.Name = "DistanceScale"
 	sc.Parent = f
 	bb.Parent = player:WaitForChild("PlayerGui")
-	return bb, costText, sc
+	return bb, costText, sc, eta
+end
+
+-- "in 17s", "in 4:05", "in 1h 05m"
+local function etaText(sec)
+	sec = math.ceil(sec)
+	if sec < 60 then
+		return "in " .. sec .. "s"
+	elseif sec < 3600 then
+		return string.format("in %d:%02d", sec // 60, sec % 60)
+	end
+	return string.format("in %dh %02dm", sec // 3600, (sec % 3600) // 60)
 end
 
 ---------------------------------------------------------------------------------------------
@@ -571,7 +585,7 @@ local function addPad(pad)
 	local rec = { pad = pad, kind = kind, mine = mine, shared = owner == nil, cost = pad:GetAttribute("Cost") or 0 }
 	rec.array = makeArray(pad, kind)
 	if mine then
-		rec.card, rec.costText, rec.scale = makeCard(pad, kind)
+		rec.card, rec.costText, rec.scale, rec.eta = makeCard(pad, kind)
 		rec.beacon = makeBeacon(pad)
 		-- the preview is its own Atomic model under the pad: with streaming it often arrives after the
 		-- pad (or streams out and back in), so it is picked up whenever it arrives (owner 2026-10-23:
@@ -601,7 +615,7 @@ local function addPad(pad)
 		end
 	end
 	pads[pad] = rec
-	-- the server reprices open pads as income grows (D44 price floor); the card reads rec.cost
+	-- the server prices the open pads again after every buy (Main pricePads); the card reads rec.cost
 	pad:GetAttributeChangedSignal("Cost"):Connect(function()
 		rec.cost = pad:GetAttribute("Cost") or 0
 	end)
@@ -987,6 +1001,12 @@ RunService.Heartbeat:Connect(function(dt)
 		put(rec.costText.need, "Visible", need)
 		put(rec.costText.more, "Visible", need)
 		put(rec.costText.amount, "Text", need and fmt(rec.cost - qi) or fmt(rec.cost))
+		local rate = player:GetAttribute("Rate") or 0
+		local wait = not ok and rate > 0 and not pad:GetAttribute("FreeText")
+		put(rec.eta, "Visible", wait)
+		if wait then
+			put(rec.eta, "Text", etaText((rec.cost - qi) / rate))
+		end
 	end
 	PerfMark.finish("padcards", t0)
 end)

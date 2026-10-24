@@ -38,17 +38,11 @@ KINDS = {
 
 
 PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
-# --plan1 (owner pick 2026-10-24, tools/qisim/plan1.luau is the same rule on the real code): a pad
-# costs PLAN1_T[realm] s of the price income (away rate without paid boosts, Robux disciples or the
-# rebirth boost) x rebirthMult(the rebirths that realm needs), spread +-30% by catalogue cost over the
-# open pads, set again after every buy; realm 1 builds the disciple core first and a breakthrough
-# keeps it (PLAN1_CORE)
-PLAN1 = False
-PLAN1_T = [5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000]
-PLAN1_SPREAD = 0.3
-PLAN1_CORE = {"platform", "hall", "quarters1", "quarters2", "array", "bridge_fields", "bridge_dao", "bridge_disciples",
-              "bridge_summit"} | {"lotus%d" % i for i in range(1, 9)}
-PLAN1_EARLY = {"platform": (40, 1), "bridge_disciples": (60, 2), "hall": (120, 3), "bridge_dao": (200, 4), "array": (350, 5)}
+# Pad prices (Plan 1, owner pick 2026-10-24; Config.padPrice / Main pricePads): a pad costs
+# PAD_SECONDS[realm] s of the pad income (away rate without paid boosts, Robux disciples or the rebirth
+# boost) x rebirthMult(the rebirths that realm needs), spread +-PAD_SPREAD by catalogue cost over the
+# open pads, set again after every buy; a breakthrough keeps PAD_KEEP. --old-prices = the D44 floor.
+PLAN1 = True
 
 
 def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10, events=None):
@@ -68,10 +62,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     auto = "auto" in buy
     gates = C.get("REBIRTH_REALMS", {})
 
-    if PLAN1:
-        for p in C["PADS"]:
-            if p["id"] in PLAN1_EARLY:
-                p["cost"], p["unlock"] = PLAN1_EARLY[p["id"]]
+    keep = {e.split("=")[0].strip() for e in C["PAD_KEEP"]}
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[])
@@ -185,8 +176,9 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             if p["id"] not in snap:
                 ops = sorted(open_pads(), key=lambda q: q["cost"])
                 i = next((k for k, q in enumerate(ops) if q["id"] == p["id"]), 0)
-                f = (1 - PLAN1_SPREAD) + 2 * PLAN1_SPREAD * i / (len(ops) - 1) if len(ops) > 1 else 1
-                t = PLAN1_T[min(S["realm"], len(PLAN1_T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
+                sp, T = C["PAD_SPREAD"], C["PAD_SECONDS"]
+                f = (1 - sp) + 2 * sp * i / (len(ops) - 1) if len(ops) > 1 else 1
+                t = T[min(S["realm"], len(T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
                 snap[p["id"]] = max(p["cost"], t * f * plan1_base())
             return snap[p["id"]]
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
@@ -349,7 +341,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         pay("breakthrough", S.pop("bt"))
                         sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
                         log["realms"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["realm_t"], at=clock["play"], day=day))
-                        S.update(realm=S["realm"] + 1, qi=0.0, owned=(S["owned"] & PLAN1_CORE) if PLAN1 else set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        S.update(realm=S["realm"] + 1, qi=0.0, owned=(S["owned"] & keep) if PLAN1 else set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
                         snap.clear()
                         clock["realm_t"] = clock["play"]
                         recalc()
@@ -422,7 +414,7 @@ def main():
     ap.add_argument("--trace", action="store_true")
     ap.add_argument("--batch", type=int, default=10, help="recruits per press (1, 10, 50)")
     ap.add_argument("--set", action="append", default=[])
-    ap.add_argument("--plan1", action="store_true", help="Plan 1 pad prices (2026-10-24, see PLAN1 above)")
+    ap.add_argument("--old-prices", action="store_true", help="the D44 price floor from before 2026-10-24 (see PLAN1 above)")
     a = ap.parse_args()
     C = load(a.config)
     for kv in a.set:
@@ -431,7 +423,7 @@ def main():
     buy = tuple(x for x in a.buy.split(",") if x)
     global PRE_D66, PLAN1
     PRE_D66 = a.pre_d66
-    PLAN1 = a.plan1
+    PLAN1 = not a.old_prices
     runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
     log, src, sink = runs[0]
     print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))

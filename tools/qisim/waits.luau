@@ -1,16 +1,12 @@
--- qisim Plan 1 (owner pick 2026-10-24, thread "Rework pricing so pads take waiting"): the real qisim
--- with the pad rules of Plan 1 laid over it, to read the numbers before anything is built.
---   * a pad costs T(realm) seconds of the price income: the away rate (no pill, tide, friends) without
---     anything paid (2x Qi pass, Welcome Pouch, Robux disciples) and without the rebirth boost; free
---     disciples count (owner: "free disciples should be taken in account"). T is the wait of a player
---     at the fewest rebirths the realm needs, so every rebirth past that is +50% faster there.
---   * prices are set again after every buy (a recruit, orbs or a pill in between shorten the wait)
---   * the open pads spread +-SPREAD around T by catalogue cost (cheap ones come sooner)
---   * realm 1 builds the disciple core first; a breakthrough keeps the core (platform, Lotus Isles,
---     Disciple Hall, Quarters, bridges, Qi Array) and rebuilds the rest
--- lune run tools/qisim/plan1.luau <median|engaged|hooked|regular> <days> <seeds> [none|all] [k=v ...]
---   k: tmul (all T x), spread, discpow (1 = free disciples fully counted, 0.5 = square root), today=1,
---      offcap (s of offline kept), offrate (offline share), welcome=1 (buys the Welcome Pouch)
+-- qisim pad waits (Plan 1, owner pick 2026-10-24): how long each pad takes, per realm, first life
+-- there or a replay. The prices are the game's own (Config.padPrice via Main pricePads).
+--   * "wait" = time between two pad buys while playing (pads paid from the qi a session started with
+--     don't count)
+--   * "price in play time" = a pad's price over the qi earned per second in the last 10 min of play
+--     (income, orbs, pills, tide, gifts; not offline, chest, streak or the Welcome Pouch)
+-- lune run tools/qisim/waits.luau <median|engaged|hooked|regular> <days> <seeds> [none|all] [k=v ...]
+--   k: T=5,40,... (Config.PAD_SECONDS), spread, offcap (s of offline kept), offrate (offline share),
+--      welcome=1 (buys the Welcome Pouch)
 local process = require("@lune/process")
 local Engine = require("./engine")
 local World = require("./world")
@@ -19,110 +15,31 @@ local ROOT = process.cwd:gsub("/tools/qisim/?$", ""):gsub("/$", "")
 local a = process.args
 local profName, days, seeds = a[1] or "engaged", tonumber(a[2] or "14"), tonumber(a[3] or "3")
 local passes = a[4] == "all" and { x2 = true, auto = true, vip = true } or {}
-local K = { tmul = 1, spread = 0.3, discpow = 1, today = 0, welcome = 0, offcap = -1, offrate = -1 }
+local K = { welcome = 0, offcap = -1, offrate = -1 }
 for i = 5, #a do
 	local k, v = a[i]:match("^(%w+)=([%d%.]+)$")
 	if k then K[k] = tonumber(v) end
 end
--- owner 2026-10-24: realm 1 "5-10 s sometimes", realms 2-3 "start to wait 30 s sometimes", then up to
--- 5 min, realms 8-10 "20-30 min of wait per pad for a full f2p"
-local T = { 5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000 }
-for i = 5, #a do -- T=7,40,... sets the whole table
+local T
+for i = 5, #a do -- T=5,40,... sets Config.PAD_SECONDS
 	local list = a[i]:match("^T=([%d,]+)$")
 	if list then
 		T = {}
 		for n in list:gmatch("%d+") do table.insert(T, tonumber(n)) end
 	end
 end
-local function target(realm)
-	return (T[math.min(realm, #T)]) * K.tmul
-end
-local CORE = { platform = true, hall = true, quarters1 = true, quarters2 = true, array = true, bridge_fields = true, bridge_dao = true, bridge_disciples = true, bridge_summit = true }
-for i = 1, 8 do
-	CORE["lotus" .. i] = true
-end
--- realm 1: the disciple core first (catalogue cost floor, unlock rung)
-local EARLY = { platform = { 40, 1 }, bridge_disciples = { 60, 2 }, hall = { 120, 3 }, bridge_dao = { 200, 4 }, array = { 350, 5 } }
 
 local function runOne(seed)
 	local E = Engine.load(ROOT, seed)
 	local C = E.Config
-	local plan = K.today ~= 1
+	if T then C.PAD_SECONDS = T end
+	if K.spread then C.PAD_SPREAD = K.spread end
 	if K.offcap >= 0 then C.OFFLINE_CAP = K.offcap end
 	if K.offrate >= 0 then C.OFFLINE_RATE = K.offrate end
-	if plan then
-		for _, pad in C.PADS do
-			local e = EARLY[pad.id]
-			if e then
-				pad.cost, pad.unlock = e[1], e[2]
-			end
-		end
-	end
 	local W = World.new(E, { passes = passes, inGroup = false })
 	local M, s, d = W.M, W.s, W.d
 	local prof = Player.PROFILES[profName]
 	local P = Player.new(W, prof, { buyWelcome = K.welcome == 1 and 300 or nil })
-	-- the price income (see the header)
-	local function priceBase()
-		local r = M.rate(s, true)
-		if s.passes.x2 then r /= C.PASS_QI_MULT end
-		r /= 1 + (d.qiBonus or 0)
-		r /= C.rebirthMult(M.rebirths(d))
-		-- Robux disciples out: their bonus off the disciple multiplier
-		local dm = M.discipleMult(s)
-		local paid = 0
-		for name, n in d.boughtDisciples or {} do
-			paid += C.discBonus(name) * n
-		end
-		local free = math.max(1, dm - paid)
-		return r / dm * free ^ K.discpow
-	end
-	local prices = {} -- [pad id] = price, cleared after every buy
-	local offers0 = W.offers
-	W.offers = function(self)
-		local list = offers0(self)
-		if not plan then return list end
-		local builds = {}
-		for _, o in list do
-			if o.kind == "build" then table.insert(builds, o) end
-		end
-		table.sort(builds, function(x, y) return x.pad.cost < y.pad.cost end)
-		local base = priceBase()
-		local t = target(d.realm) * C.rebirthMult(C.rebirthsFor(d.realm))
-		for i, o in builds do
-			if not prices[o.id] then
-				local f = #builds > 1 and (1 - K.spread) + 2 * K.spread * (i - 1) / (#builds - 1) or 1
-				prices[o.id] = math.floor(math.max(o.pad.cost, t * f * base))
-			end
-			o.cost = prices[o.id]
-		end
-		return list
-	end
-	local buy0 = W.buy
-	W.buy = function(self, o)
-		if not plan then return buy0(self, o) end
-		local keep
-		if o.kind == "breakthrough" then
-			keep = {}
-			for id in d.owned do
-				if CORE[id] then keep[id] = true end
-			end
-		end
-		local ok = buy0(self, o)
-		if ok and (o.kind == "build" or o.kind == "breakthrough" or o.kind == "hire") then
-			table.clear(prices)
-		end
-		if ok and keep then
-			for id in keep do d.owned[id] = true end
-		end
-		return ok
-	end
-	local re0 = W.reincarnate
-	W.reincarnate = function(self)
-		local ok = re0(self)
-		if ok then table.clear(prices) end
-		return ok
-	end
 	-- the probe (waits while playing: pads paid from the qi a session started with don't count): per realm, the first life that plays it ("first") and later lives ("replay")
 	local rows, last, bank, firstLife = {}, 0, 0, {}
 	local function row()
@@ -233,7 +150,7 @@ for _, c in { "realm2", "rebirth1", "rebirth2", "rebirth3", "rebirth5", "rebirth
 end
 local extra = {}
 for i = 5, #a do table.insert(extra, a[i]) end
-print(string.format("### %s %s, %d days, passes %s %s | %s", K.today == 1 and "TODAY" or "PLAN 1", profName, days, a[4] or "none", table.concat(extra, " "), table.concat(out, ", ")))
+print(string.format("### %s %s, %d days, passes %s %s | %s", "PADS", profName, days, a[4] or "none", table.concat(extra, " "), table.concat(out, ", ")))
 -- pooled over the seeds
 local pool = {}
 for _, r in runs do

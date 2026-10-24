@@ -28,7 +28,10 @@ local MIRRORS = {
 		"local newSummons = if hasChest then math.floor(away / Config.CHEST_SUMMON_EVERY) else 0",
 		"local locked = pad.kind == \"isle\" and dao(s.data, \"isles\") < (pad.karma or 1)", -- offers
 		"local ready = ownedCount >= (pad.unlock or 0)",
-		"local cost = Config.padCost(pad, s.data.realm, priceRate(s), s.data.lives)",
+		"pricePads(s, ready)",
+		"local cost = s.padPrice[pad.id]",
+		"s.padPrice = nil -- every open pad is priced again from the new income",
+		"s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)",
 		"if all and not s.pads.breakthrough and rebirths(s.data) >= Config.rebirthsFor(s.data.realm + 1) then",
 		"local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48",
 		"local cost = Config.workerCost(pad, n, s.data.realm)",
@@ -45,7 +48,7 @@ local MIRRORS = {
 -- the Main functions run as they are, in Main's order
 local FUNCTIONS = {
 	"deepCopy", "defaultData", "discLooks", "discShiny", "dao", "maxDisciples", "rebirths", "karmaGain",
-	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "roll", "byBonus",
+	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "padRate", "pricePads", "roll", "byBonus",
 	"indexAdd", "addDisciple", "clearsBusy", "reincarnate",
 }
 local HANDLERS = { "chestFn", "recruitFn", "pillFn", "giftFn", "streakFn", "welcomeFn", "daoFn" }

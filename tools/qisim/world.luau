@@ -144,10 +144,18 @@ function World:offers()
 				end
 			end
 			if ready then
-				-- publish() reprices every open pad each second from priceRate (D44 floor)
-				table.insert(list, { id = pad.id, kind = "build", cost = C.padCost(pad, d.realm, price, d.lives), x = pad.x, z = pad.z, pad = pad })
+				table.insert(list, { id = pad.id, kind = "build", x = pad.x, z = pad.z, pad = pad })
 			end
 		end
+	end
+	-- Main pricePads: the open pads keep their price until the next buy
+	local ready = {}
+	for _, o in list do
+		table.insert(ready, o.id)
+	end
+	M.pricePads(s, ready)
+	for _, o in list do
+		o.cost = s.padPrice[o.id]
 	end
 	if all and M.rebirths(d) >= C.rebirthsFor(d.realm + 1) then
 		-- the breakthrough pad's price is set when it appears (not repriced by publish)
@@ -211,6 +219,7 @@ function World:buy(o)
 	if o.kind == "build" then
 		self.sink.build = (self.sink.build or 0) + o.cost
 		d.owned[o.id] = true
+		s.padPrice = nil
 		if o.id == "platform" and not d.chestStarter and not (d.tips and d.tips.chest) then
 			d.chestStarter = true
 			d.chestQi = (d.chestQi or 0) + C.CHEST_STARTER_QI
@@ -221,13 +230,15 @@ function World:buy(o)
 		self.sink.hire = (self.sink.hire or 0) + o.cost
 		d.workers = d.workers or {}
 		d.workers[o.of] = o.n
+		s.padPrice = nil
 	elseif o.kind == "breakthrough" then
 		self.sink.breakthrough = (self.sink.breakthrough or 0) + o.cost
 		d.realm += 1
 		d.best = math.max(d.best or 1, d.realm)
 		d.climbed = (d.climbed or 0) + 1
-		d.owned = {}
+		d.owned = C.keptAtBreakthrough(d.owned)
 		d.workers = {}
+		s.padPrice = nil
 		self.sink.reset = (self.sink.reset or 0) + d.qi
 		d.qi = 0
 		d.pillReady = false

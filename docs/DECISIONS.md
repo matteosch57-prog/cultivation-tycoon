@@ -536,3 +536,16 @@ the log as a D-number.
   `data.peakSteady` (rate without pill, Spirit Tide, friends) in a new store `RanksQi2`: the old field
   counted them and a stored counter is never redefined. Why: the audit found country boards written
   but never shown and a write rate the budget could not hold with a full server.
+- **D82** Pads you wait for (owner 2026-10-24: "no choice ever, and no frustration at all ever";
+  picked Plan 1 of `docs/research/2026-10-24_core_loop_after_10.md`, then "your numbers" on the sim
+  page). Each open pad costs `PAD_SECONDS[realm]` s of the pad income (`Main padRate`: the away rate
+  without the 2x Qi pass, Welcome Pouch, Robux disciples or the rebirth boost; free disciples count)
+  x the rebirth boost the realm needs, spread +-`PAD_SPREAD` by catalogue cost (`Config.padPrice`,
+  `Main pricePads`). Prices are set when pads open and again after every buy (build, hire,
+  breakthrough, rebirth), so a recruit, orbs or a pill shorten the wait you are in. Realm 1 builds the
+  disciple core first (Meditation Platform, Disciple Bridge, Disciple Hall, Alchemy Bridge, Qi Array).
+  A breakthrough keeps `PAD_KEEP` (platform, Lotus Isles, hall, quarters, bridges, array). A red pad's
+  card says how long until you can afford it at your income now. Felt waits (qisim
+  `tools/qisim/waits.luau`, orbs and pills in; `tools/sim_check.py` agrees): realm 1 ~10 s, 2-3 ~30 s,
+  4-7 1-4 min, 8-10 14-25 min. Cost: a 3 x 15 min a day player reaches realm 9 around day 34 (was 4).
+  Replaces the D44 price floor (`PRICE_FLOOR_S`, kept for the older sims).

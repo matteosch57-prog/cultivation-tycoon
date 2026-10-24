@@ -18,6 +18,7 @@ PadLook.TEXT = {
 	breakthrough = Color3.fromHex("FFE08A"),
 	shop = Color3.fromHex("DCC6FF"),
 	locked = Color3.fromHex("FF8A80"),
+	wait = Color3.fromHex("FF9A8F"), -- a red pad's "in 0:17"
 }
 
 function PadLook.color(kind, ready)

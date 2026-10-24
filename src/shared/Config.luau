@@ -236,14 +236,14 @@ Config.PADS = {
 	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -156, z = -38, district = "fields" },
 	{ id = "lanterns", name = "Lantern Row", cost = 60, income = 3, unlock = 0, req = {}, x = 10, z = 30, district = "heart" },
 	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Main Hall", district = "heart" },
-	{ id = "platform", name = "Meditation Platform", cost = 150, income = 4, unlock = 2, req = {}, x = 0, z = 0, feature = "Disciples meditate", district = "heart" },
+	{ id = "platform", name = "Meditation Platform", cost = 40, income = 4, unlock = 1, req = {}, x = 0, z = 0, feature = "Disciples meditate", district = "heart" },
 	{ id = "garden", name = "Herb Garden", cost = 300, income = 8, unlock = 3, req = {}, x = -158, z = -66, district = "fields" },
 	{ id = "vein2", name = "Twin Spirit Vein", cost = 600, income = 14, unlock = 4, req = {}, x = -84, z = -54, district = "fields" },
 	{ id = "mainhall2", name = "Sect Hall", cost = 900, income = 20, unlock = 4, req = { "mainhall1" }, x = 0, z = -30, feature = "Hall level 2", district = "heart" },
 	{ id = "furnace", name = "Alchemy Furnace", cost = 1200, income = 10, unlock = 6, req = {}, x = 104, z = -34, feature = "2x Qi pills", district = "dao" },
-	{ id = "hall", name = "Disciple Hall", cost = 1500, income = 10, unlock = 6, req = {}, x = -100, z = -172, feature = "Recruit disciples", district = "disciples" },
+	{ id = "hall", name = "Disciple Hall", cost = 120, income = 10, unlock = 3, req = {}, x = -100, z = -172, feature = "Recruit disciples", district = "disciples" },
 	{ id = "gate", name = "Sect Gate", cost = 2200, income = 25, unlock = 8, req = {}, x = 0, z = 52, district = "heart" },
-	{ id = "array", name = "Qi Gathering Array", cost = 3200, income = 30, unlock = 9, req = {}, x = 112, z = -98, feature = "Qi orbs", district = "dao" },
+	{ id = "array", name = "Qi Gathering Array", cost = 350, income = 30, unlock = 5, req = {}, x = 112, z = -98, feature = "Qi orbs", district = "dao" },
 	{ id = "mainhall3", name = "Great Hall", cost = 4500, income = 45, unlock = 9, req = { "mainhall2" }, x = 0, z = -30, feature = "Hall level 3", district = "heart" },
 	{ id = "quarters1", name = "Disciple Quarters", cost = 5000, income = 5, unlock = 10, req = { "hall", "expand1" }, x = -128, z = -176, feature = "+1 disciple slot", district = "disciples" },
 	{ id = "expand1", name = "Expand the Peak", cost = 6000, income = 0, unlock = 11, req = {}, x = -14, z = 8, feature = "More land" },
@@ -297,8 +297,8 @@ Config.PADS = {
 	-- Fields and Alchemy groves flank their bridges on the home island (`tree` = the grove's kind).
 	-- DECOR_OPTIONAL: a breakthrough does not need them (Config.neededForBreakthrough).
 	{ id = "bridge_fields", name = "Fields Bridge", cost = 15, income = 0, unlock = 1, req = {}, x = -52, z = -25, feature = "Opens the Spirit Fields", islet = "heart", kind = "bridge" },
-	{ id = "bridge_dao", name = "Alchemy Bridge", cost = 800, income = 0, unlock = 5, req = {}, x = 52, z = -26, feature = "Opens Alchemy and Training", islet = "heart", kind = "bridge" },
-	{ id = "bridge_disciples", name = "Disciple Bridge", cost = 1000, income = 0, unlock = 6, req = {}, x = -114, z = -105, feature = "Opens the Disciples' islet", islet = "fields", kind = "bridge" },
+	{ id = "bridge_dao", name = "Alchemy Bridge", cost = 200, income = 0, unlock = 4, req = {}, x = 52, z = -26, feature = "Opens Alchemy and Training", islet = "heart", kind = "bridge" },
+	{ id = "bridge_disciples", name = "Disciple Bridge", cost = 60, income = 0, unlock = 2, req = {}, x = -114, z = -105, feature = "Opens the Disciples' islet", islet = "fields", kind = "bridge" },
 	{ id = "bridge_summit", name = "Summit Bridge", cost = 15000, income = 0, unlock = 16, req = { "expand2" }, x = 91, z = -97, feature = "Opens the Summit", islet = "dao", kind = "bridge" },
 	{ id = "path_heart", name = "Plaza Ring", cost = 120, income = 0, unlock = 2, req = {}, x = -10, z = 16, islet = "heart", kind = "path" },
 	{ id = "grove_heart", name = "Plum Grove", cost = 250, income = 0, unlock = 3, req = {}, x = 40, z = 24, islet = "heart", kind = "grove" },
@@ -819,12 +819,24 @@ Config.RECRUIT_PICK_SECONDS = 5
 -- RECRUIT_POW x the last (restarts at a breakthrough): at 1.05 the 50th costs ~11x the first.
 Config.RECRUIT_POW = 1.05 -- owner pick 2026-10-22 (was 1.25): x10 / x50 = the next 10 / 50 prices
 Config.RECRUIT_GROWTH = 0.5 -- the old linear rule, read only by the older sims (sim_pacing, sim_economy)
--- D44: a pad of the realm costs at least PRICE_FLOOR_S seconds of income (rate without the pill,
--- tide and friends), so every building stays a small saving goal and you pick which comes first
--- (DevForum rule of thumb; tools/sim_game.py). Open pads are repriced as income grows.
+-- D44 (kept for the older sims only; pads are priced by PAD_SECONDS below since 2026-10-24)
 Config.PRICE_FLOOR_S = 20
--- the first life stays fast (D25 "first realms fast", the 5-10 min hook): the floor starts here
 Config.PRICE_FLOOR_FROM_LIFE = 2
+-- Pads you wait for (owner pick Plan 1 + "your numbers" 2026-10-24; research
+-- docs/research/2026-10-24_core_loop_after_10.md, DevForum "price = income x seconds per button"):
+-- each open pad costs PAD_SECONDS[realm] seconds of the pad income (Main padRate: the away rate
+-- without the 2x Qi pass, the Welcome Pouch, Robux disciples or the rebirth boost; free disciples
+-- count), times the rebirth boost the realm needs (Config.rebirthsFor), so only rebirths past that
+-- make a realm faster. Prices are set when a pad opens and again after every buy, so a recruit, orbs
+-- or a pill in between bring the next pad sooner. Felt waits (qisim, orbs and pills in): realm 1
+-- ~10 s, 2-3 ~30 s, 4-7 1-4 min, 8-10 14-25 min (owner: "realm 8-10 may be 20-30m of wait per pad
+-- for a full f2p"). Realms past the table use its last entry.
+Config.PAD_SECONDS = { 5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000 }
+-- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
+Config.PAD_SPREAD = 0.3
+-- a breakthrough keeps the disciple core (owner 2026-10-24: "breakthrough does remove most building
+-- but the base of disciples in the center and recruit building + bridges + orb building")
+Config.PAD_KEEP = { platform = true, hall = true, quarters1 = true, quarters2 = true, array = true, bridge_fields = true, bridge_dao = true, bridge_disciples = true, bridge_summit = true, lotus1 = true, lotus2 = true, lotus3 = true, lotus4 = true, lotus5 = true, lotus6 = true, lotus7 = true, lotus8 = true }
 Config.RARITIES = {
 	{ name = "Outer Disciple", weight = 59.84, bonus = 0.10, color = Color3.fromRGB(200, 200, 200) },
 	{ name = "Inner Disciple", weight = 28, bonus = 0.25, color = Color3.fromRGB(90, 200, 120) },
@@ -1119,8 +1131,25 @@ function Config.recruitStep(n)
 	return n
 end
 
--- a pad's price: its cost x costMult, or PRICE_FLOOR_S seconds of `income` (qi/s) when that is more
--- (from life PRICE_FLOOR_FROM_LIFE on; `lives` = data.lives)
+-- the price of the `rank`-th cheapest (catalogue cost) of `n` open pads, `income` = Main padRate
+function Config.padPrice(pad, realm, income, rank, n)
+	local t = Config.PAD_SECONDS[math.min(realm, #Config.PAD_SECONDS)] * Config.rebirthMult(Config.rebirthsFor(realm))
+	local f = n > 1 and (1 - Config.PAD_SPREAD) + 2 * Config.PAD_SPREAD * (rank - 1) / (n - 1) or 1
+	return math.floor(math.max(pad.cost, t * f * income))
+end
+
+-- what a breakthrough leaves standing of `owned` (PAD_KEEP)
+function Config.keptAtBreakthrough(owned)
+	local kept = {}
+	for id in owned do
+		if Config.PAD_KEEP[id] then
+			kept[id] = true
+		end
+	end
+	return kept
+end
+
+-- the old D44 price (the older sims): cost x costMult, or PRICE_FLOOR_S s of `income` from life 2
 function Config.padCost(pad, realm, income, lives)
 	local floor = (lives or 1) >= Config.PRICE_FLOOR_FROM_LIFE and (income or 0) * Config.PRICE_FLOOR_S or 0
 	return math.floor(math.max(pad.cost * Config.costMult(realm), floor))
