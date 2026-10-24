@@ -38,6 +38,17 @@ KINDS = {
 
 
 PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
+# --plan1 (owner pick 2026-10-24, tools/qisim/plan1.luau is the same rule on the real code): a pad
+# costs PLAN1_T[realm] s of the price income (away rate without paid boosts, Robux disciples or the
+# rebirth boost) x rebirthMult(the rebirths that realm needs), spread +-30% by catalogue cost over the
+# open pads, set again after every buy; realm 1 builds the disciple core first and a breakthrough
+# keeps it (PLAN1_CORE)
+PLAN1 = False
+PLAN1_T = [5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000]
+PLAN1_SPREAD = 0.3
+PLAN1_CORE = {"platform", "hall", "quarters1", "quarters2", "array", "bridge_fields", "bridge_dao", "bridge_disciples",
+              "bridge_summit"} | {"lotus%d" % i for i in range(1, 9)}
+PLAN1_EARLY = {"platform": (40, 1), "bridge_disciples": (60, 2), "hall": (120, 3), "bridge_dao": (200, 4), "array": (350, 5)}
 
 
 def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10, events=None):
@@ -57,11 +68,16 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     auto = "auto" in buy
     gates = C.get("REBIRTH_REALMS", {})
 
+    if PLAN1:
+        for p in C["PADS"]:
+            if p["id"] in PLAN1_EARLY:
+                p["cost"], p["unlock"] = PLAN1_EARLY[p["id"]]
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[])
     src, sink = {}, {}
-    log = dict(realms=[], lives=[], days=[])
+    log = dict(realms=[], lives=[], days=[], waits={})
+    snap = {}  # --plan1: pad id -> price until the next buy
     clock = dict(play=0, realm_t=0, life_t=0)
 
     def add(k, v):
@@ -158,7 +174,21 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
         cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
 
+    def plan1_base():  # the price income: rate(s, true) without the 2x pass, Welcome Pouch, rebirth, Robux disciples
+        reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)
+        dm = dmult()
+        paid = sum(rar[names.index(n)][1] for n in S["bought"] if n in names)
+        return cache["away"] / x2 / (1 + S["welcome"]) / reb / dm * max(1.0, dm - paid)
+
     def pad_cost(p):  # Config.padCost
+        if PLAN1:
+            if p["id"] not in snap:
+                ops = sorted(open_pads(), key=lambda q: q["cost"])
+                i = next((k for k, q in enumerate(ops) if q["id"] == p["id"]), 0)
+                f = (1 - PLAN1_SPREAD) + 2 * PLAN1_SPREAD * i / (len(ops) - 1) if len(ops) > 1 else 1
+                t = PLAN1_T[min(S["realm"], len(PLAN1_T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
+                snap[p["id"]] = max(p["cost"], t * f * plan1_base())
+            return snap[p["id"]]
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
         return max(p["cost"] * cmult(), fl)
 
@@ -194,6 +224,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         S["karma"] += gain
         S["lives"] += 1
         S.update(realm=1, qi=0.0, workers={}, rr=0, pill=False, pill_t=0, boost=0)
+        snap.clear()
         S["owned"] = {p["id"] for p in C["PADS"] if RO[p["id"]] <= 1}
         S.pop("bt", None)
         for k in ("hands", "isles", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
@@ -244,6 +275,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             recalc()
             tide0 = rng.uniform(0, C["TIDE_INTERVAL"])
             walk_until = None
+            bank, last_buy = S["qi"], clock["play"]  # pads paid from the qi a session starts with are not waits
             for s in range(int(K["session"] * 60)):
                 clock["play"] += 1
                 if sess == 0 and s == 600:  # free Shop gift (DOT_SHOP_FIRST), a blessing given and received
@@ -317,7 +349,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         pay("breakthrough", S.pop("bt"))
                         sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
                         log["realms"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["realm_t"], at=clock["play"], day=day))
-                        S.update(realm=S["realm"] + 1, qi=0.0, owned=set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        S.update(realm=S["realm"] + 1, qi=0.0, owned=(S["owned"] & PLAN1_CORE) if PLAN1 else set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        snap.clear()
                         clock["realm_t"] = clock["play"]
                         recalc()
                     continue
@@ -329,6 +362,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                     b10 = sum(recruit_cost(S["rr"] + i) for i in range(batch))
                     if b10 <= tcost and S["qi"] >= b10:
                         pay("recruits", b10)
+                        bank -= b10
                         S["rr"] += batch
                         for _ in range(batch):
                             seat(roll())
@@ -349,6 +383,13 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         walk_until = None
                         pay("buildings", tcost)
                         S["owned"].add(target["id"])
+                        snap.clear()
+                        first = log.setdefault("first", {}).setdefault(S["realm"], S["lives"])
+                        wk = (S["realm"], first == S["lives"])
+                        if bank <= 0:
+                            log["waits"].setdefault(wk, []).append(clock["play"] - last_buy)
+                        bank -= tcost
+                        last_buy = clock["play"]
                         if target["id"] == "platform" and not S.get("starter_chest"):  # the starter chest comes with it
                             S["starter_chest"] = True
                             add("starter chest", C.get("CHEST_STARTER_QI", 0))
@@ -381,14 +422,16 @@ def main():
     ap.add_argument("--trace", action="store_true")
     ap.add_argument("--batch", type=int, default=10, help="recruits per press (1, 10, 50)")
     ap.add_argument("--set", action="append", default=[])
+    ap.add_argument("--plan1", action="store_true", help="Plan 1 pad prices (2026-10-24, see PLAN1 above)")
     a = ap.parse_args()
     C = load(a.config)
     for kv in a.set:
         k, v = kv.split("=", 1)
         C[k] = eval(v)
     buy = tuple(x for x in a.buy.split(",") if x)
-    global PRE_D66
+    global PRE_D66, PLAN1
     PRE_D66 = a.pre_d66
+    PLAN1 = a.plan1
     runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
     log, src, sink = runs[0]
     print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))
@@ -401,6 +444,15 @@ def main():
     print("first rebirth after %s played" % (fmt(log["lives"][0]["t"]) if log["lives"] else "-"))
     if len(log["lives"]) < 60:
         print("lives (seed 1): " + ", ".join("%d:R%d %s" % (L["life"], L["realm"], fmt(L["t"])) for L in log["lives"]))
+    waits = {}
+    for r in runs:
+        for k, v in r[0]["waits"].items():
+            waits.setdefault(k, []).extend(v)
+    if waits:
+        print("waits between pads while playing (all seeds): realm, first life there or replay: typical / slowest 10% / longest")
+        for k in sorted(waits):
+            v = sorted(waits[k])
+            print("  realm %2d %-6s %5d pads  %8s / %8s / %8s" % (k[0], "first" if k[1] else "replay", len(v) // a.seeds, fmt(v[len(v) // 2]), fmt(v[int(len(v) * 0.9)]), fmt(v[-1])))
     print("sources: " + share(src))
     print("sinks:   " + share(sink))
     if a.trace:
