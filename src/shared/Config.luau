@@ -946,7 +946,7 @@ Config.RANK_PODIUM = { r = 40, width = 7, depth = 5, scale = 1.4, glyph = 0.45 }
 -- (both stand HUB_SHOP_R from the centre, facing the plaza, clear of the bridge walks)
 Config.HUB_SHOP_GAP = 1
 Config.HUB_BELL_GAP = 3
-Config.HUB_SHOP_R = 40
+Config.HUB_SHOP_R = 38.5
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds
 Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)

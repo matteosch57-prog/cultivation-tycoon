@@ -19,8 +19,8 @@ local H = Color3.fromHex
 local GOLD = H("FFD34D")
 local BRONZE = H("8A6A3E")
 
-HubShop.STAND_X = 7.5 -- studs between two stands
-HubShop.HOVER = 3.4 -- studs from the plinth top to the blade top
+HubShop.STAND_X = 7 -- studs between two stands
+HubShop.HOVER = 2 -- studs from the plinth top to the blade top
 HubShop.YAW = math.rad(55) -- the swords turned from the plaza, so a rider shows three quarters
 
 -- a world shop pad: an invisible anchor that Build.client draws (same contract as Shop's shopPad)
@@ -47,11 +47,11 @@ function HubShop.swords(parent, cf)
 	P(m, Vector3.new(W - 1, 0.3, 8), cf * CFrame.new(0, 0.55, 1), PAL.stoneLight)
 	-- the frame behind: two red posts, a gold-capped beam and the sign
 	for _, sx in { -1, 1 } do
-		P(m, Vector3.new(0.9, 9, 0.9), cf * CFrame.new(sx * (W / 2 - 0.6), 5.2, 4.6), Kit.RED)
+		P(m, Vector3.new(0.9, 12, 0.9), cf * CFrame.new(sx * (W / 2 - 0.6), 6.7, 4.6), Kit.RED)
 	end
-	P(m, Vector3.new(W + 1, 0.8, 1.2), cf * CFrame.new(0, 9.9, 4.6), Kit.RED)
-	P(m, Vector3.new(W + 1.4, 0.3, 1.5), cf * CFrame.new(0, 10.45, 4.6), GOLD, Enum.Material.Metal)
-	Kit.plaque(m, cf * CFrame.new(0, 8.6, 4.0) * CFrame.Angles(0, math.pi, 0), 9, 1.6, "Flying Swords")
+	P(m, Vector3.new(W + 1, 0.8, 1.2), cf * CFrame.new(0, 12.9, 4.6), Kit.RED)
+	P(m, Vector3.new(W + 1.4, 0.3, 1.5), cf * CFrame.new(0, 13.45, 4.6), GOLD, Enum.Material.Metal)
+	Kit.plaque(m, cf * CFrame.new(0, 11.7, 4.0) * CFrame.Angles(0, math.pi, 0), 9, 1.6, "Flying Swords")
 	for tier, def in Config.SWORD_RIDE.tiers do
 		local x = (tier - 2) * HubShop.STAND_X
 		local h = 0.8 + 0.4 * tier -- the dearer, the higher
@@ -96,7 +96,7 @@ function HubShop.bell(parent, cf)
 	P(m, Vector3.new(0.4, 3.2, 3.2), cf * CFrame.new(0, 5.2, 1) * CFrame.Angles(0, 0, math.pi / 2), BRONZE, Enum.Material.Metal, Enum.PartType.Cylinder)
 	local glow = P(m, Vector3.new(0.12, 2.4, 2.4), cf * CFrame.new(0, 5.0, 1) * CFrame.Angles(0, 0, math.pi / 2), H("9FF5C8"), Enum.Material.Neon, Enum.PartType.Cylinder)
 	glow.CastShadow = false
-	Kit.plaque(m, cf * CFrame.new(0, 9.6, 0.3) * CFrame.Angles(0, math.pi, 0), 4.6, 0.7, "Tide Bell")
+	Kit.plaque(m, cf * CFrame.new(0, 9.6, 0.3) * CFrame.Angles(0, math.pi, 0), 6.4, 1, "Tide Bell")
 	pad(m, cf * CFrame.new(0, 0, -4.2), "tidebell")
 	m.Parent = parent
 	return m
