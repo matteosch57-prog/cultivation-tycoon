@@ -144,7 +144,10 @@ local function openCard()
 			local result = okP and done.Event:Wait() or nil
 			conn:Disconnect()
 			done:Destroy()
-			if result == Enum.AvatarPromptResult.Success then
+			-- Only a "No" (PermissionDenied) or no answer stops the claim. A Yes can come back as Failed
+			-- (the game already in the favorites, or Studio): owner 2026-10-24 "it loops on asking and
+			-- never lets the claim"
+			if result ~= nil and result ~= Enum.AvatarPromptResult.PermissionDenied then
 				local ok, res = pcall(function()
 					return remotes.ClaimFavorite:InvokeServer()
 				end)
