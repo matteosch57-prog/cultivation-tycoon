@@ -160,10 +160,10 @@ local function draw()
 	btn.Name = "SwordButton"
 	Toy.icon(btn, riding or current(list), px(36), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	text(root, riding and "Land" or "Fly", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	if not isTouch() then -- the key on PC (F, below), on the button's bottom-right corner
+	if not isTouch() then -- the key on PC (F, below), on the button's top-right corner (the caption sits under the bottom one)
 		local chip = frame(holder, {
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(1, -px(3), 1, -px(3)),
+			Position = UDim2.new(1, -px(2), 0, px(2)),
 			Size = UDim2.fromOffset(px(17), px(17)),
 			BackgroundTransparency = 0,
 			BackgroundColor3 = Color3.new(1, 1, 1),
