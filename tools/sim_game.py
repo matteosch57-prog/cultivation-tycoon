@@ -118,6 +118,9 @@ def load(path):
         for r, ids in enumerate(rp, 1):
             for i in ids:
                 env["REALM_OF"][i] = r
+        for p in pads:  # Config.DECOR_FROM_REALM: paths and groves wait for it
+            if p["kind"] in ("path", "grove"):
+                env["REALM_OF"][p["id"]] = max(env["REALM_OF"][p["id"]], int(env.get("DECOR_FROM_REALM", 1)))
     # Config.STREAK (Daily Blessing, D58): a table of tables the flat parser skips -> the sim's STREAK form
     if "STREAK" not in env or not isinstance(env.get("STREAK"), list) or (env["STREAK"] and not isinstance(env["STREAK"][0], dict)):
         st_ = []

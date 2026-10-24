@@ -1412,8 +1412,14 @@ for r, ids in Config.REALM_PADS do
 		padRealm[id] = r
 	end
 end
+-- paths and groves wait for DECOR_FROM_REALM (owner pick 2026-10-24: "make realm 1-2 20% faster still,
+-- and life 1 too": the start is walk-bound, so it has fewer optional pads to walk to; qisim -17% life 1)
+Config.DECOR_FROM_REALM = 3
 for _, pad in Config.PADS do -- a pad left out of REALM_PADS opens with the last step, never silently in realm 1
 	padRealm[pad.id] = padRealm[pad.id] or #Config.REALM_PADS
+	if pad.kind == "path" or pad.kind == "grove" then
+		padRealm[pad.id] = math.max(padRealm[pad.id], Config.DECOR_FROM_REALM)
+	end
 end
 -- the realm a pad first opens in
 function Config.padRealm(pad)
