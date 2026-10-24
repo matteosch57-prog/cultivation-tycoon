@@ -496,7 +496,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         del S["disciples"][C["DISCIPLE_CAP"] + vip:]
                     gift_i += 1
                     S["gift_i"] = gift_i
-                if altar_win is not None and "ALTAR_INTERVAL" in C and (s + tide_phase - C["TIDE_INTERVAL"] / 2) % C["ALTAR_INTERVAL"] < 1:
+                if altar_win is not None and "ALTAR_INTERVAL" in C and (s + tide_phase - (C["ALTAR_FIRST"] - C["TIDE_FIRST"])) % C["ALTAR_INTERVAL"] < 1:
                     won = rng.random() < altar_win
                     src("heavenly altar", b * (C["ALTAR_WIN_SECONDS"] if won else C["ALTAR_JOIN_SECONDS"]))
 

@@ -554,20 +554,23 @@ Config.BLESS_MIN_PLAY = 600
 -- 10 + 25 + 60 + 90, with no wait; Economy check 2026-10-21: realms 2 to 5 move under a minute)
 Config.WELCOME_QI = 200
 -- Heavenly Altar (owner idea 2026-10-21, mock A docs/art/mocks/altar_A_phone.jpg): king of the hill
--- over the hub. It opens half a tide cycle after each tide (never with one); stand on it ALONE for
+-- over the hub. It opens every 5 minutes (owner 2026-10-24: "every 5 minutes, like it's cool"), a
+-- quarter tide cycle off each tide so it never lands on one (tide 240+600k for 90 s, altar
+-- 390+300k); stand on it ALONE for
 -- ALTAR_HOLD s to claim it (two or more on it pause the timer); Palm Strike pushes, a fall locks
 -- you out until the round ends. Rewards are seconds of the player's own income (fair at any
 -- realm, no stacking power): the winner ALTAR_WIN_SECONDS + a light aura until the next round (only
 -- ALTAR_SOLO_SECONDS if nobody else came to fight), everyone else who stood on it
--- ALTAR_JOIN_SECONDS. That is ~+20% live income per round on average (research 2026-10-21_economy_math).
-Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
-Config.ALTAR_INTERVAL = Config.TIDE_INTERVAL
+-- ALTAR_JOIN_SECONDS. Twice the rounds at half the prize each (were 300/60/120 every 10 min), so
+-- the altar's qi per hour and the pacing sims are unchanged.
+Config.ALTAR_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 4 -- s after the server starts
+Config.ALTAR_INTERVAL = Config.TIDE_INTERVAL / 2
 Config.ALTAR_WARN = 30 -- s of heads-up (walking from a peak to the hub takes ~20 s)
 Config.ALTAR_WINDOW = 60 -- s the altar stays open without a claim
 Config.ALTAR_HOLD = 20
-Config.ALTAR_WIN_SECONDS = 300
-Config.ALTAR_JOIN_SECONDS = 60
-Config.ALTAR_SOLO_SECONDS = 120
+Config.ALTAR_WIN_SECONDS = 150
+Config.ALTAR_JOIN_SECONDS = 30
+Config.ALTAR_SOLO_SECONDS = 60
 -- The stage (owner 2026-10-23: the built Lei Tai was "so ugly"; "use the bottom of the disciple
 -- island, the top needs an existing asset"; picked A of docs/art/mocks/altar_store_arenas.jpg): the
 -- free Creator Store "Ancient Chinese Arena" mesh rebuilt by id on the lotus isles' rock islet
