@@ -855,6 +855,7 @@ Config.PAD_SPREAD = 0.3
 -- building's next floor is the priciest button of its tier): level lv costs MAINHALL_SECONDS[lv] x a
 -- pad's price, above every other open pad (at most 1 + PAD_SPREAD)
 Config.MAINHALL_SECONDS = { 1.5, 2, 2.5, 3, 3.5 }
+Config.MAINHALL_ABOVE = 1.25 -- and at least this x the dearest other open pad (Main pricePads)
 -- a breakthrough keeps the disciple core (owner 2026-10-24: "breakthrough does remove most building
 -- but the base of disciples in the center and recruit building + bridges + orb building")
 Config.PAD_KEEP = { platform = true, hall = true, quarters1 = true, quarters2 = true, array = true, bridge_fields = true, bridge_dao = true, bridge_disciples = true, bridge_summit = true, lotus1 = true, lotus2 = true, lotus3 = true, lotus4 = true, lotus5 = true, lotus6 = true, lotus7 = true, lotus8 = true }

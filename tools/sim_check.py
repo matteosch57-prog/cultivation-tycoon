@@ -194,6 +194,9 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 if p["id"].startswith("mainhall"):  # the Main Hall: MAINHALL_SECONDS[lv], above the spread
                     f = C["MAINHALL_SECONDS"][int(p["id"][-1]) - 1]
                 snap[p["id"]] = max(p["cost"], pad_seconds() * f * plan1_base())
+                if p["id"].startswith("mainhall"):  # Main pricePads: above the dearest other open pad
+                    top = max((pad_cost(q) for q in ops if not q["id"].startswith("mainhall")), default=0)
+                    snap[p["id"]] = max(snap[p["id"]], top * C["MAINHALL_ABOVE"])
             return snap[p["id"]]
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
         return max(p["cost"] * cmult(), fl)

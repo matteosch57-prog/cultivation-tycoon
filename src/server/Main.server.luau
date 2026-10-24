@@ -730,6 +730,19 @@ local function pricePads(s, ids)
 			s.padPrice[pad.id] = Config.padPrice(pad, s.data.realm, income, i, #open)
 		end
 	end
+	-- the Main Hall stays the dearest open pad, also where catalogue floors win (realm 1: a Furnace
+	-- at 1,200 above a Sect Hall at 900)
+	local top = 0
+	for _, pad in open do
+		if not pad.id:match("^mainhall") then
+			top = math.max(top, s.padPrice[pad.id])
+		end
+	end
+	for _, pad in open do
+		if pad.id:match("^mainhall") then
+			s.padPrice[pad.id] = math.max(s.padPrice[pad.id], math.floor(top * Config.MAINHALL_ABOVE))
+		end
+	end
 end
 
 local function publish(player)
