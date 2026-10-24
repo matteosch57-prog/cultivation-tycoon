@@ -850,7 +850,7 @@ Config.PRICE_FLOOR_FROM_LIFE = 2
 -- or a pill in between bring the next pad sooner. Felt waits (qisim, orbs and pills in): realm 1
 -- ~10 s, 2-3 ~30 s, 4-7 1-4 min, 8-10 14-25 min (owner: "realm 8-10 may be 20-30m of wait per pad
 -- for a full f2p"). Realms past the table use its last entry.
-Config.PAD_SECONDS = { 5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000 }
+Config.PAD_SECONDS = { 5, 30, 40, 65, 110, 220, 800, 5000, 6000, 7000 } -- realms 2-7 trimmed ~25% (owner pick 2026-10-24: the Main Hall last and paid hires had slowed the climb ~40%)
 -- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
 Config.PAD_SPREAD = 0.3
 -- the Main Hall is the big step of a realm (owner 2026-10-24: "the main hall price between steps should
