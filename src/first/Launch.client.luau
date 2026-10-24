@@ -1,9 +1,9 @@
 -- The launch screen (owner pick A with C's camera dive, mock docs/art/mocks/loading_A.jpg and
 -- loading_C.jpg): from the first frame a jade veil, the title and a qi drop that fills with the real
 -- progress (game loaded, the HUD drawn, the server's PeakReady once your avatar stands on your
--- peak). Full: the drop glows and turns, "TAP TO ENTER". The tap fades the veil while the camera
--- dives from the sky onto your peak, then sets the local attribute LaunchDone; the Heavenly Gift
--- and the return screen wait for it. Runs from ReplicatedFirst, so it draws before anything else.
+-- peak). Full: the drop glows a moment, then the veil fades by itself while the camera dives from
+-- the sky onto your peak (owner 2026-10-24: no TAP TO ENTER, "shall we remove the tap to enter too?"),
+-- then sets the local attribute LaunchDone; the return screen and the tips wait for it. Runs from ReplicatedFirst, so it draws before anything else.
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -45,8 +45,9 @@ local QI_PALE = Color3.fromHex("E8FFF4")
 local GOLD = Color3.fromHex("FFD34D")
 local INK = Color3.fromHex("1B1420")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
-local MAX_WAIT = 30 -- s: past this the tap is offered whatever is missing (never a dead screen)
-local DIVE = 1.6 -- s of camera dive after the tap
+local MAX_WAIT = 30 -- s: past this it enters whatever is missing (never a dead screen)
+local DIVE = 1.6 -- s of camera dive into the game
+local FULL_HOLD = 0.5 -- s the full, glowing drop shows before the dive
 -- s before SKIP shows (owner 2026-10-24: "add a skip in loading, it can be long"); it only shows once
 -- the avatar stands on its peak, so a skip never enters without one (the art may still be loading)
 local SKIP_AFTER = 5
@@ -228,7 +229,7 @@ task.spawn(function()
 end)
 
 local ready = false
-local tapPrompt, skip
+local full, skip
 local skipBtn = Instance.new("TextButton")
 skipBtn.Name = "Skip"
 skipBtn.AnchorPoint = Vector2.new(1, 1)
@@ -265,7 +266,7 @@ end)
 local conn
 conn = RunService.RenderStepped:Connect(function(dt)
 	if player:GetAttribute("SaveWait") then
-		-- the last server still holds the save (a crash): wait here, never offer the tap without a peak
+		-- the last server still holds the save (a crash): wait here, never enter without a peak
 		startedAt = math.max(startedAt, os.clock() - MAX_WAIT + 10)
 	end
 	local waited = os.clock() - startedAt
@@ -283,12 +284,12 @@ conn = RunService.RenderStepped:Connect(function(dt)
 	if fill >= 1 and not ready then
 		ready = true
 		conn:Disconnect()
-		skipBtn.Visible = false -- the tap enters now
-		tapPrompt()
+		skipBtn.Visible = false -- entering now
+		full()
 	end
 end)
 
--- 4. full: glow and TAP; the tap dives the camera onto the peak and opens the game
+-- 4. full: a glow, then the camera dives onto the peak and the game opens
 local entered = false
 local function enter()
 	if entered or not ready then
@@ -344,40 +345,25 @@ skip = function()
 	enter()
 end
 
-tapPrompt = function()
-	status.Text = "TAP TO ENTER"
-	status.TextSize = px(30)
+full = function()
+	status.Text = "ENTERING"
 	status.TextColor3 = Color3.new(1, 1, 1)
-	status.UIStroke.Thickness = px(4)
 	tipLine.Visible = false
 	if rays then
 		for _, bar in rays:GetChildren() do
-			tween(bar, 0.5, { BackgroundTransparency = 0 })
+			tween(bar, 0.3, { BackgroundTransparency = 0 })
 		end
 		tween(rays, 18, { Rotation = 360 }, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
 	end
 	if dropScale then
-		tween(dropScale, 0.15, { Scale = 1.12 }).Completed:Wait()
-		tween(dropScale, 0.8, { Scale = 1.04 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		tween(dropScale, 0.15, { Scale = 1.12 })
 	end
-	local pulse = Instance.new("UIScale")
-	pulse.Parent = status
-	tween(pulse, 0.7, { Scale = 1.08 }, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-	veil.InputBegan:Connect(function(input)
-		local t = input.UserInputType
-		if t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch then
-			enter()
-		end
-	end)
-	UserInputService.InputBegan:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.ButtonA then
-			enter()
-		end
-	end)
+	task.wait(FULL_HOLD)
+	enter()
 end
 
--- Studio test hooks: player attribute LaunchTap = true taps, LaunchSkip = true presses SKIP (no mouse
--- input in tests)
+-- Studio test hooks: player attribute LaunchTap = true enters once full (no wait for the glow),
+-- LaunchSkip = true presses SKIP (no mouse input in tests)
 if RunService:IsStudio() then
 	player:GetAttributeChangedSignal("LaunchTap"):Connect(function()
 		if player:GetAttribute("LaunchTap") then
