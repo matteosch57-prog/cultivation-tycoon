@@ -135,6 +135,11 @@ local function openCard()
 			local conn = AvatarEditorService.PromptSetFavoriteCompleted:Connect(function(result)
 				done:Fire(result)
 			end)
+			task.delay(60, function() -- no answer (closed some other way): let the button ask again
+				if done.Parent == nil and conn.Connected then
+					done:Fire(nil)
+				end
+			end)
 			local okP = pcall(AvatarEditorService.PromptSetFavorite, AvatarEditorService, game.PlaceId, Enum.AvatarItemType.Asset, true)
 			local result = okP and done.Event:Wait() or nil
 			conn:Disconnect()
