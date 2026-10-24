@@ -1,7 +1,8 @@
 -- The Flying Sword button (D76): a row of the HUD's right stack (Player.HudSlots.Right, after the gift,
 -- the pill and the altar row; the left rail wraps at 4 rows on a 749 x 381 phone, Studio 2026-10-23),
 -- shown once the player owns a sword pass. One tap flies the picked sword (SwordPick), one tap lands
--- (owner 2026-10-24: "remove the swords small menu, one click to fly and unfly"). Owning several: a
+-- (owner 2026-10-24: "remove the swords small menu, one click to fly and unfly"); F does the same on
+-- a keyboard (a small "F" key on the button on PC), except at the Altar in a round (F = Palm Strike). Owning several: a
 -- small round swap button (two arrows) on the button's corner moves to the next owned sword, at
 -- once while flying. The icon is the sword's own store icon (Toy.icon, the pass thumbnail). Jumping
 -- does NOT land (it rises: SwordFly.client flies). The server mounts, checks and switches it off
@@ -10,6 +11,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -94,6 +96,46 @@ local function swapIcon(parent, size)
 	return box
 end
 
+local function isTouch()
+	local forced = player:GetAttribute("HudDevice")
+	if forced then
+		return forced == "phone"
+	end
+	return playerGui:FindFirstChild("TouchGui") ~= nil or (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+end
+
+-- fly or land (the button, or F on a keyboard)
+local function toggle()
+	if player:GetAttribute("Riding") then
+		ride(false)
+	else
+		local list = owned()
+		if #list > 0 then
+			ride(current(list))
+		end
+	end
+end
+
+-- at the Heavenly Altar during a round F is the Palm Strike (Altar.client): no flying there anyway
+local function atAltar()
+	local top = workspace:GetAttribute("AltarTop")
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not (top and hrp) or (workspace:GetAttribute("AltarUntil") or 0) <= workspace:GetServerTimeNow() then
+		return false
+	end
+	local d = hrp.Position - top
+	local reach = math.max(Config.ALTAR_RADIUS * 1.5, Config.ALTAR_SPRING_X) + 4
+	return Vector2.new(d.X, d.Z).Magnitude < reach and d.Y > -(Config.ALTAR_HEIGHT + 4) and d.Y < 20
+end
+
+ContextActionService:BindAction("SwordToggle", function(_, state)
+	if state == Enum.UserInputState.Begin and #owned() > 0 and not atAltar() then
+		toggle()
+	end
+	return Enum.ContextActionResult.Pass
+end, false, Enum.KeyCode.F)
+
 local function draw()
 	local list = owned()
 	local riding = player:GetAttribute("Riding")
@@ -118,13 +160,24 @@ local function draw()
 	btn.Name = "SwordButton"
 	Toy.icon(btn, riding or current(list), px(36), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	text(root, riding and "Land" or "Fly", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	btn.Activated:Connect(function()
-		if player:GetAttribute("Riding") then
-			ride(false)
-		else
-			ride(current(list))
-		end
-	end)
+	if not isTouch() then -- the key on PC (F, below), on the button's bottom-right corner
+		local chip = frame(holder, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(1, -px(3), 1, -px(3)),
+			Size = UDim2.fromOffset(px(17), px(17)),
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			ZIndex = 6,
+		})
+		Toy.corner(chip, UDim.new(0, px(4)))
+		local cs = Instance.new("UIStroke")
+		cs.Color = Toy.INK
+		cs.Thickness = px(2)
+		cs.Parent = chip
+		local t = text(chip, "F", px(13), Toy.INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 7 })
+		t:FindFirstChildOfClass("UIStroke"):Destroy()
+	end
+	btn.Activated:Connect(toggle)
 	if #list > 1 then
 		-- the swap: the next owned sword (flying: switch now; on foot: the next one to fly)
 		local sHolder, sBtn = Toy.button(holder, UDim2.fromOffset(px(22), px(22)), SWAP, px(11))
