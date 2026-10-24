@@ -248,7 +248,9 @@ Config.BREAKTHROUGH_ASK_SECONDS = 120
 -- district stands on its own islet (Sky Islets, Config.ISLETS; `islet` overrides, e.g. the summit).
 Config.PADS = {
 	{ id = "path", name = "Stone Path", cost = 10, income = 1, unlock = 0, req = {}, x = 0, z = 40, district = "heart" },
-	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -156, z = -38, district = "fields" },
+	-- vein1 just past the Fields Bridge, beside the trail (owner pick A 2026-10-24: new players stopped after
+	-- that bridge, ~105 studs of empty islet before the next pad; was x = -156, z = -38)
+	{ id = "vein1", name = "Spirit Vein", cost = 25, income = 2, unlock = 0, req = {}, x = -92, z = -48, district = "fields" },
 	{ id = "lanterns", name = "Lantern Row", cost = 60, income = 3, unlock = 0, req = {}, x = 10, z = 30, district = "heart" },
 	{ id = "mainhall1", name = "Thatched Hut", cost = 90, income = 4, unlock = 1, req = {}, x = 0, z = -30, feature = "Main Hall", district = "heart" },
 	{ id = "platform", name = "Meditation Platform", cost = 40, income = 4, unlock = 1, req = {}, x = 0, z = 0, feature = "Disciples meditate", district = "heart" },
@@ -482,7 +484,7 @@ Config.WORKERS = {
 	garden3 = { name = "Farmer", x = -127.5, z = -41 },
 	tea1 = { name = "Farmer", x = -108, z = -71 },
 	tea2 = { name = "Farmer", x = -124, z = -80 },
-	vein1 = { name = "Miner", x = -145, z = -44 },
+	vein1 = { name = "Miner", x = -101, z = -43 },
 	vein2 = { name = "Miner", x = -95, z = -57.5 },
 	vein3 = { name = "Miner", x = -137, z = -75.5 },
 	furnace = { name = "Alchemist", x = 111.5, z = -44.5 },
