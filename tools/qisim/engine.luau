@@ -26,6 +26,8 @@ local MIRRORS = {
 		"offlineGain = math.floor(rate(s, true) * away * Config.OFFLINE_RATE)", -- join
 		"local away = math.clamp(os.time() - (lastSeen or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, \"meditation\"))",
 		"local newSummons = if hasChest then math.floor(away / Config.CHEST_SUMMON_EVERY) else 0",
+		"newSummons = math.clamp(Config.CHEST_SUMMON_MAX - (data.chestSummons or 0), 0, newSummons)",
+		"local hasChest = hasIdleChest(data)",
 		"local locked = pad.kind == \"isle\" and dao(s.data, \"isles\") < (pad.karma or 1)", -- offers
 		"local ready = ownedCount >= (pad.unlock or 0)",
 		"pricePads(s, ready)",
@@ -34,7 +36,7 @@ local MIRRORS = {
 		"s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)",
 		"if all and not s.pads.breakthrough and rebirths(s.data) >= Config.rebirthsFor(s.data.realm + 1) then",
 		"local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48",
-		"local cost = Config.workerCost(pad, n, s.data.realm)",
+		"s.padPrice[key] = Config.workerCost(pad, n, s.data.realm, padRate(s))",
 		"s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI",
 		"s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)",
 		"local gain = math.floor(rate(s) * Config.ORB_VALUE)", -- orbs
@@ -48,9 +50,9 @@ local MIRRORS = {
 
 -- the Main functions run as they are, in Main's order
 local FUNCTIONS = {
-	"deepCopy", "defaultData", "discLooks", "discShiny", "dao", "maxDisciples", "rebirths", "karmaGain",
-	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "padRate", "pricePads", "roll", "byBonus",
-	"indexAdd", "addDisciple", "clearsBusy", "reincarnate",
+	"hasIdleChest", "deepCopy", "defaultData", "discLooks", "discShiny", "dao", "maxDisciples", "rebirths", "karmaGain",
+	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "padRate", "pricePads", "giveIdleChest", "roll", "byBonus",
+	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "reincarnate",
 }
 local HANDLERS = { "chestFn", "recruitFn", "pillFn", "giftFn", "streakFn", "welcomeFn", "daoFn" }
 
@@ -186,6 +188,7 @@ function Engine.load(root, seed)
 		refreshPads = noop,
 		buildDisciples = noop,
 		buildWorkers = noop,
+		showIdleChest = noop,
 		save = noop,
 		friendsOf = {},
 		task = { spawn = noop, delay = noop, wait = noop },

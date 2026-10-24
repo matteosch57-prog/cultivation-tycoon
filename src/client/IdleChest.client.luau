@@ -185,6 +185,7 @@ local function chestLabels(on)
 	end
 end
 
+local show -- (below)
 local function close()
 	if not gui.Enabled then
 		return
@@ -194,6 +195,13 @@ local function close()
 	tween(ui.veil, 0.25, { BackgroundTransparency = 1 })
 	task.delay(0.25, function()
 		gui.Enabled = false
+	end)
+	-- free summons given while the screen was up (an index step) open next, never left unseen
+	task.delay(1, function()
+		local left = player:GetAttribute("ChestSummons") or 0
+		if left > 0 and not gui.Enabled then
+			show(0, 0, left, "summons")
+		end
 	end)
 end
 
@@ -292,6 +300,7 @@ local function openBall(b)
 	inflight = false
 end
 
+local BALLS_MAX = 5 -- balls drawn at most (a gift can give more summons than the chest holds)
 local function build(away, summons, mode)
 	for _, c in gui:GetChildren() do
 		c:Destroy()
@@ -319,11 +328,14 @@ local function build(away, summons, mode)
 	ui.scale.Scale = 0.6
 	ui.scale.Parent = card
 	Toy.list(card, false, px(6))
-	-- "chest" = opened from its green pad (the starter chest): teach what it is
-	text(card, mode == "chest" and "Your Idle Chest!" or "Welcome back!", px(28), GOLD, { LayoutOrder = 1 })
+	-- "chest" = opened from its green pad (the starter chest): teach what it is; "summons" = free
+	-- summons just given (a gift, the Daily Blessing, an index step): no qi, just the balls
+	local gift = mode == "summons"
+	text(card, mode == "chest" and "Your Idle Chest!" or gift and "Free summons!" or "Welcome back!", px(28), GOLD, { LayoutOrder = 1 })
 	text(
 		card,
 		mode == "chest" and string.format("It fills while you're away (up to %d h)", Config.OFFLINE_CAP / 3600)
+			or gift and "Tap a ball to open it"
 			or "Your sect worked for " .. awayText(away),
 		px(15),
 		Color3.new(1, 1, 1),
@@ -336,7 +348,8 @@ local function build(away, summons, mode)
 	ui.chest, ui.setLid = chest, setLid
 	local right = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	Toy.list(right, false, px(8), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
-	local _, amount = Toy.amount(right, "qi", px(34), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	local qiRow, amount = Toy.amount(right, "qi", px(34), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	qiRow.Visible = not gift
 	amount.Text = "+0"
 	ui.amount = amount
 	text(
@@ -348,7 +361,7 @@ local function build(away, summons, mode)
 	)
 	local ballRow = frame(right, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(ballRow, true, px(10))
-	for i = 1, summons do
+	for i = 1, math.min(summons, BALLS_MAX) do -- Collect opens any beyond the balls too
 		local size = px(56)
 		local holder = frame(ballRow, { Size = UDim2.fromOffset(size, size + px(18)), LayoutOrder = i })
 		local sc = Instance.new("UIScale")
@@ -492,7 +505,7 @@ local function play(gain, away, summons, mode)
 	tween(ui.rays, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)
 	local centre = ui.chest.AbsolutePosition - gui.AbsolutePosition + ui.chest.AbsoluteSize * Vector2.new(0.5, 0.5)
 	-- the qi explodes: drops burst out in a ring, hang a beat, then stream into the counter
-	local drops = math.clamp(6 + math.floor(math.log10(math.max(gain, 1)) * 2), 8, 18)
+	local drops = if gain > 0 then math.clamp(6 + math.floor(math.log10(math.max(gain, 1)) * 2), 8, 18) else 0
 	local target = counterCentre()
 	for i = 1, drops do
 		local d = Toy.qiIcon(
@@ -565,7 +578,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local joinShown = false -- the join's return screen plays once, from the Notify or the attribute
-local function show(gain, away, summons, mode)
+function show(gain, away, summons, mode)
 	if mode == nil then
 		if joinShown then
 			return
@@ -578,7 +591,7 @@ local function show(gain, away, summons, mode)
 	if gui.Enabled then
 		return
 	end
-	task.spawn(play, gain or 0, away or 0, math.clamp(summons or 0, 0, Config.CHEST_SUMMON_MAX), mode)
+	task.spawn(play, gain or 0, away or 0, math.max(summons or 0, 0), mode)
 end
 
 remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, gain, away, summons, mode)

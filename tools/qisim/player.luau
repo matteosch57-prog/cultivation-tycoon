@@ -147,7 +147,7 @@ function Player:act()
 			return prof.react
 		end
 	end
-	if (d.chestSummons or 0) > 0 and s.chestShown then
+	if (d.chestSummons or 0) > 0 and (s.chestShown or not W.M.hasIdleChest(d)) then -- gift summons open at once (giveSummons)
 		W:call("chestFn", "chest", d.chestSummons)
 		return prof.react * 2
 	end

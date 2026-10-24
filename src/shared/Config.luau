@@ -20,6 +20,9 @@ Config.IDLE_CHEST_AT = Vector3.new(26, 0, 52) -- on the peak (frame space): besi
 -- A brand-new save finds the chest already full (owner: "give a full one at start, green pad in
 -- front, with the full animation to get the loop into their heads"): CHEST_STARTER_QI waiting and
 -- CHEST_STARTER_SUMMONS free summons, opened by stepping on the green pad at IDLE_CHEST_PAD.
+-- The chest arrives once the Meditation Platform stands AND the first CHEST_AFTER_RECRUITS recruits are
+-- done (owner 2026-10-24: "idle chest should be given AFTER the first 3 recruits")
+Config.CHEST_AFTER_RECRUITS = 3
 Config.CHEST_STARTER_QI = 150
 Config.CHEST_STARTER_SUMMONS = 3
 Config.IDLE_CHEST_PAD = Vector3.new(24, 0, 45)
@@ -460,7 +463,11 @@ end
 -- `x`, `z` = the hire pad on the peak.
 Config.WORKER_MAX = 2 -- owner 2026-10-22: "every farming spot should have 2 farmers, not 3 on one only"
 Config.WORKER_BONUS = 0.5 -- simmed (research 2026-10-21_economy_math): ~9% faster climb; above 1.0 eats the hard part
-Config.WORKER_COST = { 0.5, 1 }
+Config.WORKER_COST = { 0.5, 1 } -- the floor: the n-th hire never costs less than this x the building's catalogue cost
+-- hires are priced like the pads (D82; owner 2026-10-24: "workers are super cheap, their price doesn't
+-- evolve"): the n-th costs WORKER_SECONDS[n] x a pad's price (PAD_SECONDS[realm] s of the pad income),
+-- so it climbs with the income and is priced again after every buy (Main pricePads)
+Config.WORKER_SECONDS = { 0.5, 1 }
 Config.WORKERS = {
 	garden = { name = "Farmer", x = -143, z = -63.5 },
 	garden2 = { name = "Farmer", x = -142.5, z = -96.5 },
@@ -473,8 +480,9 @@ Config.WORKERS = {
 	furnace = { name = "Alchemist", x = 111.5, z = -44.5 },
 	training = { name = "Fighter", x = 112, z = -74 },
 }
-function Config.workerCost(pad, n, realm)
-	return math.floor(pad.cost * Config.WORKER_COST[n] * Config.costMult(realm))
+-- `income` = Main padRate (nil: the floor only)
+function Config.workerCost(pad, n, realm, income)
+	return math.floor(math.max(pad.cost * Config.WORKER_COST[n], Config.padSeconds(realm) * Config.WORKER_SECONDS[n] * (income or 0)))
 end
 
 -- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
@@ -840,6 +848,11 @@ Config.PRICE_FLOOR_FROM_LIFE = 2
 Config.PAD_SECONDS = { 5, 40, 55, 90, 150, 300, 1000, 5000, 6000, 7000 }
 -- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
 Config.PAD_SPREAD = 0.3
+-- the Main Hall is the big step of a realm (owner 2026-10-24: "the main hall price between steps should
+-- be way higher, it should always be the last building to get"; the tycoon standard: the main
+-- building's next floor is the priciest button of its tier): level lv costs MAINHALL_SECONDS[lv] x a
+-- pad's price, above every other open pad (at most 1 + PAD_SPREAD)
+Config.MAINHALL_SECONDS = { 1.5, 2, 2.5, 3, 3.5 }
 -- a breakthrough keeps the disciple core (owner 2026-10-24: "breakthrough does remove most building
 -- but the base of disciples in the center and recruit building + bridges + orb building")
 Config.PAD_KEEP = { platform = true, hall = true, quarters1 = true, quarters2 = true, array = true, bridge_fields = true, bridge_dao = true, bridge_disciples = true, bridge_summit = true, lotus1 = true, lotus2 = true, lotus3 = true, lotus4 = true, lotus5 = true, lotus6 = true, lotus7 = true, lotus8 = true }
@@ -1139,9 +1152,17 @@ end
 
 -- the price of the `rank`-th cheapest (catalogue cost) of `n` open pads, `income` = Main padRate
 function Config.padPrice(pad, realm, income, rank, n)
-	local t = Config.PAD_SECONDS[math.min(realm, #Config.PAD_SECONDS)] * Config.rebirthMult(Config.rebirthsFor(realm))
 	local f = n > 1 and (1 - Config.PAD_SPREAD) + 2 * Config.PAD_SPREAD * (rank - 1) / (n - 1) or 1
-	return math.floor(math.max(pad.cost, t * f * income))
+	local lv = tonumber(pad.id:match("^mainhall(%d)$"))
+	if lv then
+		f = Config.MAINHALL_SECONDS[lv] -- the Main Hall: priced above the spread
+	end
+	return math.floor(math.max(pad.cost, Config.padSeconds(realm) * f * income))
+end
+
+-- a pad's price in seconds of the pad income (PAD_SECONDS x the rebirth boost the realm needs)
+function Config.padSeconds(realm)
+	return Config.PAD_SECONDS[math.min(realm, #Config.PAD_SECONDS)] * Config.rebirthMult(Config.rebirthsFor(realm))
 end
 
 -- what a breakthrough leaves standing of `owned` (PAD_KEEP)

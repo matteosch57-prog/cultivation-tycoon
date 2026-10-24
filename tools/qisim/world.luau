@@ -46,7 +46,7 @@ function World:join()
 	if d.tips == nil then
 		d.tips = d.welcomed and { orb = true, pill = true, chest = true } or {}
 	end
-	local hasChest = d.owned.platform == true
+	local hasChest = M.hasIdleChest(d)
 	local now = math.floor(self:now())
 	local lastSeen = self.lastSeen
 	local away = math.clamp(now - (lastSeen or now), 0, C.OFFLINE_CAP + C.DAO_OFFLINE_SECONDS * M.dao(d, "meditation"))
@@ -57,7 +57,8 @@ function World:join()
 		self.src.offline = (self.src.offline or 0) + offlineGain
 	end
 	local newSummons = if hasChest then math.floor(away / C.CHEST_SUMMON_EVERY) else 0
-	d.chestSummons = math.min((d.chestSummons or 0) + newSummons, C.CHEST_SUMMON_MAX)
+	newSummons = math.clamp(C.CHEST_SUMMON_MAX - (d.chestSummons or 0), 0, newSummons)
+	d.chestSummons = (d.chestSummons or 0) + newSummons
 	local showChest = hasChest and (offlineGain > 0 or d.chestSummons > 0 or (d.chestQi or 0) > 0)
 	if showChest then
 		s.chestShown = true
@@ -164,14 +165,16 @@ function World:offers()
 	else
 		s.btCost = nil
 	end
-	if d.owned.platform and ((d.chestQi or 0) > 0 or (d.chestSummons or 0) > 0) and not s.chestShown then
+	if M.hasIdleChest(d) and ((d.chestQi or 0) > 0 or (d.chestSummons or 0) > 0) and not s.chestShown then
 		table.insert(list, { id = "chest", kind = "chest", cost = 0, x = C.IDLE_CHEST_PAD.X, z = C.IDLE_CHEST_PAD.Z })
 	end
 	for id, spec in C.WORKERS do
 		if d.owned[id] and ((d.workers or {})[id] or 0) < C.WORKER_MAX then
 			local pad = C.padById(id)
 			local n = ((d.workers or {})[id] or 0) + 1
-			table.insert(list, { id = "hire_" .. id, kind = "hire", cost = C.workerCost(pad, n, d.realm), x = spec.x, z = spec.z, of = id, n = n })
+			local key = "hire_" .. id
+			s.padPrice[key] = s.padPrice[key] or C.workerCost(pad, n, d.realm, M.padRate(s)) -- Main refreshPads
+			table.insert(list, { id = key, kind = "hire", cost = s.padPrice[key], x = spec.x, z = spec.z, of = id, n = n })
 		end
 	end
 	return list
@@ -220,11 +223,8 @@ function World:buy(o)
 		self.sink.build = (self.sink.build or 0) + o.cost
 		d.owned[o.id] = true
 		s.padPrice = nil
-		if o.id == "platform" and not d.chestStarter and not (d.tips and d.tips.chest) then
-			d.chestStarter = true
-			d.chestQi = (d.chestQi or 0) + C.CHEST_STARTER_QI
-			d.chestSummons = math.max(d.chestSummons or 0, C.CHEST_STARTER_SUMMONS)
-			s.chestShown = false
+		if o.id == "platform" then
+			M.giveIdleChest(s) -- the idle chest, once the first recruits are done too (the Recruit handler gives it then)
 		end
 		if o.id == "hall" and (d.recruited or 0) == 0 and not (d.tips and d.tips.recruit) then
 			d.freeRecruits = math.max(d.freeRecruits or 0, C.FREE_RECRUITS)

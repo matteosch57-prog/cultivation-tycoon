@@ -6,7 +6,8 @@
 --     (income, orbs, pills, tide, gifts; not offline, chest, streak or the Welcome Pouch)
 -- lune run tools/qisim/waits.luau <median|engaged|hooked|regular> <days> <seeds> [none|all] [k=v ...]
 --   k: T=5,40,... (Config.PAD_SECONDS), spread, offcap (s of offline kept), offrate (offline share),
---      welcome=1 (buys the Welcome Pouch)
+--      welcome=1 (buys the Welcome Pouch), MH=2,3,... (Config.MAINHALL_SECONDS), WS=0.6,1.2
+--      (Config.WORKER_SECONDS)
 local process = require("@lune/process")
 local Engine = require("./engine")
 local World = require("./world")
@@ -20,19 +21,22 @@ for i = 5, #a do
 	local k, v = a[i]:match("^(%w+)=([%d%.]+)$")
 	if k then K[k] = tonumber(v) end
 end
-local T
-for i = 5, #a do -- T=5,40,... sets Config.PAD_SECONDS
-	local list = a[i]:match("^T=([%d,]+)$")
-	if list then
-		T = {}
-		for n in list:gmatch("%d+") do table.insert(T, tonumber(n)) end
+local lists = {}
+for i = 5, #a do -- T=5,40,... sets Config.PAD_SECONDS; MH= and WS= the Main Hall and hire shares
+	local k, list = a[i]:match("^(%u+)=([%d,%.]+)$")
+	if k then
+		lists[k] = {}
+		for n in list:gmatch("[%d%.]+") do table.insert(lists[k], tonumber(n)) end
 	end
 end
+local T = lists.T
 
 local function runOne(seed)
 	local E = Engine.load(ROOT, seed)
 	local C = E.Config
 	if T then C.PAD_SECONDS = T end
+	if lists.MH then C.MAINHALL_SECONDS = lists.MH end
+	if lists.WS then C.WORKER_SECONDS = lists.WS end
 	if K.spread then C.PAD_SPREAD = K.spread end
 	if K.offcap >= 0 then C.OFFLINE_CAP = K.offcap end
 	if K.offrate >= 0 then C.OFFLINE_RATE = K.offrate end
@@ -66,9 +70,14 @@ local function runOne(seed)
 		if b2[1] - a1[1] < 60 then return nil end
 		return (b2[2] - a1[2]) / (b2[1] - a1[1])
 	end
+	local order = {} -- the builds and hires of each realm's first life, in buy order (the Main Hall probe)
 	local b1 = W.buy
 	W.buy = function(self, o)
 		local r = row()
+		if (o.kind == "build" or o.kind == "hire") and firstLife[d.realm] == d.lives and d.qi >= o.cost then
+			order[d.realm] = order[d.realm] or {}
+			table.insert(order[d.realm], { id = o.id, cost = o.cost })
+		end
 		local pr = o.kind == "build" and playRate()
 		if pr and pr > 0 then table.insert(r.real, o.cost / pr) end
 		local ok = b1(self, o)
@@ -126,7 +135,7 @@ local function runOne(seed)
 		end
 		E.clock.t = ds + 86400
 	end
-	return { P = P, W = W, rows = rows }
+	return { P = P, W = W, rows = rows, order = order }
 end
 
 local function fmt(t)
@@ -190,3 +199,24 @@ table.sort(led, function(x, y) return x[2] > y[2] end)
 local ls = {}
 for _, e in led do table.insert(ls, string.format("%s %.0f%%", e[1], 100 * e[2] / sum)) end
 print(string.format("  end (seed %d): realm %d, life %d, disciples %d; idle (nothing to buy at all) %.0f%%; qi from %s", math.ceil(#runs / 2), R.W.d.realm, R.W.d.lives, #R.W.d.disciples, 100 * R.P.wait.any / tot, table.concat(ls, ", ")))
+-- the Main Hall probe (seed of the median run): where each level falls in its realm's build order
+-- ("3/24" = the 3rd of 24 builds), and the hires (how many, their share of the realm's build qi)
+print("  Main Hall order and hires, first life of each realm (seed " .. math.ceil(#runs / 2) .. "):")
+for realm = 1, 12 do
+	local list = R.order[realm]
+	if list then
+		local builds, hires, hq, bq, mh = 0, 0, 0, 0, {}
+		for _, e in list do
+			if e.id:match("^hire_") then
+				hires += 1
+				hq += e.cost
+			else
+				builds += 1
+				bq += e.cost
+				local lv = e.id:match("^mainhall(%d)$")
+				if lv then table.insert(mh, "L" .. lv .. " " .. builds) end
+			end
+		end
+		print(string.format("    realm %2d: %d builds; Main Hall at %s; %d hires (%.0f%% of build qi)", realm, builds, table.concat(mh, ", "), hires, 100 * hq / math.max(1, bq)))
+	end
+end

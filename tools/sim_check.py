@@ -171,6 +171,19 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         paid = sum(rar[names.index(n)][1] for n in S["bought"] if n in names)
         return cache["away"] / x2 / (1 + S["welcome"]) / reb / dm * max(1.0, dm - paid)
 
+    def pad_seconds():  # Config.padSeconds
+        T = C["PAD_SECONDS"]
+        return T[min(S["realm"], len(T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
+
+    def worker_cost(i):  # Config.workerCost (Main refreshPads: priced from the pad income, again after a buy)
+        n = S["workers"].get(i, 0)
+        if not PLAN1:
+            return P[i]["cost"] * C["WORKER_COST"][n] * cmult()
+        key = "hire_%s_%d" % (i, n)
+        if key not in snap:
+            snap[key] = max(P[i]["cost"] * C["WORKER_COST"][n], pad_seconds() * C["WORKER_SECONDS"][n] * plan1_base())
+        return snap[key]
+
     def pad_cost(p):  # Config.padCost
         if PLAN1:
             if p["id"] not in snap:
@@ -178,8 +191,9 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 i = next((k for k, q in enumerate(ops) if q["id"] == p["id"]), 0)
                 sp, T = C["PAD_SPREAD"], C["PAD_SECONDS"]
                 f = (1 - sp) + 2 * sp * i / (len(ops) - 1) if len(ops) > 1 else 1
-                t = T[min(S["realm"], len(T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
-                snap[p["id"]] = max(p["cost"], t * f * plan1_base())
+                if p["id"].startswith("mainhall"):  # the Main Hall: MAINHALL_SECONDS[lv], above the spread
+                    f = C["MAINHALL_SECONDS"][int(p["id"][-1]) - 1]
+                snap[p["id"]] = max(p["cost"], pad_seconds() * f * plan1_base())
             return snap[p["id"]]
         fl = cache["price"] * C["PRICE_FLOOR_S"] if S["lives"] >= C["PRICE_FLOOR_FROM_LIFE"] else 0
         return max(p["cost"] * cmult(), fl)
@@ -314,7 +328,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         offer += [pad_cost(p) for p in open_pads()]
                         if "hall" in S["owned"]:
                             offer.append(sum(recruit_cost(S["rr"] + i) for i in range(batch)))
-                        offer += [P[i]["cost"] * C["WORKER_COST"][S["workers"].get(i, 0)] * cmult() for i in C["WORKER_PADS"]
+                        offer += [worker_cost(i) for i in C["WORKER_PADS"]
                                   if i in S["owned"] and S["workers"].get(i, 0) < C["WORKER_MAX"]]
                     if offer and S["qi"] < min(offer):
                         events.append((clock["play"], "wait", 0, S["realm"], S["lives"]))
@@ -360,13 +374,14 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                             seat(roll())
                         recalc()
                         continue
-                hires = [(P[i]["cost"] * C["WORKER_COST"][S["workers"].get(i, 0)] * cmult(), i) for i in C["WORKER_PADS"]
+                hires = [(worker_cost(i), i) for i in C["WORKER_PADS"]
                          if i in S["owned"] and S["workers"].get(i, 0) < C["WORKER_MAX"]]
                 if hires and min(hires)[0] < tcost:
                     wc, wi = min(hires)
                     if S["qi"] >= wc:
                         pay("workers", wc)
                         S["workers"][wi] = S["workers"].get(wi, 0) + 1
+                        snap.clear()
                         recalc()
                     continue
                 if S["qi"] >= tcost:

@@ -453,6 +453,28 @@ local function showIdleChest(plot, on)
 	end
 end
 
+-- the save has its idle chest: the Meditation Platform stands and the first CHEST_AFTER_RECRUITS
+-- recruits are done (owner 2026-10-24: "idle chest should be given AFTER the first 3 recruits"); a
+-- save that already had it keeps it
+local function hasIdleChest(d)
+	return d.owned.platform == true and ((d.recruited or 0) >= Config.CHEST_AFTER_RECRUITS or d.chestStarter == true or (d.tips and d.tips.chest) == true)
+end
+
+-- Free summons (a gift, the Daily Blessing, an index step) go into the idle chest's pool and open
+-- at once: the summon screen (IdleChest.client, mode "summons") shows their balls a moment later.
+-- Owner 2026-10-24: "free summons don't actually give free summons": they waited unseen for the
+-- next join's return screen
+local function giveSummons(s, n)
+	local d = s.data
+	d.chestSummons = (d.chestSummons or 0) + n
+	s.player:SetAttribute("ChestSummons", d.chestSummons)
+	task.delay(1.5, function()
+		if s.player.Parent and (d.chestSummons or 0) > 0 then
+			notify:FireClient(s.player, "idleChest", 0, 0, d.chestSummons, "summons")
+		end
+	end)
+end
+
 local function buildPlots()
 	for i = 1, Config.PLOT_COUNT do
 		local a = (i - 1) / Config.PLOT_COUNT * math.pi * 2
@@ -721,7 +743,7 @@ local function publish(player)
 	player:SetAttribute("AwayRate", rate(s, true)) -- what a Qi pack or a gift pays per second
 	-- the open pads' prices (pricePads; set again after a buy)
 	for id, part in s.pads or {} do
-		local pad = Config.padById(id)
+		local pad = Config.padById(id) or (id:match("^hire_") and true)
 		local info = s.padData and s.padData[part]
 		local cost = s.padPrice and s.padPrice[id]
 		if pad and info and cost and not info.busy then
@@ -1290,7 +1312,24 @@ local function rebuild(s)
 	end
 	buildDisciples(s)
 	buildWorkers(s)
-	showIdleChest(s.plot, s.data.owned.platform == true)
+	showIdleChest(s.plot, hasIdleChest(s.data))
+end
+
+-- the idle chest arrives (hasIdleChest: after the platform and the first recruits) with the starter
+-- chest: full, opened from its green pad (a new save only: a save from before the tips, or one that
+-- had it, knows the chest). The caller refreshes the pads
+local function giveIdleChest(s)
+	if not hasIdleChest(s.data) then
+		return
+	end
+	showIdleChest(s.plot, true)
+	if not s.data.chestStarter and not (s.data.tips and s.data.tips.chest) then
+		s.data.chestStarter = true
+		s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI
+		s.data.chestSummons = math.max(s.data.chestSummons or 0, Config.CHEST_STARTER_SUMMONS)
+		s.player:SetAttribute("ChestSummons", s.data.chestSummons)
+		s.chestShown = false
+	end
 end
 
 refreshPads = function(player, s)
@@ -1329,7 +1368,7 @@ refreshPads = function(player, s)
 	pricePads(s, ready)
 	-- the idle chest's green pad: while it holds something the player has not been shown yet (and
 	-- only once the chest stands, with the Meditation Platform)
-	if s.data.owned.platform and ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
+	if hasIdleChest(s.data) and ((s.data.chestQi or 0) > 0 or (s.data.chestSummons or 0) > 0) and not s.chestShown then
 		wanted.chest = true
 	end
 	-- a hire pad beside every owned building that takes workers, until it has WORKER_MAX
@@ -1387,16 +1426,7 @@ refreshPads = function(player, s)
 					end
 					if pad.id == "platform" then
 						buildDisciples(s)
-						showIdleChest(s.plot, true)
-						-- the starter chest comes with it: full, opened from its green pad (a new save
-						-- only: a save from before the tips, or one that had it, knows the chest)
-						if not s.data.chestStarter and not (s.data.tips and s.data.tips.chest) then
-							s.data.chestStarter = true
-							s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI
-							s.data.chestSummons = math.max(s.data.chestSummons or 0, Config.CHEST_STARTER_SUMMONS)
-							player:SetAttribute("ChestSummons", s.data.chestSummons)
-							s.chestShown = false
-						end
+						giveIdleChest(s)
 					end
 					-- the recruit tutorial (owner 2026-10-24): a new save's first Disciple Hall comes with a
 					-- free recruit (Tips.client points at the Recruit button), then the trail leads to the
@@ -1441,15 +1471,20 @@ refreshPads = function(player, s)
 	for id, spec in Config.WORKERS do
 		local key = "hire_" .. id
 		local pad = Config.padById(id)
+		local n = ((s.data.workers or {})[id] or 0) + 1
+		if wanted[key] and pad and not s.padPrice[key] then
+			-- priced like the pads, from the pad income, and again after every buy (publish sets it)
+			s.padPrice[key] = Config.workerCost(pad, n, s.data.realm, padRate(s))
+		end
 		if wanted[key] and pad and not s.pads[key] then
-			local n = ((s.data.workers or {})[id] or 0) + 1
-			local cost = Config.workerCost(pad, n, s.data.realm)
+			local cost = s.padPrice[key]
 			local income = pad.income * Config.incomeMult(s.data.realm) * Config.WORKER_BONUS
-			local p = makePad(player, s, { id = key, x = spec.x, z = spec.z }, cost, spec.name, income, function()
+			local part
+			part = makePad(player, s, { id = key, x = spec.x, z = spec.z }, cost, spec.name, income, function()
 				s.data.workers = s.data.workers or {}
 				s.data.workers[id] = n
 				s.padPrice = nil
-				Telemetry.sink(player, s.data, cost, key)
+				Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, key)
 				-- the next hire costs more: a fresh pad (its card shows one more dot)
 				if s.pads[key] then
 					s.pads[key]:Destroy()
@@ -1464,10 +1499,10 @@ refreshPads = function(player, s)
 				refreshPads(player, s)
 				publish(player)
 			end, "hire")
-			p.Name = "Hire_" .. id -- not "Pad_": the HUD goal and the guide trail lead to buildings only
-			p:SetAttribute("Hired", n - 1)
-			p:SetAttribute("HireMax", Config.WORKER_MAX)
-			s.pads[key] = p
+			part.Name = "Hire_" .. id -- not "Pad_": the HUD goal and the guide trail lead to buildings only
+			part:SetAttribute("Hired", n - 1)
+			part:SetAttribute("HireMax", Config.WORKER_MAX)
+			s.pads[key] = part
 		end
 	end
 	-- the next realm opens only with enough rebirths (Config.REBIRTH_REALMS, Muscle Legends' gyms)
@@ -1825,9 +1860,9 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = data.welcomed and { orb = true, pill = true, chest = true, recruit = true } or {}
 	end
-	-- the starter idle chest is filled when the Meditation Platform is built (its buy, refreshPads):
-	-- the chest stands only from then
-	local hasChest = data.owned.platform == true
+	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
+	-- first recruits): the chest stands only from then
+	local hasChest = hasIdleChest(data)
 
 	-- offline qi
 	local away = math.clamp(os.time() - (lastSeen or os.time()), 0, Config.OFFLINE_CAP + Config.DAO_OFFLINE_SECONDS * dao(data, "meditation"))
@@ -1840,7 +1875,9 @@ local function onJoin(player)
 	-- idle chest: a free summon per CHEST_SUMMON_EVERY s away; unopened ones wait (capped). No chest
 	-- yet (no Meditation Platform): no summons fill it
 	local newSummons = if hasChest then math.floor(away / Config.CHEST_SUMMON_EVERY) else 0
-	data.chestSummons = math.min((data.chestSummons or 0) + newSummons, Config.CHEST_SUMMON_MAX)
+	-- the cap holds the time away only: gift / blessing / index summons still waiting are kept
+	newSummons = math.clamp(Config.CHEST_SUMMON_MAX - (data.chestSummons or 0), 0, newSummons)
+	data.chestSummons = (data.chestSummons or 0) + newSummons
 	player:SetAttribute("ChestSummons", data.chestSummons)
 	if away > 60 then
 		Telemetry.custom(player, "IdleChest", Telemetry.hourBucket(away), tostring(data.chestSummons), Telemetry.realmBucket(data.realm))
@@ -1869,6 +1906,9 @@ local function onJoin(player)
 	publishFriends(player)
 	publishSettings(player, data)
 	s.ready = true -- receipts wait for this (Shop processReceipt): passes known, peak built
+	if not showChest and (data.chestSummons or 0) > 0 then
+		giveSummons(s, 0) -- free summons from before the chest (a gift): they open now
+	end
 	if showChest then
 		task.delay(3, function()
 			-- the return screen (IdleChest.client): the chest bursts, then the summons wait to be tapped
@@ -2007,9 +2047,9 @@ local function indexAdd(s, name, look)
 	if after > before then
 		local steps = Config.indexTotalStars(d.index) // Config.INDEX_STEP_STARS
 		if steps > (d.indexSteps or 0) then
-			d.chestSummons = (d.chestSummons or 0) + (steps - (d.indexSteps or 0)) * Config.INDEX_STEP_SUMMONS
+			local n = (steps - (d.indexSteps or 0)) * Config.INDEX_STEP_SUMMONS
 			d.indexSteps = steps
-			s.player:SetAttribute("ChestSummons", d.chestSummons)
+			giveSummons(s, n)
 			notify:FireClient(s.player, "indexStep", Config.INDEX_STEP_SUMMONS)
 		end
 	end
@@ -2206,6 +2246,10 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 		Telemetry.customValue(player, "Recruit", n, rarity, Telemetry.realmBucket(s.data.realm), fate)
 	end
 	buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
+	if s.data.recruited >= Config.CHEST_AFTER_RECRUITS and s.data.recruited - want < Config.CHEST_AFTER_RECRUITS then
+		giveIdleChest(s) -- the first recruits are done: the idle chest arrives, full (its green pad)
+		refreshPads(player, s)
+	end
 	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
@@ -2252,9 +2296,8 @@ giftFn.OnServerInvoke = function(player)
 	local rarity = Config.GIFT_RARITY[gi] ~= "" and Config.GIFT_RARITY[gi] or nil
 	d.giftIdx = gi + 1
 	d.qi += gain
-	if summons > 0 then -- free summons wait in the idle chest's pool (ChestSummon reveals them)
-		d.chestSummons = (d.chestSummons or 0) + summons
-		player:SetAttribute("ChestSummons", d.chestSummons)
+	if summons > 0 then
+		giveSummons(s, summons)
 	end
 	if pill > 0 then -- a 2x Qi pill: adds to one already running
 		d.boostUntil = math.max(workspace:GetServerTimeNow(), d.boostUntil or 0) + pill
@@ -2302,9 +2345,8 @@ streakFn.OnServerInvoke = function(player)
 	if gain > 0 then
 		Telemetry.source(player, d, gain, "streak", true)
 	end
-	if summons > 0 then -- free summons wait in the idle chest's pool, as the gifts' do
-		d.chestSummons = (d.chestSummons or 0) + summons
-		player:SetAttribute("ChestSummons", d.chestSummons)
+	if summons > 0 then
+		giveSummons(s, summons)
 	end
 	if rarity then
 		addDisciple(s, rarity, true) -- a gift: never turned away
