@@ -1782,14 +1782,24 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 		if layer then
 			-- a gold "x3" pops beside the income line, then fades. On the gui itself, never inside the
 			-- line: the line sizes itself to its children, so a child there pushed its own text under it
-			local at = ui.rate.AbsolutePosition - layer.AbsolutePosition
-			local size = ui.rate.AbsoluteSize
-			local tag = text(layer, boost, px(26), GOLD, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(at.X + size.X + px(6), at.Y + size.Y / 2), ZIndex = 30 })
+			local function beside()
+				local at = ui.rate.AbsolutePosition - layer.AbsolutePosition
+				local size = ui.rate.AbsoluteSize
+				return UDim2.fromOffset(at.X + size.X + px(6), at.Y + size.Y / 2)
+			end
+			local tag = text(layer, boost, px(26), GOLD, { AnchorPoint = Vector2.new(0, 0.5), Position = beside(), ZIndex = 30 })
 			local sc = Instance.new("UIScale")
 			sc.Scale = 0.3
 			sc.Parent = tag
 			TweenService:Create(sc, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-			task.delay(3.5, function()
+			task.spawn(function()
+				-- it stays BOOST_TAG_SECONDS (owner 2026-10-24: "x3 should last like 20s"), following the
+				-- line as the income grows wider while the realm is rebuilt
+				local untilT = os.clock() + Config.BOOST_TAG_SECONDS - 0.5
+				while tag.Parent and os.clock() < untilT do
+					tag.Position = beside()
+					task.wait(0.25)
+				end
 				fadeOut(tag, 0.5)
 				task.wait(0.55)
 				tag:Destroy()

@@ -240,6 +240,7 @@ Config.BREAKTHROUGH_ASK_SECONDS = 120
 -- 2026-10-24: 7 of 25 realm-2 leavers quit within 30 s of their first breakthrough, sect gone, qi 0 and
 -- nothing affordable; AdVenture Capitalist / Egg, Inc. restart a reset with something to spend at once)
 Config.BREAKTHROUGH_START_SECONDS = 60
+Config.BOOST_TAG_SECONDS = 20 -- the gold realm boost ("x3") beside the income line after a breakthrough (Hud)
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.
