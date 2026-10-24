@@ -1,7 +1,7 @@
 -- Heavenly Altar on the client (mock A, docs/art/mocks/altar_A_phone.jpg): while a round is open, a
 -- small altar button in the HUD's right stack (owner 2026-10-22: the ring in the middle was "too
 -- invasive"; docs/art/mocks/fight_options.jpg): beads around it fill as the holder's timer runs, a
--- tap draws the guide trail to the nearest moon gate, its X hides it until the next round. The
+-- tap teleports you onto the deck (owner 2026-10-24), its X hides it until the next round. The
 -- Palm Strike button while you stand on the altar (owner pick 1 2026-10-23,
 -- docs/art/mocks/altar_phone_buttons.jpg: on a phone it takes the Recruit seal's spot left of Jump and
 -- the seal steps aside through the Player attribute AltarPalm; F on a keyboard), the moon gates
@@ -128,9 +128,8 @@ local function placeRow()
 	end
 end
 
--- a tap on the altar button: the guide trail to the nearest moon gate, which takes you up (the deck
--- floats ALTAR_HEIGHT over the plaza: a trail at the altar itself would point at the sky)
--- from Config, not the parts: far from the hub the altar model has not streamed in
+-- the guide trail to the nearest moon gate (no longer drawn by the altar button, which teleports;
+-- only cleared here), from Config, not the parts: far from the hub the altar model has not streamed in
 local function nearestSpring()
 	local top = workspace:GetAttribute("AltarTop")
 	if not top then
@@ -206,9 +205,19 @@ local function build()
 		row.Visible = false
 		guideToAltar(false)
 	end)
-	btn.Activated:Connect(function()
-		guideToAltar(player:GetAttribute("GuideTo") == nil)
-	end)
+	-- the altar button and the "!" both teleport onto the deck, no trail (owner 2026-10-24: "clicking
+	-- on HUD arena is teleporting in arena, stop showing path")
+	local function goToAltar()
+		guideToAltar(false)
+		local slots = player:FindFirstChild("HudSlots")
+		local travel = slots and slots:FindFirstChild("Travel")
+		if travel then
+			travel:Fire("altar") -- the HUD's jade wipe (Base / Ranks chips)
+		else
+			remotes.Teleport:FireServer("altar")
+		end
+	end
+	btn.Activated:Connect(goToAltar)
 	-- the "!": gold, on the top-left corner (the X has the right one); it bounces and rocks per frame
 	local alert = Instance.new("TextButton")
 	alert.Text = "!"
@@ -230,16 +239,7 @@ local function build()
 	ast.Parent = alert
 	ui.alert, ui.alertX, ui.alertY = alert, -rowSize / 2 - px(2), px(6) + px(2)
 	Toy.feel(alert)
-	alert.Activated:Connect(function()
-		local slots = player:FindFirstChild("HudSlots")
-		local travel = slots and slots:FindFirstChild("Travel")
-		if travel then
-			travel:Fire("altar") -- the HUD's jade wipe (Base / Ranks chips)
-		else
-			remotes.Teleport:FireServer("altar")
-		end
-		guideToAltar(true) -- the trail from the spring up
-	end)
+	alert.Activated:Connect(goToAltar)
 	placeRow()
 	-- Palm Strike: on a phone in the Recruit seal's spot, left of Jump with their bottoms level (the
 	-- seal steps aside while this shows: Hud reads AltarPalm); bottom right on a computer (key F),
