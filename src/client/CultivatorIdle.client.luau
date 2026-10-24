@@ -433,10 +433,17 @@ RunService.PreSimulation:Connect(function(frameDt)
 			end
 			local k = math.max(0, 1 - (now - f.surgeAt) / SURGE)
 			k = k * k * (3 - 2 * k) -- smooth in and out
-			local up = HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k
+			-- outside the full set the figure holds its float height: moving the anchored root moves the
+			-- whole avatar (every limb, robe and accessory), and the swords, halo and orbs ride on it, so
+			-- a held figure only breathes through its joints (Studio 2026-10-24: 2.4 ms a frame for 41)
+			local up = f.full and (HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k) or HOVER
+			local moved = up ~= f.up
+			f.up = up
 			local lift = f.pivot + Vector3.new(0, up, 0)
 			-- the whole figure floats on its anchored root; the folded legs ride with it
-			f.rootPart.CFrame = f.rootBase + Vector3.new(0, up, 0)
+			if moved then
+				f.rootPart.CFrame = f.rootBase + Vector3.new(0, up, 0)
+			end
 			-- the raised mudra: the right hand lifts to the chest for a few breaths, then returns
 			local raise = now > f.nextMudra and now < f.nextMudra + 3.5
 			if now > f.nextMudra + 3.5 then
@@ -498,8 +505,12 @@ RunService.PreSimulation:Connect(function(frameDt)
 				end
 				f.eyes += (eyes - f.eyes) * math.min(1, dt * 6)
 				f.smile += (smile - f.smile) * ease
-				f.face.LeftEyeClosed, f.face.RightEyeClosed = f.eyes, f.eyes
-				f.face.LeftLipCornerPuller, f.face.RightLipCornerPuller = f.smile, f.smile
+				-- a face pose write re-deforms the dynamic head: only a visible change is written
+				if math.abs(f.eyes - (f.eyesSet or -1)) > 0.02 or math.abs(f.smile - (f.smileSet or -1)) > 0.02 then
+					f.eyesSet, f.smileSet = f.eyes, f.smile
+					f.face.LeftEyeClosed, f.face.RightEyeClosed = f.eyes, f.eyes
+					f.face.LeftLipCornerPuller, f.face.RightLipCornerPuller = f.smile, f.smile
+				end
 			end
 			local n = math.sin(t / NOD * TAU)
 			goal.Neck = CFrame.Angles(0, f.yaw, 0) * CFrame.Angles(f.pitch - bow + math.rad(2.5 * n + 1 * b), math.rad(3 * math.sin(t / NOD * 0.5 * TAU)), math.rad(-1.6 * s))
@@ -514,7 +525,7 @@ RunService.PreSimulation:Connect(function(frameDt)
 					j.Transform = c
 				end
 			end
-			if f.halo then
+			if f.halo and moved then
 				f.halo.Position = f.haloBase + Vector3.new(0, up, 0)
 			end
 			-- the magic circles turn (the second the other way), the halo circle about its own axis
@@ -525,27 +536,34 @@ RunService.PreSimulation:Connect(function(frameDt)
 				table.insert(cfs, c.base * CFrame.Angles(0, f.circleAngle * c.dir, 0))
 			end
 			if f.rim and f.lit then
-				f.rim.FillTransparency = f.rimFill - 0.12 * k -- more washed the robe out to one colour
+				local fill = f.rimFill - 0.12 * k -- more washed the robe out to one colour
+				if fill ~= f.rim.FillTransparency then
+					f.rim.FillTransparency = fill
+				end
 			end
-			if f.haloCircle then
+			if f.haloCircle and (f.full or moved) then
 				table.insert(parts, f.haloCircle)
 				table.insert(cfs, CFrame.new(f.haloPos + Vector3.new(0, up, 0)) * f.haloTurn * CFrame.Angles(0, now * 0.4, 0))
 			end
-			for _, piece in f.mount or {} do
-				table.insert(parts, piece.part)
-				table.insert(cfs, piece.base + Vector3.new(0, up, 0))
+			if moved then
+				for _, piece in f.mount or {} do
+					table.insert(parts, piece.part)
+					table.insert(cfs, piece.base + Vector3.new(0, up, 0))
+				end
 			end
-			-- the spirit swords hover with the figure, each on its own small rhythm
-			for i, pieces in f.swordBase do
-				local hover = Vector3.new(0, up + 0.12 * math.sin(now * 1.7 + i * 0.9), 0)
+			-- the spirit swords hover with the figure, each on its own small rhythm (a held figure's
+			-- swords hold still with it)
+			for i, pieces in (f.full or moved) and f.swordBase or {} do
+				local hover = Vector3.new(0, up + (f.full and 0.12 * math.sin(now * 1.7 + i * 0.9) or 0), 0)
 				for _, piece in pieces do
 					table.insert(parts, piece.part)
 					table.insert(cfs, piece.base + hover)
 				end
 			end
-			-- the orbs circle (alternate directions from 4 orbs); in a surge they race and rise
+			-- the orbs circle (alternate directions from 4 orbs); in a surge they race and rise. Only in
+			-- the full set: elsewhere their light is off and they are invisible parts
 			local spin = CFrame.Angles(0, f.orbAngle, 0)
-			for i, orb in f.orbs do
+			for i, orb in f.full and f.orbs or {} do
 				local dir = (i % 2 == 0) and -1 or 1
 				local turn = #f.orbs > 3 and CFrame.Angles(0, f.orbAngle * dir, 0) or spin
 				table.insert(parts, orb)
