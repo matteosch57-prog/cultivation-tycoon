@@ -987,6 +987,13 @@ local function buildDisciples(s, newcomer)
 			onPlatform -= (pad.seats or 4)
 		end
 	end
+	ctx.platformSeats = onPlatform -- Builders.disciple spaces a crowded ring evenly
+	-- the ring's spacing changed (8 or fewer seats vs 9+): every seat moves, so every figure is reseated
+	local was = folder:GetAttribute("PlatformSeats")
+	if was ~= onPlatform and (math.max(was or 0, onPlatform) > 8) then
+		folder:ClearAllChildren()
+	end
+	folder:SetAttribute("PlatformSeats", onPlatform)
 	local function onIsle(slot)
 		return slot > onPlatform
 	end

@@ -559,7 +559,11 @@ function Builders.disciple(ctx, slot, rarity, arrive, look, isle, k)
 		local x, z = math.cos(a) * ISLE_SEAT_R, math.sin(a) * ISLE_SEAT_R
 		face = CFrame.new(d.X + x, d.Y - PLATFORM_TOP, d.Z + z) * CFrame.Angles(0, math.atan2(x, z) + math.pi, 0)
 	else
-		local a = math.rad(-90 + (slot - 3) * 40)
+		-- 40 degrees apart from -170; a sect with 9 or 10 platform seats (VIP, every slot building and
+		-- the karma Disciple Seat) spreads evenly round the ring instead, clear of the isle stair at 140
+		-- degrees (the 40 degree ring put seat 10 on seat 1 and seat 9 on the stair: Studio 2026-10-24)
+		local n = ctx.platformSeats or 0
+		local a = math.rad(if n > 8 then 160 + (slot - 0.5) * 320 / n else -90 + (slot - 3) * 40)
 		local x, z = math.cos(a) * 8.5, -math.sin(a) * 8.5 -- arc on the hub side of the platform
 		face = CFrame.new(x, 0, z) * CFrame.Angles(0, math.atan2(x, z), 0) -- face the centre
 	end
