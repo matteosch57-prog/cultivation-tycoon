@@ -156,13 +156,16 @@ local function build()
 	-- the altar row: a 46 px toy button with the altar icon, the hold beads around it, the seconds
 	-- under it, an X on its corner
 	local rowSize = px(46)
-	local row = frame(nil, { Size = UDim2.fromOffset(rowSize + px(12), rowSize + px(31)), Visible = false, Name = "AltarRow" })
+	local row = frame(nil, { Size = UDim2.fromOffset(rowSize + px(12), rowSize + px(48)), Visible = false, Name = "AltarRow" })
 	ui.row = row
 	local holder, btn = Toy.button(row, UDim2.fromOffset(rowSize, rowSize), ROW, rowSize / 2)
 	holder.AnchorPoint = Vector2.new(0.5, 0)
 	holder.Position = UDim2.new(0.5, 0, 0, px(6))
 	Toy.icon(btn, "altar", math.floor(rowSize * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	Toy.teleportTag(btn, px(13))
+	-- the Teleport tag sits under the bead ring (on the button's edge the beads drew over it)
+	local tag = Toy.teleportTag(row, px(13))
+	tag.AnchorPoint = Vector2.new(0.5, 0)
+	tag.Position = UDim2.new(0.5, 0, 0, rowSize + px(17))
 	-- one bead per 2 s held (10 for the 20 s claim): fewer, bigger beads read at 46 px
 	local n = math.ceil(Config.ALTAR_HOLD / 2)
 	for i = 1, n do
@@ -183,7 +186,7 @@ local function build()
 		st.Parent = b
 		beads[i] = b
 	end
-	ui.secs = text(row, "", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, rowSize + px(15)) })
+	ui.secs = text(row, "", px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, rowSize + px(32)) })
 	-- the X: hides the row until the next round
 	local x = Instance.new("TextButton")
 	x.Text = ""

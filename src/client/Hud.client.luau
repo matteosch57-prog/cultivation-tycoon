@@ -504,9 +504,12 @@ local function build()
 		local c, b = sideButton(top, order, 40, face, true)
 		Toy.icon(b, key, px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		b.Name = caption .. "Button"
-		text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		local cap = text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 		if where ~= "ranks" then -- Ranks opens a screen first; its "Go to the wall" carries the tag
 			Toy.teleportTag(b, px(13))
+			local pad = Instance.new("UIPadding") -- the caption steps down out from under the tag
+			pad.PaddingTop = UDim.new(0, px(5))
+			pad.Parent = cap
 		end
 		b.Activated:Connect(function()
 			local screen = where == "ranks" and player:FindFirstChild("RanksOpen")
