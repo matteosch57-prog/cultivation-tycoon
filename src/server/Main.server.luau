@@ -95,7 +95,7 @@ local welcomeFn = Instance.new("RemoteFunction")
 welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
 welcomeFn.Parent = remotes
 local teleportEv = Instance.new("RemoteEvent")
-teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks"), the altar "!" ("altar") and the portals ("isle<i>", "hub")
+teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks"), the incense button ("shrine"), the altar "!" ("altar") and the portals ("isle<i>", "hub")
 teleportEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
@@ -2596,6 +2596,13 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 			local at = Vector3.new(top.X + sx * (Config.ALTAR_RADIUS - 3), top.Y + 3, top.Z)
 			travel(player, s, CFrame.lookAt(at, Vector3.new(top.X, top.Y + 3, top.Z)))
 		end
+	elseif where == "shrine" then
+		-- the HUD's incense button (Incense.client): in front of the nearest shrine this player can
+		-- still bless today (Bless.target checks the day's limits)
+		local plot = Bless.target(player, s, p)
+		if plot then
+			travel(player, s, Bless.standAt(plot), true)
+		end
 	elseif type(where) == "string" then
 		-- a portal (Portals.luau): only from beside it, to a claimed island or the hub
 		local function near(at)
@@ -3026,6 +3033,7 @@ Shop.init({
 })
 Bless.init({
 	sessions = sessions,
+	plots = plots,
 	rate = rate,
 	publish = publish,
 	notify = notify,

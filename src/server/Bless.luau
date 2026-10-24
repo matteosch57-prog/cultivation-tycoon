@@ -37,6 +37,7 @@ local function paint(plot, lit, total)
 	if not m then
 		return
 	end
+	m:SetAttribute("Lit", lit) -- a full shrine (BLESS_GET_MAX) is no target for the HUD's incense button
 	for k = 1, Config.BLESS_GET_MAX do
 		local tip = m:FindFirstChild("Tip" .. k)
 		if tip then
@@ -84,6 +85,9 @@ function Bless.mark(player, s)
 		table.insert(ids, id)
 	end
 	player:SetAttribute("BlessedTo", table.concat(ids, ","))
+	-- the HUD's incense button (Incense.client): sticks left today, and the UTC day they count for
+	player:SetAttribute("IncenseLeft", math.max(0, Config.BLESS_GIVE_MAX - daily(s.data, "blessGave").n))
+	player:SetAttribute("IncenseDay", today())
 end
 
 -- Studio test hook (a solo Play cannot bless: your own shrine is hidden). Set the workspace
@@ -94,6 +98,37 @@ local function testOwner(plot, player)
 		return player
 	end
 	return plot.owner
+end
+
+-- the shrine this player can bless now that the incense button goes to (Main, Teleport "shrine"):
+-- someone else's (or a Studio test peak), not blessed by them today, not full; the nearest one.
+-- nil when none is free or no incense is left.
+function Bless.target(player, s, from)
+	local gave = daily(s.data, "blessGave")
+	if gave.n >= Config.BLESS_GIVE_MAX then
+		return nil
+	end
+	local best, bestD
+	for _, plot in api.plots do
+		local owner = testOwner(plot, player)
+		local os_ = owner and api.sessions[owner]
+		local test = owner == player and plot.owner == nil
+		if plot.shrineAt and os_ and (owner ~= player or test) and not gave.to[tostring(owner.UserId)] and daily(os_.data, "blessGot").n < Config.BLESS_GET_MAX then
+			local d = (plot.shrineAt.Position - from).Magnitude
+			if not bestD or d < bestD then
+				best, bestD = plot, d
+			end
+		end
+	end
+	return best
+end
+
+-- where a player lands to bless a shrine: on the avenue side, BLESS_STAND studs out, facing the pot
+-- (inside the prompt's reach)
+local BLESS_STAND = 7
+function Bless.standAt(plot)
+	local at = plot.shrineAt * CFrame.new(0, 4, BLESS_STAND)
+	return CFrame.lookAt(at.Position, (plot.shrineAt * CFrame.new(0, 4, 0)).Position)
 end
 
 local function trigger(plot, player)
@@ -251,11 +286,30 @@ function Bless.build(plot)
 	m:SetAttribute("PlotIndex", plot.index)
 	m.Parent = plot.folder
 	plot.shrine = m
+	plot.shrineAt = cf
 	paint(plot, 0, 0)
 end
 
 function Bless.init(deps)
 	api = deps
+	-- a new UTC day: every shrine goes cold and every player's incense refills without a rejoin
+	task.spawn(function()
+		local day = today()
+		while true do
+			task.wait(20)
+			if today() ~= day then
+				day = today()
+				for _, plot in api.plots do
+					Bless.refresh(plot)
+				end
+				for player, s in api.sessions do
+					if player.Parent then
+						Bless.mark(player, s)
+					end
+				end
+			end
+		end
+	end)
 end
 
 return Bless
