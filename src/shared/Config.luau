@@ -1473,8 +1473,9 @@ Config.STEPS = {
 -- (light C, authored in Edit), then NIGHT_SECONDS of the NIGHT look (blue hour just after sunset, mock
 -- docs/art/mocks/2026-10-23_night_N2_*), each change a NIGHT_FADE s blend. Every client computes the phase
 -- from the server clock, so all players see the same hour with nothing replicated (DayNight.client).
-Config.DAY_SECONDS = 600
-Config.NIGHT_SECONDS = 240
+-- Owner 2026-10-24: 5 min day and 5 min night ("night is cool").
+Config.DAY_SECONDS = 300
+Config.NIGHT_SECONDS = 300
 Config.NIGHT_FADE = 20
 Config.NIGHT = {
 	ClockTime = 18.35,
