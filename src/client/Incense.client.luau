@@ -71,7 +71,8 @@ local function scan()
 			local test = owner == 0 and workspace:GetAttribute("BlessTest") == true -- Studio hook (Bless.luau)
 			if test or (owner ~= 0 and owner ~= player.UserId) then
 				others = true
-				if (test or not blessed[tostring(owner)]) and (shrine:GetAttribute("Lit") or 0) < Config.BLESS_GET_MAX then
+				local key = test and "test" .. tostring(shrine:GetAttribute("PlotIndex")) or tostring(owner)
+				if not blessed[key] and (shrine:GetAttribute("Lit") or 0) < Config.BLESS_GET_MAX then
 					free = true
 				end
 			end
@@ -219,7 +220,7 @@ local function update()
 	local caption = "Bless"
 	if n <= 0 then
 		local s = 86400 - math.floor(workspace:GetServerTimeNow()) % 86400 -- to the UTC reset
-		caption = string.format("%d:%02d", s // 3600, s // 60 % 60)
+		caption = s >= 3600 and string.format("%dh %dm", s // 3600, s // 60 % 60) or string.format("%dm", math.max(1, s // 60)) -- not m:ss like the gift timer above
 	elseif os.clock() < note then
 		caption = "Nobody free"
 	end

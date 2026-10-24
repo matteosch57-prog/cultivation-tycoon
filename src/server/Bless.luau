@@ -113,7 +113,8 @@ function Bless.target(player, s, from)
 		local owner = testOwner(plot, player)
 		local os_ = owner and api.sessions[owner]
 		local test = owner == player and plot.owner == nil
-		if plot.shrineAt and os_ and (owner ~= player or test) and not gave.to[tostring(owner.UserId)] and daily(os_.data, "blessGot").n < Config.BLESS_GET_MAX then
+		local key = test and "test" .. plot.index or tostring(owner and owner.UserId)
+		if plot.shrineAt and os_ and (owner ~= player or test) and not gave.to[key] and daily(os_.data, "blessGot").n < Config.BLESS_GET_MAX then
 			local d = (plot.shrineAt.Position - from).Magnitude
 			if not bestD or d < bestD then
 				best, bestD = plot, d
@@ -123,12 +124,13 @@ function Bless.target(player, s, from)
 	return best
 end
 
--- where a player lands to bless a shrine: on the avenue side, BLESS_STAND studs out, facing the pot
--- (inside the prompt's reach)
+-- where a player lands to bless a shrine: on the avenue side, BLESS_STAND studs out (inside the
+-- prompt's reach), turned a little past the pot so the camera behind the avatar sees the shrine
+-- beside it (facing the pot head-on, the avatar hid it: Studio 2026-10-24)
 local BLESS_STAND = 7
 function Bless.standAt(plot)
-	local at = plot.shrineAt * CFrame.new(0, 4, BLESS_STAND)
-	return CFrame.lookAt(at.Position, (plot.shrineAt * CFrame.new(0, 4, 0)).Position)
+	local at = plot.shrineAt * CFrame.new(-1.5, 4, BLESS_STAND)
+	return CFrame.lookAt(at.Position, (plot.shrineAt * CFrame.new(-5, 4, 0)).Position)
 end
 
 local function trigger(plot, player)
@@ -143,7 +145,7 @@ local function trigger(plot, player)
 	s.blessBusy = true
 	local gave = daily(s.data, "blessGave")
 	local got = daily(os_.data, "blessGot")
-	local key = tostring(owner.UserId)
+	local key = test and "test" .. plot.index or tostring(owner.UserId) -- a test peak counts as its own sect
 	if gave.to[key] then
 		api_.notify:FireClient(player, "blessNo", "Already blessed today")
 	elseif gave.n >= Config.BLESS_GIVE_MAX then
