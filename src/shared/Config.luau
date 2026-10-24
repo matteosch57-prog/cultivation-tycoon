@@ -257,7 +257,7 @@ Config.PADS = {
 	{ id = "pagoda1", name = "Pagoda", cost = 21000, income = 150, unlock = 17, req = { "expand2" }, x = 72, z = -146, district = "heart", islet = "summit" },
 	{ id = "library", name = "Scripture Library", cost = 23000, income = 170, unlock = 18, req = { "expand2" }, x = 40, z = -140, district = "heart", islet = "summit" },
 	{ id = "moongate", name = "Moon Gate Garden", cost = 24000, income = 170, unlock = 18, req = { "expand2" }, x = 44, z = -184, district = "dao", islet = "summit" },
-	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 72, z = -146, district = "heart", islet = "summit" },
+	{ id = "pagoda2", name = "Pagoda Spire", cost = 26000, income = 200, unlock = 19, req = { "pagoda1" }, x = 58, z = -146, district = "heart", islet = "summit" }, -- its pad beside the Pagoda (on pagoda1's spot it stood inside the built Pagoda: owner 2026-10-24); the spire still stacks on pagoda1 (Builders.pagoda2)
 	-- Floating Lotus Isles (owner pick C 2026-10-22, captures docs/art/captures/2026-10-22_platform_C_v2_islets.jpg):
 	-- jade lotus discs on rock islets floating over the Meditation Platform, each seating `seats` more
 	-- disciples; floating stepping stones let the player jump up to each, one after the other

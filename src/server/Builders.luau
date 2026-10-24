@@ -285,8 +285,10 @@ function Builders.pagoda1(ctx, pad)
 	Kit.pagoda(ctx.folder, pad and ctx.frame * CFrame.new(pad.x, 0, pad.z) or ctx.frame * PAGODA_AT, 10, 1, 2, 5)
 end
 
+-- the spire stacks on the Pagoda: built on pagoda1's spot, its own pad stands beside it
 function Builders.pagoda2(ctx, pad)
-	Kit.pagoda(ctx.folder, pad and ctx.frame * CFrame.new(pad.x, 0, pad.z) or ctx.frame * PAGODA_AT, 10, 3, 5, 5)
+	local base = pad and Config.padById("pagoda1")
+	Kit.pagoda(ctx.folder, base and ctx.frame * CFrame.new(base.x, 0, base.z) or ctx.frame * PAGODA_AT, 10, 3, 5, 5)
 end
 
 function Builders.array(ctx, pad)
