@@ -1,9 +1,11 @@
 -- The Flying Sword button (D76): a row of the HUD's right stack (Player.HudSlots.Right, after the gift,
 -- the pill and the altar row; the left rail wraps at 4 rows on a 749 x 381 phone, Studio 2026-10-23),
--- shown once the player owns a sword pass. Tap: ride the last sword (SwordPick); tap again to step
--- off. Owning several: the first tap opens a small picker of the owned swords (the last one ridden
--- first, in gold). Jumping does NOT step off (it rises: SwordFly.client flies). The server mounts,
--- checks and switches it off (R9, src/server/SwordRide.luau); this only asks.
+-- shown once the player owns a sword pass. One tap flies the picked sword (SwordPick), one tap lands
+-- (owner 2026-10-24: "remove the swords small menu, one click to fly and unfly"). Owning several: a
+-- small round swap button (two arrows) on the button's corner moves to the next owned sword, at
+-- once while flying. The icon is the sword's own store icon (Toy.icon, the pass thumbnail). Jumping
+-- does NOT land (it rises: SwordFly.client flies). The server mounts, checks and switches it off
+-- (R9, src/server/SwordRide.luau); this only asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
@@ -19,7 +21,7 @@ local Toy = require(Shared:WaitForChild("Toy"))
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local FACE = Color3.fromHex("3A2C44") -- the HUD's button face
 local RIDING = Color3.fromHex("6FE0B4")
-local GOLD = Color3.fromHex("FFD34D")
+local SWAP = Color3.fromHex("7A5A96")
 local TIERS = Config.SWORD_RIDE.tiers
 
 local gui = Instance.new("ScreenGui")
@@ -50,70 +52,56 @@ local function owned()
 	return list
 end
 
-local function nameOf(key)
-	local it = Config.shopItem(key)
-	return it and it.name or key
-end
-
-local root -- the button's column (a row of the left rail)
+local root -- the button's column (a row of the right stack)
 local placeRow -- forward
-local picker -- the open picker row, if any
 local shown
 
-local function closePicker()
-	if picker then
-		picker:Destroy()
-		picker = nil
-	end
-end
-
 local function ride(key)
-	closePicker()
 	remotes.SwordRide:FireServer(key)
 end
 
--- the picker: one toy tile per owned sword beside the button, the last ridden first and gold-rimmed.
--- It floats in this script's own gui at the button's left (Studio 2026-10-23: inside a rail it
--- widened the row and pushed the HUD's other buttons 160 px over)
-local function openPicker(list, anchor)
-	closePicker()
+-- the sword the next tap flies: the last pick if still owned, else the best owned
+local function current(list)
 	local pick = player:GetAttribute("SwordPick")
-	table.sort(list, function(a, b)
-		if a == pick or b == pick then
-			return a == pick
-		end
-		return a < b
-	end)
-	local at = anchor.AbsolutePosition - gui.AbsolutePosition
-	picker = frame(gui, {
-		AutomaticSize = Enum.AutomaticSize.XY,
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.fromOffset(at.X - px(12), at.Y + anchor.AbsoluteSize.Y / 2),
-		ZIndex = 5,
-	})
-	Toy.list(picker, true, px(8))
-	for i, key in list do
-		local col = frame(picker, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, ZIndex = 5 })
-		Toy.list(col, false, px(1))
-		local holder, btn = Toy.button(col, UDim2.fromOffset(px(42), px(42)), key == pick and GOLD or FACE, px(11))
-		holder.LayoutOrder = 1
-		Toy.icon(btn, key, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 6 })
-		text(col, nameOf(key), px(11), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 6 })
-		btn.Activated:Connect(function()
-			ride(key)
-		end)
+	return table.find(list, pick) and pick or list[#list]
+end
+
+-- two white arrows, one each way, drawn from frames (the icon sheet has no swap glyph)
+local function swapIcon(parent, size)
+	local box = frame(parent, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size, size), ZIndex = 8 })
+	local t = math.max(2, math.floor(size * 0.14))
+	local L = size * 0.34
+	local function bar(cx, cy, len, rot)
+		local f = frame(box, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(cx, cy),
+			Size = UDim2.fromOffset(len, t),
+			Rotation = rot,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			ZIndex = 8,
+		})
+		Toy.corner(f, UDim.new(1, 0))
 	end
+	local c = math.cos(math.rad(45)) * L / 2
+	for _, a in { { y = 0.3, dir = 1 }, { y = 0.7, dir = -1 } } do
+		local y = size * a.y
+		local tipX = a.dir == 1 and size * 0.9 or size * 0.1
+		bar(size / 2, y, size * 0.8, 0)
+		bar(tipX - a.dir * c, y - c, L, a.dir * 45)
+		bar(tipX - a.dir * c, y + c, L, -a.dir * 45)
+	end
+	return box
 end
 
 local function draw()
 	local list = owned()
 	local riding = player:GetAttribute("Riding")
-	local key = table.concat(list, ",") .. "|" .. tostring(riding) .. "|" .. Toy.S
+	local key = table.concat(list, ",") .. "|" .. tostring(riding) .. "|" .. tostring(player:GetAttribute("SwordPick")) .. "|" .. Toy.S
 	if key == shown then
 		return
 	end
 	shown = key
-	closePicker()
 	if root then
 		root:Destroy()
 		root = nil
@@ -125,24 +113,38 @@ local function draw()
 	root.Name = "SwordRow"
 	Toy.list(root, false, px(1))
 	local face = riding and RIDING or FACE
-	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), face, px(11))
+	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), face, px(21))
 	holder.LayoutOrder = 1
 	btn.Name = "SwordButton"
-	local pick = player:GetAttribute("SwordPick")
-	local iconKey = riding or (table.find(list, pick) and pick) or list[#list]
-	Toy.icon(btn, iconKey, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	text(root, riding and "Off" or "Ride", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	Toy.icon(btn, riding or current(list), px(36), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	text(root, riding and "Land" or "Fly", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	btn.Activated:Connect(function()
 		if player:GetAttribute("Riding") then
 			ride(false)
-		elseif #list == 1 then
-			ride(list[1])
-		elseif picker then
-			closePicker()
 		else
-			openPicker(table.clone(list), btn)
+			ride(current(list))
 		end
 	end)
+	if #list > 1 then
+		-- the swap: the next owned sword (flying: switch now; on foot: the next one to fly)
+		local sHolder, sBtn = Toy.button(holder, UDim2.fromOffset(px(22), px(22)), SWAP, px(11))
+		sHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+		sHolder.Position = UDim2.fromOffset(px(2), px(2))
+		sHolder.ZIndex = 6
+		sBtn.ZIndex = 6
+		sBtn.Name = "SwordSwap"
+		swapIcon(sBtn, px(14))
+		sBtn.Activated:Connect(function()
+			local now = player:GetAttribute("Riding") or current(list)
+			local i = table.find(list, now) or 0
+			local nextKey = list[i % #list + 1]
+			if player:GetAttribute("Riding") then
+				ride(nextKey)
+			else
+				remotes.SwordRide:FireServer(nextKey, true)
+			end
+		end)
+	end
 	placeRow()
 end
 
@@ -173,7 +175,6 @@ task.spawn(function()
 	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
-			closePicker() -- it floats beside a button that is about to move
 			task.defer(placeRow)
 		end)
 	end

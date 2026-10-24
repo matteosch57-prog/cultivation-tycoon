@@ -190,7 +190,7 @@ function SwordRide.init(a)
 	local ev = Instance.new("RemoteEvent")
 	ev.Name = "SwordRide"
 	ev.Parent = api.remotes
-	ev.OnServerEvent:Connect(function(player, key)
+	ev.OnServerEvent:Connect(function(player, key, pickOnly)
 		if not Guard.allow(player, "SwordRide") then
 			return
 		end
@@ -209,7 +209,16 @@ function SwordRide.init(a)
 			end
 			SwordRide.stop(player, "player")
 		elseif type(key) == "string" and #key <= 24 then
-			start(player, key)
+			if pickOnly == true then
+				-- the HUD's swap button while on foot: only the next sword to fly (saved)
+				local s = api.sessions[player]
+				if s and tierOf(key) and s.passes and s.passes[key] then
+					s.data.swordPick = key
+					player:SetAttribute("SwordPick", key)
+				end
+			else
+				start(player, key)
+			end
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(player)

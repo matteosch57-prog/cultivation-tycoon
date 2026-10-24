@@ -1031,6 +1031,20 @@ function Toy.icon(parent, key, size, props)
 		return box
 	elseif item and item.rarity then
 		return well(parent, size, Config.rarityIndex(item.rarity), props)
+	elseif item and item.ride and (item.id or 0) ~= 0 then
+		-- a Flying Sword: its own store icon (the grade's disc, tools/shop_icons/sword_icons.js) from
+		-- the pass thumbnail (owner 2026-10-24: "show real sword icons")
+		local img = Instance.new("ImageLabel")
+		img.Name = "Icon"
+		img.BackgroundTransparency = 1
+		img.Image = string.format("rbxthumb://type=GamePass&id=%d&w=150&h=150", item.id)
+		img.Size = UDim2.fromOffset(size, size)
+		img.ZIndex = 2 -- over a toy button's glass cap
+		for k, v in props or {} do
+			img[k] = v
+		end
+		img.Parent = parent
+		return img
 	elseif item and item.ride and not ICON_ATLAS.keys[key] then
 		return swordGlyph(parent, size, item.ride, props)
 	elseif key == "robux" then
