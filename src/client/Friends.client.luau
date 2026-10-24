@@ -104,14 +104,15 @@ local function openCard()
 	bannerIcon(jrow, px(40), { LayoutOrder = 2 })
 	text(jrow, "Join the group", px(24), Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	local hint = text(col, "Both on the game page", px(17), Color3.fromHex("CBBFD6"), { LayoutOrder = 4 })
-	local claimHolder, claimBtn = Toy.button(col, UDim2.fromOffset(px(210), px(54)), GOLD, px(14))
+	local claimHolder, claimBtn = Toy.button(col, UDim2.fromOffset(px(300), px(54)), GOLD, px(14))
 	claimHolder.LayoutOrder = 5
 	Toy.dot(claimBtn, px(18)) -- where the Friends button's dot leads
 	local cl = frame(claimBtn, { Size = UDim2.fromScale(1, 1) })
 	Toy.list(cl, true, px(6))
 	text(cl, "3", px(24), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	text(cl, "Claim", px(24), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	text(cl, string.format("+%d%%", math.round(Config.GROUP_BONUS * 100)), px(20), JADE, { LayoutOrder = 3 })
+	-- owner 2026-10-24: "say +10% FOREVER" (the group gift never runs out)
+	text(cl, string.format("+%d%% FOREVER", math.round(Config.GROUP_BONUS * 100)), px(20), JADE, { LayoutOrder = 3 })
 	Toy.qiIcon(cl, px(22), { LayoutOrder = 4 })
 	local busy = false
 	claimBtn.Activated:Connect(function()
@@ -166,8 +167,7 @@ local function groupOpen()
 	return Config.GROUP_ID > 0 and player:GetAttribute("GroupBonus") ~= true
 end
 
--- the server lights the Sect Gift's red dot at most once a day while it is unclaimed (Dots.luau);
--- opening the card (MenuOpened "group") follows it
+-- the server keeps the Sect Gift's red dot lit until it is claimed (Dots.luau)
 local function groupDot()
 	local ok, t = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Dots") or "{}")
 	return ok and type(t) == "table" and t.group == true

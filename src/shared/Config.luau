@@ -591,11 +591,10 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
 -- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
 -- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
--- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's (unclaimed
--- group gift) lights at most once per DOT_GROUP_SECONDS.
+-- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's stays lit
+-- until the group gift is claimed (owner 2026-10-24: "keep the red dot always until claimed").
 Config.DOT_SHOP_FIRST = 120
 Config.SHOP_FREE_SECONDS = 300
-Config.DOT_GROUP_SECONDS = 24 * 3600
 Config.GIFT_VALUE = { 180, 120, 0, 300, 0, 900, 0, 0 }
 Config.GIFT_SUMMONS = { 0, 1, 0, 3, 0, 0, 5, 0 }
 Config.GIFT_PILL = { 0, 0, 300, 0, 0, 0, 0, 0 } -- seconds of 2x qi (adds to a running pill)

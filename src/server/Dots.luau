@@ -81,9 +81,9 @@ function Dots.compute(s)
 	if (d.qi or 0) >= Config.rebirthPrice((d.lives or 1) - 1) and Config.rebirthOpen(d.realm, (d.lives or 1) - 1, d.owned) and seen.reinc ~= (d.lives or 1) then
 		lit.reinc = true
 	end
-	-- the Sect Gift (group): unclaimed, at most once a day
-	local now = os.time()
-	if Config.GROUP_ID > 0 and not (s.inGroup and d.groupClaimed) and now - (seen.group or 0) >= Config.DOT_GROUP_SECONDS then
+	-- the Sect Gift (group): lit until it is claimed (owner 2026-10-24: "keep the red dot always until
+	-- claimed"); opening the card does not clear it
+	if Config.GROUP_ID > 0 and not (s.inGroup and d.groupClaimed) then
 		lit.group = true
 	end
 	-- the Shop: its free daily gift is waiting (claiming it clears the dot, not opening the Shop)
@@ -124,8 +124,6 @@ function Dots.seen(player, s, key)
 		seen.karma = kseen
 	elseif key == "reinc" then
 		seen.reinc = d.lives or 1
-	elseif key == "group" then
-		seen.group = os.time()
 	else
 		return
 	end
