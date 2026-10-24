@@ -13,6 +13,7 @@ local GuiService = game:GetService("GuiService")
 local SocialService = game:GetService("SocialService")
 local UserInputService = game:GetService("UserInputService")
 local AvatarEditorService = game:GetService("AvatarEditorService")
+local STUDIO = game:GetService("RunService"):IsStudio()
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -74,6 +75,29 @@ local function closeCard()
 		card:Destroy()
 		card = nil
 	end
+end
+
+-- is the game in the player's favorites? Roblox answers only after its inventory-read prompt
+-- (PromptAllowInventoryReadAccess, asked again each session); false on a No or an error
+local function favoritedNow()
+	local done = Instance.new("BindableEvent")
+	local conn = AvatarEditorService.PromptAllowInventoryReadAccessCompleted:Connect(function(result)
+		done:Fire(result)
+	end)
+	task.delay(60, function()
+		if conn.Connected then
+			done:Fire(nil)
+		end
+	end)
+	local okP = pcall(AvatarEditorService.PromptAllowInventoryReadAccess, AvatarEditorService)
+	local access = okP and done.Event:Wait() or nil
+	conn:Disconnect()
+	done:Destroy()
+	if access ~= Enum.AvatarPromptResult.Success then
+		return false
+	end
+	local ok, fav = pcall(AvatarEditorService.GetFavoriteAsync, AvatarEditorService, game.PlaceId, Enum.AvatarItemType.Asset)
+	return ok and fav == true
 end
 
 -- the card's foot: Invite, and the X in the corner
@@ -144,10 +168,18 @@ local function openCard()
 			local result = okP and done.Event:Wait() or nil
 			conn:Disconnect()
 			done:Destroy()
-			-- Only a "No" (PermissionDenied) or no answer stops the claim. A Yes can come back as Failed
-			-- (the game already in the favorites, or Studio): owner 2026-10-24 "it loops on asking and
-			-- never lets the claim"
-			if result ~= nil and result ~= Enum.AvatarPromptResult.PermissionDenied then
+			-- Live: only Success means the game is in the favorites now (DevForum 2717433: the prompt on
+			-- game.PlaceId really favorites in live servers). Studio cannot save a favorite and answers a
+			-- Yes with Failed, so there any answer but No pays, for testing (owner 2026-10-24: "it loops
+			-- on asking", then "doesnt add to fav but gives the boost")
+			local paid = result == Enum.AvatarPromptResult.Success
+				or (STUDIO and result ~= nil and result ~= Enum.AvatarPromptResult.PermissionDenied)
+			if not paid and not STUDIO and result == Enum.AvatarPromptResult.Failed then
+				-- a Failed in live (the game may be in the favorites already): ask Roblox itself, which
+				-- needs its inventory-read prompt first (AvatarEditorService docs)
+				paid = favoritedNow()
+			end
+			if paid then
 				local ok, res = pcall(function()
 					return remotes.ClaimFavorite:InvokeServer()
 				end)
