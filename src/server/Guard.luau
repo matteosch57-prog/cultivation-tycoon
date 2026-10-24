@@ -19,6 +19,7 @@ local LIMITS = {
 	ClaimStreak = { 1, 3 },
 	ClaimShopFree = { 1, 3 },
 	ClaimGroup = { 1, 3 },
+	ClaimFavorite = { 1, 3 },
 	ClaimWelcome = { 1, 3 },
 	SocialInvite = { 1, 3 },
 	Reincarnate = { 1, 2 },

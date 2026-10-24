@@ -546,6 +546,10 @@ Config.FRIEND_MAX = 3
 -- everywhere. 0 = no group yet: the Group button is hidden (the owner pastes the group id, R5)
 Config.GROUP_ID = 172156768 -- Cultivation Tycoon community (owner, 2026-10-22)
 Config.GROUP_BONUS = 0.1
+-- Favorite gift (owner 2026-10-24: "another 10% boost ... for favoriting game", no new sim on his
+-- word): FAVORITE_BONUS more qi everywhere, forever, once the player favorites the game from the
+-- Sect Gift card. Out of priceRate like the group gift.
+Config.FAVORITE_BONUS = 0.1
 -- Incense Blessing (owner pick A 2026-10-22, src/server/Bless.luau): hold a neighbour's shrine
 -- prompt BLESS_HOLD s; both get BLESS_SECONDS of their own offline-rate income (PROPOSED, the
 -- economy check confirms). Once per visitor and sect a UTC day; at most BLESS_GIVE_MAX given and

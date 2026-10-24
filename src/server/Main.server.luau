@@ -85,6 +85,9 @@ handsFn.Parent = remotes
 local groupFn = Instance.new("RemoteFunction")
 groupFn.Name = "ClaimGroup"
 groupFn.Parent = remotes
+local favoriteFn = Instance.new("RemoteFunction")
+favoriteFn.Name = "ClaimFavorite" -- the Sect Gift card's Favorite, after Roblox's favorite prompt succeeded
+favoriteFn.Parent = remotes
 local inviteEv = Instance.new("RemoteEvent")
 inviteEv.Name = "SocialInvite" -- the client opened Roblox's invite prompt (telemetry only)
 inviteEv.Parent = remotes
@@ -668,14 +671,15 @@ local function rate(s, away)
 	local past = Config.rebirthMult(rebirths(data))
 	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
 	local group = (s.inGroup and data.groupClaimed) and 1 + Config.GROUP_BONUS or 1
+	local favorite = data.favoriteClaimed and 1 + Config.FAVORITE_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
 	local index = Config.indexMult(data.index) -- the disciple index's stars (D60)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * welcome * harmony * index
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
--- realm and the disciples. Not a pill, the tide, friends, the group, the rebirth boost, Harmony (D67:
+-- realm and the disciples. Not a pill, the tide, friends, the group, the favorite gift, the rebirth boost, Harmony (D67:
 -- inside it the floor ate most of its +20%), the index (nor a disciple's own stars) or a paid multiplier (2x Qi pass, Welcome
 -- Pouch), so those make every goal come sooner instead of raising its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
 local function priceRate(s)
@@ -700,6 +704,9 @@ local function padRate(s)
 		r /= Config.PASS_QI_MULT
 	end
 	r /= 1 + (data.qiBonus or 0)
+	if data.favoriteClaimed then
+		r /= 1 + Config.FAVORITE_BONUS -- the favorite gift never raises a price (out of priceRate too)
+	end
 	r /= Config.rebirthMult(rebirths(data))
 	local dm = discipleMult(s)
 	local paid = 0
@@ -776,6 +783,7 @@ local function publish(player)
 	end
 	player:SetAttribute("FriendIds", table.concat(ids, ",")) -- head shots on the HUD card
 	player:SetAttribute("GroupBonus", (s.inGroup and d.groupClaimed) == true)
+	player:SetAttribute("FavoriteBonus", d.favoriteClaimed == true)
 	player:SetAttribute("WelcomeQi", d.welcomed == false and Config.WELCOME_QI or 0) -- > 0: show the intro
 	s.friendsPeak = math.max(s.friendsPeak or 0, friends)
 	player:SetAttribute("Realm", d.realm)
@@ -2406,6 +2414,25 @@ groupFn.OnServerInvoke = function(player)
 		end
 	end
 	return "notMember"
+end
+
+-- Favorite gift (owner 2026-10-24): the card opens Roblox's own favorite prompt and asks here once it
+-- reports Success. Roblox has no server check for a favorite (AvatarEditorService answers only on the
+-- client, behind its own inventory prompt), so this one trusts the ask: once per save, +10% qi.
+favoriteFn.OnServerInvoke = function(player)
+	if not Guard.allow(player, "ClaimFavorite") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	if not s then
+		return nil
+	end
+	if not s.data.favoriteClaimed then
+		s.data.favoriteClaimed = true
+		publish(player)
+		Telemetry.custom(player, "Social", "favorite_claim", "", Telemetry.minuteBucket(s.data.playSec or 0))
+	end
+	return "claimed"
 end
 
 -- Heavenly Gift (D36): paid once per save, on the intro's GO

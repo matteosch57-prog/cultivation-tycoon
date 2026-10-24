@@ -47,7 +47,7 @@ function Dots.freeReady(d)
 end
 
 -- what is lit now: { disc = { [name] = newCount }, karma = { "seat:1", ... }, shop = "free",
--- group = true, reinc = true }
+-- group = true, fav = true, reinc = true }
 function Dots.compute(s)
 	local d = s.data
 	local seen = seenOf(d)
@@ -85,6 +85,10 @@ function Dots.compute(s)
 	-- claimed"); opening the card does not clear it
 	if Config.GROUP_ID > 0 and not (s.inGroup and d.groupClaimed) then
 		lit.group = true
+	end
+	-- the favorite gift, on the same card: lit until it is claimed
+	if not d.favoriteClaimed then
+		lit.fav = true
 	end
 	-- the Shop: its free daily gift is waiting (claiming it clears the dot, not opening the Shop)
 	if Dots.freeReady(d) then
