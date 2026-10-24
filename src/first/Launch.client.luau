@@ -47,6 +47,9 @@ local INK = Color3.fromHex("1B1420")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 local MAX_WAIT = 30 -- s: past this the tap is offered whatever is missing (never a dead screen)
 local DIVE = 1.6 -- s of camera dive after the tap
+-- s before SKIP shows (owner 2026-10-24: "add a skip in loading, it can be long"); it only shows once
+-- the avatar stands on its peak, so a skip never enters without one (the art may still be loading)
+local SKIP_AFTER = 5
 
 local function tween(obj, t, props, style, dir, reps, rev, delay)
 	local tw = TweenService:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out, reps or 0, rev or false, delay or 0), props)
@@ -225,7 +228,40 @@ task.spawn(function()
 end)
 
 local ready = false
-local tapPrompt
+local tapPrompt, skip
+local skipBtn = Instance.new("TextButton")
+skipBtn.Name = "Skip"
+skipBtn.AnchorPoint = Vector2.new(1, 1)
+skipBtn.Position = UDim2.new(1, -px(24), 1, -px(20))
+skipBtn.AutomaticSize = Enum.AutomaticSize.XY
+skipBtn.Size = UDim2.new()
+skipBtn.BackgroundColor3 = Color3.fromHex("163A30")
+skipBtn.BackgroundTransparency = 0.2
+skipBtn.FontFace = FONT
+skipBtn.Text = "SKIP"
+skipBtn.TextSize = px(22)
+skipBtn.TextColor3 = QI_PALE
+skipBtn.AutoButtonColor = true
+skipBtn.Visible = false
+skipBtn.ZIndex = 3
+do
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(18)), UDim.new(0, px(18))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(8)), UDim.new(0, px(8))
+	pad.Parent = skipBtn
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = skipBtn
+	local st = Instance.new("UIStroke")
+	st.Color = QI_LIGHT
+	st.Thickness = 2
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = skipBtn
+end
+skipBtn.Parent = gui
+skipBtn.Activated:Connect(function()
+	skip()
+end)
 local conn
 conn = RunService.RenderStepped:Connect(function(dt)
 	if player:GetAttribute("SaveWait") then
@@ -243,9 +279,11 @@ conn = RunService.RenderStepped:Connect(function(dt)
 		clip.Size = UDim2.new(1, 0, fill, 0)
 	end
 	status.Text = if player:GetAttribute("SaveWait") then "Your last server is still saving your sect..." else string.format("Gathering qi... %d%%", math.floor(fill * 100))
+	skipBtn.Visible = os.clock() - startedAt > SKIP_AFTER and steps.peak and steps.body and not player:GetAttribute("SaveWait")
 	if fill >= 1 and not ready then
 		ready = true
 		conn:Disconnect()
+		skipBtn.Visible = false -- the tap enters now
 		tapPrompt()
 	end
 end)
@@ -257,6 +295,7 @@ local function enter()
 		return
 	end
 	entered = true
+	skipBtn:Destroy()
 	local cam = workspace.CurrentCamera
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -295,6 +334,16 @@ local function enter()
 	end)
 end
 
+-- SKIP: enter now, the drop not yet full (shown only with the avatar on its peak)
+skip = function()
+	if ready or not skipBtn.Visible then
+		return
+	end
+	ready = true
+	conn:Disconnect()
+	enter()
+end
+
 tapPrompt = function()
 	status.Text = "TAP TO ENTER"
 	status.TextSize = px(30)
@@ -327,11 +376,17 @@ tapPrompt = function()
 	end)
 end
 
--- Studio test hook: player attribute LaunchTap = true taps (no mouse input in tests)
+-- Studio test hooks: player attribute LaunchTap = true taps, LaunchSkip = true presses SKIP (no mouse
+-- input in tests)
 if RunService:IsStudio() then
 	player:GetAttributeChangedSignal("LaunchTap"):Connect(function()
 		if player:GetAttribute("LaunchTap") then
 			enter()
+		end
+	end)
+	player:GetAttributeChangedSignal("LaunchSkip"):Connect(function()
+		if player:GetAttribute("LaunchSkip") then
+			skip()
 		end
 	end)
 end

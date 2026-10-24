@@ -436,7 +436,11 @@ local function covered()
 end
 
 -- once a day, after the launch screen and the gift (a new save waits FIRST_DELAY s)
-local hadGift = (player:GetAttribute("WelcomeQi") or 0) > 0
+-- (a new save: NewSave since the gift is paid on join, WelcomeQi while an intro was still shown)
+local function newSave()
+	return player:GetAttribute("NewSave") == true or (player:GetAttribute("WelcomeQi") or 0) > 0
+end
+local hadGift = newSave()
 local shownToday = false
 task.spawn(function()
 	while true do
@@ -445,7 +449,7 @@ task.spawn(function()
 		if not ready then
 			shownToday = false
 		elseif not shownToday and not open and player:GetAttribute("LaunchDone") and (player:GetAttribute("WelcomeQi") or 0) == 0 then
-			if (player:GetAttribute("WelcomeQi") or 0) > 0 then
+			if newSave() then
 				hadGift = true
 			end
 			if (not hadGift or time() > FIRST_DELAY) and not covered() then

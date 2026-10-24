@@ -784,7 +784,7 @@ local function publish(player)
 	player:SetAttribute("FriendIds", table.concat(ids, ",")) -- head shots on the HUD card
 	player:SetAttribute("GroupBonus", (s.inGroup and d.groupClaimed) == true)
 	player:SetAttribute("FavoriteBonus", d.favoriteClaimed == true)
-	player:SetAttribute("WelcomeQi", d.welcomed == false and Config.WELCOME_QI or 0) -- > 0: show the intro
+	player:SetAttribute("WelcomeQi", d.welcomed == false and Config.WELCOME_QI or 0) -- > 0: show the intro (never since the gift is paid on join)
 	s.friendsPeak = math.max(s.friendsPeak or 0, friends)
 	player:SetAttribute("Realm", d.realm)
 	player:SetAttribute("RealmName", Config.realmName(d.realm))
@@ -1876,6 +1876,14 @@ local function onJoin(player)
 	-- existed counts as already welcomed. Stamped once, so it can never be paid twice.
 	if data.welcomed == nil then
 		data.welcomed = (data.sessions or 0) > 0
+	end
+	-- paid here on join, no GO to press (owner 2026-10-24, after new players left on the intro: "remove
+	-- the go and just make them start with qi"); NewSave lets the client hold its day-one cards back
+	if data.welcomed == false then
+		data.welcomed = true
+		data.qi += Config.WELCOME_QI
+		Telemetry.source(player, data, Config.WELCOME_QI, "welcome")
+		player:SetAttribute("NewSave", true)
 	end
 	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
 	if data.tips == nil then
