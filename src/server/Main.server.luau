@@ -1687,6 +1687,23 @@ local function watchDeath(player, char)
 	end)
 end
 
+-- a fall off the islands (owner 2026-10-24: "make the respawn faster when falling"): the floaty fall
+-- took ~10 s to reach the kill height, then RespawnTime; below Config.VOID_Y the avatar is set back on
+-- its peak at once, facing in, with no death (Obby and simulator games do the same)
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		for player in sessions do
+			local char = player.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if hrp and hrp.Position.Y < Config.VOID_Y then
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				placeOnPeak(player)
+			end
+		end
+	end
+end)
+
 local function onJoin(player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"

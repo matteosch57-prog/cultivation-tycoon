@@ -4,9 +4,26 @@
 -- Main.server sets FaceAt / FaceLook and bumps FaceTurn on each placement (spawn on the peak, the
 -- MY BASE and RANKINGS teleports); the launch screen's dive ends where this leaves the camera.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local player = Players.LocalPlayer
-local BACK, UP = 14, 6 -- studs behind and above the avatar, about the default follow distance
+local BACK, UP = 17, 7 -- studs behind and above the avatar, about the start zoom below
+
+-- the start zoom (owner 2026-10-24: "make the default zoom higher like 20%"): Roblox starts the follow
+-- camera 12.5 studs out; the camera module only moves out to a raised minimum, so the minimum is held
+-- at CAMERA_ZOOM until the follow camera runs (the launch screen holds it first), then given back, and
+-- the player can zoom in again
+task.spawn(function()
+	local before = player.CameraMinZoomDistance
+	player.CameraMinZoomDistance = math.max(before, Config.CAMERA_ZOOM)
+	local t0 = os.clock()
+	repeat
+		task.wait(0.1)
+	until (player.Character and workspace.CurrentCamera.CameraType == Enum.CameraType.Custom) or os.clock() - t0 > 180
+	task.wait(0.3)
+	player.CameraMinZoomDistance = before
+end)
 
 local turn = 0
 local function face()

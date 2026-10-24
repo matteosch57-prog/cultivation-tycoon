@@ -77,8 +77,12 @@ Config.NATURE_MESH = {
 
 -- Movement (Movement.client.luau, owner 2026-10-21: "walking a bit faster, redo moving and jumping,
 -- fit our style"): a cultivator's light step. Roblox defaults are walk 16, jump height 7.2.
+Config.CAMERA_ZOOM = 15 -- studs: the follow camera's start distance (Roblox's 12.5 + 20%, owner 2026-10-24)
+-- a fall into the sky (owner 2026-10-24: "make the respawn faster when falling"): below this world Y
+-- (the land stands at ~2) the avatar is set back on its peak at once, no death (Main voidWatch)
+Config.VOID_Y = -30
 Config.MOVE = {
-	walk = 28, -- studs/s (owner 2026-10-22: "way faster")
+	walk = 30.8, -- studs/s (owner 2026-10-22: "way faster"; 2026-10-24 +10%, swords too: their speeds are x this)
 	jumpHeight = 8.5, -- studs
 	floatFall = 0.45, -- share of gravity taken away while falling (a soft, floaty landing)
 	airSteps = 1, -- cloud steps: jump again in the air, once per jump
