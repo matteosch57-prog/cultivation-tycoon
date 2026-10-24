@@ -561,3 +561,9 @@ the log as a D-number.
   bridge after bridge, from wherever the feet are (on a bridge too). Copies the standard first-egg
   tutorial (Pet Simulator 99, Bee Swarm Simulator's free first bee). qisim (engaged / median, 30 days,
   3 seeds) moves nothing past noise: realm 2 at 2.8 min (was 2.6), every later mark within 2%.
+- **D84 Incense button (owner 2026-10-24, pick A of docs/art/mocks/2026-10-24_incense_button_ABC.jpg):**
+  a round button in the HUD's right stack (src/client/Incense.client.luau) with the incense left today on
+  an ember count badge (Pet Simulator 99 / Bee Swarm item counts). One tap teleports you in front of the
+  nearest neighbour's shrine you can still bless (Teleport "shrine", Bless.target); the 3 s hold there
+  stays (D57 keeps the visit, like Adopt Me's trick-or-treat buckets). Shown only while another sect is
+  on the server; gold when a shrine is free; no incense left = the countdown to the UTC reset.
