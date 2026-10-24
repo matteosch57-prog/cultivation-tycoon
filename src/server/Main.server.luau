@@ -2771,13 +2771,15 @@ local function checkOrbs(player, s, hrp)
 		if not orb.Parent then
 			table.remove(s.orbs, i)
 		elseif (orb.Position - hrp.Position).Magnitude < 4.5 or (auto and os.clock() - (orb:GetAttribute("Age") or 0) > 1.5) then
+			local walked = (orb.Position - hrp.Position).Magnitude < 4.5
 			local gain = math.floor(rate(s) * Config.ORB_VALUE)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
 			s.data.tips = s.data.tips or {}
-			if not s.data.tips.orb then
-				-- the tip stays for the first few orbs (Config.ORB_TIP_TIMES)
+			if not s.data.tips.orb and walked then
+				-- the tip stays for the first few orbs walked into (Config.ORB_TIP_TIMES; the Auto Orbs
+				-- pass pulls them in after 1.5 s, which does not count)
 				s.data.orbTips = (s.data.orbTips or 0) + 1
 				if s.data.orbTips >= Config.ORB_TIP_TIMES then
 					s.data.tips.orb = true
