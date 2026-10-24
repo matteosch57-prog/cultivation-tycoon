@@ -65,7 +65,7 @@ function PerfMark.recent(window: number): string
 			sum[n] = 0
 			table.insert(order, n)
 		end
-		sum[n] += durs[k]
+		sum[n] = math.max(sum[n], durs[k]) -- the worst single run: a sum of every frame's run read as a spike
 	end
 	local out = {}
 	for _, n in order do

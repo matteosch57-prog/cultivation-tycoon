@@ -29,7 +29,7 @@ local POSES = require(Shared:WaitForChild("CultivatorPoses"))
 
 local TAG = "Cultivator"
 local FAR = 150
-local BODY_R = 6 -- studs: a figure with its aura, for the on-screen test
+local BODY_R = 9 -- studs: a figure with its aura and sword fan, for the on-screen test
 local GLOW = 90
 local SLOW = 3 -- a figure outside the full set moves every SLOW-th frame (its motion is slow anyway)
 -- [small device or low graphics] = the budgets
@@ -436,7 +436,13 @@ RunService.PreSimulation:Connect(function(frameDt)
 			-- outside the full set the figure holds its float height: moving the anchored root moves the
 			-- whole avatar (every limb, robe and accessory), and the swords, halo and orbs ride on it, so
 			-- a held figure only breathes through its joints (Studio 2026-10-24: 2.4 ms a frame for 41)
-			local up = f.full and (HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k) or HOVER
+			-- a figure joining or leaving the full set eases between the two (a straight switch jumped
+			-- up to 0.24 studs in one frame), then a held figure stops writing at all
+			local target = f.full and (HOVER + BOB * math.sin(t / FLOAT * TAU) + 0.25 * k) or HOVER
+			local up = target
+			if f.up and math.abs(target - f.up) > 0.02 then
+				up = f.up + (target - f.up) * math.min(1, dt * 3)
+			end
 			local moved = up ~= f.up
 			f.up = up
 			local lift = f.pivot + Vector3.new(0, up, 0)
@@ -553,7 +559,9 @@ RunService.PreSimulation:Connect(function(frameDt)
 			end
 			-- the spirit swords hover with the figure, each on its own small rhythm (a held figure's
 			-- swords hold still with it)
-			for i, pieces in (f.full or moved) and f.swordBase or {} do
+			-- (they bob 0.12 studs: every other frame is enough, and they are most of the parts moved)
+			local swordsNow = if f.full then (frame + f.slot) % 2 == 0 else moved
+			for i, pieces in swordsNow and f.swordBase or {} do
 				local hover = Vector3.new(0, up + (f.full and 0.12 * math.sin(now * 1.7 + i * 0.9) or 0), 0)
 				for _, piece in pieces do
 					table.insert(parts, piece.part)
