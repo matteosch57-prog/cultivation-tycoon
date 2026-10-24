@@ -476,10 +476,16 @@ end
 -- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
 Config.GUIDE_BUILT = 5 -- always shown in realm 1 until this many buildings stand
 Config.GUIDE_IDLE = 20 -- afterwards only after this many seconds standing still
--- the recruiting building comes first (owner 2026-10-23: "should push to do the recruiting building in
--- priority"): once its pad or its bridge's is open, the HUD "Next" arrow and the guide trail lead
--- there (bridges first, the hall last) before the cheapest pad, and the trail stays on until it stands
-Config.GUIDE_PRIORITY = { "bridge_fields", "bridge_disciples", "hall" }
+-- the tutorial order (owner 2026-10-23: "should push to do the recruiting building in priority";
+-- 2026-10-24: "the meditation center should be also in the first things"): while one of these pads
+-- is open, the HUD "Next" arrow and the guide trail lead to the first open one in this order (D82's
+-- realm 1 disciple core) before the cheapest pad, and the trail stays on until the core stands
+Config.GUIDE_PRIORITY = { "platform", "bridge_fields", "bridge_disciples", "hall", "bridge_dao", "array" }
+-- the recruit tutorial (owner 2026-10-24): the first Disciple Hall of a save that never recruited
+-- comes with FREE_RECRUITS free recruits, then the trail leads to the Meditation Platform to see the
+-- newcomer, done within SEE_DISCIPLE_RANGE studs of its centre (Main income tick, Tips.client)
+Config.FREE_RECRUITS = 1
+Config.SEE_DISCIPLE_RANGE = 22
 -- `pads`: the player's open pad parts (PadId, Cost attributes). Returns the pad to lead to, and
 -- whether it is the priority one
 function Config.guidePick(pads)
@@ -490,12 +496,9 @@ function Config.guidePick(pads)
 			best = p
 		end
 	end
-	local chain = Config.GUIDE_PRIORITY
-	if byId[chain[#chain]] or byId[chain[#chain - 1]] then
-		for _, id in chain do
-			if byId[id] then
-				return byId[id], true
-			end
+	for _, id in Config.GUIDE_PRIORITY do
+		if byId[id] then
+			return byId[id], true
 		end
 	end
 	return best, false

@@ -226,6 +226,9 @@ function World:buy(o)
 			d.chestSummons = math.max(d.chestSummons or 0, C.CHEST_STARTER_SUMMONS)
 			s.chestShown = false
 		end
+		if o.id == "hall" and (d.recruited or 0) == 0 and not (d.tips and d.tips.recruit) then
+			d.freeRecruits = math.max(d.freeRecruits or 0, C.FREE_RECRUITS)
+		end
 	elseif o.kind == "hire" then
 		self.sink.hire = (self.sink.hire or 0) + o.cost
 		d.workers = d.workers or {}

@@ -36,6 +36,7 @@ local MIRRORS = {
 		"local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48",
 		"local cost = Config.workerCost(pad, n, s.data.realm)",
 		"s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI",
+		"s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)",
 		"local gain = math.floor(rate(s) * Config.ORB_VALUE)", -- orbs
 		"if #s.orbs >= Config.ORB_MAX then",
 	},

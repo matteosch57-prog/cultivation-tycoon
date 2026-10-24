@@ -785,6 +785,8 @@ local function publish(player)
 		table.insert(tips, key)
 	end
 	player:SetAttribute("Tips", table.concat(tips, ",")) -- first-time tips already done (Tips.client)
+	player:SetAttribute("FreeRecruits", d.freeRecruits or 0) -- the recruit tutorial (Tips.client, Hud)
+	player:SetAttribute("SeeDisciple", d.seeDisciple == true)
 	player:SetAttribute("PillIn", d.owned.furnace and math.max(0, math.ceil(Config.PILL_INTERVAL - (d.pillTimer or 0))) or 0)
 	player:SetAttribute("BoostUntil", d.boostUntil or 0)
 	-- playtime gifts (D49, daily): GiftIn = seconds to the next one (0 = ready), -1 = all claimed
@@ -1396,6 +1398,12 @@ refreshPads = function(player, s)
 							s.chestShown = false
 						end
 					end
+					-- the recruit tutorial (owner 2026-10-24): a new save's first Disciple Hall comes with a
+					-- free recruit (Tips.client points at the Recruit button), then the trail leads to the
+					-- Meditation Platform to see the newcomer (data.seeDisciple, the income tick)
+					if pad.id == "hall" and (s.data.recruited or 0) == 0 and not (s.data.tips and s.data.tips.recruit) then
+						s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)
+					end
 					refreshPads(player, s)
 					publish(player)
 					notify:FireClient(player, "built", pad.name)
@@ -1798,7 +1806,7 @@ local function onJoin(player)
 	end
 	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
 	if data.tips == nil then
-		data.tips = data.welcomed and { orb = true, pill = true, chest = true } or {}
+		data.tips = data.welcomed and { orb = true, pill = true, chest = true, recruit = true } or {}
 	end
 	-- the starter idle chest is filled when the Meditation Platform is built (its buy, refreshPads):
 	-- the chest stands only from then
@@ -2134,15 +2142,28 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 			want = n
 		end
 	end
-	local cost = Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
+	-- the tutorial's free recruit (FREE_RECRUITS with the first Disciple Hall): one, at no qi, and it
+	-- does not raise the next price
+	local free = (s.data.freeRecruits or 0) > 0
+	if free then
+		want = 1
+	end
+	local cost = free and 0 or Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
 	if s.data.qi < cost then
 		return { ok = false, reason = "Not enough Qi" }
 	end
 	s.recruiting = true
-	s.data.qi -= cost
 	s.data.recruited += want -- lifetime (telemetry)
-	s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
-	Telemetry.sink(player, s.data, cost, "recruit")
+	if free then
+		s.data.freeRecruits -= 1
+		s.data.tips = s.data.tips or {}
+		s.data.tips.recruit = true
+		s.data.seeDisciple = s.data.owned.platform == true -- next: walk to the platform to see it
+	else
+		s.data.qi -= cost
+		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
+		Telemetry.sink(player, s.data, cost, "recruit")
+	end
 	local results, best, bestLook, bestShiny, bestKept, bestKeptBonus, bestKeptKey = {}, nil, nil, false, false, -1, nil
 	local rolled = {} -- ["rarity|kept"] = count: one Recruit event per outcome, not one per roll (an
 	-- x50 alone was a quarter of the server's minute analytics budget, Telemetry `spend`)
@@ -2978,6 +2999,14 @@ while true do
 				if d.pillTimer >= Config.PILL_INTERVAL then
 					d.pillReady = true
 					notify:FireClient(player, "pill")
+				end
+			end
+			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
+			if d.seeDisciple then
+				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local off = hrp and s.plot.frame:PointToObjectSpace(hrp.Position)
+				if not d.owned.platform or (off and Vector2.new(off.X, off.Z).Magnitude < Config.SEE_DISCIPLE_RANGE) then
+					d.seeDisciple = nil
 				end
 			end
 			-- Qi Gathering Array drops an orb every ORB_INTERVAL

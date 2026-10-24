@@ -101,9 +101,13 @@ local function billboard(m, size, offset)
 	local b = Instance.new("BillboardGui")
 	b.Name = "DiscipleInspect"
 	b.ResetOnSpawn = false
-	b.Adornee = m:FindFirstChild("Cushion")
+	local cushion = m:FindFirstChild("Cushion")
+	b.Adornee = cushion
 	b.Size = size
-	b.StudsOffsetWorldSpace = offset
+	-- StudsOffsetWorldSpace is in the adornee's own axes, and the round cushion is a cylinder turned on
+	-- its side (its Y points along the floor), so a plain (0, y, 0) put the crowns in the ground beside
+	-- the disciple (Matteo 2026-10-24): turn the world-up offset into the cushion's frame
+	b.StudsOffsetWorldSpace = cushion and cushion.CFrame:VectorToObjectSpace(offset) or offset
 	b.AlwaysOnTop = true
 	b.LightInfluence = 0
 	b.Parent = playerGui

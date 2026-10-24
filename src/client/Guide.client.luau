@@ -20,7 +20,7 @@ local JADE = Color3.fromHex("6FD6AA")
 local EDGE = Color3.fromHex("225C4A")
 local SPACING = 3.2 -- studs between chevrons
 local SPEED = 2.2 -- studs per second toward the pad
-local POOL = 30 -- chevrons at most (a ~95-stud trail)
+local POOL = 36 -- chevrons at most (a ~115-stud trail)
 local NEAR = 5 -- hide the last stretch: the pad's own beacon takes over
 
 local folder = Instance.new("Folder")
@@ -101,9 +101,10 @@ local function groundY(x, z, fallback)
 	return hit and hit.Position.Y or fallback
 end
 
--- Sky Islets: the trail never points across open sky. When the pad stands on another islet, it
--- leads to the bridge to take first (the foot of the bridge toward it, or this islet's own bridge
--- back toward the heart). Islets and bridges: Config.ISLETS, Config.bridgeEnds.
+-- Sky Islets: the trail never points across open sky. When the goal stands on another islet, it
+-- follows the whole way there, bridge after bridge (out over the bridges toward it, or back over this
+-- islet's own bridge toward the heart), with no gap at the bridges (owner 2026-10-24: "they cut at
+-- bridges, it shouldnt be"). Islets and bridges: Config.ISLETS, Config.bridgeEnds.
 local function peakFrame()
 	local idx = player:GetAttribute("PlotIndex")
 	if not idx then
@@ -113,34 +114,94 @@ local function peakFrame()
 	local c = Vector3.new(math.cos(a) * Config.PLOT_RADIUS, 0, math.sin(a) * Config.PLOT_RADIUS)
 	return CFrame.lookAt(c, Vector3.zero) * CFrame.Angles(0, math.pi, 0)
 end
--- is islet `a` on the way from the heart to islet `b` (or b itself)?
-local function leadsTo(a, b)
-	while b do
-		if a == b then
-			return true
-		end
-		b = Config.ISLETS[b].from
+local BRIDGE_HALF = 4 -- studs: feet this close to a bridge's line, between its ends, are on it
+-- islet `name`, then each islet on the way back to the heart
+local function chain(name)
+	local list = {}
+	while name do
+		table.insert(list, name)
+		name = Config.ISLETS[name].from
 	end
-	return false
+	return list
 end
-local function waypoint(fromWorld, toWorld)
+-- the corners of the walk to `toWorld` (world, Y = 0), ending at it: 2 studs before and after each
+-- bridge it crosses
+local function route(fromWorld, toWorld)
+	local goal = Vector3.new(toWorld.X, 0, toWorld.Z)
 	local frame = peakFrame()
 	if not frame then
-		return toWorld
+		return { goal }
 	end
 	local lf, lt = frame:PointToObjectSpace(fromWorld), frame:PointToObjectSpace(toWorld)
-	local here, there = Config.isletAt(lf.X, lf.Z), Config.isletAt(lt.X, lt.Z)
-	if here == there then
-		return toWorld
+	local down = chain((Config.isletAt(lt.X, lt.Z)))
+	local onDown = {}
+	for i, name in down do
+		onDown[name] = i
 	end
+	-- on a bridge, the walk goes on over it: the far end of it toward the goal comes first
+	local here = Config.isletAt(lf.X, lf.Z)
+	local feet = Vector3.new(lf.X, 0, lf.Z)
 	for name, i in Config.ISLETS do
-		if i.from == here and leadsTo(name, there) then -- go out over the bridge toward it
+		if i.bridge then
 			local foot, land = Config.bridgeEnds(name)
-			return frame * (foot + (foot - land).Unit * 2)
+			local ab = land - foot
+			local t = (feet - foot):Dot(ab) / ab:Dot(ab)
+			if t > 0 and t < 1 and (foot + ab * t - feet).Magnitude < BRIDGE_HALF then
+				here = if onDown[name] then i.from else name
+			end
 		end
 	end
-	local foot, land = Config.bridgeEnds(here) -- go back over this islet's own bridge
-	return frame * (land + (land - foot).Unit * 2)
+	local up = chain(here)
+	local pts = {}
+	local function cross(a, b) -- over one bridge, from end a to end b (peak frame)
+		local d = (b - a).Unit * 2
+		table.insert(pts, frame * (a - d))
+		table.insert(pts, frame * (b + d))
+	end
+	local meet = #down
+	for _, name in up do -- back toward the heart until the goal's chain
+		if onDown[name] then
+			meet = onDown[name]
+			break
+		end
+		local foot, land = Config.bridgeEnds(name)
+		cross(land, foot)
+	end
+	for i = meet - 1, 1, -1 do -- then out to the goal's islet
+		local foot, land = Config.bridgeEnds(down[i])
+		cross(foot, land)
+	end
+	for i, p in pts do
+		pts[i] = Vector3.new(p.X, 0, p.Z)
+	end
+	table.insert(pts, goal)
+	return pts
+end
+-- the trail's line from the feet `from` along `pts`: when the feet are on it (on a bridge, say),
+-- it starts from the nearest point of it, so the corners already walked never pull the trail back
+local ON_ROUTE = 8
+local function trailLine(from, pts)
+	local bestD, bestK, bestQ = (pts[1] - from).Magnitude, 0, nil
+	for k = 1, #pts - 1 do
+		local a, b = pts[k], pts[k + 1]
+		local ab = b - a
+		local t = ab.Magnitude > 0 and math.clamp((from - a):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+		local q = a + ab * t
+		local d = (q - from).Magnitude
+		if d < bestD then
+			bestD, bestK, bestQ = d, k, q
+		end
+	end
+	local line = { from }
+	if bestK > 0 and bestD < ON_ROUTE then
+		table.insert(line, bestQ)
+	else
+		bestK = 0
+	end
+	for k = bestK + 1, #pts do
+		table.insert(line, pts[k])
+	end
+	return line
 end
 
 local target, priority
@@ -169,9 +230,11 @@ RunService.RenderStepped:Connect(function(dt)
 	local goalPos = guideTo or (target and target.Parent and target.Position)
 	local want = hrp and goalPos and (guideTo or early or priority or still >= Config.GUIDE_IDLE)
 	local from = hrp and Vector3.new(hrp.Position.X, 0, hrp.Position.Z)
-	local goal = goalPos and hrp and waypoint(hrp.Position, goalPos)
-	local to = goal and Vector3.new(goal.X, 0, goal.Z)
-	local length = want and (to - from).Magnitude - NEAR or 0
+	local line = want and trailLine(from, route(hrp.Position, goalPos))
+	local length = -NEAR
+	for k = 2, line and #line or 0 do
+		length += (line[k] - line[k - 1]).Magnitude
+	end
 	if length < 2 then
 		for _, c in chevrons do
 			hide(c)
@@ -179,15 +242,21 @@ RunService.RenderStepped:Connect(function(dt)
 		PerfMark.finish("guide", t0)
 		return
 	end
-	local dir = (to - from).Unit
 	offset = (offset + SPEED * dt) % SPACING
 	local padY = goalPos.Y
+	local k, segStart = 2, 0 -- the stretch of the line the next chevron falls on
 	for i, c in chevrons do
 		local d = 1.5 + (i - 1) * SPACING + offset
+		while k < #line and d > segStart + (line[k] - line[k - 1]).Magnitude do
+			segStart += (line[k] - line[k - 1]).Magnitude
+			k += 1
+		end
 		if d > length then
 			hide(c)
 		else
-			local p = from + dir * d
+			local a, b = line[k - 1], line[k]
+			local dir = (b - a).Magnitude > 0 and (b - a).Unit or Vector3.zAxis
+			local p = a + dir * (d - segStart)
 			local y = groundY(p.X, p.Z, padY) + 0.08
 			-- fade in at the feet and out before the pad, so the trail never pops
 			local alpha = math.max(0, 1 - math.min((d - 1.5) / 3, (length - d) / 3, 1))

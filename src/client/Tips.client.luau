@@ -4,7 +4,9 @@
 -- target with a bobbing gold arrow and takes over the jade guide trail (local attribute TipTarget,
 -- Guide.client); the pill tip sits beside the HUD's pill button and points at it. The server
 -- marks a tip done when the player does the thing (data.tips, player attribute Tips); nothing here
--- is saved or granted. Waits for the launch screen (LaunchDone) and the Heavenly Gift.
+-- is saved or granted. Waits for the launch screen (LaunchDone) and the Heavenly Gift. The recruit
+-- tutorial (2026-10-24) points at the HUD's Recruit button while the Disciple Hall's free recruit
+-- waits, then over the Meditation Platform (the trail leads there) until the player walks to it.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -25,6 +27,10 @@ local TIPS = {
 	chest = { title = "Idle chest", line = "Step on the green pad" },
 	orb = { title = "Qi orb!", line = "Walk into it" },
 	pill = { title = "Pill ready!", line = string.format("Tap: %dx qi for %d s", PILL_MULT, Config.PILL_DURATION) },
+	-- the recruit tutorial (owner 2026-10-24): the Disciple Hall's free recruit, then a walk to the
+	-- Meditation Platform to see the newcomer seated (FreeRecruits / SeeDisciple from the server)
+	recruit = { title = "Free recruit!", line = "Tap Recruit" },
+	see = { title = "Your new disciple!", line = "Meditates here for qi" },
 }
 
 local function done(key)
@@ -98,7 +104,7 @@ local function draw(key, side)
 	shownKey, shownScale, shownSide = key, Toy.S, side
 	board:ClearAllChildren()
 	hudTip:ClearAllChildren()
-	if key == "pill" then
+	if key == "pill" or key == "recruit" then
 		local left = side == "left"
 		hudCol = frame(hudTip, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(left and 1 or 0, 0.5) })
 		Toy.list(hudCol, true, px(2))
@@ -137,7 +143,13 @@ local function shown(obj)
 	return obj ~= nil and obj:IsA("ScreenGui") and obj.Enabled
 end
 
--- which tip, if any, and its target (a part, or the pill button)
+-- the recruit reveal is on screen (the walk tip waits for it)
+local function revealing()
+	local g = playerGui:FindFirstChild("RecruitReveal")
+	return g ~= nil and g.Enabled
+end
+
+-- which tip, if any, and its target (a part, or the pill or Recruit button)
 local function pick()
 	if not player:GetAttribute("LaunchDone") or (player:GetAttribute("WelcomeQi") or 0) > 0 then
 		return nil -- the launch screen or the Heavenly Gift is up
@@ -165,6 +177,20 @@ local function pick()
 			return "orb", best
 		end
 	end
+	if (player:GetAttribute("FreeRecruits") or 0) > 0 and player:GetAttribute("HasHall") then
+		local hud = playerGui:FindFirstChild("Hud")
+		local btn = hud and hud:FindFirstChild("RecruitSeal", true)
+		if btn and shown(btn) then
+			return "recruit", btn
+		end
+	end
+	if player:GetAttribute("SeeDisciple") and not revealing() then
+		local platform = built and built:FindFirstChild("platform")
+		local at = platform and (platform.PrimaryPart or platform:FindFirstChildWhichIsA("BasePart", true))
+		if at then
+			return "see", at
+		end
+	end
 	if player:GetAttribute("PillReady") and not done("pill") then
 		local hud = playerGui:FindFirstChild("Hud")
 		local btn = hud and hud:FindFirstChild("PillButton", true)
@@ -186,7 +212,7 @@ RunService.RenderStepped:Connect(function(dt)
 			hideAll()
 		else
 			local side = "right"
-			if key == "pill" and target.AbsolutePosition.X > hudTip.AbsoluteSize.X / 2 then
+			if (key == "pill" or key == "recruit") and target.AbsolutePosition.X > hudTip.AbsoluteSize.X / 2 then
 				side = "left"
 			end
 			if key ~= shownKey or Toy.S ~= shownScale or side ~= shownSide then
@@ -198,7 +224,7 @@ RunService.RenderStepped:Connect(function(dt)
 		return
 	end
 	local bob = math.sin(os.clock() * 5) * px(4)
-	if key == "pill" then
+	if key == "pill" or key == "recruit" then
 		hudTip.Enabled = true
 		board.Enabled = false
 		local inset = hudTip.AbsolutePosition -- the HUD may draw under the top bar inset
@@ -212,7 +238,7 @@ RunService.RenderStepped:Connect(function(dt)
 		hudTip.Enabled = false
 		board.Adornee = target
 		board.Enabled = true
-		board.StudsOffsetWorldSpace = Vector3.new(0, (key == "orb" and 3.5 or 4.5), 0)
+		board.StudsOffsetWorldSpace = Vector3.new(0, (key == "orb" and 3.5 or key == "see" and 9 or 4.5), 0)
 		if boardArrow then
 			boardArrow.Position = UDim2.fromOffset(0, bob)
 		end

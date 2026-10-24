@@ -151,6 +151,11 @@ function Player:act()
 		W:call("chestFn", "chest", d.chestSummons)
 		return prof.react * 2
 	end
+	if d.owned.hall and (d.freeRecruits or 0) > 0 then -- the recruit tutorial's free recruit (Tips.client)
+		W:call("recruitFn", "recruit", 1)
+		self:note("freeRecruit")
+		return prof.react * 2
+	end
 	if d.pillReady and d.owned.furnace then
 		self.pillSeen = self.pillSeen or (d.playSec or 0)
 		if (d.playSec or 0) - self.pillSeen >= prof.pillDelay then

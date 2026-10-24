@@ -881,7 +881,10 @@ local function build()
 			return
 		end
 		state.recruiting = true
-		ui.showRecruitPick() -- the first press shows the x1 / x10 / x50 choice, qi or not
+		local free = (player:GetAttribute("FreeRecruits") or 0) > 0
+		if not free then -- the tutorial's free recruit is one, with no choice to make
+			ui.showRecruitPick() -- the first press shows the x1 / x10 / x50 choice, qi or not
+		end
 		local ok, res = pcall(function()
 			return remotes.Recruit:InvokeServer(state.recruitN or 1)
 		end)
@@ -1234,8 +1237,9 @@ refreshStatic = function()
 			chip.price.Text = compact(state.recruitTotals[c])
 		end
 	end
-	ui.recruitCost.Text = compact(state.recruitTotals[n] or 0)
-	ui.recruitLabel.Text = n == 1 and "Recruit" or ("Recruit x" .. n)
+	local free = (player:GetAttribute("FreeRecruits") or 0) > 0 -- the recruit tutorial (Tips.client)
+	ui.recruitCost.Text = free and "Free" or compact(state.recruitTotals[n] or 0)
+	ui.recruitLabel.Text = (n == 1 or free) and "Recruit" or ("Recruit x" .. n)
 	local raw = player:GetAttribute("Disciples") or ""
 	local list = raw == "" and {} or string.split(raw, ",")
 	local looksRaw = player:GetAttribute("DiscLooks") or ""
@@ -1374,7 +1378,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen", "RebirthNeed" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen", "RebirthNeed", "FreeRecruits" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1583,7 +1587,7 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the Recruit seal: while a recruit is affordable the orb charges through the first five
 		-- rarity colours (a step every 0.6 s), the ring and rays turn and it breathes; else still, dim
 		local totals = state.recruitTotals or {}
-		local can = target >= (totals[state.recruitN or 1] or math.huge)
+		local can = target >= (totals[state.recruitN or 1] or math.huge) or (player:GetAttribute("FreeRecruits") or 0) > 0
 		-- the chips: the pick is gold, a size out of reach is grey (dim gold when it is the pick)
 		if ui.recruitPick.Visible then
 			for c, chip in ui.recruitChips do

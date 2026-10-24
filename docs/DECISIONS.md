@@ -549,3 +549,15 @@ the log as a D-number.
   `tools/qisim/waits.luau`, orbs and pills in; `tools/sim_check.py` agrees): realm 1 ~10 s, 2-3 ~30 s,
   4-7 1-4 min, 8-10 14-25 min. Cost: a 3 x 15 min a day player reaches realm 9 around day 34 (was 4).
   Replaces the D44 price floor (`PRICE_FLOOR_S`, kept for the older sims).
+- **D83** Recruit tutorial and a trail that never cuts (owner 2026-10-24: "the meditation center
+  should be also in the first things, when you unlock recruit small tutorial with a free recruit +
+  walk to the meditation center to see it"; "arrows ... cut at bridges, it shouldnt be. keep them
+  active always during tutorial"). `Config.GUIDE_PRIORITY` is now D82's realm 1 core in order
+  (platform, Fields Bridge, Disciple Bridge, hall, Alchemy Bridge, array): the first open one leads
+  the HUD "Next" and the trail, which stays on until the core stands. The first Disciple Hall of a
+  save that never recruited comes with `FREE_RECRUITS` (1) free recruit: the Recruit seal reads
+  "Free", a tip points at it, and after the reveal a tip over the Meditation Platform leads the trail
+  there until the player stands within `SEE_DISCIPLE_RANGE`. The trail now follows the whole route,
+  bridge after bridge, from wherever the feet are (on a bridge too). Copies the standard first-egg
+  tutorial (Pet Simulator 99, Bee Swarm Simulator's free first bee). qisim (engaged / median, 30 days,
+  3 seeds) moves nothing past noise: realm 2 at 2.8 min (was 2.6), every later mark within 2%.
