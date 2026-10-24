@@ -1768,7 +1768,33 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "offline" then
 		toast({ "Away", { icon = "qi", text = "+" .. short(a) } }, Color3.fromHex("9FD0FF"), 5)
 	elseif kind == "breakthrough" then
-		toast(a == player.DisplayName and (b .. "!") or (a .. ": " .. b .. "!"), GOLD, 4)
+		if a ~= player.DisplayName then
+			toast(a .. ": " .. b .. "!", GOLD, 4)
+			return
+		end
+		-- the realm boost made visible the moment it lands (owner pick A+C 2026-10-24: players left
+		-- right after their first breakthrough, the sect gone and the income looking unchanged)
+		local realm = player:GetAttribute("Realm") or 2
+		local m = Config.incomeMult(realm) / Config.incomeMult(realm - 1)
+		local boost = "x" .. (m == math.floor(m) and tostring(m) or string.format("%.1f", m))
+		toast({ b .. "!", { icon = "hall", text = boost } }, GOLD, 4)
+		local layer = ui.rate and ui.rate:FindFirstAncestorWhichIsA("LayerCollector")
+		if layer then
+			-- a gold "x3" pops beside the income line, then fades. On the gui itself, never inside the
+			-- line: the line sizes itself to its children, so a child there pushed its own text under it
+			local at = ui.rate.AbsolutePosition - layer.AbsolutePosition
+			local size = ui.rate.AbsoluteSize
+			local tag = text(layer, boost, px(26), GOLD, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(at.X + size.X + px(6), at.Y + size.Y / 2), ZIndex = 30 })
+			local sc = Instance.new("UIScale")
+			sc.Scale = 0.3
+			sc.Parent = tag
+			TweenService:Create(sc, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			task.delay(3.5, function()
+				fadeOut(tag, 0.5)
+				task.wait(0.55)
+				tag:Destroy()
+			end)
+		end
 	elseif kind == "reincarnate" then
 		toast(a == player.DisplayName and string.format("Life %d!", b) or string.format("%s: life %d!", a, b), Color3.fromHex("D9B8FF"), 4)
 	end
