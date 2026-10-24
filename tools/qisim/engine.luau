@@ -243,7 +243,7 @@ function Engine.load(root, seed)
 	local M = luau.load(table.concat(chunk, "\n"), { debugName = "Main(economy)", environment = env })()
 	-- Shop's product grant (Welcome Pouch, Qi packs, Starter Pack, bought disciples), as it is
 	env.api = { rate = M.rate, addDisciple = M.addDisciple, notify = stub(), tideBell = noop }
-	local grantText = cut(texts.shop, "\nlocal function grantProduct(", "Shop grantProduct")
+	local grantText = cut(texts.shop, "\nlocal function realm(", "Shop realm") .. cut(texts.shop, "\nlocal function grantProduct(", "Shop grantProduct")
 	local grantProduct = luau.load(grantText .. "\nreturn grantProduct\n", { debugName = "Shop(grant)", environment = env })()
 	-- the orb spots (Main ORB_SPOTS), read from Main's text
 	local orbStart = string.find(texts.main, "\nlocal ORB_SPOTS = {", 1, true)

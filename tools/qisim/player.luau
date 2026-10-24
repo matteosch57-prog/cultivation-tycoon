@@ -9,10 +9,10 @@
 local Player = {}
 
 Player.PROFILES = {
-	median = { perDay = 2, minutes = 7, react = 2.5, path = 1.35, orbEvery = 60, patience = 20, pillDelay = 30, giftDelay = 20, rebirthDelay = 30, recruitBias = 1 },
-	engaged = { perDay = 3, minutes = 15, react = 2, path = 1.3, orbEvery = 40, patience = 15, pillDelay = 15, giftDelay = 10, rebirthDelay = 15, recruitBias = 1 },
-	hooked = { perDay = 4, minutes = 26, react = 1.5, path = 1.25, orbEvery = 30, patience = 10, pillDelay = 8, giftDelay = 5, rebirthDelay = 8, recruitBias = 1 },
-	regular = { perDay = 2, minutes = 30, react = 2, path = 1.3, orbEvery = 30, patience = 15, pillDelay = 10, giftDelay = 10, rebirthDelay = 10, recruitBias = 1 },
+	median = { perDay = 2, minutes = 7, react = 4.5, path = 1.35, orbEvery = 60, patience = 20, pillDelay = 30, giftDelay = 20, rebirthDelay = 30, recruitBias = 2 },
+	engaged = { perDay = 3, minutes = 15, react = 3.5, path = 1.3, orbEvery = 40, patience = 15, pillDelay = 15, giftDelay = 10, rebirthDelay = 15, recruitBias = 2 },
+	hooked = { perDay = 4, minutes = 26, react = 3, path = 1.25, orbEvery = 30, patience = 10, pillDelay = 8, giftDelay = 5, rebirthDelay = 8, recruitBias = 2 },
+	regular = { perDay = 2, minutes = 30, react = 3.5, path = 1.3, orbEvery = 30, patience = 15, pillDelay = 10, giftDelay = 10, rebirthDelay = 10, recruitBias = 2 },
 }
 -- karma: cheapest comfort first (the old sims' order)
 Player.DAO_ORDER = { "hands", "isles", "elixir", "meditation", "seat", "echo" }
