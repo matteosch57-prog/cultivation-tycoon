@@ -23,6 +23,13 @@ local PREVIEW_RANGE = 30 -- studs (horizontal) from the pad centre where the pre
 local PREVIEW_FADE = 12 -- and it is fully there this many studs closer
 local SPIRIT = Color3.fromHex("D8FFF0") -- the preview's glow (white with a breath of jade)
 local SPIRIT_LTM = 0.78 -- its see-through at full strength (LocalTransparencyModifier)
+-- Phone fps 2026-10-24 (owner's Pixel: -30 fps as the Main Hall upgrade's preview appeared): a big
+-- building's preview was thousands of see-through Neon parts, each rewritten every frame (fade, breath)
+-- and moved every frame (the rise). A preview now draws only its PREVIEW_MAX_PARTS biggest parts (the
+-- silhouette: roofs, walls, columns; trims and finials stay hidden), and its parts are only written
+-- when the see-through changes by a visible step.
+local PREVIEW_MAX_PARTS = 300
+local LTM_STEP = 0.01 -- a smaller change of the see-through is not written
 local REACH = 2.6 -- the server buys inside this (Main PAD_REACH)
 local ANIM_RANGE = 120 -- rings only turn near the camera
 local LIGHT_RANGE = 70 -- and only the nearest pads light the ground
@@ -520,6 +527,21 @@ local function preparePreview(rec, preview)
 			table.insert(rec.preview, d)
 		end
 	end
+	if #rec.preview > PREVIEW_MAX_PARTS then
+		-- biggest first (by the largest face: a long beam counts, a small knob does not); the rest keep
+		-- the server's Transparency 1
+		local area = {}
+		for _, p in rec.preview do
+			local sz = p.Size
+			area[p] = math.max(sz.X * sz.Y, sz.Y * sz.Z, sz.X * sz.Z)
+		end
+		table.sort(rec.preview, function(a, b)
+			return area[a] > area[b]
+		end)
+		for i = #rec.preview, PREVIEW_MAX_PARTS + 1, -1 do
+			rec.preview[i] = nil
+		end
+	end
 	rec.homes = {}
 	for i, p in rec.preview do
 		rec.homes[i] = p.CFrame
@@ -535,6 +557,7 @@ local function preparePreview(rec, preview)
 		end
 	end
 	rec.k = 0
+	rec.ltm, rec.lift = nil, nil -- a preview that streamed back in is written fresh
 	rec.cfs = table.create(#rec.preview)
 end
 
@@ -811,6 +834,7 @@ local function updatePreview(rec, hrp, dt)
 				p.LocalTransparencyModifier = 1
 			end
 			rec.lift = nil
+			rec.ltm = nil
 		end
 		return
 	end
@@ -821,8 +845,11 @@ local function updatePreview(rec, hrp, dt)
 	rec.previewShown = true
 	-- whole and in its real place; it rises the last stud and a half as it fades in, then breathes
 	local ltm = 1 - k * (1 - SPIRIT_LTM) + 0.04 * k * math.sin(os.clock() * 2.2)
-	for _, p in rec.preview do
-		p.LocalTransparencyModifier = ltm
+	if math.abs(ltm - (rec.ltm or -1)) >= LTM_STEP then
+		rec.ltm = ltm
+		for _, p in rec.preview do
+			p.LocalTransparencyModifier = ltm
+		end
 	end
 	local lift = (1 - k) * 1.5
 	if math.abs(lift - (rec.lift or -1)) > 0.01 then
