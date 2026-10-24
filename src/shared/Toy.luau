@@ -681,6 +681,37 @@ function Toy.dot(parent, size, props)
 	return holder
 end
 
+-- The "Teleport" tag (owner 2026-10-24: "normalize a Teleport text ... so people know what buttons
+-- teleport"): one small jade pill with ink text, pinned across the bottom edge of every button that
+-- moves you (HUD Base chip, the altar button, the Rankings "Go to the wall"). `h` = its height in px.
+function Toy.teleportTag(parent, h)
+	local pill = Instance.new("TextLabel")
+	pill.Name = "TeleportTag"
+	pill.AnchorPoint = Vector2.new(0.5, 0.5)
+	pill.Position = UDim2.fromScale(0.5, 1)
+	pill.AutomaticSize = Enum.AutomaticSize.X
+	pill.Size = UDim2.fromOffset(0, h)
+	pill.BackgroundColor3 = Color3.fromHex("8FF3CF")
+	pill.BorderSizePixel = 0
+	pill.FontFace = Toy.FONT
+	pill.Text = "Teleport"
+	pill.TextSize = math.floor(h * 0.68 + 0.5)
+	pill.TextColor3 = Toy.INK
+	pill.ZIndex = 8
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0, math.floor(h * 0.45))
+	pad.PaddingRight = pad.PaddingLeft
+	pad.Parent = pill
+	Toy.corner(pill, UDim.new(1, 0))
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = math.max(1.5, h * 0.12)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = pill
+	pill.Parent = parent
+	return pill
+end
+
 -- the disciple picture from the atlas (the mock's drawing), centred in `parent`, `size` px
 local function figureImage(parent, size, idx, props)
 	local c = ATLAS.cells["fig" .. idx]

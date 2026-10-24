@@ -365,6 +365,7 @@ local function show()
 
 	local goHolder, goBtn = Toy.button(body, UDim2.fromOffset(LEFT, px(34)), JADE, px(12))
 	goHolder.Position = UDim2.fromOffset(0, px(288))
+	Toy.teleportTag(goBtn, px(13))
 	plainText(
 		goBtn,
 		"Go to the wall",

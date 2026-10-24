@@ -505,6 +505,9 @@ local function build()
 		Toy.icon(b, key, px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		b.Name = caption .. "Button"
 		text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		if where ~= "ranks" then -- Ranks opens a screen first; its "Go to the wall" carries the tag
+			Toy.teleportTag(b, px(13))
+		end
 		b.Activated:Connect(function()
 			local screen = where == "ranks" and player:FindFirstChild("RanksOpen")
 			if screen then
