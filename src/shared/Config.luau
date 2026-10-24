@@ -942,6 +942,11 @@ Config.RANK_LION = { name = "Lion", height = 7, size = Vector3.new(38.665, 48.38
 -- RANK_REFRESH. r = studs from the hub centre (the dais clears both bridge walks by 5+); width, depth = a plinth's; scale = the avatars';
 -- glyph = the ground glyph's size over a player's
 Config.RANK_PODIUM = { r = 40, width = 7, depth = 5, scale = 1.4, glyph = 0.45 }
+-- The hub's ride shop (HubShop.luau, owner 2026-10-24): the gap that holds it, and the Tide Bell's
+-- (both stand HUB_SHOP_R from the centre, facing the plaza, clear of the bridge walks)
+Config.HUB_SHOP_GAP = 1
+Config.HUB_BELL_GAP = 3
+Config.HUB_SHOP_R = 40
 Config.RANK_REFRESH = 300 -- s between store reads (DevForum: a global board needs no faster)
 Config.RANK_WRITE_EVERY = 60 -- s between write rounds
 Config.RANK_WRITE_GAP = 300 -- s between two saves of one player's scores (leaving saves at once)

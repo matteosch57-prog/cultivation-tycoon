@@ -24,6 +24,7 @@ local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local RankBoard = require(script.Parent:WaitForChild("RankBoard"))
+local HubShop = require(script.Parent:WaitForChild("HubShop"))
 local Portals = require(script.Parent:WaitForChild("Portals"))
 local Altar = require(script.Parent:WaitForChild("Altar"))
 local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ChestModel"))
@@ -168,6 +169,15 @@ local function buildHub()
 			-- the top 3 podium stands across the hub from the wall, facing the plaza (RankBoard.podium)
 			local at = Vector3.new(math.cos(mid) * Config.RANK_PODIUM.r, BASE_Y, math.sin(mid) * Config.RANK_PODIUM.r)
 			RankBoard.podium(folder, CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0)))
+		elseif i == Config.HUB_SHOP_GAP or i == Config.HUB_BELL_GAP then
+			-- the ride shop and the Tide Bell (HubShop): where every player passes
+			local at = Vector3.new(math.cos(mid) * Config.HUB_SHOP_R, BASE_Y, math.sin(mid) * Config.HUB_SHOP_R)
+			local cf = CFrame.lookAt(at, Vector3.new(0, BASE_Y, 0))
+			if i == Config.HUB_SHOP_GAP then
+				HubShop.swords(folder, cf)
+			else
+				HubShop.bell(folder, cf)
+			end
 		elseif i % 2 == 0 then
 			Style.sakura(folder, CFrame.new(math.cos(mid) * r, BASE_Y, math.sin(mid) * r), i)
 		else
