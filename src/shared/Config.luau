@@ -935,7 +935,8 @@ Config.RANK_WALL_GAP = 5 -- the hub gap (between bridges 5 and 6) where the wall
 Config.RANK_WALL_R = 52 -- studs from the hub centre: the wall (lions at its ends) clears both bridge walks by 3 studs and its back lanterns stand on the rim (54 left their legs over the drop; 25 on the 44 hub stood on the walks)
 -- HUD teleports (owner 2026-10-22: "MY BASE" and "RANKINGS" at the top of the HUD): seconds between two
 -- jumps, and how far in front of the ranking wall you land (facing it)
-Config.TELEPORT_COOLDOWN = 3
+Config.TELEPORT_COOLDOWN = 2 -- s between two teleports on the client (the server allows half: Main)
+Config.TELEPORT_VEIL = 0.35 -- s the server waits before the move: the Hud's jade wipe closes in that time
 Config.TELEPORT_RANK_FRONT = 9 -- 13 put the follow camera inside the cauldron and the altar
 -- The Robux purchase moment (BuyMoment.client, owner pick A "Spotlight" 2026-10-22): seconds for the
 -- item's pop, the hold on screen, the flight home; the HUD bumps the qi counter at buyArrive()

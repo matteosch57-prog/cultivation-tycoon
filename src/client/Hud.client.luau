@@ -267,12 +267,24 @@ local goalPad -- the pad the "Next" card names (set per frame; Heavenly Hands bu
 
 -- the Base / Ranks chips: a jade wipe closes over the screen, the server moves the avatar under it
 -- (Remotes.Teleport, the server picks the spot), then the wipe opens (mock 2026-10-22_teleport_and_buy)
-local travelAt = 0
+local travelAt = -math.huge
+local travelling = false
 local function teleportTo(where)
-	if os.clock() - travelAt < Config.TELEPORT_COOLDOWN then
+	if travelling then
 		return
 	end
+	travelling = true
+	-- a tap inside the cooldown goes once it ends instead of being dropped (owner 2026-10-24: "arena
+	-- tp doesnt work sometimes")
+	local left = Config.TELEPORT_COOLDOWN - (os.clock() - travelAt)
+	if left > 0 then
+		task.wait(left)
+	end
 	travelAt = os.clock()
+	-- ask now, from where you stand: the server checks you are on the portal, then waits TELEPORT_VEIL
+	-- (the wipe's close) before the move and bumps Travelled once it is done
+	local done = player:GetAttribute("Travelled") or 0
+	remotes.Teleport:FireServer(where)
 	local wipeGui = Instance.new("ScreenGui")
 	wipeGui.Name = "TravelWipe"
 	wipeGui.IgnoreGuiInset = true
@@ -298,20 +310,19 @@ local function teleportTo(where)
 	g.Rotation = 90
 	g.Parent = disc
 	Sfx.play("rise")
-	local close = TweenService:Create(disc, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.fromOffset(d, d) })
+	local close = TweenService:Create(disc, TweenInfo.new(Config.TELEPORT_VEIL, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.fromOffset(d, d) })
 	close:Play()
 	close.Completed:Wait()
+	local t = os.clock()
+	while (player:GetAttribute("Travelled") or 0) == done and os.clock() - t < 1.5 do
+		task.wait()
+	end
+	local moved = (player:GetAttribute("Travelled") or 0) ~= done
+	task.wait(0.15) -- the move replicates and the camera settles behind the veil
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local from = root and root.Position
-	remotes.Teleport:FireServer(where)
-	task.wait(0.25) -- the move replicates and the camera settles behind the veil
-	if where ~= "home" and root then
+	if moved and where ~= "home" and root then
 		-- turn the camera the way the server faced you: level with the ranking wall (owner: boards
-		-- hard to read), into the island or toward the plaza after a portal
-		local t = os.clock()
-		while (root.Position - from).Magnitude < 4 and os.clock() - t < 1 do
-			task.wait()
-		end
+		-- hard to read), into the island, onto the altar or toward the plaza after a portal
 		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 		if look.Magnitude > 0.5 then
 			look = look.Unit
@@ -321,6 +332,7 @@ local function teleportTo(where)
 	end
 	local open = TweenService:Create(disc, TweenInfo.new(0.4, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
 	open:Play()
+	travelling = false
 	open.Completed:Wait()
 	wipeGui:Destroy()
 end
@@ -353,10 +365,15 @@ task.spawn(function()
 				end
 			end
 		end
-		if here and here ~= onPortal and not here:GetAttribute("Off") then
-			task.spawn(teleportTo, here:GetAttribute("Where"))
+		if here ~= onPortal then
+			if here and not here:GetAttribute("Off") then
+				if travelling or os.clock() - travelAt < Config.TELEPORT_COOLDOWN then
+					continue -- still cooling down: asks again next tick while you stand on it
+				end
+				task.spawn(teleportTo, here:GetAttribute("Where"))
+			end
+			onPortal = here
 		end
-		onPortal = here
 	end
 end)
 

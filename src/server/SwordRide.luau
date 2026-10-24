@@ -246,6 +246,10 @@ function SwordRide.init(a)
 					continue
 				end
 				local pos = hrp.Position
+				if r.graceUntil and os.clock() < r.graceUntil then
+					r.last = pos
+					continue
+				end
 				-- the speed cap: farther than the tier allows since the last good spot, a few checks
 				-- running, goes back there
 				local cap = Config.MOVE.walk * RIDE.tiers[r.tier].speed * RIDE.speedSlack
@@ -292,6 +296,18 @@ function SwordRide.init(a)
 			end
 		end
 	end)
+end
+
+-- a teleport moved the rider (Main, Remotes.Teleport): the checks start again from the landing spot,
+-- with a short grace while the client's last pre-teleport positions arrive (the speed cap pulled a
+-- rider who used a portal or a HUD chip back to where the teleport began)
+function SwordRide.moved(player)
+	local r = rides[player]
+	if r then
+		r.last = nil
+		r.strikes = 0
+		r.graceUntil = os.clock() + 1
+	end
 end
 
 -- Studio hook (DebugSet "ride", key | false): ride without the button (ownership still checked)

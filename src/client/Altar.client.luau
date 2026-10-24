@@ -6,7 +6,7 @@
 -- docs/art/mocks/altar_phone_buttons.jpg: on a phone it takes the Recruit seal's spot left of Jump and
 -- the seal steps aside through the Player attribute AltarPalm; F on a keyboard), the moon gates
 -- that throw you up, the knockback (a short ragdoll, a camera kick), toasts and sounds. In the last ALERT_SECS of a round a bouncing "!" sits on the
--- button's other corner (owner 2026-10-23): a tap teleports you beside a moon gate at the hub.
+-- button's other corner (owner 2026-10-23): a tap teleports you onto the deck (owner 2026-10-24).
 -- The server decides who holds and who wins (src/server/Altar.luau); this only draws and asks.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
