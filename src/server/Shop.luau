@@ -428,8 +428,9 @@ function Shop.refreshPeak(s)
 	end
 	local radius = plot.radius or Config.islandRadius(s.data.owned)
 	local wanted = {}
+	local shown = (s.data.lives or 1) >= Config.SHOP_PADS_FROM_LIFE
 	for _, e in Config.SHOP_PEAK_PADS do
-		if not e.needs or s.data.owned[e.needs] then
+		if shown and (not e.needs or s.data.owned[e.needs]) then
 			local x, z = Config.shopPeakSpot(e, radius)
 			wanted["ShopPad_" .. e.key] = { e = e, x = x, z = z }
 		end

@@ -806,6 +806,9 @@ Config.SHOP_PEAK_PADS = {
 	{ key = "pill", x = 90, z = -34, needs = "furnace" }, -- the furnace brews this pill; beside it (Sky Islets)
 	{ key = "auto", x = 106, z = -84, needs = "array" }, -- the orbs come from the Gathering Array, beside it (Sky Islets)
 }
+-- the peak's shop pads stand only from this life on (owner 2026-10-24: a new player left 13 s after a
+-- pad's Robux prompt; no paid prompt underfoot before the first rebirth). The HUD shop stays open (D64)
+Config.SHOP_PADS_FROM_LIFE = 2
 -- (x, z) of a SHOP_PEAK_PADS entry on an island of `radius`
 function Config.shopPeakSpot(e, radius)
 	return e.x, e.fromRim and (radius - e.fromRim) or e.z
