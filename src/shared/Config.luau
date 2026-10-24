@@ -120,8 +120,16 @@ Config.REBIRTH_KARMA = 2
 Config.REBIRTH_KARMA_STEP = 1
 -- realm -> rebirths needed to break through into it (realms not listed are always open)
 Config.REBIRTH_REALMS = { [3] = 1, [5] = 2, [7] = 4, [9] = 6, [11] = 9, [13] = 12, [15] = 16, [17] = 20 } -- Economy sim (first rebirth ~11 to 15 min)
+-- a faster start (owner 2026-10-24: "make realm 1-2 20% faster still, and life 1 too"): in realms up to
+-- START_REALMS pads, hires and recruits cost START_PRICE of their price, and so does the first rebirth
+Config.START_REALMS = 2
+Config.START_PRICE = 0.8
+function Config.startMult(realm)
+	return if realm <= Config.START_REALMS then Config.START_PRICE else 1
+end
 function Config.rebirthPrice(rebirths)
-	return Config.REBIRTH_PRICE + Config.REBIRTH_PRICE_STEP * (rebirths or 0)
+	local first = (rebirths or 0) == 0 and Config.START_PRICE or 1
+	return math.floor((Config.REBIRTH_PRICE + Config.REBIRTH_PRICE_STEP * (rebirths or 0)) * first)
 end
 function Config.rebirthMult(rebirths)
 	return 1 + Config.REBIRTH_BONUS * (rebirths or 0)
@@ -482,7 +490,7 @@ Config.WORKERS = {
 }
 -- `income` = Main padRate (nil: the floor only)
 function Config.workerCost(pad, n, realm, income)
-	return math.floor(math.max(pad.cost * Config.WORKER_COST[n], Config.padSeconds(realm) * Config.WORKER_SECONDS[n] * (income or 0)))
+	return math.floor(math.max(pad.cost * Config.WORKER_COST[n], Config.padSeconds(realm) * Config.WORKER_SECONDS[n] * (income or 0)) * Config.startMult(realm))
 end
 
 -- Guide trail (src/client/Guide.client.luau): chevrons from the feet to the next pad
@@ -608,17 +616,19 @@ Config.ALTAR_BRAZIERS = 8 -- rim braziers: they light one by one as the holder's
 -- 2x qi and a GIFT_RARITY[i] disciple (owner: "make them interesting": an Elder at 45 min, an
 -- Immortal at 2 h). Simmed 2026-10-22 (tools/sim_game.py): every player kind's lives end on the
 -- same days as before, within a minute or two of play.
-Config.GIFT_TIMES = { 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
+-- the 2 min gift (owner 2026-10-24: "add a 2m online daily qi gift, so they see it faster"): the
+-- first claim comes inside the first realm, so a new player learns the ladder on day 1
+Config.GIFT_TIMES = { 120, 300, 600, 1200, 1800, 2700, 3600, 5400, 7200 }
 -- Red dots (server Dots.luau). The Shop's leads to its free daily gift (owner: "to clean shop one, give
 -- a small free daily gift"): SHOP_FREE_SECONDS of income (no tide, no pill), once per UTC day, first
 -- offered after DOT_SHOP_FIRST s of play; claiming it is what clears the dot. The Sect Gift's stays lit
 -- until the group gift is claimed (owner 2026-10-24: "keep the red dot always until claimed").
 Config.DOT_SHOP_FIRST = 120
 Config.SHOP_FREE_SECONDS = 300
-Config.GIFT_VALUE = { 180, 120, 0, 300, 0, 900, 0, 0 }
-Config.GIFT_SUMMONS = { 0, 1, 0, 3, 0, 0, 5, 0 }
-Config.GIFT_PILL = { 0, 0, 300, 0, 0, 0, 0, 0 } -- seconds of 2x qi (adds to a running pill)
-Config.GIFT_RARITY = { "", "", "", "", "Elder", "", "", "Immortal" } -- a disciple of that rarity
+Config.GIFT_VALUE = { 120, 180, 120, 0, 300, 0, 900, 0, 0 }
+Config.GIFT_SUMMONS = { 0, 0, 1, 0, 3, 0, 0, 5, 0 }
+Config.GIFT_PILL = { 0, 0, 0, 300, 0, 0, 0, 0, 0 } -- seconds of 2x qi (adds to a running pill)
+Config.GIFT_RARITY = { "", "", "", "", "", "Elder", "", "", "Immortal" } -- a disciple of that rarity
 Config.GIFT_DAILY = true -- read by the sim
 -- what gift i pays (the HUD chip and the Free Gifts page draw it)
 function Config.giftPrize(i)
@@ -1137,7 +1147,7 @@ end
 
 -- `recruits` = disciples recruited in the current realm (data.realmRecruits)
 function Config.recruitCost(realm, recruits)
-	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits)
+	return math.floor(Config.RECRUIT_BASE * Config.costMult(realm) * Config.RECRUIT_POW ^ recruits * Config.startMult(realm))
 end
 
 -- the qi price of one press of `n` recruits, paid all or nothing: the real price of the next n
@@ -1163,7 +1173,7 @@ function Config.padPrice(pad, realm, income, rank, n)
 	if lv then
 		f = Config.MAINHALL_SECONDS[lv] -- the Main Hall: priced above the spread
 	end
-	return math.floor(math.max(pad.cost, Config.padSeconds(realm) * f * income))
+	return math.floor(math.max(pad.cost, Config.padSeconds(realm) * f * income) * Config.startMult(realm))
 end
 
 -- a pad's price in seconds of the pad income (PAD_SECONDS x the rebirth boost the realm needs)
