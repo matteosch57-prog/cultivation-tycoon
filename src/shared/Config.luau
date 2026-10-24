@@ -522,6 +522,8 @@ Config.PILL_DURATION = 60 -- seconds of 2x qi
 Config.ORB_INTERVAL = 20 -- seconds between qi orbs from the Qi Gathering Array
 Config.ORB_MAX = 3 -- orbs waiting on a peak at most
 Config.ORB_VALUE = 15 -- an orb is worth this many seconds of income
+Config.ORB_TIP_TIMES = 5 -- the "Walk into it" tip stays for this many orbs (owner 2026-10-24)
+Config.REBIRTH_TIP_TIMES = 2 -- the first rebirths get a "Rebirth ready!" bubble and toast (Tips.client, Hud)
 -- Spirit Tide (server-wide event, research 2026-10-21_tycoon_study): every peak earns x TIDE_MULT
 Config.TIDE_FIRST = 240 -- s after the server starts
 Config.TIDE_INTERVAL = 600 -- s from one tide's start to the next

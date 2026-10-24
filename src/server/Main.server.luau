@@ -2763,7 +2763,14 @@ local function checkOrbs(player, s, hrp)
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
 			s.data.tips = s.data.tips or {}
-			s.data.tips.orb = true
+			if not s.data.tips.orb then
+				-- the tip stays for the first few orbs (Config.ORB_TIP_TIMES)
+				s.data.orbTips = (s.data.orbTips or 0) + 1
+				if s.data.orbTips >= Config.ORB_TIP_TIMES then
+					s.data.tips.orb = true
+					s.data.orbTips = nil
+				end
+			end
 			notify:FireClient(player, "orb", gain, orb.Position)
 			orb:Destroy()
 			table.remove(s.orbs, i)

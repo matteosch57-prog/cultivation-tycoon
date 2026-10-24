@@ -7,6 +7,10 @@
 -- is saved or granted. Waits for the launch screen (LaunchDone) and the Heavenly Gift. The recruit
 -- tutorial (2026-10-24) points at the HUD's Recruit button while the Disciple Hall's free recruit
 -- waits, then over the Meditation Platform (the trail leads there) until the player walks to it.
+-- Owner 2026-10-24: the orb tip stays for the first Config.ORB_TIP_TIMES orbs (the server counts),
+-- and the first Config.REBIRTH_TIP_TIMES rebirths get a bubble over the Rebirth seal once the price
+-- is held, until that rebirth's screen is opened (the seal's red dot, Dots.luau).
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -31,6 +35,10 @@ local TIPS = {
 	-- Meditation Platform to see the newcomer seated (FreeRecruits / SeeDisciple from the server)
 	recruit = { title = "Free recruit!", line = "Tap Recruit" },
 	see = { title = "Your new disciple!", line = "Meditates here for qi" },
+	-- the line names the boost the next rebirth brings (NextRebirthMult), set when drawn
+	rebirth = { title = "Rebirth ready!", line = function()
+		return string.format("Tap: x%s qi forever", tostring(player:GetAttribute("NextRebirthMult") or Config.rebirthMult(1)))
+	end },
 }
 
 local function done(key)
@@ -63,7 +71,8 @@ local function bubble(parent, key)
 	pad.Parent = card
 	Toy.list(card, false, px(1))
 	text(card, TIPS[key].title, px(20), GOLD, { LayoutOrder = 1 })
-	local line = text(card, TIPS[key].line, px(15), INK, { LayoutOrder = 2 })
+	local l = TIPS[key].line
+	local line = text(card, type(l) == "function" and l() or l, px(15), INK, { LayoutOrder = 2 })
 	line.UIStroke.Enabled = false
 	return card
 end
@@ -98,13 +107,23 @@ hudTip.Parent = playerGui
 local hudCol, hudArrow
 
 local shownKey, shownScale, shownSide
+local HUD_TIPS = { pill = true, recruit = true, rebirth = true } -- drawn on the HUD, beside a button
 -- `side` = "right" puts the pill bubble right of its button, "left" left of it (the button may sit
 -- in the HUD's left or right stack)
 local function draw(key, side)
 	shownKey, shownScale, shownSide = key, Toy.S, side
 	board:ClearAllChildren()
 	hudTip:ClearAllChildren()
-	if key == "pill" or key == "recruit" then
+	if key == "rebirth" then
+		-- the seal sits bottom centre: the bubble stands over it, the arrow points down at it
+		hudCol = frame(hudTip, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 1) })
+		local l = Toy.list(hudCol, false, px(2))
+		l.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		bubble(hudCol, key).LayoutOrder = 1
+		local slot
+		slot, hudArrow = arrow(hudCol, px(26), 90)
+		slot.LayoutOrder = 2
+	elseif key == "pill" or key == "recruit" then
 		local left = side == "left"
 		hudCol = frame(hudTip, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(left and 1 or 0, 0.5) })
 		Toy.list(hudCol, true, px(2))
@@ -149,6 +168,18 @@ local function revealing()
 	return g ~= nil and g.Enabled
 end
 
+-- this life's rebirth is held and its screen not opened yet (the seal's red dot), for the first rebirths
+local function rebirthReady()
+	if (player:GetAttribute("Rebirths") or 0) >= Config.REBIRTH_TIP_TIMES or not player:GetAttribute("RebirthOpen") then
+		return false
+	end
+	if (player:GetAttribute("Qi") or 0) < (player:GetAttribute("RebirthPrice") or math.huge) then
+		return false
+	end
+	local ok, lit = pcall(HttpService.JSONDecode, HttpService, player:GetAttribute("Dots") or "{}")
+	return ok and type(lit) == "table" and lit.reinc == true
+end
+
 -- which tip, if any, and its target (a part, or the pill or Recruit button)
 local function pick()
 	if not player:GetAttribute("LaunchDone") or (player:GetAttribute("WelcomeQi") or 0) > 0 then
@@ -191,6 +222,13 @@ local function pick()
 			return "see", at
 		end
 	end
+	if rebirthReady() then
+		local hud = playerGui:FindFirstChild("Hud")
+		local btn = hud and hud:FindFirstChild("RebirthSeal", true)
+		if btn and shown(btn) then
+			return "rebirth", btn
+		end
+	end
 	if player:GetAttribute("PillReady") and not done("pill") then
 		local hud = playerGui:FindFirstChild("Hud")
 		local btn = hud and hud:FindFirstChild("PillButton", true)
@@ -212,7 +250,7 @@ RunService.RenderStepped:Connect(function(dt)
 			hideAll()
 		else
 			local side = "right"
-			if (key == "pill" or key == "recruit") and target.AbsolutePosition.X > hudTip.AbsoluteSize.X / 2 then
+			if HUD_TIPS[key] and key ~= "rebirth" and target.AbsolutePosition.X > hudTip.AbsoluteSize.X / 2 then
 				side = "left"
 			end
 			if key ~= shownKey or Toy.S ~= shownScale or side ~= shownSide then
@@ -224,13 +262,17 @@ RunService.RenderStepped:Connect(function(dt)
 		return
 	end
 	local bob = math.sin(os.clock() * 5) * px(4)
-	if key == "pill" or key == "recruit" then
+	if HUD_TIPS[key] then
 		hudTip.Enabled = true
 		board.Enabled = false
 		local inset = hudTip.AbsolutePosition -- the HUD may draw under the top bar inset
 		local a, s = target.AbsolutePosition - inset, target.AbsoluteSize
-		local x = if shownSide == "left" then a.X - px(8) - bob else a.X + s.X + px(8) + bob
-		hudCol.Position = UDim2.fromOffset(x, a.Y + s.Y / 2)
+		if key == "rebirth" then
+			hudCol.Position = UDim2.fromOffset(a.X + s.X / 2, a.Y - px(4) + bob)
+		else
+			local x = if shownSide == "left" then a.X - px(8) - bob else a.X + s.X + px(8) + bob
+			hudCol.Position = UDim2.fromOffset(x, a.Y + s.Y / 2)
+		end
 		if player:GetAttribute("TipTarget") then
 			player:SetAttribute("TipTarget", nil)
 		end

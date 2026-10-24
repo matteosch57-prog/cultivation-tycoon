@@ -1449,6 +1449,7 @@ end
 ---------------------------------------------------------------------------------------------
 -- per frame: smooth count-up, next-goal arrow, recruit wobble when affordable
 local goalAcc = 0
+local rebirthToasted -- the life (rebirths done) whose "Rebirth ready!" toast already showed
 RunService.RenderStepped:Connect(function(dt)
 	if not ui.root then
 		return
@@ -1503,8 +1504,19 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
 	end
 
-	-- the Rebirth seal wobbles gold once the rebirth price is held
-	if player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge) then
+	-- the Rebirth seal wobbles gold once the rebirth price is held; the first rebirths also say so
+	-- once, in a gold toast (owner 2026-10-24; Tips.client points at the seal)
+	local rebirthHeld = player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge)
+	if player:GetAttribute("LaunchDone") and (player:GetAttribute("WelcomeQi") or 0) <= 0 then
+		local life = player:GetAttribute("Rebirths") or 0
+		if rebirthHeld and rebirthToasted ~= life and life < Config.REBIRTH_TIP_TIMES then
+			toast("Rebirth ready!", GOLD, 4)
+		end
+		if rebirthHeld then
+			rebirthToasted = life
+		end
+	end
+	if rebirthHeld then
 		ui.rebirthBtn.Rotation = math.sin(os.clock() * 6) * 4
 		ui.rebirthBtn.BackgroundColor3 = GOLD
 	else
