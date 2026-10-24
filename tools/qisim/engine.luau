@@ -36,6 +36,7 @@ local MIRRORS = {
 		"s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)",
 		"if all and not s.pads.breakthrough and rebirths(s.data) >= Config.rebirthsFor(s.data.realm + 1) then",
 		"local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48",
+		"local startQi = math.floor(padRate(s) * Config.BREAKTHROUGH_START_SECONDS) -- the new realm's first pads at once",
 		"s.padPrice[key] = Config.workerCost(pad, n, s.data.realm, padRate(s))",
 		"s.data.chestQi = (s.data.chestQi or 0) + Config.CHEST_STARTER_QI",
 		"s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)",

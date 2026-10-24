@@ -1549,6 +1549,9 @@ refreshPads = function(player, s)
 			s.data.realmRecruits = 0
 			lightning(s)
 			rebuild(s)
+			local startQi = math.floor(padRate(s) * Config.BREAKTHROUGH_START_SECONDS) -- the new realm's first pads at once
+			s.data.qi = startQi
+			Telemetry.source(player, s.data, startQi, "breakthrough")
 			refreshPads(player, s)
 			publish(player)
 			notify:FireAllClients("breakthrough", player.DisplayName, nextName)

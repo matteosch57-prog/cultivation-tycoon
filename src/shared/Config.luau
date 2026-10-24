@@ -236,6 +236,10 @@ Config.BREAKTHROUGH_COST = 300000 -- the old fixed price (x costMult); read only
 Config.BREAKTHROUGH_SECONDS = 90
 -- the breakthrough pad opens a confirm screen; its Confirm counts this long after the offer (s)
 Config.BREAKTHROUGH_ASK_SECONDS = 120
+-- a breakthrough starts the new realm with this many seconds of the new pad income in qi (owner pick
+-- 2026-10-24: 7 of 25 realm-2 leavers quit within 30 s of their first breakthrough, sect gone, qi 0 and
+-- nothing affordable; AdVenture Capitalist / Egg, Inc. restart a reset with something to spend at once)
+Config.BREAKTHROUGH_START_SECONDS = 60
 
 -- Pads of one realm. Players CHOOSE: a pad opens once `unlock` buildings are owned (any of
 -- them) and its `req` pads (hard dependencies) are owned, which keeps 3 to 5 pads open at once.

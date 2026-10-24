@@ -248,6 +248,9 @@ function World:buy(o)
 		d.pillTimer = 0
 		d.realmRecruits = 0
 		s.btCost = nil
+		local startQi = math.floor(M.padRate(s) * C.BREAKTHROUGH_START_SECONDS) -- Main: the new realm's first pads at once
+		d.qi = startQi
+		self.src.breakthrough = (self.src.breakthrough or 0) + startQi
 	end
 	return true
 end
