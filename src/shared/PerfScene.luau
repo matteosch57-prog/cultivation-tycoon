@@ -43,7 +43,8 @@ function PerfScene.zone(): string
 	local cam = workspace.CurrentCamera
 	local at = (root and root.Position) or (cam and cam.CFrame.Position) or Vector3.zero
 	for _, m in CollectionService:GetTagged("Cultivator") do
-		if m:IsA("Model") and m.Parent and (m:GetPivot().Position - at).Magnitude < DISCIPLE_NEAR then
+		-- (a shop or streak card's ViewportFrame holds a tagged preview figure at the origin)
+		if m:IsA("Model") and m:IsDescendantOf(workspace) and (m:GetPivot().Position - at).Magnitude < DISCIPLE_NEAR then
 			return "disciples"
 		end
 	end

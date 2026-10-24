@@ -68,10 +68,37 @@ two events (Telemetry.clientPerf):
 The scan walks the workspace by hand, 1,000 instances a frame, every 25 s, so it causes no hitch
 of its own. The owner's `/perf` rows now also show the zone and those counts.
 
-## Studio check
+## Studio check (2026-10-24, owner's PC)
 
-(to be filled in by the Studio run: numbers before and after at quality 10, quality 3 and the
-phone emulator, and the ablations: emitters off, Highlights off, motion off, avatars hidden)
+A full late-game sect: 41 seated disciples (5 Primordial, 8 Heavenly Emperor, 9 Dao Ancestor,
+9 Celestial, 8 Immortal, 2 Elder, 2 Shiny), all 8 isles, the camera behind the avatar on the platform.
+Studio is capped at 60 fps on this PC, so the render CPU time is the number that moves. "Old" is
+the old look rebuilt on the client: the old orb rates, every layer and Highlight on, one Highlight a sword.
+
+| Run | Render CPU ms (median/95%) | Draw calls | Triangles | Live particles near | Highlights near |
+|---|---|---|---|---|---|
+| New, quality 10 | 8.0 / 9.2 | 1,387 | 2.87M | 4,094 | 28 |
+| Old, quality 10 | 9.3 / 10.6 | 2,192 | 3.16M | 10,288 | 226 |
+| New, quality 3 | 7.1 / 8.5 | 1,148 | 2.85M | 4,094 | 28 |
+| Old, quality 3 | 8.2 / 9.7 | 2,070 | 3.14M | 10,296 | 226 |
+
+Changes from the old state: all emitters off saved 940 draw calls and 2.4 ms (the biggest lever).
+All Highlights off saved 604 draw calls and 0.94M triangles, but only 0.1 ms of CPU, because their
+cost is screen fill that a PC GPU hides. Hiding the avatars saved 498 draw calls, 1.08M triangles
+and 0.5 ms. The fix overall cut draw calls by 37%, particles by 60% and Highlights from 226 to 28.
+These runs used the PC budget, since scripts cannot set the graphics level, so a phone also gets the
+smaller budget (8 full figures, 10 Highlights).
+
+**Main Hall preview** (the owner's -30 fps): the Celestial Palace preview had 4,269 parts. Its
+per-frame work was 2.58 ms of Lua for all of them, plus drawing 4,269 see-through Neon parts. With
+the 300 biggest parts it is 0.16 ms, with no fps drop while it fades in, and it still reads as the
+palace.
+
+Found and fixed during the check: disciples streamed in piece by piece, so late emitters missed the
+budget (now Atomic, and late layers join the budget). The zone check also counted a shop card's
+viewport figure at the hub as a disciple.
+Still open: CultivatorIdle costs about 2.4 ms of Lua a frame with 41 figures (PC budget), with rare
+spikes. The phone emulator run needs the Device emulator set by hand.
 
 ## Next if the phone is still slow
 

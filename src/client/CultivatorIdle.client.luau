@@ -151,6 +151,14 @@ local function add(m)
 	f.rimFill = f.rim and f.rim.FillTransparency
 	f.model = m
 	figures[m] = f
+	-- a layer that arrives late (streaming, a Shiny's glints) joins the budget in the figure's state
+	m.DescendantAdded:Connect(function(d)
+		if d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") then
+			local heavy = HEAVY[d.Name] == true
+			table.insert(if heavy then f.heavy else f.layers, d)
+			d.Enabled = if heavy then f.full else f.lit
+		end
+	end)
 end
 
 -- Arrival (owner 2026-10-22): a new recruit walks in from behind its cushion with Roblox's own R15

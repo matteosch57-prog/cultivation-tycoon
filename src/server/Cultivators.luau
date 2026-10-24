@@ -593,6 +593,9 @@ function Cultivators.build(parent, cf, look, rarity, rarities, opts)
 	end
 	local tier = tierOf(rarity, rarities)
 	local m = Instance.new("Model")
+	-- arrives on clients whole: a figure streamed in part by part left its late aura emitters out of
+	-- CultivatorIdle's budget (on at every distance) and its late orbs out of the circling (Studio 2026-10-24)
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m.Name = "Cultivator_" .. look
 	m:SetAttribute("Look", look)
 	m:SetAttribute("Rarity", rarity.name)
