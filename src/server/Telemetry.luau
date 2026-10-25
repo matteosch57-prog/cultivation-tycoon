@@ -40,6 +40,10 @@ Telemetry.EVENTS = {
 		fields = { "pill | orb | gift | hands | streak", "realm (realmBucket)" },
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
+	Mission = {
+		fields = { "done | daily | rank", "done/daily: group; rank: the rank reached", "done/daily: stars; rank: minutes played (minuteBucket)" },
+		question = "Which Sect Missions get finished, and how fast do players climb the ranks?",
+	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
 		question = "Are servers healthy: the worst 5 minutes of each server, does it slow down as it fills?",

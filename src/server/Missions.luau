@@ -132,7 +132,7 @@ local function daily(m, d, c)
 	end
 	local pool = {}
 	for _, group in Config.MISSION_DAILY do
-		if group ~= "bless" and allowed(group, c) or group == "bless" then -- a sect to bless turns up during the day
+		if allowed(group, c) then
 			table.insert(pool, group)
 		end
 	end
@@ -243,10 +243,11 @@ function Missions.bump(player, group, n)
 	end
 	local m = state(s.data)
 	local c = api.ctx(player, s)
-	local gotStars, finished, paid = 0, {}, {}
+	local gotStars, finished, paid, moved = 0, {}, {}, false
 	for i = #m.slots, 1, -1 do
 		local x = m.slots[i]
 		if x.g == group then
+			moved = true
 			x.n = math.min(x.need, x.n + (n or 1))
 			if x.n >= x.need then
 				table.remove(m.slots, i)
@@ -260,6 +261,7 @@ function Missions.bump(player, group, n)
 	local dl = daily(m, s.data, c)
 	for _, x in dl.list do
 		if x.g == group and x.n < x.need then
+			moved = true
 			x.n = math.min(x.need, x.n + (n or 1))
 			if x.n >= x.need then
 				gotStars += x.stars
@@ -269,6 +271,9 @@ function Missions.bump(player, group, n)
 		end
 	end
 	if gotStars == 0 then
+		if moved then
+			Missions.push(player, s) -- the tracker's counts move on every step
+		end
 		return
 	end
 	local chest

@@ -1596,7 +1596,7 @@ Config.MISSION_STARTER = {
 	{ group = "orb", need = 8, stars = 2 },
 }
 -- Daily (owner pick pending, B): 3 missions a UTC day from these groups, all 3 done opens the daily chest.
-Config.MISSION_DAILY = { "orb", "recruit", "build", "gift", "bless", "altar", "pill" }
+Config.MISSION_DAILY = { "orb", "recruit", "build", "gift", "altar", "pill" } -- no bless: a day can start on an empty server
 Config.MISSION_DAILY_COUNT = 3
 Config.MISSION_DAILY_TIER = 2 -- every daily is drawn at this tier (the nearest one the group has)
 Config.MISSION_DAILY_CHEST = { qiSec = 300, summons = 2 }

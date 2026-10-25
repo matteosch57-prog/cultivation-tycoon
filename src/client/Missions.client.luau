@@ -42,6 +42,13 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 17 -- over the HUD, under the Gifts page (18) and the Intro (20)
 gui.Parent = playerGui
 
+-- the rank page has its own ScreenGui, empty while closed: the Daily Blessing waits while it has children
+-- (Streak.client COVERS)
+local pageGui = gui:Clone()
+pageGui.Name = "MissionsPage"
+pageGui.DisplayOrder = 19
+pageGui.Parent = playerGui
+
 local openEvent = Instance.new("BindableEvent")
 openEvent.Name = "MissionsOpen"
 openEvent.Parent = player -- not PlayerGui: the first LoadCharacter empties it
@@ -317,7 +324,7 @@ drawPage = function(open)
 	dim.BackgroundColor3 = Color3.new(0, 0, 0)
 	dim.BackgroundTransparency = 0.45
 	dim.Size = UDim2.fromScale(1, 1)
-	dim.Parent = gui
+	dim.Parent = pageGui
 	page = dim
 	dim.Activated:Connect(function()
 		drawPage(false)
@@ -337,13 +344,15 @@ drawPage = function(open)
 	st.Thickness = px(4)
 	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	st.Parent = card
+	-- the content in its own list, so the close button can sit on the card's corner
+	local body = frame(card, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y })
 	local pad = Instance.new("UIPadding")
 	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(16)), UDim.new(0, px(16))
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(12)), UDim.new(0, px(14))
-	pad.Parent = card
-	Toy.list(card, false, px(10), { HorizontalAlignment = Enum.HorizontalAlignment.Left, VerticalAlignment = Enum.VerticalAlignment.Top })
+	pad.Parent = body
+	Toy.list(body, false, px(10), { HorizontalAlignment = Enum.HorizontalAlignment.Left, VerticalAlignment = Enum.VerticalAlignment.Top })
 	-- title
-	local title = frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
+	local title = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	Toy.list(title, true, px(10))
 	local badge = frame(title, { Size = UDim2.fromOffset(px(32), px(32)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("F0B400"), LayoutOrder = 1 })
 	corner(badge, UDim.new(1, 0))
@@ -353,13 +362,9 @@ drawPage = function(open)
 	text(title, string.format("★ %d of %d to %s", m.stars, m.path[#m.path].at, nextName), px(15), MUTED, { LayoutOrder = 3 })
 	-- close
 	local xh, xb = Toy.button(card, UDim2.fromOffset(px(36), px(36)), Color3.fromHex("FF4D4D"), px(18))
-	xh.Parent = dim -- on the card's corner, out of its list
 	xh.AnchorPoint = Vector2.new(0.5, 0.5)
-	local function sitClose()
-		xh.Position = UDim2.fromOffset(card.AbsolutePosition.X + card.AbsoluteSize.X - px(4), card.AbsolutePosition.Y + px(4))
-	end
-	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(sitClose)
-	task.defer(sitClose)
+	xh.Position = UDim2.new(1, -px(4), 0, px(4))
+	xh.ZIndex = 5
 	text(xb, "✕", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	Toy.feel(xb)
 	xb.Activated:Connect(function()
@@ -367,7 +372,7 @@ drawPage = function(open)
 	end)
 	-- the reward path: nodes along a gold line, ticked when paid, the next one ringed
 	local pathH = px(phone and 96 or 112)
-	local path = frame(card, { Size = UDim2.new(1, 0, 0, pathH), LayoutOrder = 2 })
+	local path = frame(body, { Size = UDim2.new(1, 0, 0, pathH), LayoutOrder = 2 })
 	local lineY = px(phone and 30 or 36)
 	local _, fill = bar(path, px(10), GOLD)
 	fill.Parent.Position = UDim2.fromOffset(0, lineY - px(5))
@@ -396,7 +401,7 @@ drawPage = function(open)
 		text(cell, last and (words .. " + rank up") or words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })
 	end
 	-- missions and dailies side by side
-	local cols = frame(card, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 3 })
+	local cols = frame(body, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 3 })
 	Toy.list(cols, true, px(14), { VerticalAlignment = Enum.VerticalAlignment.Top, HorizontalAlignment = Enum.HorizontalAlignment.Left })
 	local daily = Config.MISSION_DAILY_ON and #m.daily > 0
 	local cw = daily and (w - px(32) - px(14)) / 2 or (w - px(32))

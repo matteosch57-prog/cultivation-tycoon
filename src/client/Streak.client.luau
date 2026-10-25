@@ -423,7 +423,7 @@ end
 -- the card never opens over another screen (owner 2026-10-23): it waits until each of these is gone.
 -- A screen counts while its gui is Enabled and draws something (Gifts and Intro stay Enabled, emptied);
 -- the Friends gui always holds its HUD row, so only its card counts
-local COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest" }
+local COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest", "MissionsPage" }
 local function covered()
 	for _, name in COVERS do
 		local g = playerGui:FindFirstChild(name)
