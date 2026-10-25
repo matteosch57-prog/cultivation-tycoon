@@ -69,6 +69,7 @@ function World:join()
 		end
 	end
 	d.sessions = (d.sessions or 0) + 1
+	self.E.Missions.refresh(self.player, s) -- Main onJoin: Sect Missions top up
 	-- the server this session joins: its tide and altar clocks start at a random point
 	self.tideNext = self:now() + math.random(0, C.TIDE_INTERVAL)
 	self.altarNext = self.tideNext + C.TIDE_INTERVAL / 2
@@ -229,6 +230,7 @@ function World:buy(o)
 		if o.id == "hall" and (d.recruited or 0) == 0 and not (d.tips and d.tips.recruit) then
 			d.freeRecruits = math.max(d.freeRecruits or 0, C.FREE_RECRUITS)
 		end
+		self.E.Missions.bump(self.player, "build", 1)
 	elseif o.kind == "hire" then
 		self.sink.hire = (self.sink.hire or 0) + o.cost
 		d.workers = d.workers or {}
@@ -251,6 +253,7 @@ function World:buy(o)
 		local startQi = math.floor(M.padRate(s) * C.BREAKTHROUGH_START_SECONDS) -- Main: the new realm's first pads at once
 		d.qi = startQi
 		self.src.breakthrough = (self.src.breakthrough or 0) + startQi
+		self.E.Missions.bump(self.player, "breakthrough", 1)
 	end
 	return true
 end
@@ -267,6 +270,7 @@ function World:pickOrb()
 	self.src.orb = (self.src.orb or 0) + gain
 	d.tips = d.tips or {}
 	d.tips.orb = true
+	self.E.Missions.bump(self.player, "orb", 1)
 	return gain
 end
 
@@ -293,6 +297,7 @@ function World:altar(contested)
 	local gain = math.floor(self.M.rate(self.s, true) * (contested and C.ALTAR_WIN_SECONDS or C.ALTAR_SOLO_SECONDS))
 	self.d.qi += gain
 	self.src.altar = (self.src.altar or 0) + gain
+	self.E.Missions.bump(self.player, "altar", 1)
 	return gain
 end
 

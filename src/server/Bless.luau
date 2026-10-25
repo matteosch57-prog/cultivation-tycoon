@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local AssetService = game:GetService("AssetService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Missions = require(script.Parent:WaitForChild("Missions"))
 
 local Bless = {}
 local api -- { sessions, rate, publish, notify, telemetry, style, palette, kit }
@@ -173,6 +174,7 @@ local function trigger(plot, player)
 		api_.notify:FireClient(owner, "blessed", player.DisplayName, theirs)
 		Bless.mark(player, s)
 		api_.publish(player)
+		task.defer(Missions.bump, player, "bless", 1)
 		api_.publish(owner)
 	end
 	task.delay(1, function()

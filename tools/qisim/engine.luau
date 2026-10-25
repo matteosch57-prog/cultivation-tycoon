@@ -47,6 +47,14 @@ local MIRRORS = {
 	dots = { "return (d.playSec or 0) >= Config.DOT_SHOP_FIRST and d.shopFreeDay ~= os.time() // 86400" },
 	altar = { "local gain = math.floor(ctx.rate(s, true) * seconds)", "contested and Config.ALTAR_WIN_SECONDS or Config.ALTAR_SOLO_SECONDS" },
 	bless = { "local mine = math.floor(api_.rate(s, true) * Config.BLESS_SECONDS)" },
+	-- Missions.init's ctx in Main, mirrored in Engine.load
+	missionsCtx = {
+		"giftLeft = Config.GIFT_TIMES[d.giftIdx or 1] ~= nil,",
+		"furnace = d.owned.furnace == true,",
+		"reborn = rebirths(d) >= 1,",
+		"streakReady = (d.streak or {}).last ~= Config.giftDay(),",
+		"canBreak = not Config.rebirthOpen(d.realm, rebirths(d), d.owned),",
+	},
 }
 
 -- the Main functions run as they are, in Main's order
@@ -124,7 +132,9 @@ function Engine.load(root, seed)
 		dots = fs.readFile(root .. "/src/server/Dots.luau"),
 		altar = fs.readFile(root .. "/src/server/Altar.luau"),
 		bless = fs.readFile(root .. "/src/server/Bless.luau"),
+		missions = fs.readFile(root .. "/src/server/Missions.luau"),
 	}
+	texts.missionsCtx = texts.main -- the ctx lines live in Main
 	checkMirrors(texts)
 	local clock = newClock(1761200000) -- a fixed epoch: UTC days and weeks fall the same way each run
 	math.randomseed(seed or 1)
@@ -192,7 +202,10 @@ function Engine.load(root, seed)
 		showIdleChest = noop,
 		save = noop,
 		friendsOf = {},
-		task = { spawn = noop, delay = noop, wait = noop },
+		task = { spawn = noop, delay = noop, wait = noop, defer = function(f, ...)
+			f(...)
+		end },
+		Missions = nil, -- set below (the real Missions.luau)
 		-- Main reports a caught error with warn + print ("... error:"): the sim keeps every one and
 		-- the run fails on them, so a stub gap can never turn into silently skipped code
 		warn = function(...)
@@ -217,6 +230,9 @@ function Engine.load(root, seed)
 	-- Config, as the game loads it
 	local Config = luau.load(fs.readFile(root .. "/src/shared/Config.luau"), { debugName = "Config", environment = env })()
 	env.Config = Config
+	if require("@lune/process").env.QISIM_MISSIONS == "0" then
+		Config.MISSIONS_ON = false -- QISIM_MISSIONS=0: the game without Sect Missions, to compare
+	end
 	for _, h in HANDLERS do
 		env[h] = {}
 	end
@@ -248,7 +264,46 @@ function Engine.load(root, seed)
 		table.insert(exports, name .. " = " .. name)
 	end
 	table.insert(chunk, "\nreturn { " .. table.concat(exports, ", ") .. " }\n")
+	-- Sect Missions, the real module (its header requires swapped for the sim's Config), loaded first: luau.load copies the environment
+	local mText = fs.readFile(root .. "/src/server/Missions.luau")
+	local body = string.find(mText, "\nlocal Missions = {}", 1, true)
+	assert(body, "qisim: Missions.luau no longer has its module table")
+	env.HttpService = { JSONEncode = function()
+		return ""
+	end }
+	local Missions = luau.load(string.sub(mText, body), { debugName = "Missions", environment = env })()
+	env.Missions = Missions
 	local M = luau.load(table.concat(chunk, "\n"), { debugName = "Main(economy)", environment = env })()
+	local missionQi, missionRanks = {}, {}
+	Missions.init({
+		sessions = sessions,
+		rate = M.rate,
+		publish = noop,
+		notify = stub(),
+		telemetry = setmetatable({
+			source = function(_, _, gain, why)
+				missionQi[why] = (missionQi[why] or 0) + gain
+			end,
+			custom = function(player, name, what, a)
+				if name == "Mission" and what == "rank" then
+					missionRanks[tonumber(a)] = sessions[player].data.playSec or 0
+				end
+			end,
+		}, stubMeta),
+		giveSummons = M.giveSummons,
+		addDisciple = M.addDisciple,
+		ctx = function(player, s)
+			local d = s.data
+			return {
+				others = false, -- the sim plays alone
+				giftLeft = Config.GIFT_TIMES[d.giftIdx or 1] ~= nil,
+				furnace = d.owned.furnace == true,
+				reborn = M.rebirths(d) >= 1,
+				streakReady = (d.streak or {}).last ~= Config.giftDay(),
+				canBreak = not Config.rebirthOpen(d.realm, M.rebirths(d), d.owned),
+			}
+		end,
+	})
 	-- Shop's product grant (Welcome Pouch, Qi packs, Starter Pack, bought disciples), as it is
 	env.api = { rate = M.rate, addDisciple = M.addDisciple, notify = stub(), tideBell = noop }
 	local grantText = cut(texts.shop, "\nlocal function realm(", "Shop realm") .. cut(texts.shop, "\nlocal function grantProduct(", "Shop grantProduct")
@@ -273,6 +328,9 @@ function Engine.load(root, seed)
 		errors = errors,
 		handlers = {},
 		newPlayer = newPlayer,
+		Missions = Missions,
+		missionQi = missionQi,
+		missionRanks = missionRanks, -- rank -> play seconds when it was reached
 	}
 	for _, h in HANDLERS do
 		api.handlers[h] = env[h].OnServerInvoke

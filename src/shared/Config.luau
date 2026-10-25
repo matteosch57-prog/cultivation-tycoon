@@ -1538,4 +1538,105 @@ Config.SKY = {
 }
 Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: the birds fade out, the crickets in
 
+-- Sect Missions (2026-10-25, copies Pet Simulator 99 ranks: https://pet-simulator.fandom.com/wiki/Ranks_(Pet_Simulator_99)).
+-- A few missions at a time, one from each group (MISSION_GROUPS), a done one pays its stars and a new one
+-- takes its slot. Stars fill the rank's reward path (MISSION_RANKS): each reward is paid when the stars
+-- reach its `at`, the last one ranks you up. Slots per rank and star tiers follow PS99 (2 slots at rank 1,
+-- 3 at ranks 2-4, 4 from rank 5; 2-star missions from rank 1's 3rd mission, 3-star from rank 2, 4-star
+-- from rank 5). Rank 1 is a fixed starter line (MISSION_STARTER) aimed at what goes with players coming
+-- back (live analysis 2026-10-25: realm 2, the Daily Blessing, the first rebirth). Missions are kept for
+-- the whole account (breakthrough and rebirth keep them). Rewards are the timed gifts' kinds: qiSec
+-- seconds of income (no tide, no pill), free summons (into the idle chest's summons), pill seconds of
+-- 2x qi, a disciple of `rarity`.
+Config.MISSIONS_ON = true
+Config.MISSION_HUD = "list" -- "list": rank bar + missions beside the left rail (picks A, B); "button": a Missions button + the nearest mission (C)
+Config.MISSION_DAILY_ON = true -- the 3 daily missions and their chest (picks B, C)
+Config.MISSION_SLOTS = { 2, 3, 3, 3, 4 } -- by rank, the last entry for every rank after
+Config.MISSION_TIER_AT = { [2] = { rank = 1, done = 2 }, [3] = { rank = 2, done = 0 }, [4] = { rank = 5, done = 0 } } -- a tier opens at that rank after `done` missions in it
+Config.MISSION_RANKS = {
+	{ name = "Sweeper", rewards = { { at = 2, qiSec = 60 }, { at = 4, summons = 1 }, { at = 7, pill = 120 }, { at = 10, qiSec = 120 }, { at = 13, summons = 2, rarity = "Core Disciple" } } },
+	{ name = "Novice", rewards = { { at = 3, qiSec = 90 }, { at = 7, summons = 1 }, { at = 11, pill = 180 }, { at = 16, qiSec = 150 }, { at = 20, summons = 2 }, { at = 25, summons = 2, rarity = "Core Disciple" } } },
+	{ name = "Acolyte", rewards = { { at = 4, qiSec = 120 }, { at = 9, summons = 2 }, { at = 15, pill = 300 }, { at = 21, qiSec = 180 }, { at = 26, summons = 2 }, { at = 32, summons = 3, rarity = "Elder" } } },
+	{ name = "Adept", rewards = { { at = 6, qiSec = 150 }, { at = 13, summons = 2 }, { at = 21, pill = 300 }, { at = 29, qiSec = 240 }, { at = 37, summons = 3 }, { at = 46, summons = 3, rarity = "Elder" } } },
+	{ name = "Senior", rewards = { { at = 8, qiSec = 180 }, { at = 18, summons = 2 }, { at = 28, pill = 420 }, { at = 39, qiSec = 300 }, { at = 50, summons = 3 }, { at = 63, summons = 4, rarity = "Immortal" } } },
+	{ name = "Deacon", rewards = { { at = 11, qiSec = 240 }, { at = 25, summons = 3 }, { at = 40, pill = 600 }, { at = 55, qiSec = 360 }, { at = 71, summons = 4 }, { at = 89, summons = 4, rarity = "Elder" } } },
+	{ name = "Steward", rewards = { { at = 16, qiSec = 300 }, { at = 36, summons = 3 }, { at = 58, pill = 600 }, { at = 80, qiSec = 480 }, { at = 104, summons = 5 }, { at = 131, summons = 5, rarity = "Immortal" } } },
+	{ name = "Hall Master", rewards = { { at = 22, qiSec = 360 }, { at = 50, summons = 4 }, { at = 80, pill = 900 }, { at = 112, qiSec = 600 }, { at = 146, summons = 5 }, { at = 182, summons = 6, rarity = "Immortal" } } },
+	{ name = "Protector", rewards = { { at = 32, qiSec = 480 }, { at = 70, summons = 4 }, { at = 113, pill = 900 }, { at = 160, qiSec = 720 }, { at = 208, summons = 6 }, { at = 259, summons = 6, rarity = "Celestial" } } },
+	{ name = "Sect Master", rewards = { { at = 40, qiSec = 600 }, { at = 88, summons = 5 }, { at = 140, pill = 1200 }, { at = 196, qiSec = 900 }, { at = 256, summons = 6 }, { at = 319, summons = 8, rarity = "Celestial" } } },
+}
+Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
+
+-- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier
+-- is never drawn. `when(d, ctx)` says the group can be drawn now (ctx.others = other players here,
+-- ctx.rebirths, ctx.giftLeft, ctx.furnace). `scale` "build" shrinks the count in late realms, where pads wait
+-- minutes (D82).
+Config.MISSION_GROUPS = {
+	orb = { text = "Collect %d qi orbs", need = { 3, 8, 15, 30 }, stars = { 1, 2, 3, 4 } },
+	recruit = { text = "Recruit %d disciples", need = { 3, 10, 25, 60 }, stars = { 1, 2, 3, 4 } },
+	build = { text = "Build %d buildings", need = { 3, 8, 15, 25 }, stars = { 1, 2, 3, 4 }, scale = "build" },
+	breakthrough = { text = "Break through %d time", plural = "Break through %d times", need = { [3] = 1, [4] = 2 }, stars = { [3] = 3, [4] = 4 } },
+	altar = { text = "Join a Heavenly Altar fight", need = { [2] = 1 }, stars = { [2] = 2 } },
+	gift = { text = "Claim %d free gift", plural = "Claim %d free gifts", need = { 1, 2 }, stars = { 1, 2 }, when = "giftLeft" },
+	pill = { text = "Take %d x2 pill", plural = "Take %d x2 pills", need = { 1, 2, 4 }, stars = { 1, 2, 3 }, when = "furnace" },
+	bless = { text = "Bless %d sect", plural = "Bless %d sects", need = { [2] = 1, [3] = 2 }, stars = { [2] = 2, [3] = 3 }, when = "others" },
+	rebirth = { text = "Rebirth once", need = { [4] = 1 }, stars = { [4] = 4 }, when = "reborn" },
+}
+-- Rank 1, in order (like Bee Swarm Simulator's first quest giver): each entry is a group, count and stars.
+-- "streak" (claim the Daily Blessing) is skipped when today's is already claimed, "rebirth" after a first rebirth.
+Config.MISSION_STARTER = {
+	{ group = "build", need = 5, stars = 1 },
+	{ group = "recruit", need = 3, stars = 1 },
+	{ group = "breakthrough", need = 1, stars = 2, text = "Break through to the next realm" },
+	{ group = "rebirth", need = 1, stars = 4, text = "Rebirth once" }, -- sits in its slot until the first rebirth (~9 min)
+	{ group = "orb", need = 3, stars = 1 },
+	{ group = "streak", need = 1, stars = 1, text = "Claim the Daily Blessing" },
+	{ group = "build", need = 10, stars = 2 },
+	{ group = "gift", need = 1, stars = 1 },
+	{ group = "orb", need = 8, stars = 2 },
+}
+-- Daily (owner pick pending, B): 3 missions a UTC day from these groups, all 3 done opens the daily chest.
+Config.MISSION_DAILY = { "orb", "recruit", "build", "gift", "bless", "altar", "pill" }
+Config.MISSION_DAILY_COUNT = 3
+Config.MISSION_DAILY_TIER = 2 -- every daily is drawn at this tier (the nearest one the group has)
+Config.MISSION_DAILY_CHEST = { qiSec = 300, summons = 2 }
+
+function Config.missionRank(rank)
+	local n = #Config.MISSION_RANKS
+	local def = Config.MISSION_RANKS[math.min(rank, n)]
+	if rank <= n then
+		return def.name, def.rewards
+	end
+	local roman = { "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" }
+	return def.name .. " " .. (roman[rank - n] or tostring(rank - n + 1)), def.rewards
+end
+
+function Config.missionSlots(rank)
+	return Config.MISSION_SLOTS[math.min(rank, #Config.MISSION_SLOTS)]
+end
+
+-- the count of a group's tier for this save (build missions shrink where pads wait long)
+function Config.missionNeed(group, tier, realm)
+	local g = Config.MISSION_GROUPS[group]
+	local n = g and g.need[tier]
+	if not n then
+		return nil
+	end
+	if g.scale == "build" then
+		n = math.max(1, math.floor(n * (realm <= 3 and 1 or realm <= 6 and 0.5 or 0.2)))
+	end
+	return n
+end
+
+function Config.missionText(group, n, text)
+	if text then
+		return text
+	end
+	local g = Config.MISSION_GROUPS[group]
+	if not g then
+		return group
+	end
+	return string.format(n ~= 1 and g.plural or g.text, n)
+end
+
 return Config

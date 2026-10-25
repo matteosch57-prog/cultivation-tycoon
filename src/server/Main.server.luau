@@ -31,6 +31,7 @@ local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Journal = require(script.Parent:WaitForChild("Journal"))
 local Bless = require(script.Parent:WaitForChild("Bless"))
+local Missions = require(script.Parent:WaitForChild("Missions"))
 local Badges = require(script.Parent:WaitForChild("Badges"))
 local PlayerAura = require(script.Parent:WaitForChild("PlayerAura"))
 
@@ -1417,6 +1418,7 @@ refreshPads = function(player, s)
 					Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, pad.id)
 					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
 					Telemetry.funnel(player, s.data)
+					task.defer(Missions.bump, player, "build", 1) -- after the pad's own state is set
 					-- BuiltAt tells clients to play the assemble animation for this model
 					-- a Main Hall level replaces the one before it
 					local lv = tonumber(pad.id:match("^mainhall(%d)$"))
@@ -1540,6 +1542,7 @@ refreshPads = function(player, s)
 			Ranks.touch()
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
+			task.defer(Missions.bump, player, "breakthrough", 1) -- after the realm change is done
 			s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)
 			s.data.workers = {}
 			s.padPrice = nil
@@ -1861,6 +1864,7 @@ local function onJoin(player)
 	Ranks.touch()
 	Bless.refresh(plot) -- the shrine shows this owner's blessings
 	Bless.mark(player, s)
+	Missions.refresh(player, s) -- Sect Missions: top up the slots and today's dailies
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
 	SwordRide.onJoin(player, s)
@@ -2209,6 +2213,7 @@ chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	buildDisciples(s, bestKey) -- once: the best newcomer walks to its seat
 	publish(player)
 	s.recruiting = false
+	Missions.bump(player, "recruit", #results)
 	return { results = results, left = s.data.chestSummons }
 end)
 
@@ -2285,6 +2290,7 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
+	Missions.bump(player, "recruit", want)
 	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, kept = bestKept, results = results }
 end)
 
@@ -2305,6 +2311,7 @@ pillFn.OnServerInvoke = function(player)
 	s.data.boostUntil = math.max(workspace:GetServerTimeNow(), s.data.boostUntil or 0) + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
+	Missions.bump(player, "pill", 1)
 	return true
 end
 
@@ -2340,6 +2347,7 @@ giftFn.OnServerInvoke = function(player)
 	Telemetry.source(player, d, gain, "gift", true)
 	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(d.realm))
 	publish(player)
+	task.defer(Missions.bump, player, "gift", 1)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
 	return { qi = gain, summons = summons, pill = pill, rarity = rarity }
 end
@@ -2385,6 +2393,7 @@ streakFn.OnServerInvoke = function(player)
 	end
 	Telemetry.custom(player, "Feature", "streak", Telemetry.realmBucket(d.realm))
 	publish(player)
+	task.defer(Missions.bump, player, "streak", 1)
 	return { day = day, qi = gain, summons = summons, rarity = rarity }
 end
 
@@ -2667,6 +2676,7 @@ local function reincarnate(player, s)
 	publish(player)
 	task.spawn(save, s, false, true)
 	notify:FireAllClients("reincarnate", player.DisplayName, d.lives)
+	task.defer(Missions.bump, player, "rebirth", 1)
 	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)) }
 end
 
@@ -2849,6 +2859,7 @@ local function checkOrbs(player, s, hrp)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
+			task.defer(Missions.bump, player, "orb", 1)
 			s.data.tips = s.data.tips or {}
 			if not s.data.tips.orb and walked then
 				-- the tip stays for the first few orbs walked into (Config.ORB_TIP_TIMES; the Auto Orbs
@@ -3041,6 +3052,33 @@ Bless.init({
 	style = Style,
 	palette = Style.PAL,
 	kit = Kit,
+})
+Missions.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	notify = notify,
+	telemetry = Telemetry,
+	giveSummons = giveSummons,
+	addDisciple = addDisciple,
+	-- what a mission draw may ask for right now (Missions allowed())
+	ctx = function(player, s)
+		local d = s.data
+		local others = false
+		for p in sessions do
+			if p ~= player then
+				others = true
+			end
+		end
+		return {
+			others = others,
+			giftLeft = Config.GIFT_TIMES[d.giftIdx or 1] ~= nil,
+			furnace = d.owned.furnace == true,
+			reborn = rebirths(d) >= 1,
+			streakReady = (d.streak or {}).last ~= Config.giftDay(),
+			canBreak = not Config.rebirthOpen(d.realm, rebirths(d), d.owned),
+		}
+	end,
 })
 setupLighting()
 buildPlots()
