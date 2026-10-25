@@ -568,7 +568,7 @@ the log as a D-number.
   stays (D57 keeps the visit, like Adopt Me's trick-or-treat buckets). Shown only while another sect is
   on the server; gold when a shrine is free; no incense left = the countdown to the UTC reset.
 - **D85 Auto Build (owner 2026-10-25: "long term isn't so interesting once you build the same things
-  50 times"; mock docs/art/mocks/2026-10-25_auto_build.jpg, built as pick C pending the owner's card):**
+  50 times"; owner pick C of docs/art/mocks/2026-10-25_auto_build.jpg):**
   Mega Mansion Tycoon's "Auto Build" pass ("build your house as you can afford each purchase"), free
   here and only for buildings the save has built before, in any life (`data.everBuilt`, seeded for old
   saves from what they own and the required pads below their best realm). The server buys one marked pad
