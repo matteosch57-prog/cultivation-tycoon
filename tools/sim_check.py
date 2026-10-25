@@ -85,7 +85,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     keep = {e.split("=")[0].strip() for e in C["PAD_KEEP"]}
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
-             welcome=0.0, index={}, steps=0, bought=[])
+             welcome=0.0, index={}, steps=0, bought=[], ever=set(), best=1)
+
+    def auto_build(pid):  # Main autoBuildTick (D85): a pad this save built before, once Config.autoBuildOpen
+        frm = C.get("AUTO_BUILD_FROM")
+        open_ = (frm == "breakthrough" and (S["best"] > 1 or S["lives"] > 1)) or (frm == "rebirth" and S["lives"] > 1)
+        return open_ and pid in S["ever"]
     src, sink = {}, {}
     log = dict(realms=[], lives=[], days=[], waits={})
     snap = {}  # --plan1: pad id -> price until the next buy
@@ -409,6 +414,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
                         log["realms"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["realm_t"], at=clock["play"], day=day))
                         S.update(realm=S["realm"] + 1, qi=0.0, owned=(S["owned"] & keep) if PLAN1 else set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        S["best"] = max(S["best"], S["realm"])
                         snap.clear()
                         clock["realm_t"] = clock["play"]
                         recalc()
@@ -438,11 +444,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         recalc()
                     continue
                 if S["qi"] >= tcost:
-                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") else K["walk"])
+                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"])
                     if s >= walk_until:
                         walk_until = None
                         pay("buildings", tcost)
                         S["owned"].add(target["id"])
+                        S["ever"].add(target["id"])
                         snap.clear()
                         first = log.setdefault("first", {}).setdefault(S["realm"], S["lives"])
                         wk = (S["realm"], first == S["lives"])

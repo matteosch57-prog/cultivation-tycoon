@@ -209,6 +209,21 @@ Config.DAO = {
 	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
+-- Auto Build (D85, owner 2026-10-25: "long term isn't so interesting once you build the same things
+-- 50 times"): Mega Mansion Tycoon's "Auto Build" pass ("build your house as you can afford each
+-- purchase"), free here and only for buildings the save has built before, in any life (data.everBuilt;
+-- not hires). It buys in the HUD "Next" order (guidePick), one every AUTO_BUILD_GAP s while the
+-- owner is in the game; the breakthrough and the rebirth stay the player's own. AUTO_BUILD_FROM:
+-- "breakthrough" = from the first breakthrough of life 1, "rebirth" = from life 2.
+Config.AUTO_BUILD_FROM = "breakthrough"
+Config.AUTO_BUILD_GAP = 1.2 -- s between two auto builds: a cascade to watch, not one pop
+function Config.autoBuildOpen(d)
+	local lives, best = d.lives or 1, d.best or 1
+	if Config.AUTO_BUILD_FROM == "rebirth" then
+		return lives > 1
+	end
+	return lives > 1 or best > 1
+end
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
 Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
 Config.DAO_ECHO = 0.1 -- echo, karma per level

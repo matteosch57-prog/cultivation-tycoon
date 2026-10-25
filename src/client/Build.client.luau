@@ -35,6 +35,7 @@ local ANIM_RANGE = 120 -- rings only turn near the camera
 local LIGHT_RANGE = 70 -- and only the nearest pads light the ground
 local JADE = Color3.fromHex("6FB59C")
 local GOLD = Color3.fromHex("D4A445")
+local AUTO_GOLD = Color3.fromHex("FFD34D") -- Auto Build (D85): the beam and the "Auto in 0:13" line
 local INK = Color3.fromHex("1B1420")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 
@@ -521,7 +522,7 @@ local function setReady(rec, ok)
 	local col = PadLook.color(rec.kind, ok)
 	rec.array.setColor(ok and col or col:Lerp(Color3.new(0.2, 0.15, 0.2), 0.45), ok)
 	if rec.beacon then
-		rec.beacon.setColor(col)
+		rec.beacon.setColor(rec.auto and AUTO_GOLD or col) -- a pad Auto Build will take is gold (D85)
 		rec.beacon.core.Width0 = ok and 1.8 or 1.1
 		rec.beacon.glow.Width0 = ok and 4.6 or 2.6
 		rec.beacon.motes.Rate = ok and 9 or 3
@@ -969,6 +970,13 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		local ok = qi >= rec.cost
 		rec.onPad = d < 4
+		-- built before and Auto Build on (D85): the beam turns gold and the wait reads "Auto in 0:13"
+		local auto = pad:GetAttribute("Auto") == true and player:GetAttribute("AutoBuildOpen") == true and not player:GetAttribute("AutoBuildOff")
+		if auto ~= rec.auto then
+			rec.auto = auto
+			setReady(rec, ok)
+			put(rec.eta, "TextColor3", auto and AUTO_GOLD or PadLook.TEXT.wait)
+		end
 		if ok ~= rec.ready then
 			setReady(rec, ok)
 			if ok then
@@ -1005,8 +1013,21 @@ RunService.Heartbeat:Connect(function(dt)
 		local wait = not ok and rate > 0 and not pad:GetAttribute("FreeText")
 		put(rec.eta, "Visible", wait)
 		if wait then
-			put(rec.eta, "Text", etaText((rec.cost - qi) / rate))
+			put(rec.eta, "Text", (rec.auto and "Auto " or "") .. etaText((rec.cost - qi) / rate))
 		end
 	end
 	PerfMark.finish("padcards", t0)
+end)
+
+-- Auto Build (D85): a building that built itself gets a gold column from the sky on its pad, the
+-- Heavenly Hands at work (the HUD shows the toast)
+ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify").OnClientEvent:Connect(function(kind, _, at)
+	if kind ~= "autoBuilt" or typeof(at) ~= "Vector3" then
+		return
+	end
+	local c = CFrame.new(at)
+	Sfx.play("buyChime")
+	column(c, AUTO_GOLD, 60, 7)
+	ripple(c, AUTO_GOLD, 4, 16, 0.8)
+	burst(at + Vector3.new(0, 0.6, 0), AUTO_GOLD, 24, 0)
 end)

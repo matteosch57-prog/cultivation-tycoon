@@ -14,6 +14,7 @@ local LIMITS = {
 	ChestSummon = { 3, 6 },
 	DaoBuy = { 4, 8 },
 	HandsBuild = { 2, 4 },
+	AutoBuild = { 1, 3 },
 	UsePill = { 1, 3 },
 	ClaimGift = { 1, 3 },
 	ClaimStreak = { 1, 3 },
