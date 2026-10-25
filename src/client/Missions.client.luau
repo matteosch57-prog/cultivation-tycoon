@@ -44,8 +44,11 @@ gui.Parent = playerGui
 
 -- the rank page has its own ScreenGui, empty while closed: the Daily Blessing waits while it has children
 -- (Streak.client COVERS)
-local pageGui = gui:Clone()
+local pageGui = Instance.new("ScreenGui")
 pageGui.Name = "MissionsPage"
+pageGui.ResetOnSpawn = false
+pageGui.IgnoreGuiInset = true
+pageGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 pageGui.DisplayOrder = 19
 pageGui.Parent = playerGui
 
@@ -172,12 +175,10 @@ local function rankHeader(parent, m, w, size, order)
 	corner(badge, UDim.new(1, 0))
 	text(badge, tostring(m.rank), px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	text(line, m.name, size + px(1), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	local nextR = m.path[m.paid + 1]
-	local goal = nextR and nextR.at or m.stars
-	text(line, string.format("★ %d/%d", m.stars, m.path[#m.path].at), size, GOLD, { LayoutOrder = 3 })
-	local _, fill = bar(head, px(8), GOLD, 2)
-	local prev = m.paid > 0 and m.path[m.paid].at or 0
-	fill.Size = UDim2.fromScale(math.clamp((m.stars - prev) / math.max(1, goal - prev), 0, 1), 1)
+	local total = m.path[#m.path].at
+	text(line, string.format("★ %d/%d", m.stars, total), size, GOLD, { LayoutOrder = 3 })
+	local _, fill = bar(head, px(8), GOLD, 2) -- the whole rank, as the count beside it reads
+	fill.Size = UDim2.fromScale(math.clamp(m.stars / math.max(1, total), 0, 1), 1)
 	return head
 end
 
@@ -365,7 +366,7 @@ drawPage = function(open)
 	xh.AnchorPoint = Vector2.new(0.5, 0.5)
 	xh.Position = UDim2.new(1, -px(4), 0, px(4))
 	xh.ZIndex = 5
-	text(xb, "✕", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	text(xb, "X", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	Toy.feel(xb)
 	xb.Activated:Connect(function()
 		drawPage(false)
@@ -394,7 +395,13 @@ drawPage = function(open)
 		bs.Parent = box
 		rewardIcon(box, r, node - px(18), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		if got then
-			text(box, "✓", px(16), JADE, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, 0, 0, 0), ZIndex = 4 })
+			-- paid: a jade dot on the corner (FredokaOne has no tick glyph)
+			local tick = frame(box, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -px(2), 0, px(2)), Size = UDim2.fromOffset(px(18), px(18)), BackgroundTransparency = 0, BackgroundColor3 = JADE, ZIndex = 4 })
+			corner(tick, UDim.new(1, 0))
+			local ts = Instance.new("UIStroke")
+			ts.Color = Toy.INK
+			ts.Thickness = px(2)
+			ts.Parent = tick
 		end
 		local words, color = rewardWords(r)
 		text(cell, "★" .. r.at, px(13), GOLD, { LayoutOrder = 2, ZIndex = 2 })
