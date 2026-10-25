@@ -22,6 +22,7 @@ local Workers = require(script.Parent:WaitForChild("Workers"))
 local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
+local SectStyle = require(script.Parent:WaitForChild("SectStyle"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local RankBoard = require(script.Parent:WaitForChild("RankBoard"))
 local HubShop = require(script.Parent:WaitForChild("HubShop"))
@@ -109,6 +110,9 @@ rankingsFn.Parent = remotes
 local perfEv = Instance.new("RemoteEvent")
 perfEv.Name = "PerfReport" -- fps of one zone window and the scene load around the camera (PerfReport.client)
 perfEv.Parent = remotes
+local styleFn = Instance.new("RemoteFunction")
+styleFn.Name = "SetSectStyle" -- the Styles page wears an unlocked Sect Style, or "classic"
+styleFn.Parent = remotes
 remotes.Parent = ReplicatedStorage
 
 -- World ------------------------------------------------------------------------------
@@ -855,6 +859,8 @@ local function publish(player)
 	player:SetAttribute("Lives", d.lives or 1)
 	player:SetAttribute("Karma", d.karma or 0)
 	player:SetAttribute("Rebirths", rebirths(d))
+	local worn = Config.wornStyle(d.sectStyle, rebirths(d))
+	player:SetAttribute("SectStyle", worn and worn.id or "classic") -- the Styles page marks it
 	player:SetAttribute("RebirthPrice", Config.rebirthPrice(rebirths(d)))
 	player:SetAttribute("RebirthOpen", Config.rebirthOpen(d.realm, rebirths(d), d.owned)) -- the next realm waits for a rebirth
 	local needKind, needN = Config.rebirthNeed(d.realm, rebirths(d), d.owned) -- what a closed rebirth waits for
@@ -913,7 +919,7 @@ local function buildModel(s, pad, attrs)
 		m:SetAttribute(k, v)
 	end
 	Builders[pad.id](ctxFor(s, m), pad)
-	Skin.apply(m, s.data.realm, s.data.lives) -- the realm / life grade (Config.skinFor)
+	Skin.apply(m, s.data.realm, s.data.lives, Config.wornStyle(s.data.sectStyle, rebirths(s.data))) -- the Sect Style, else the realm / life grade (Config.skinFor)
 	Skin.scale(m, pad, s.data.lives, s.plot.frame) -- the Main Hall grows each life
 	return m
 end
@@ -1330,6 +1336,10 @@ local function rebuild(s)
 			paintGround(m)
 			attachName(s, m)
 		end
+	end
+	local style = Config.wornStyle(s.data.sectStyle, rebirths(s.data))
+	if style then
+		SectStyle.ambience(s.plot.built, s.plot.frame, s.plot.radius or 60, style)
 	end
 	buildDisciples(s)
 	buildWorkers(s)
@@ -2643,6 +2653,11 @@ local function reincarnate(player, s)
 	d.soulPeak = math.max(d.soulPeak or 0, d.realm) -- kept for the record only (nothing reads it for power)
 	d.lives = (d.lives or 1) + 1
 	d.lifeStart = d.playSec or 0
+	-- a rebirth that unlocks a Sect Style wears it at once (the reward is seeing it rebuilt)
+	local newStyle = Config.styleAt(rebirths(d))
+	if newStyle then
+		d.sectStyle = newStyle.id
+	end
 	Ranks.submit(player, d)
 	Ranks.touch()
 	-- back to realm 1 with its pads built (D56: no 10-min rebuild of the first realm)
@@ -2667,7 +2682,33 @@ local function reincarnate(player, s)
 	publish(player)
 	task.spawn(save, s, false, true)
 	notify:FireAllClients("reincarnate", player.DisplayName, d.lives)
+	if newStyle then
+		notify:FireClient(player, "sectStyle", newStyle.name)
+	end
 	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)) }
+end
+
+-- Styles page: wear an unlocked Sect Style or "classic" (the D53 ladder); the sect is rebuilt in it
+styleFn.OnServerInvoke = function(player, id)
+	if not Guard.allow(player, "SetSectStyle") then
+		return nil
+	end
+	local s = sessions[player]
+	if not s or type(id) ~= "string" then
+		return nil
+	end
+	local st = Config.sectStyle(id)
+	if id ~= "classic" and not (st and st.rebirth <= rebirths(s.data)) then
+		return nil -- still locked
+	end
+	local was = Config.wornStyle(s.data.sectStyle, rebirths(s.data))
+	s.data.sectStyle = id
+	if was ~= Config.wornStyle(id, rebirths(s.data)) then
+		rebuild(s)
+		refreshPads(player, s)
+	end
+	publish(player)
+	return true
 end
 
 -- Karma Shop: buy the next level of one node (server checks the price and the cap, R9)

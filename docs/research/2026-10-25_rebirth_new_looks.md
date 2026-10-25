@@ -43,3 +43,10 @@ units), and it should be a collection you can browse (PS99 index).
   paying a little qi. Touches the economy: sims first.
 - **C Relic Terrace** (PS99 index, rebirth trophies): each rebirth leaves a relic statue on a terrace
   behind the Main Hall that no reset takes; sets of 5 give a small bonus.
+
+## Built (A, on the recommended pick)
+`Config.SECT_STYLES` (12 styles: rebirths 1 to 10, then 15 and 20), `SectStyle.luau` (recolour +
+ridge ornaments + one ambience emitter a peak), `Skin.apply` wears the style (else the D53 ladder),
+a rebirth that unlocks one wears it at once ("New style!" toast), the Rebirth screen names the style
+the next rebirth unlocks, and a Sect Styles page (Rebirth screen) wears any unlocked one or Classic
+(`SetSectStyle` remote). The overhead title says "3rd Life · Volcano Forge".

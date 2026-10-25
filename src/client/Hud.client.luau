@@ -1723,6 +1723,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "shopOwned" then
 		toast("Already yours", Color3.fromHex("9FF5C8"), 1.6)
 		return
+	elseif kind == "sectStyle" then -- a rebirth unlocked a Sect Style and the sect is rebuilt in it (`a` = its name)
+		task.delay(1.5, toast, "New style: " .. a .. "!", Color3.fromHex("FFD6E4"), 4)
+		return
 	elseif kind == "realmLook" then
 		toast(a, GOLD, 4) -- what this realm changed on the peak (Config.realmLookLine)
 		return

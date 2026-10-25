@@ -10,6 +10,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Style = require(script.Parent:WaitForChild("Style"))
+local SectStyle = require(script.Parent:WaitForChild("SectStyle"))
 
 local Skin = {}
 
@@ -35,10 +36,8 @@ local function clamp01(x)
 	return math.clamp(x, 0, 1)
 end
 
-function Skin.apply(model, realm, lives)
-	local grade = Config.skinFor(realm, lives)
-	model:SetAttribute("Skin", Config.SKIN_GRADES[grade].name)
-	local map = Config.SKIN_GRADES[grade].map
+-- move every part matched to a PAL key onto `map` (a grade's or a Sect Style's)
+function Skin.recolour(model, map)
 	if next(map) == nil then
 		return
 	end
@@ -56,6 +55,18 @@ function Skin.apply(model, realm, lives)
 			end
 		end
 	end
+end
+
+-- `style` = the Sect Style the sect wears (Config.wornStyle; nil = the D53 realm / life grade)
+function Skin.apply(model, realm, lives, style)
+	if style then
+		model:SetAttribute("Skin", style.name)
+		SectStyle.dress(model, style, Skin.recolour)
+		return
+	end
+	local grade = Config.skinFor(realm, lives)
+	model:SetAttribute("Skin", Config.SKIN_GRADES[grade].name)
+	Skin.recolour(model, Config.SKIN_GRADES[grade].map)
 end
 
 local function ghost(model)

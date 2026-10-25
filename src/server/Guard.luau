@@ -13,6 +13,7 @@ local LIMITS = {
 	Recruit = { 3, 6 },
 	ChestSummon = { 3, 6 },
 	DaoBuy = { 4, 8 },
+	SetSectStyle = { 1, 3 },
 	HandsBuild = { 2, 4 },
 	UsePill = { 1, 3 },
 	ClaimGift = { 1, 3 },

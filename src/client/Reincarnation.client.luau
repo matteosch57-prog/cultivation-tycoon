@@ -54,7 +54,8 @@ gui.Parent = playerGui
 local ui = {}
 local armedUntil = 0 -- second tap within this time confirms
 local busy = false
-local page = "road" -- "road" | "karma"
+local page = "road" -- "road" | "karma" | "styles"
+local STYLE_ROW = 7 -- Styles page tiles per row
 
 local function computeScale()
 	local vp = workspace.CurrentCamera.ViewportSize
@@ -91,6 +92,7 @@ local function mult(m)
 end
 
 local close -- forward
+local refreshStyles -- forward (the Styles page)
 
 -- an amount of a currency: its icon, then the number (owner: every currency always shows its icon)
 local function amount(parent, key, size, color, props)
@@ -135,6 +137,10 @@ local function refresh()
 		refreshKarma()
 		return
 	end
+	if page == "styles" then
+		refreshStyles()
+		return
+	end
 	local qi = player:GetAttribute("Qi") or 0
 	local price = player:GetAttribute("RebirthPrice") or Config.rebirthPrice(0)
 	local ready = qi >= price and player:GetAttribute("RebirthOpen") == true
@@ -152,6 +158,14 @@ local function refresh()
 	local realm = player:GetAttribute("Realm") or 1
 	ui.opens.Visible = need > done and need == done + 1
 	ui.opens.Text = "Opens Realm " .. (realm + 1) .. ": " .. Config.realmName(realm + 1) -- the number too (owner 2026-10-23)
+	-- the Sect Style this rebirth unlocks (Build Your Backrooms lists each rebirth's unlocks)
+	local nextStyle = Config.styleAt(done + 1)
+	ui.style.Visible = nextStyle ~= nil
+	if nextStyle then
+		ui.styleName.Text = "New style: " .. nextStyle.name
+		ui.styleSwatch.BackgroundColor3 = nextStyle.swatch[1]
+		ui.styleTrim.BackgroundColor3 = nextStyle.swatch[2]
+	end
 
 	-- closed: what it waits for, on the button and spelled out under it (Config.rebirthNeed)
 	local kind, n = string.match(player:GetAttribute("RebirthNeed") or "", "^(%a+):(%d+)$")
@@ -196,7 +210,7 @@ end
 local function head(body, title)
 	local h = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1, Rotation = -2 })
 	Toy.list(h, true, px(14))
-	if page == "karma" then
+	if page ~= "road" then
 		local bHolder, bBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), JADE, px(10))
 		bHolder.LayoutOrder = 0
 		text(bBtn, "<", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
@@ -212,6 +226,82 @@ local function head(body, title)
 		close()
 	end)
 	return titleLabel
+end
+
+-- a style's colour chip: its roof colour with a stripe of its trim
+local function swatch(parent, size, st)
+	local chip = Toy.frame(parent, { Size = UDim2.fromOffset(size, size), BackgroundTransparency = 0, BackgroundColor3 = st and st.swatch[1] or Color3.fromHex("3E4656"), ClipsDescendants = true })
+	Toy.corner(chip, UDim.new(1, 0))
+	local trim = Toy.frame(chip, { Size = UDim2.fromScale(1, 0.3), Position = UDim2.fromScale(0, 0.7), BackgroundTransparency = 0, BackgroundColor3 = st and st.swatch[2] or Color3.fromHex("B8352B") })
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Toy.INK
+	stroke.Thickness = px(2)
+	stroke.Parent = chip
+	return chip, trim
+end
+
+refreshStyles = function()
+	local done = player:GetAttribute("Rebirths") or 0
+	local worn = player:GetAttribute("SectStyle") or "classic"
+	for _, t in ui.styleTiles do
+		local open = t.st == nil or t.st.rebirth <= done
+		local id = t.st and t.st.id or "classic"
+		t.chip.BackgroundTransparency = open and 0 or 0.6
+		t.trim.BackgroundTransparency = open and 0 or 0.6
+		if id == worn then
+			t.label.Text = "Wearing"
+			t.button.BackgroundColor3 = GOLD
+		elseif open then
+			t.label.Text = "Wear"
+			t.button.BackgroundColor3 = JADE
+		else
+			t.label.Text = "Rebirth " .. t.st.rebirth
+			t.button.BackgroundColor3 = LOCKED
+		end
+	end
+end
+
+-- the Styles page: every Sect Style (Config.SECT_STYLES) and Classic; tap an unlocked one to wear it
+local function buildStyles(body)
+	head(body, "Sect Styles")
+	text(body, "Every rebirth unlocks a new look for your whole sect", px(14), Color3.fromHex("C9FFE4"), { LayoutOrder = 2 })
+	ui.styleTiles = {}
+	local list = { false }
+	for _, st in Config.SECT_STYLES do
+		table.insert(list, st)
+	end
+	local rows = {}
+	for i, st in list do
+		local r = math.ceil(i / STYLE_ROW)
+		if not rows[r] then
+			rows[r] = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 + r })
+			Toy.list(rows[r], true, px(12), { VerticalAlignment = Enum.VerticalAlignment.Top })
+		end
+		st = st or nil
+		local col = Toy.frame(rows[r], { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, Rotation = TILT[(i - 1) % #TILT + 1] or 0 })
+		Toy.list(col, false, px(3))
+		local chip, trim = swatch(col, px(48), st)
+		chip.LayoutOrder = 1
+		text(col, st and st.name or "Classic", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		local bHolder, bBtn = Toy.button(col, UDim2.fromOffset(px(76), px(24)), JADE, px(8))
+		bHolder.LayoutOrder = 3
+		local label = text(bBtn, "", px(12), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		bBtn.Activated:Connect(function()
+			local id = st and st.id or "classic"
+			if busy or id == player:GetAttribute("SectStyle") or (st and st.rebirth > (player:GetAttribute("Rebirths") or 0)) then
+				Sfx.play("deny")
+				return
+			end
+			busy = true
+			local ok, res = pcall(function()
+				return remotes.SetSectStyle:InvokeServer(id)
+			end)
+			busy = false
+			Sfx.play(ok and res and "buyChime" or "deny")
+			refreshStyles()
+		end)
+		table.insert(ui.styleTiles, { st = st, chip = chip, trim = trim, label = label, button = bBtn })
+	end
 end
 
 -- the Karma Shop page: one tile per node (icon, name, a short line, level pips, price)
@@ -297,6 +387,11 @@ build = function()
 		refresh()
 		return
 	end
+	if page == "styles" then
+		buildStyles(body)
+		refresh()
+		return
+	end
 	ui.title = head(body, "Rebirth")
 
 	-- the boost: x now -> x after
@@ -321,6 +416,13 @@ build = function()
 	Toy.list(gains, true, px(22))
 	ui.gain = amount(gains, "karma", px(22), KARMA, { LayoutOrder = 1 })
 	ui.opens = text(gains, "", px(18), GOLD, { LayoutOrder = 2 })
+
+	-- the Sect Style it unlocks: its chip and name
+	ui.style = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 10, Rotation = -1, Visible = false })
+	Toy.list(ui.style, true, px(8))
+	ui.styleSwatch, ui.styleTrim = swatch(ui.style, px(26), nil)
+	ui.styleSwatch.LayoutOrder = 1
+	ui.styleName = text(ui.style, "", px(18), Color3.fromHex("FFD6E4"), { LayoutOrder = 2 })
 
 	ui.need = text(body, "", px(18), Color3.fromHex("FFB3A8"), { LayoutOrder = 12, Visible = false })
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
@@ -365,6 +467,14 @@ build = function()
 	kBtn.Activated:Connect(function()
 		goTo("karma")
 	end)
+	-- the Styles page, beside the Karma Shop
+	local sHolder, sBtn = Toy.button(body, UDim2.fromOffset(px(160), px(34)), Color3.fromHex("FF9EC0"), px(11))
+	sHolder.LayoutOrder = 17
+	sHolder.Rotation = 1.5
+	text(sBtn, "Sect Styles", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	sBtn.Activated:Connect(function()
+		goTo("styles")
+	end)
 	refresh()
 end
 
@@ -391,7 +501,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
+local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "SectStyle", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)
 end

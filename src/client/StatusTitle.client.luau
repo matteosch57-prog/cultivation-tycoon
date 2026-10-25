@@ -59,7 +59,8 @@ local function draw(plr, gui)
 		Toy.text(gui, Config.realmName(realm), 20, Config.realmColor(realm), { LayoutOrder = 1 })
 	end
 	if lives > 1 then
-		Toy.text(gui, Config.ordinal(lives) .. " Life · " .. Config.skinName(realm, lives), 14, CREAM, { LayoutOrder = 2 })
+		local style = Config.sectStyle(plr:GetAttribute("SectStyle") or "") -- the Sect Style worn, else the D53 grade
+		Toy.text(gui, Config.ordinal(lives) .. " Life · " .. (style and style.name or Config.skinName(realm, lives)), 14, CREAM, { LayoutOrder = 2 })
 	end
 end
 
@@ -88,6 +89,9 @@ local function attach(plr, char)
 			draw(plr, gui)
 		end),
 		plr:GetAttributeChangedSignal("Pass_vip"):Connect(function()
+			draw(plr, gui)
+		end),
+		plr:GetAttributeChangedSignal("SectStyle"):Connect(function()
 			draw(plr, gui)
 		end),
 		gui.AncestryChanged:Connect(function()

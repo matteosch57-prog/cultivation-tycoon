@@ -1064,6 +1064,96 @@ end
 function Config.skinName(realm, lives)
 	return Config.SKIN_GRADES[Config.skinFor(realm, lives)].name
 end
+
+-- Sect Styles (research docs/research/2026-10-25_rebirth_new_looks.md, mocks
+-- docs/art/mocks/2026-10-25_sect_style_*.png; Build Your Backrooms biomes + Clash of Clans levels):
+-- every rebirth up to 10, then every 5th, unlocks a whole-sect look so a rebuild never repeats. A style
+-- replaces the D53 grade colours (`map`, same keys as SKIN_GRADES), puts ornaments on every top roof
+-- ridge (`orn`, SectStyle.luau) and drifts one ambience emitter over the peak (`fx`). The newest is
+-- worn on unlock; the Styles page (Reincarnation.client) picks any unlocked one, or Classic (the D53
+-- ladder). `swatch` = the tile and the trim on its page tile.
+Config.SECT_STYLES = {
+	{ id = "snow", name = "Snow Lotus", rebirth = 1, orn = "crystal", ornColor = hex("A8E4FF"), swatch = { hex("CFE3F2"), hex("A8E4FF") },
+		map = { tile = { hex("EEF4FA"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("DDE8F2"), plaster = hex("FFFFFF"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("8FA6BA"), timberDark = hex("5C7389"), jade = hex("A8E4FF") },
+		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.4, -2, 0), size = 0.5 } },
+	{ id = "volcano", name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
+		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("7A1F14"), plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
+		fx = { color = hex("FF8A2A"), accel = Vector3.new(0, 2.5, 0), size = 0.4, light = 1 } },
+	{ id = "sakura", name = "Sakura Spring", rebirth = 3, orn = "blossom", ornColor = hex("FFD6E4"), swatch = { hex("E79AB4"), hex("FFFFFF") },
+		map = { tile = hex("E79AB4"), tileDark = hex("C27390"), vermilion = hex("F4EDE6"), plaster = hex("FFFFFF"), gold = hex("F2C9A0"), timber = hex("7A4E3A") },
+		fx = { color = hex("FFC4D8"), accel = Vector3.new(0.8, -1.2, 0), size = 0.5 } },
+	{ id = "moon", name = "Moon Palace", rebirth = 4, orn = "crescent", ornColor = hex("E8EEF8"), swatch = { hex("2D3E73"), hex("E8EEF8") },
+		map = { tile = hex("2D3E73"), tileDark = hex("1E2A52"), vermilion = hex("E9EEF6"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = hex("D8E2F0"), stone = { hex("E4E9F1"), Enum.Material.Marble }, stoneLight = hex("F2F5F9"), timber = hex("5A6788"), timberDark = hex("323C58") },
+		fx = { color = hex("CFE0FF"), accel = Vector3.new(0, 0.4, 0), size = 0.6 } },
+	{ id = "thunder", name = "Thunder Peak", rebirth = 5, orn = "rod", ornColor = hex("B9A8FF"), swatch = { hex("3A3550"), hex("F5D04A") },
+		map = { tile = hex("3A3550"), tileDark = hex("272338"), vermilion = hex("4B3C7A"), plaster = { hex("8B8FA0"), Enum.Material.Slate }, gold = hex("F5D04A"), stone = { hex("5C606B"), Enum.Material.Slate }, stoneLight = hex("6E727D") },
+		fx = { color = hex("C8B8FF"), accel = Vector3.new(0, 0, 0), size = 0.5, light = 1 } },
+	{ id = "dragon", name = "Dragon Emperor", rebirth = 6, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("E0A82E"), hex("A3221B") },
+		map = { tile = hex("E0A82E"), tileDark = hex("B07E18"), vermilion = hex("A3221B"), plaster = hex("F3DFB0"), gold = { hex("FFD24A"), Enum.Material.Foil }, stone = hex("E2D2A8") },
+		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.6, 0), size = 0.5 } },
+	{ id = "maple", name = "Autumn Maple", rebirth = 7, orn = "pearl", ornColor = hex("FFB347"), swatch = { hex("C2452D"), hex("FFB347") },
+		map = { tile = hex("C2452D"), tileDark = hex("8E2E1E"), vermilion = hex("6B3A22"), plaster = hex("F5E6CC"), gold = hex("FFB347"), timber = hex("4A2C1C"), jade = hex("E08A3C") },
+		fx = { color = hex("FF9A3C"), accel = Vector3.new(0.6, -1, 0), size = 0.6 } },
+	{ id = "abyss", name = "Abyssal Jade", rebirth = 8, orn = "pearl", ornColor = hex("7FFFE0"), swatch = { hex("1F5F5B"), hex("7FFFE0") },
+		map = { tile = hex("1F5F5B"), tileDark = hex("143F3C"), vermilion = hex("2E7F74"), plaster = { hex("CFEDE6"), Enum.Material.Marble }, gold = hex("9FE8D6"), stone = { hex("8FB8B0"), Enum.Material.Marble }, stoneLight = hex("B4D6CF"), timber = hex("23463F"), timberDark = hex("142B27") },
+		fx = { color = hex("7FFFE0"), accel = Vector3.new(0, 0.8, 0), size = 0.5, light = 1 } },
+	{ id = "phoenix", name = "Phoenix Flame", rebirth = 9, orn = "feather", ornColor = hex("FFC24A"), swatch = { hex("B3202A"), hex("FFC24A") },
+		map = { tile = hex("B3202A"), tileDark = hex("7E141B"), vermilion = hex("E05A1F"), plaster = hex("FFF1D6"), gold = { hex("FFC24A"), Enum.Material.Foil }, stone = hex("E8D2B0") },
+		fx = { color = hex("FFB04A"), accel = Vector3.new(0, 2, 0), size = 0.5, light = 1 } },
+	{ id = "cloud", name = "Heavenly Cloud", rebirth = 10, orn = "pearl", ornColor = hex("FFFFFF"), swatch = { hex("F2F6FA"), hex("FFD36A") },
+		map = { tile = hex("FFE7A0"), tileDark = hex("E0C070"), vermilion = hex("FFFFFF"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = { hex("FFD36A"), Enum.Material.Foil }, stone = { hex("F4F6F8"), Enum.Material.Marble }, stoneLight = hex("FFFFFF"), timber = hex("E8DCC4"), timberDark = hex("B8A888") },
+		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.3, 0.2, 0), size = 1.2 } },
+	{ id = "starfall", name = "Starfall", rebirth = 15, orn = "star", ornColor = hex("FFFFFF"), swatch = { hex("1B2450"), hex("DDE6FF") },
+		map = { tile = hex("1B2450"), tileDark = hex("101636"), vermilion = hex("2A3570"), plaster = hex("DDE6FF"), gold = hex("DDE6FF"), stone = hex("3A4366"), stoneLight = hex("4C5680"), timber = hex("1B2040"), timberDark = hex("10142A") },
+		fx = { color = hex("FFFFFF"), accel = Vector3.new(0, -0.6, 0), size = 0.5, light = 1 } },
+	{ id = "goldlotus", name = "Golden Lotus", rebirth = 20, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("FFD24A"), hex("FFF3C4") },
+		map = { tile = { hex("FFD24A"), Enum.Material.Foil }, tileDark = hex("D9A43A"), vermilion = { hex("F2C14E"), Enum.Material.Foil }, plaster = hex("FFF3C4"), gold = { hex("FFF0A0"), Enum.Material.Foil }, stone = hex("F0DCA0"), stoneLight = hex("FFF0C8"), timber = hex("C8962E"), timberDark = hex("8E6A1E") },
+		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.8, 0), size = 0.6, light = 1 } },
+}
+function Config.sectStyle(id)
+	for _, st in Config.SECT_STYLES do
+		if st.id == id then
+			return st
+		end
+	end
+	return nil
+end
+-- the style rebirth number `n` unlocks (nil: none at that rebirth)
+function Config.styleAt(n)
+	for _, st in Config.SECT_STYLES do
+		if st.rebirth == n then
+			return st
+		end
+	end
+	return nil
+end
+-- the next style still locked after `rebirths` rebirths (nil: all collected)
+function Config.nextStyle(rebirths)
+	for _, st in Config.SECT_STYLES do
+		if st.rebirth > (rebirths or 0) then
+			return st
+		end
+	end
+	return nil
+end
+-- the style a sect wears: its pick if unlocked ("classic" = the D53 ladder), else the newest unlocked
+function Config.wornStyle(choice, rebirths)
+	rebirths = rebirths or 0
+	if choice == "classic" then
+		return nil
+	end
+	local pick = choice and Config.sectStyle(choice)
+	if pick and pick.rebirth <= rebirths then
+		return pick
+	end
+	local newest
+	for _, st in Config.SECT_STYLES do
+		if st.rebirth <= rebirths then
+			newest = st
+		end
+	end
+	return newest
+end
 -- the overhead status title (StatusTitle.client): realms 1 to 5 climb the rarity colours, then the realm tint
 function Config.realmColor(realm)
 	if realm <= 5 then
