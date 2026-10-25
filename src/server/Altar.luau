@@ -13,6 +13,7 @@ local AssetService = game:GetService("AssetService")
 
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
+local Missions = require(script.Parent:WaitForChild("Missions"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local Altar = {}
@@ -499,6 +500,9 @@ local function tick(dt)
 				)
 			else
 				table.insert(crowd, player)
+				if not round.joined[player] then
+					task.defer(Missions.bump, player, "altar", 1) -- Sect Missions: joined this round's fight
+				end
 				round.joined[player] = true
 			end
 		elseif round.joined[player] and not round.out[player] then

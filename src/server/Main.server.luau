@@ -32,6 +32,7 @@ local ChestModel = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Journal = require(script.Parent:WaitForChild("Journal"))
 local Bless = require(script.Parent:WaitForChild("Bless"))
+local Missions = require(script.Parent:WaitForChild("Missions"))
 local Badges = require(script.Parent:WaitForChild("Badges"))
 local PlayerAura = require(script.Parent:WaitForChild("PlayerAura"))
 
@@ -83,6 +84,9 @@ daoFn.Parent = remotes
 local handsFn = Instance.new("RemoteFunction")
 handsFn.Name = "HandsBuild"
 handsFn.Parent = remotes
+local autoFn = Instance.new("RemoteFunction")
+autoFn.Name = "AutoBuild" -- the HUD's Auto Build switch (D85): on / off
+autoFn.Parent = remotes
 local groupFn = Instance.new("RemoteFunction")
 groupFn.Name = "ClaimGroup"
 groupFn.Parent = remotes
@@ -870,6 +874,9 @@ local function publish(player)
 	player:SetAttribute("RebirthKarma", karmaGain(d))
 	-- the next realm waits for more rebirths (their gyms): the HUD and the screen say so
 	player:SetAttribute("RealmNeedsRebirths", Config.rebirthsFor(d.realm + 1))
+	-- Auto Build (D85): open (the HUD shows its switch) and switched off by the player
+	player:SetAttribute("AutoBuildOpen", Config.autoBuildOpen(d))
+	player:SetAttribute("AutoBuildOff", d.autoOff == true)
 	Dots.publish(player, s) -- which red dots are lit (Dots.luau)
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
@@ -1237,9 +1244,44 @@ local function offerBreakthrough(player, s, info)
 	notify:FireClient(player, "breakthroughAsk", info.cost)
 end
 
+-- Auto Build (D85, Mega Mansion Tycoon's pass, free): a pad marked Auto (built before, in any life) that
+-- the owner can pay builds itself, in the HUD "Next" order, one per AUTO_BUILD_GAP s. The breakthrough
+-- pad only opens its confirm screen, so it is never taken here; neither are the idle chest and hires
+-- (hires are a payback choice: auto hiring them starved the pads a realm needs, qisim 2026-10-25).
+local function autoBuildTick(player, s)
+	local d = s.data
+	if not s.ready or s.reincBusy or d.autoOff or not s.padData or not Config.autoBuildOpen(d) then
+		return
+	end
+	local now = os.clock()
+	if now < (s.autoAt or 0) then
+		return
+	end
+	local can = {}
+	for part, info in s.padData do
+		if part.Parent and not info.busy and not info.confirm and part:GetAttribute("Auto") and d.qi >= info.cost then
+			table.insert(can, part)
+		end
+	end
+	if #can == 0 then
+		return
+	end
+	local part = Config.guidePick(can)
+	local title, at = part:GetAttribute("Title"), part.Position
+	s.autoAt = now + Config.AUTO_BUILD_GAP
+	s.autoNow = true
+	buyPad(s, part, s.padData[part])
+	s.autoNow = nil
+	s.autoBuilt = (s.autoBuilt or 0) + 1
+	notify:FireClient(player, "autoBuilt", title, at)
+end
+
 -- Every 0.1 s: is an owner standing on one of their pads? (horizontal distance + height band)
 local PAD_REACH = 2.6 -- the pad top is 4 studs wide
 local function checkPads()
+	for player, s in sessions do
+		autoBuildTick(player, s)
+	end
 	for player, s in sessions do
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -1423,10 +1465,12 @@ refreshPads = function(player, s)
 				local part
 				part = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
+					s.data.everBuilt[pad.id] = true -- Auto Build rebuilds it from now on (D85)
 					s.padPrice = nil -- every open pad is priced again from the new income
 					Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, pad.id)
 					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
 					Telemetry.funnel(player, s.data)
+					task.defer(Missions.bump, player, "build", 1) -- after the pad's own state is set
 					-- BuiltAt tells clients to play the assemble animation for this model
 					-- a Main Hall level replaces the one before it
 					local lv = tonumber(pad.id:match("^mainhall(%d)$"))
@@ -1467,10 +1511,13 @@ refreshPads = function(player, s)
 					end
 					refreshPads(player, s)
 					publish(player)
-					notify:FireClient(player, "built", pad.name)
+					if not s.autoNow then -- an auto build has its own toast (autoBuildTick)
+						notify:FireClient(player, "built", pad.name)
+					end
 					Shop.maybeWelcome(player, s, pad)
 					Shop.maybeStarter(player, s, pad)
 				end)
+				part:SetAttribute("Auto", s.data.everBuilt[pad.id] == true) -- built before: Auto Build takes it (D85)
 				s.pads[pad.id] = part
 			end
 		end
@@ -1550,6 +1597,7 @@ refreshPads = function(player, s)
 			Ranks.touch()
 			Telemetry.realm(player, s.data.realm)
 			Telemetry.funnel(player, s.data)
+			task.defer(Missions.bump, player, "breakthrough", 1) -- after the realm change is done
 			s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)
 			s.data.workers = {}
 			s.padPrice = nil
@@ -1863,6 +1911,17 @@ local function onJoin(player)
 		end
 		data.streak.got = got
 	end
+	-- Auto Build (D85): what the save has built before. A save from before it counts what it owns now
+	-- and every required pad of the realms below its best (a breakthrough needed them)
+	if data.everBuilt == nil then
+		data.everBuilt = {}
+		local below = math.max(data.best or 1, data.soulPeak or 0) - 1
+		for _, pad in Config.PADS do
+			if data.owned[pad.id] or (below >= 1 and Config.neededForBreakthrough(pad) and Config.padOpen(pad, below)) then
+				data.everBuilt[pad.id] = true
+			end
+		end
+	end
 	-- read before anything can save: a save (autosave, a receipt) stamps `last` with now
 	local lastSeen = data.last
 	local s = { data = data, plot = plot, pads = {}, loaded = loaded, userId = player.UserId, sessionId = sessionId, player = player }
@@ -1871,6 +1930,7 @@ local function onJoin(player)
 	Ranks.touch()
 	Bless.refresh(plot) -- the shrine shows this owner's blessings
 	Bless.mark(player, s)
+	Missions.refresh(player, s) -- Sect Missions: top up the slots and today's dailies
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
 	Shop.onJoin(player, s) -- yields for the pass checks
 	SwordRide.onJoin(player, s)
@@ -2219,6 +2279,7 @@ chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	buildDisciples(s, bestKey) -- once: the best newcomer walks to its seat
 	publish(player)
 	s.recruiting = false
+	Missions.bump(player, "recruit", #results)
 	return { results = results, left = s.data.chestSummons }
 end)
 
@@ -2295,6 +2356,7 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	publish(player)
 	Telemetry.funnel(player, s.data)
 	s.recruiting = false
+	Missions.bump(player, "recruit", want)
 	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, kept = bestKept, results = results }
 end)
 
@@ -2315,6 +2377,7 @@ pillFn.OnServerInvoke = function(player)
 	s.data.boostUntil = math.max(workspace:GetServerTimeNow(), s.data.boostUntil or 0) + Config.PILL_DURATION + Config.DAO_PILL_SECONDS * dao(s.data, "elixir")
 	publish(player)
 	Telemetry.custom(player, "Feature", "pill", Telemetry.realmBucket(s.data.realm))
+	Missions.bump(player, "pill", 1)
 	return true
 end
 
@@ -2350,6 +2413,7 @@ giftFn.OnServerInvoke = function(player)
 	Telemetry.source(player, d, gain, "gift", true)
 	Telemetry.custom(player, "Feature", "gift", Telemetry.realmBucket(d.realm))
 	publish(player)
+	task.defer(Missions.bump, player, "gift", 1)
 	print(string.format("[Tycoon] gift %d claimed by %d after %d s today", gi, player.UserId, math.floor(d.giftPlay or 0)))
 	return { qi = gain, summons = summons, pill = pill, rarity = rarity }
 end
@@ -2395,6 +2459,7 @@ streakFn.OnServerInvoke = function(player)
 	end
 	Telemetry.custom(player, "Feature", "streak", Telemetry.realmBucket(d.realm))
 	publish(player)
+	task.defer(Missions.bump, player, "streak", 1)
 	return { day = day, qi = gain, summons = summons, rarity = rarity }
 end
 
@@ -2668,6 +2733,7 @@ local function reincarnate(player, s)
 	for _, pad in Config.PADS do
 		if Config.padOpen(pad, d.realm) then
 			d.owned[pad.id] = true
+			d.everBuilt[pad.id] = true
 		end
 	end
 	d.qi = 0
@@ -2685,6 +2751,7 @@ local function reincarnate(player, s)
 	if newStyle then
 		notify:FireClient(player, "sectStyle", newStyle.name)
 	end
+	task.defer(Missions.bump, player, "rebirth", 1)
 	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)) }
 end
 
@@ -2767,6 +2834,22 @@ handsFn.OnServerInvoke = function(player, padId)
 	end
 	buyPad(s, part, info)
 	Telemetry.custom(player, "Feature", "hands", Telemetry.realmBucket(s.data.realm))
+	return true
+end
+
+-- the HUD's Auto Build switch (D85): `on` = true switches it on, false off (kept in the save)
+autoFn.OnServerInvoke = function(player, on)
+	if not Guard.allow(player, "AutoBuild") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	if not s or type(on) ~= "boolean" or not Config.autoBuildOpen(s.data) then
+		return false
+	end
+	s.data.autoOff = not on
+	s.autoAt = os.clock() + Config.AUTO_BUILD_GAP -- switched on: the first build follows the tap, not with it
+	publish(player)
+	Telemetry.custom(player, "Feature", on and "autoOn" or "autoOff", Telemetry.realmBucket(s.data.realm))
 	return true
 end
 
@@ -2890,6 +2973,7 @@ local function checkOrbs(player, s, hrp)
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))
+			task.defer(Missions.bump, player, "orb", 1)
 			s.data.tips = s.data.tips or {}
 			if not s.data.tips.orb and walked then
 				-- the tip stays for the first few orbs walked into (Config.ORB_TIP_TIMES; the Auto Orbs
@@ -2929,6 +3013,7 @@ if game:GetService("RunService"):IsStudio() then
 		local s = sessions[player]
 		if s then
 			s.data = defaultData()
+			s.data.everBuilt = {} -- a new save has built nothing (onJoin seeds it)
 			rebuild(s)
 			refreshPads(player, s)
 			publish(player)
@@ -3082,6 +3167,33 @@ Bless.init({
 	style = Style,
 	palette = Style.PAL,
 	kit = Kit,
+})
+Missions.init({
+	sessions = sessions,
+	rate = rate,
+	publish = publish,
+	notify = notify,
+	telemetry = Telemetry,
+	giveSummons = giveSummons,
+	addDisciple = addDisciple,
+	-- what a mission draw may ask for right now (Missions allowed())
+	ctx = function(player, s)
+		local d = s.data
+		local others = false
+		for p in sessions do
+			if p ~= player then
+				others = true
+			end
+		end
+		return {
+			others = others,
+			giftLeft = Config.GIFT_TIMES[d.giftIdx or 1] ~= nil,
+			furnace = d.owned.furnace == true,
+			reborn = rebirths(d) >= 1,
+			streakReady = (d.streak or {}).last ~= Config.giftDay(),
+			canBreak = not Config.rebirthOpen(d.realm, rebirths(d), d.owned),
+		}
+	end,
 })
 setupLighting()
 buildPlots()

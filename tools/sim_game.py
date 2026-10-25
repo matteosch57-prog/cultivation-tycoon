@@ -184,7 +184,12 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     auto_orbs = "orbs" in passes
 
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disciples=[], realm_recruits=0, soul=0, karma=0,
-             dao={}, life=1, pill_t=0.0, pill_ready=False, boost=0.0, orb_t=0.0, orbs=0)
+             dao={}, life=1, pill_t=0.0, pill_ready=False, boost=0.0, orb_t=0.0, orbs=0, ever=set(), best=1)
+
+    def auto_build(pid):  # Main autoBuildTick (D85): a pad this save built before, once Config.autoBuildOpen
+        frm = C.get("AUTO_BUILD_FROM")
+        open_ = (frm == "breakthrough" and (S["best"] > 1 or S["life"] > 1)) or (frm == "rebirth" and S["life"] > 1)
+        return open_ and pid in S["ever"]
     led_src, led_sink = {}, {}
     out = dict(milestones={}, lives=[], realms=[])
     played = 0
@@ -534,6 +539,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         led_sink["reset loss"] = led_sink.get("reset loss", 0) + S["qi"] - carry
                         life_sink["reset loss"] = life_sink.get("reset loss", 0) + S["qi"] - carry
                         S["realm"] += 1
+                        S["best"] = max(S["best"], S["realm"])
                         S.pop("bt_frozen", None)
                         keep = S["owned"] if C.get("KEEP_ON_BT") else set()  # KEEP_ON_BT: buildings stay (only a new life resets)
                         kw = S["workers"] if C.get("KEEP_ON_BT") else {}
@@ -583,7 +589,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         S["workers"][wid] = S["workers"].get(wid, 0) + 1
                     continue
                 if S["qi"] >= tcost:
-                    walking = walking if walking is not None else s + walk
+                    walking = walking if walking is not None else s + (0 if auto_build(target["id"]) else walk)
                     if s >= walking:
                         walking = None
                         # choice metrics: how many open pads could be paid right now, how long since the last buy
@@ -594,6 +600,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         out["last_buy"] = played
                         sink("buildings", tcost)
                         S["owned"].add(target["id"])
+                        S["ever"].add(target["id"])
                         if target["id"] == "platform":
                             starter_chest()
                         if len(choices) == 1:  # that was the realm's last building: how many recruits does a minute buy now?

@@ -578,6 +578,25 @@ local function build()
 			toast(string.format("Brewing %d:%02d", s // 60, s % 60), PINK, 1.6)
 		end
 	end)
+	-- Auto Build (D85, owner pick C): a gold hand while it is on; the caption counts the buildings it will
+	-- rebuild (built before, still to buy). A tap switches it on or off (Remotes.AutoBuild)
+	local aCol, aBtn = sideButton(right, 3, 40, FACE_READY, true)
+	aBtn.Name = "AutoBuildButton"
+	Toy.icon(aBtn, "hands", px(28), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	ui.autoLabel = text(aCol, "Auto", px(12), GOLD, { LayoutOrder = 2 })
+	ui.aCol = aCol
+	ui.autoBtn = aBtn
+	aBtn.Activated:Connect(function()
+		local on = player:GetAttribute("AutoBuildOff") == true
+		local ok, done = pcall(function()
+			return remotes.AutoBuild:InvokeServer(on)
+		end)
+		if ok and done then
+			toast({ { icon = "hands", text = on and "Auto Build on" or "Auto Build off" } }, on and GOLD or Color3.fromHex("C8C0D0"), 1.6)
+		else
+			Sfx.play("deny")
+		end
+	end)
 	ui.left = left
 	ui.dBtn = dBtn
 
@@ -1147,6 +1166,7 @@ local function layout()
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
 	ui.dCol.Visible = true -- always there (owner 2026-10-23), the Disciple Hall or not: the book and the sect to look at
 	ui.pCol.Visible = hasFurnace
+	ui.aCol.Visible = player:GetAttribute("AutoBuildOpen") == true
 	ui.gCol.Visible = true -- the gift always shows its next reward (owner pick B)
 	ui.karmaRow.Visible = (player:GetAttribute("Karma") or 0) > 0 or (player:GetAttribute("Lives") or 1) > 1
 	local modal = modalOpen()
@@ -1409,6 +1429,7 @@ player:GetAttributeChangedSignal("HasHall"):Connect(function()
 	layout()
 end)
 player:GetAttributeChangedSignal("HasFurnace"):Connect(layout)
+player:GetAttributeChangedSignal("AutoBuildOpen"):Connect(layout)
 player:GetAttributeChangedSignal("AltarPalm"):Connect(layout) -- Altar.client: Palm Strike takes the Recruit seal's spot
 for _, a in { "Karma", "Lives" } do
 	player:GetAttributeChangedSignal(a):Connect(function()
@@ -1597,6 +1618,21 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
+	if ui.aCol.Visible then
+		local on = not player:GetAttribute("AutoBuildOff")
+		local n = 0
+		if on then
+			for _, p in myPads() do
+				if p:GetAttribute("Auto") then
+					n += 1
+				end
+			end
+		end
+		put(ui.autoLabel, "Text", not on and "Off" or n > 0 and tostring(n) or "On")
+		put(ui.autoLabel, "TextColor3", on and GOLD or Color3.fromHex("C8C0D0"))
+		put(ui.autoBtn, "BackgroundColor3", on and FACE_READY or FACE)
+	end
+
 	if ui.pCol.Visible then
 		local left = (player:GetAttribute("BoostUntil") or 0) - workspace:GetServerTimeNow()
 		if left > 0 then
@@ -1768,6 +1804,8 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	end
 	if kind == "built" then
 		toast(a .. "!", Color3.fromHex("9FF5C8"), 1.6)
+	elseif kind == "autoBuilt" then -- Auto Build (D85): the gold hand built it
+		toast({ { icon = "hands", text = tostring(a) .. "!" } }, GOLD, 1.6)
 	elseif kind == "offline" then
 		toast({ "Away", { icon = "qi", text = "+" .. short(a) } }, Color3.fromHex("9FD0FF"), 5)
 	elseif kind == "breakthrough" then

@@ -66,6 +66,32 @@ local tot = 0
 for _, v in R.P.playBy do
 	tot += v
 end
+local ms = d.missions
+if ms then
+	local mq = 0
+	for _, v in R.W.E.missionQi do
+		mq += v
+	end
+	local all = 0
+	for _, v in R.W.src do
+		all += v
+	end
+	print(string.format("  sect missions: rank %d (%s), %d stars, mission qi %.1f%% of sources (qi paid by rewards: %s)", ms.rank, (R.W.C.missionRank(ms.rank)), ms.total, 100 * mq / math.max(all, 1), (function()
+		local t = {}
+		for k, v in R.W.E.missionQi do
+			table.insert(t, k .. " " .. math.floor(v))
+		end
+		return table.concat(t, ", ")
+	end)()))
+	local rk = {}
+	for r = 2, ms.rank do
+		local t = R.W.E.missionRanks[r]
+		if t then
+			table.insert(rk, string.format("r%d %s", r, fmt(t)))
+		end
+	end
+	print("  rank reached at play time: " .. table.concat(rk, ", "))
+end
 print(string.format("  waiting (idle, nothing affordable): %.1f%% of play; longest gap between pad buys %d s", 100 * R.P.wait.any / tot, R.P.gaps.longest))
 local line = {}
 for r = 1, 30 do

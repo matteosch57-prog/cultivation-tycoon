@@ -28,6 +28,26 @@ from sim_game import load, DEFAULT_CONFIG  # noqa: E402  (the Config.luau parser
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
           dict(summons=3), dict(qi=1800), dict(rarity="Celestial", again=3)]
+# Config.MISSION_RANKS (Sect Missions, 2026-10-25) is a table of tables too: copied, checked by hand.
+# Each rank: rewards at cumulative stars (qi = s of away income, summons, pill = s of 2x, rarity); the last ranks up.
+MISSION_RANKS = [
+    [(2, dict(qi=60)), (4, dict(summons=1)), (7, dict(pill=120)), (10, dict(qi=120)), (13, dict(summons=2, rarity="Core Disciple"))],
+    [(3, dict(qi=90)), (7, dict(summons=1)), (11, dict(pill=180)), (16, dict(qi=150)), (20, dict(summons=2)), (25, dict(summons=2, rarity="Core Disciple"))],
+    [(4, dict(qi=120)), (9, dict(summons=2)), (15, dict(pill=300)), (21, dict(qi=180)), (26, dict(summons=2)), (32, dict(summons=3, rarity="Elder"))],
+    [(6, dict(qi=150)), (13, dict(summons=2)), (21, dict(pill=300)), (29, dict(qi=240)), (37, dict(summons=3)), (46, dict(summons=3, rarity="Elder"))],
+    [(8, dict(qi=180)), (18, dict(summons=2)), (28, dict(pill=420)), (39, dict(qi=300)), (50, dict(summons=3)), (63, dict(summons=4, rarity="Immortal"))],
+    [(11, dict(qi=240)), (25, dict(summons=3)), (40, dict(pill=600)), (55, dict(qi=360)), (71, dict(summons=4)), (89, dict(summons=4, rarity="Elder"))],
+    [(16, dict(qi=300)), (36, dict(summons=3)), (58, dict(pill=600)), (80, dict(qi=480)), (104, dict(summons=5)), (131, dict(summons=5, rarity="Immortal"))],
+    [(22, dict(qi=360)), (50, dict(summons=4)), (80, dict(pill=900)), (112, dict(qi=600)), (146, dict(summons=5)), (182, dict(summons=6, rarity="Immortal"))],
+    [(32, dict(qi=480)), (70, dict(summons=4)), (113, dict(pill=900)), (160, dict(qi=720)), (208, dict(summons=6)), (259, dict(summons=6, rarity="Celestial"))],
+    [(40, dict(qi=600)), (88, dict(summons=5)), (140, dict(pill=1200)), (196, dict(qi=900)), (256, dict(summons=6)), (319, dict(summons=8, rarity="Celestial"))],
+]
+MISSION_DAILY_CHEST = dict(qi=300, summons=2)
+# --missions: an independent stand-in for the missions themselves: stars come at STAR_RATE per second of
+# play (not the qisim's real mission draws), the 3 dailies (2 stars each) are done in the day's first
+# session after DAILY_AFTER s, then the daily chest.
+STAR_RATE = 1.3 / 60
+DAILY_AFTER = 600
 SLOT_PADS = ("quarters1", "quarters2")  # fallback when Config has no SLOT_PADS
 
 KINDS = {
@@ -45,7 +65,7 @@ PRE_D66 = False  # --pre-d66: the old rebirth rule (qi price only)
 PLAN1 = True
 
 
-def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10, events=None):
+def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, trace=False, react=20, batch=10, events=None, missions=False):
     slot_seats = {p["id"]: int(p.get("seats", 1)) for p in C["PADS"]}  # a slot pad's seats (Config.maxDisciples)
     """policy: gated = rebirth only when the next realm's gate blocks (sim_game.py's rule);
     eager = rebirth `react` s after qi first holds the price (the gold wobbling chip);
@@ -65,7 +85,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     keep = {e.split("=")[0].strip() for e in C["PAD_KEEP"]}
     S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
-             welcome=0.0, index={}, steps=0, bought=[])
+             welcome=0.0, index={}, steps=0, bought=[], ever=set(), best=1)
+
+    def auto_build(pid):  # Main autoBuildTick (D85): a pad this save built before, once Config.autoBuildOpen
+        frm = C.get("AUTO_BUILD_FROM")
+        open_ = (frm == "breakthrough" and (S["best"] > 1 or S["lives"] > 1)) or (frm == "rebirth" and S["lives"] > 1)
+        return open_ and pid in S["ever"]
     src, sink = {}, {}
     log = dict(realms=[], lives=[], days=[], waits={})
     snap = {}  # --plan1: pad id -> price until the next buy
@@ -257,6 +282,31 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     recalc()
     add("welcome gift", C["WELCOME_QI"])
     streak_day, streak_got = 0, set()
+    M = dict(rank=0, stars=0.0, paid=0)  # Sect Missions (--missions)
+
+    def mission_pay(r):
+        add("sect missions", cache["away"] * r.get("qi", 0))
+        for _ in range(int(r.get("summons", 0))):
+            seat(roll())
+        S["boost"] += r.get("pill", 0)
+        if r.get("rarity"):
+            seat(names.index(r["rarity"]))
+        recalc()
+
+    def mission_stars(n):
+        M["stars"] += n
+        while True:
+            path = MISSION_RANKS[min(M["rank"], len(MISSION_RANKS) - 1)]
+            if M["paid"] >= len(path) or M["stars"] < path[M["paid"]][0]:
+                break
+            at, r = path[M["paid"]]
+            M["paid"] += 1
+            mission_pay(r)
+            if M["paid"] == len(path):
+                M["rank"] += 1
+                M["stars"] -= at
+                M["paid"] = 0
+                log.setdefault("ranks", []).append(clock["play"])
     gap = 24 * 3600 / K["per_day"] - K["session"] * 60
     eager_at = None
     for day in range(days):
@@ -310,6 +360,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 if S["orbs"] and (auto or s % K["orb_every"] == 0):
                     add("qi orbs", S["orbs"] * live * C["ORB_VALUE"])
                     S["orbs"] = 0
+                if missions:
+                    mission_stars(STAR_RATE)
+                    if sess == 0 and s == DAILY_AFTER:
+                        mission_stars(6)
+                        mission_pay(MISSION_DAILY_CHEST)
                 gift_play += 1
                 if gift_i < len(C["GIFT_TIMES"]) and gift_play >= C["GIFT_TIMES"][gift_i]:
                     add("playtime gifts", cache["away"] * C["GIFT_VALUE"][gift_i])
@@ -359,6 +414,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         sink["reset loss"] = sink.get("reset loss", 0) + S["qi"]
                         log["realms"].append(dict(life=S["lives"], realm=S["realm"], t=clock["play"] - clock["realm_t"], at=clock["play"], day=day))
                         S.update(realm=S["realm"] + 1, qi=0.0, owned=(S["owned"] & keep) if PLAN1 else set(), workers={}, rr=0, pill=False, pill_t=0, boost=0)
+                        S["best"] = max(S["best"], S["realm"])
                         snap.clear()
                         clock["realm_t"] = clock["play"]
                         recalc()
@@ -388,11 +444,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         recalc()
                     continue
                 if S["qi"] >= tcost:
-                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") else K["walk"])
+                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"])
                     if s >= walk_until:
                         walk_until = None
                         pay("buildings", tcost)
                         S["owned"].add(target["id"])
+                        S["ever"].add(target["id"])
                         snap.clear()
                         first = log.setdefault("first", {}).setdefault(S["realm"], S["lives"])
                         wk = (S["realm"], first == S["lives"])
@@ -432,6 +489,7 @@ def main():
     ap.add_argument("--trace", action="store_true")
     ap.add_argument("--batch", type=int, default=10, help="recruits per press (1, 10, 50)")
     ap.add_argument("--set", action="append", default=[])
+    ap.add_argument("--missions", action="store_true", help="Sect Missions on (stars at STAR_RATE, dailies, rank path rewards)")
     ap.add_argument("--old-prices", action="store_true", help="the D44 price floor from before 2026-10-24 (see PLAN1 above)")
     a = ap.parse_args()
     C = load(a.config)
@@ -442,7 +500,7 @@ def main():
     global PRE_D66, PLAN1
     PRE_D66 = a.pre_d66
     PLAN1 = not a.old_prices
-    runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch) for seed in range(1, a.seeds + 1)]
+    runs = [sim(C, a.kind, a.policy, a.days, seed, buy, batch=a.batch, missions=a.missions) for seed in range(1, a.seeds + 1)]
     log, src, sink = runs[0]
     print("kind=%s policy=%s buy=%s days=%d batch=x%d" % (a.kind, a.policy, ",".join(buy) or "-", a.days, a.batch))
     print("day | realm | deepest | rebirths | rebirth x | disciples x | index stars   (median of %d seeds)" % a.seeds)
@@ -463,6 +521,8 @@ def main():
         for k in sorted(waits):
             v = sorted(waits[k])
             print("  realm %2d %-6s %5d pads  %8s / %8s / %8s" % (k[0], "first" if k[1] else "replay", len(v) // a.seeds, fmt(v[len(v) // 2]), fmt(v[int(len(v) * 0.9)]), fmt(v[-1])))
+    if a.missions:
+        print("sect mission ranks reached at play time (seed 1): " + ", ".join("r%d %s" % (i + 2, fmt(t)) for i, t in enumerate(log.get("ranks", [])[:12])))
     print("sources: " + share(src))
     print("sinks:   " + share(sink))
     if a.trace:

@@ -15,6 +15,7 @@ local LIMITS = {
 	DaoBuy = { 4, 8 },
 	SetSectStyle = { 1, 3 },
 	HandsBuild = { 2, 4 },
+	AutoBuild = { 1, 3 },
 	UsePill = { 1, 3 },
 	ClaimGift = { 1, 3 },
 	ClaimStreak = { 1, 3 },

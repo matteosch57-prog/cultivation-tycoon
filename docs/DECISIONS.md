@@ -567,3 +567,24 @@ the log as a D-number.
   nearest neighbour's shrine you can still bless (Teleport "shrine", Bless.target); the 3 s hold there
   stays (D57 keeps the visit, like Adopt Me's trick-or-treat buckets). Shown only while another sect is
   on the server; gold when a shrine is free; no incense left = the countdown to the UTC reset.
+- **D85 Auto Build (owner 2026-10-25: "long term isn't so interesting once you build the same things
+  50 times"; owner pick C of docs/art/mocks/2026-10-25_auto_build.jpg, from the first breakthrough):**
+  Mega Mansion Tycoon's "Auto Build" pass ("build your house as you can afford each purchase"), free
+  here and only for buildings the save has built before, in any life (`data.everBuilt`, seeded for old
+  saves from what they own and the required pads below their best realm). The server buys one marked pad
+  (`Auto` attribute) every `AUTO_BUILD_GAP` s while the owner is in the game, in the HUD "Next" order;
+  never the breakthrough, the rebirth, the idle chest or hires (qisim: auto hiring starved the pads a
+  realm needs, realm 7 -> 5 by day 7). `AUTO_BUILD_FROM` "breakthrough" = from life 1's first
+  breakthrough (realm 2 rebuilds realm 1 by itself), "rebirth" = from life 2. Look: a gold beam and an
+  "Auto in 0:13" line on the pad card, a gold light column + toast when it builds, a round gold hand in
+  the HUD's right stack (count of buildings waiting, tap = on / off, kept in the save). Sims (qisim 4
+  profiles x 14 days x 5 seeds, sim_game, sim_check): rebirth 1 0.3-0.8 min sooner, sim_game casual
+  life 2 at 8.3 min (was 11.2) and rebirth 2 30 min (was 42); late lives and the end realm unchanged.
+- **D86 Sect Styles (owner 2026-10-25: "Rebirth changing the vibe YES A"; research
+  `docs/research/2026-10-25_rebirth_new_looks.md`, mocks `docs/art/mocks/2026-10-25_sect_style_*.png`):**
+  every rebirth 1 to 10, then 15 and 20, unlocks a whole-sect look (`Config.SECT_STYLES`, Build Your
+  Backrooms biomes + Clash of Clans levels): recolour, ornaments on every kit roof ridge and one
+  ambience emitter over the peak (`SectStyle.luau`). The new one is worn at once ("New style!"), the
+  Rebirth screen names the next one, and the Sect Styles page (Rebirth screen) wears any unlocked one
+  or Classic (the D53 ladder). The overhead title shows the style. Why: from rebirth 3 every rebuild
+  looked the same. Next: a Relic Hall that never resets, filled by mission progress (owner, mock first).

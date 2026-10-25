@@ -37,8 +37,12 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands | streak", "realm (realmBucket)" },
+		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85)", "realm (realmBucket)" },
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
+	},
+	Mission = {
+		fields = { "done | daily | rank", "done/daily: group; rank: the rank reached", "done/daily: stars; rank: minutes played (minuteBucket)" },
+		question = "Which Sect Missions get finished, and how fast do players climb the ranks?",
 	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
