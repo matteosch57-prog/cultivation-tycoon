@@ -1138,7 +1138,7 @@ Config.SECT_STYLES = {
 		map = { tile = { hex("F4F8FC"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("7E2A30"), plaster = hex("F2F4F7"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("4A3A3A"), timberDark = hex("2E2426"), jade = hex("A8E4FF") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.4, -2, 0), size = 0.5 } },
 	{ id = "volcano", name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
-		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("7A1F14"), plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
+		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("4A1610"), -- 7A1F14 read bright red under the place lighting plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
 		fx = { color = hex("FF8A2A"), accel = Vector3.new(0, 2.5, 0), size = 0.4, light = 1 } },
 	{ id = "sakura", name = "Sakura Spring", rebirth = 3, orn = "blossom", ornColor = hex("FFD6E4"), swatch = { hex("E79AB4"), hex("FFFFFF") },
 		map = { tile = hex("E79AB4"), tileDark = hex("C27390"), vermilion = hex("F4EDE6"), plaster = hex("FFFFFF"), gold = hex("F2C9A0"), timber = hex("7A4E3A") },
