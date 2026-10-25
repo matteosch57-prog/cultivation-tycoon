@@ -75,12 +75,14 @@ local function infoOf(m)
 	local stars = Config.indexStars(pulls)
 	local r = Config.rarity(name)
 	local shiny = m:GetAttribute("Shiny") == true
+	local mut = m:GetAttribute("Mutation")
 	return {
 		rarity = r,
 		name = Config.discipleName(name, look),
 		shiny = shiny,
+		mut = Config.mutation(mut),
 		stars = stars,
-		bonus = Config.discBonus(name, shiny) * Config.discipleStarMult(pulls),
+		bonus = Config.discBonus(name, shiny, mut) * Config.discipleStarMult(pulls),
 		nextAt = Config.INDEX_STARS[stars + 1],
 		pulls = pulls,
 	}
@@ -132,6 +134,9 @@ local function card(m)
 	-- its name (named disciples, 2026-10-23), then its rarity in the rarity's colour (Shiny first)
 	Toy.text(box, info.name, 18, Color3.new(1, 1, 1), { LayoutOrder = 0 })
 	Toy.text(box, (info.shiny and "Shiny " or "") .. info.rarity.name, 14, info.rarity.color, { LayoutOrder = 1 })
+	if info.mut then -- a weather mutation (Heavenly Weather): its name and mult in its weather's colour
+		Toy.text(box, string.format("%s x%s", info.mut.mut, tostring(info.mut.mult)), 14, info.mut.color, { LayoutOrder = 1 })
+	end
 	Toy.stars(box, info.stars, 22, { LayoutOrder = 2 })
 	local _, label = Toy.amount(box, "qi", 18, Color3.new(1, 1, 1), { LayoutOrder = 3 })
 	label.Text = string.format("+%d%% qi", math.floor(info.bonus * 100 + 0.5))

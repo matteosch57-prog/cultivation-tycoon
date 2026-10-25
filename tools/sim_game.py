@@ -103,6 +103,9 @@ def load(path):
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
     env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
+    # Heavenly Weather (2026-10-25): Config.WEATHERS rows -> [{key, chance, mult, weight, duration}]
+    env["WEATHERS"] = [dict(key=k, chance=float(c), mult=float(m), weight=float(w), duration=int(d)) for k, c, m, w, d in
+                       re.findall(r'key = "(\w+)".*?chance = ([\d.]+), mult = ([\d.]+), weight = ([\d.]+), duration = (\d+)', "\n".join(block("WEATHERS")))]
     # pity (2026-10-23, Anime Defenders): Config.PITY = { { rarity = "Celestial", at = 1000 }, ... } -> {tier index: at}
     m = re.search(r"^Config\.PITY = \{(.*)\}$", src, re.M)
     if m:
@@ -167,6 +170,39 @@ KINDS = {
     "regular+passes": dict(play="active", session=30, per_day=2, passes=("2x", "vip", "orbs")),
     "regular+social": dict(play="active", session=30, per_day=2, friends=2, altar=0.25),
 }
+def weather_clock(C, seed, phase, newcomer=False):
+    """Heavenly Weather (Config.WEATHERS, Main weatherTick): f(s) -> the weather row running at second s of a
+    session that starts `phase` s into the tide cycle (slots WEATHER_FIRST - TIDE_FIRST after each tide's,
+    every WEATHER_INTERVAL, one weather rolled by weight each). `newcomer` = a save's first session: a Spirit
+    Rain at WEATHER_NEWCOMER_AT s unless it has seen weather by then. Its own random, so the other rolls
+    of the run stay the same with weather on or off (--set WEATHER_OFF=1)."""
+    W = C.get("WEATHERS") or []
+    if not W or C.get("WEATHER_OFF"):
+        return lambda s: None
+    r = random.Random(seed)
+    off, iv = C["WEATHER_FIRST"] - C["TIDE_FIRST"], C["WEATHER_INTERVAL"]
+    kinds, seen = {}, [False]
+    at_new = C.get("WEATHER_NEWCOMER_AT", 1e9)
+
+    def at(s):
+        t = s + phase - off
+        k = int(t // iv)
+        if k not in kinds:
+            x, kinds[k] = r.random(), W[0]
+            for w in W:
+                x -= w["weight"]
+                if x <= 0:
+                    kinds[k] = w
+                    break
+        w = kinds[k] if t % iv < kinds[k]["duration"] else None
+        if w is None and newcomer and not seen[0] and at_new <= s < at_new + W[0]["duration"]:
+            w = W[0]
+        if w is not None and s < at_new + W[0]["duration"]:
+            seen[0] = True
+        return w
+    return at
+
+
 DAO_ORDER = ["hands", "isles", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
 
 
@@ -292,6 +328,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         return base() / (x2 * idx_mult() * rb) * dmult(True) / dmult()
 
     pity = {}  # PITY (Main roll): {tier index: rolls since that tier or better}
+    wx = {"now": None}  # the weather running this second (weather_clock), None between sessions
 
     def roll():  # Main roll: the weights, then pity (Config.PITY), then Shiny (SHINY_CHANCE x SHINY_MULT)
         x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
@@ -310,6 +347,9 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         b = C["RARITIES"][pick][1]
         if C.get("SHINY_CHANCE") and rng.random() < C["SHINY_CHANCE"]:
             b *= C.get("SHINY_MULT", 1)
+        if wx["now"] and rng.random() < wx["now"]["chance"]:  # Heavenly Weather: its mutation
+            b *= wx["now"]["mult"]
+            out["mutations"] = out.get("mutations", 0) + 1
         d = Disc(b)
         d.key = idx_record(pick)
         return d
@@ -424,6 +464,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     rar_bonus = {n: b for n, b in zip(C.get("RARITY_NAMES", []), [b for _, b in C["RARITIES"]])}
     streak_once = set()
     for day in range(days):
+        wx["now"] = None
         # STREAK (login streak, proposal lever): day d's reward on the first join of the day; a list of
         # dicts {qi_s, summons, disciple (rarity name, once per save; repeats give `else_summons`)}
         if C.get("DAILY_QI_S"):  # DAILY_QI_S (lever): seconds of income paid once a day (free shop gift, blessings)
@@ -444,6 +485,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
             S["disciples"].sort(reverse=True)
             del S["disciples"][C["DISCIPLE_CAP"] + vip:]
         for _ in range(K["per_day"]):
+            wx["now"] = None  # offline, chest and streak rolls happen between sessions: clear sky
             if played:
                 away = min(session_gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
                 src("offline", base() * away * C.get("OFFLINE_RATE", 1))  # Main onJoin: x OFFLINE_RATE
@@ -454,6 +496,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                         del S["disciples"][C["DISCIPLE_CAP"] + vip:]
                         led_src["free summons"] = led_src.get("free summons", 0)
             tide_phase = rng.uniform(0, C["TIDE_INTERVAL"])
+            weather_at = weather_clock(C, seed * 100003 + played, tide_phase, newcomer=played == 0)
             walking = None
             # GIFT_DAILY (D49): the ladder counts play time over the whole day and restarts each day
             if not C.get("GIFT_DAILY") or S.get("gift_day") != day:
@@ -462,6 +505,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
             walk = 0 if lvl("hands") else st["walk"] * C["WALK_SCALE"]  # WALK_SCALE: islets' longer walks
             for s in range(int(K["session"] * 60)):
                 played += 1
+                wx["now"] = weather_at(s)
                 tp = (s + tide_phase) % C["TIDE_INTERVAL"]
                 tide = C["TIDE_MULT"] if tp < C["TIDE_DURATION"] else 1
                 pill = 2 if S["boost"] > 0 else 1

@@ -272,7 +272,7 @@ local function showBall(b, res)
 	b.orb:Destroy()
 	b.face.BackgroundColor3 = r.color
 	b.face.BackgroundTransparency = 0
-	Toy.disciple(b.face, math.floor(b.size * 0.8), res.rarity, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), ZIndex = 6 }, true, res.look, res.shiny)
+	Toy.disciple(b.face, math.floor(b.size * 0.8), res.rarity, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), ZIndex = 6 }, true, res.look, res.shiny, res.mut)
 	b.label.Text = res.look and Config.discipleName(res.rarity, res.look) or res.rarity
 	b.label.TextColor3 = r.color:Lerp(Color3.new(1, 1, 1), 0.35)
 	local sc = b.holder:FindFirstChildOfClass("UIScale")
