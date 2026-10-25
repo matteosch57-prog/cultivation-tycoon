@@ -935,6 +935,51 @@ Config.PITY = { { rarity = "Celestial", at = 1000 }, { rarity = "Dao Ancestor", 
 -- its rarity: a sparkling frame and SHINY_MULT x its bonus. data.shinyIndex marks each entry found.
 Config.SHINY_CHANCE = 0.01
 Config.SHINY_MULT = 1.5
+-- Heavenly Weather (owner pick B 2026-10-25, mock docs/art/mocks/2026-10-25_live_events.html; copy Grow a
+-- Garden's weather + crop mutations): a server-wide sky event. Every recruit, chest or gift summon rolled
+-- while one runs has `chance` to come out with its mutation: x`mult` its bonus (Shiny stacks) and its own
+-- index mark (data.mutIndex). The mutation sits on the disciple (data.discMut, "" = none), like Shiny.
+-- Paid random item rule (R8): the odds sheet shows every mutation's chance. Bought disciples never mutate.
+-- A slot opens every WEATHER_INTERVAL s, half a tide cycle off the tides (tide 240+600k for 90 s, weather
+-- 540+600k), and rolls one weather by `weight` (shares of the slots, summing to 1): rain most slots,
+-- thunder ~1 in 4, blood moon ~1 in 9, starfall ~1 in 20 (~3 h). `duration` s each, ending before the
+-- next altar round (690+600k).
+Config.WEATHER_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after the server starts
+Config.WEATHER_INTERVAL = Config.TIDE_INTERVAL
+Config.WEATHER_WARN = 20 -- s of heads-up toast before a slot
+Config.WEATHERS = {
+	{ key = "rain", name = "Spirit Rain", mut = "Dewy", chance = 0.2, mult = 2, weight = 0.62, duration = 150, color = Color3.fromRGB(111, 183, 255) },
+	{ key = "thunder", name = "Thunder Tribulation", mut = "Thunderborn", chance = 0.1, mult = 4, weight = 0.22, duration = 120, color = Color3.fromRGB(199, 155, 255) },
+	{ key = "blood", name = "Blood Moon", mut = "Bloodlit", chance = 0.1, mult = 5, weight = 0.11, duration = 150, color = Color3.fromRGB(255, 93, 108) },
+	{ key = "star", name = "Starfall", mut = "Starforged", chance = 0.05, mult = 10, weight = 0.05, duration = 120, color = Color3.fromRGB(159, 243, 255) },
+}
+-- a save that never saw weather (data.weatherSeen nil) gets a Spirit Rain for its server at
+-- WEATHER_NEWCOMER_AT s of its session, unless weather is on or a slot opens within WEATHER_NEWCOMER_GAP s
+-- (live 2026-10-25: 18% quit while recruiting at ~3.6 min); at most one such rain a WEATHER_NEWCOMER_GAP
+Config.WEATHER_NEWCOMER_AT = 220
+Config.WEATHER_NEWCOMER_GAP = 120
+
+function Config.weather(key)
+	for _, w in Config.WEATHERS do
+		if w.key == key then
+			return w
+		end
+	end
+	return nil
+end
+
+-- the weather whose mutation is `mut` (its name, "Dewy"), nil for none
+function Config.mutation(mut)
+	if not mut or mut == "" then
+		return nil
+	end
+	for _, w in Config.WEATHERS do
+		if w.mut == mut then
+			return w
+		end
+	end
+	return nil
+end
 
 -- Building palettes cycle with the realm.
 Config.PALETTES = {
@@ -1511,9 +1556,10 @@ function Config.discipleName(rarityName, look)
 	return names[Config.rarityIndex(rarityName)] or rarityName
 end
 
--- a disciple's bonus: its rarity's, x SHINY_MULT when Shiny
-function Config.discBonus(rarityName, shiny)
-	return Config.rarity(rarityName).bonus * (shiny and Config.SHINY_MULT or 1)
+-- a disciple's bonus: its rarity's, x SHINY_MULT when Shiny, x its weather mutation's mult (`mut` = "Dewy")
+function Config.discBonus(rarityName, shiny, mut)
+	local w = Config.mutation(mut)
+	return Config.rarity(rarityName).bonus * (shiny and Config.SHINY_MULT or 1) * (w and w.mult or 1)
 end
 
 function Config.rarity(name)

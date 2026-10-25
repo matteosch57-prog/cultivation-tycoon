@@ -93,13 +93,14 @@ local function fillSect(body)
 		c:Destroy()
 	end
 	local names, looks, shiny = split("Disciples", ","), split("DiscLooks", ","), split("DiscShiny", ",")
+	local muts = string.split(player:GetAttribute("DiscMut") or "", ",") -- weather mutations ("" = none)
 	local pulls = readIndex()
 	local max = player:GetAttribute("MaxDisciples") or Config.MAX_DISCIPLES
 	local onPlatform = max - isleSeats()
 	local working, total = math.min(#names, max), 0
 	for i = 1, working do
 		local own = looks[i] and pulls[Config.indexKey(names[i], looks[i])]
-		total += Config.discBonus(names[i], shiny[i] == "1") * Config.discipleStarMult(own)
+		total += Config.discBonus(names[i], shiny[i] == "1", muts[i]) * Config.discipleStarMult(own)
 	end
 	Toy.list(body, false, px(6), { VerticalAlignment = Enum.VerticalAlignment.Top })
 	text(body, string.format("%d / %d seats · +%s%% Qi · the strongest %d meditate on the platform", working, max, commas(math.floor(total * 100 + 0.5)), math.min(onPlatform, working)), px(14), WHITE, { LayoutOrder = 1 })
@@ -117,15 +118,17 @@ local function fillSect(body)
 		local look = looks[i]
 		local key = look and Config.indexKey(name, look)
 		local isShiny = shiny[i] == "1"
+		local mut = Config.mutation(muts[i])
 		local benched = i > max
 		local tag = benched and "Bench" or (i <= onPlatform and "Platform" or ("Isle " .. ((i - onPlatform - 1) // 4 + 1)))
 		local slot = frame(grid, { LayoutOrder = i })
 		local cell, tap = Toy.discipleTile(slot, px(54), name, look, {
 			shiny = isShiny,
+			mut = muts[i],
 			stars = Config.indexStars(key and pulls[key] or 0),
 			tag = tag,
 		})
-		local bonus = math.floor(Config.discBonus(name, isShiny) * Config.discipleStarMult(key and pulls[key]) * 100 + 0.5)
+		local bonus = math.floor(Config.discBonus(name, isShiny, muts[i]) * Config.discipleStarMult(key and pulls[key]) * 100 + 0.5)
 		text(cell, "+" .. bonus .. "%", px(11), benched and Color3.fromHex("9A8FA8") or Config.rarity(name).color, { LayoutOrder = 50 })
 		if benched then
 			for _, d in cell:GetDescendants() do
@@ -139,8 +142,8 @@ local function fillSect(body)
 		end
 		tap.Activated:Connect(function()
 			if ui.nameLine then
-				ui.nameLine.Text = (isShiny and "Shiny " or "") .. Config.discipleName(name, look) .. " · " .. name .. " · " .. tag
-				ui.nameLine.TextColor3 = Config.rarity(name).color:Lerp(WHITE, 0.25)
+				ui.nameLine.Text = (mut and mut.mut .. " " or "") .. (isShiny and "Shiny " or "") .. Config.discipleName(name, look) .. " · " .. name .. " · " .. tag
+				ui.nameLine.TextColor3 = (mut and mut.color or Config.rarity(name).color):Lerp(WHITE, 0.25)
 			end
 		end)
 	end
@@ -285,7 +288,7 @@ if oddsEvent then
 end
 
 -- My Sect follows the disciples while it is open (a recruit, a new isle, a new star)
-for _, a in { "Disciples", "DiscLooks", "DiscShiny", "Index", "MaxDisciples" } do
+for _, a in { "Disciples", "DiscLooks", "DiscShiny", "DiscMut", "Index", "MaxDisciples" } do
 	player:GetAttributeChangedSignal(a):Connect(function()
 		if gui.Enabled and current == "sect" then
 			showTab("sect")

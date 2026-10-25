@@ -69,10 +69,30 @@ local function readShiny()
 	return out
 end
 
+-- the MutIndex attribute: "Elder|lotus#Dewy;..." -> { [key] = { "Dewy", ... } } (weather mutations found),
+-- strongest first
+local function readMut()
+	local out = {}
+	for _, pair in string.split(player:GetAttribute("MutIndex") or "", ";") do
+		local key, mut = string.match(pair, "^(.-)#(.+)$")
+		if key and Config.mutation(mut) then
+			out[key] = out[key] or {}
+			table.insert(out[key], mut)
+		end
+	end
+	for _, list in out do
+		table.sort(list, function(a, b)
+			return Config.mutation(a).mult > Config.mutation(b).mult
+		end)
+	end
+	return out
+end
+
 local seen = {} -- stars per entry at the last close: a tile with more since says NEW
 local close
 local nameLine -- the foot line: the star rule, then the tapped disciple's name (named disciples, 2026-10-23)
 local shinyFound = {}
+local mutFound = {}
 
 -- One entry: the shared disciple tile (Toy.discipleTile, the same card as My Sect and the recruit
 -- reveal), its pulls in the corner and its star row under it. Tap: its name under the grid.
@@ -82,6 +102,7 @@ local function tile(parent, rarity, look, pulls, order)
 	local _, tap = Toy.discipleTile(parent, px(54), rarity.name, look, {
 		found = pulls > 0,
 		shiny = shinyFound[key],
+		mut = mutFound[key] and mutFound[key][1],
 		stars = stars,
 		count = pulls,
 		new = stars > (seen[key] or 0),
@@ -89,7 +110,7 @@ local function tile(parent, rarity, look, pulls, order)
 	})
 	tap.Activated:Connect(function()
 		if nameLine and pulls > 0 then
-			nameLine.Text = (shinyFound[key] and "Shiny " or "") .. Config.discipleName(rarity.name, look) .. " · " .. rarity.name
+			nameLine.Text = (shinyFound[key] and "Shiny " or "") .. Config.discipleName(rarity.name, look) .. " · " .. rarity.name .. (mutFound[key] and " · " .. table.concat(mutFound[key], ", ") or "")
 			nameLine.TextColor3 = rarity.color:Lerp(Color3.new(1, 1, 1), 0.25)
 			nameLine.TextSize = px(15)
 		end
@@ -102,6 +123,7 @@ end
 local function fill(body)
 	local index = readIndex()
 	shinyFound = readShiny()
+	mutFound = readMut()
 	local total = Config.indexTotalStars(index)
 	local max = #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.INDEX_STARS
 	text(body, string.format("%d of %d stars · +%s%% qi forever", total, max, string.format("%.2f", (Config.indexMult(index) - 1) * 100):gsub("%.?0+$", "")), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })

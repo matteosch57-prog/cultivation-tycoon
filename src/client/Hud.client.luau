@@ -427,6 +427,17 @@ local function build()
 	tideIcon(tideRow, px(15), { LayoutOrder = 1 })
 	ui.tide = text(tideRow, "", px(12), TIDE_LIGHT, { LayoutOrder = 2 })
 	ui.tideRow = tideRow
+	-- Heavenly Weather line: its colour gem, its name and the time left (only while one runs)
+	local wRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4, Visible = false })
+	Toy.list(wRow, true, px(4), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	local wGem = frame(wRow, { Size = UDim2.fromOffset(px(10), px(10)), BackgroundTransparency = 0, Rotation = 45, LayoutOrder = 1 })
+	Toy.corner(wGem, UDim.new(0, px(2)))
+	local wgs = Instance.new("UIStroke")
+	wgs.Color = INK
+	wgs.Thickness = px(2)
+	wgs.Parent = wGem
+	ui.weather = text(wRow, "", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.weatherRow, ui.weatherGem = wRow, wGem
 	ui.counter = counter
 	counter.Name = "Counter" -- Juice flies qi drops into it
 	-- karma beside the qi (every currency shows with its icon), once the player has any or a past life
@@ -1092,6 +1103,70 @@ local function tideBanner(name)
 	end)
 end
 
+-- The Heavenly Weather banner: the Tide Bell's plate in the weather's colour, its name and what a
+-- recruit can become ("20% of recruits come out Dewy x2"), then it shrinks into the HUD weather line
+local function weatherBanner(w)
+	if banner then
+		banner:Destroy()
+	end
+	local at = UDim2.new(0.5, 0, 0, px(150))
+	local counter = ui.counter
+	if counter and counter.AbsoluteSize.Y > 0 then
+		local below = counter.AbsolutePosition.Y + counter.AbsoluteSize.Y - bannerGui.AbsolutePosition.Y
+		at = UDim2.new(0.5, 0, 0, below + px(8))
+	end
+	local plate = frame(bannerGui, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0), Position = at, BackgroundTransparency = 0, BackgroundColor3 = w.color, ZIndex = 21 })
+	banner = plate
+	Toy.corner(plate, UDim.new(0, px(16)))
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = px(3)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = plate
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = ColorSequence.new(w.color:Lerp(Color3.new(1, 1, 1), 0.35), w.color:Lerp(Toy.INK, 0.35))
+	grad.Parent = plate
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(18)), UDim.new(0, px(18))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(6)), UDim.new(0, px(7))
+	pad.Parent = plate
+	local words = frame(plate, { AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 22 })
+	Toy.list(words, false, 0)
+	text(words, w.name .. "!", px(24), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 22 })
+	local sub = text(words, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 22 })
+	local function tick()
+		local left = math.max(0, (workspace:GetAttribute("WeatherUntil") or 0) - workspace:GetServerTimeNow())
+		sub.Text = string.format("Recruit now: %d%% become %s x%s · %d:%02d", math.floor(w.chance * 100 + 0.5), w.mut, tostring(w.mult), left // 60, math.floor(left % 60))
+	end
+	tick()
+	local sc = Instance.new("UIScale")
+	sc.Scale = 0.4
+	sc.Parent = plate
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	Sfx.play("toast")
+	task.spawn(function()
+		local t0 = os.clock()
+		while plate.Parent and os.clock() - t0 < BANNER_HOLD + 1 do
+			tick()
+			task.wait(0.25)
+		end
+		if plate.Parent then
+			local row = ui.weatherRow
+			local goal = at - UDim2.fromOffset(0, px(20))
+			if row and row.Visible and row.AbsoluteSize.X > 0 then
+				local c = row.AbsolutePosition + row.AbsoluteSize / 2 - bannerGui.AbsolutePosition
+				goal = UDim2.fromOffset(c.X, c.Y)
+			end
+			TweenService:Create(plate, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = goal }):Play()
+			TweenService:Create(sc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.25 }):Play()
+			fadeOut(plate, 0.5)
+			task.wait(0.55)
+			plate:Destroy()
+		end
+	end)
+end
+
 popGain = function(amount, big)
 	if not ui.counter or amount <= 0 then
 		return
@@ -1289,6 +1364,7 @@ refreshStatic = function()
 	local looks = looksRaw == "" and {} or string.split(looksRaw, ",")
 	local shinyRaw = player:GetAttribute("DiscShiny") or "" -- "1,0,...": Shiny marks, as DiscLooks
 	local shiny = shinyRaw == "" and {} or string.split(shinyRaw, ",")
+	local muts = string.split(player:GetAttribute("DiscMut") or "", ",") -- weather mutations ("" = none), as DiscLooks
 	local pulls = {} -- the index (D60): "key=pulls;..."; a disciple's own stars raise its bonus
 	for _, pair in string.split(player:GetAttribute("Index") or "", ";") do
 		local key, n = string.match(pair, "^(.-)=(%d+)$")
@@ -1318,7 +1394,7 @@ refreshStatic = function()
 		cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		cl.SortOrder = Enum.SortOrder.LayoutOrder
 		cl.Parent = cell
-		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }, false, looks[i], shiny[i] == "1") -- its face and its rarity's moving aura
+		local face = Toy.disciple(cell, px(46), name, { LayoutOrder = 1 }, false, looks[i], shiny[i] == "1", muts[i]) -- its face and its rarity's moving aura
 		-- a tap opens the Disciples book on My Sect (Roster.client)
 		local tapFace = Instance.new("TextButton")
 		tapFace.Text = ""
@@ -1348,7 +1424,7 @@ refreshStatic = function()
 			ds.Parent = dot
 		end
 		local own = looks[i] and pulls[Config.indexKey(name, looks[i])]
-		text(cell, string.format("+%d%%", math.floor(Config.discBonus(name, shiny[i] == "1") * Config.discipleStarMult(own) * 100 + 0.5)), px(11), r.color, { LayoutOrder = 2 })
+		text(cell, string.format("+%d%%", math.floor(Config.discBonus(name, shiny[i] == "1", muts[i]) * Config.discipleStarMult(own) * 100 + 0.5)), px(11), r.color, { LayoutOrder = 2 })
 	end
 	-- the disciple index (D60, IndexBook.client): a gold book button at the end of the card, with a red
 	-- dot while a star is new (local attribute IndexNew, set by IndexBook where the stars change)
@@ -1421,7 +1497,7 @@ rebuildAll = function()
 end
 
 rebuildAll()
-for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen", "RebirthNeed", "FreeRecruits" } do
+for _, a in { "Rate", "RealmName", "RecruitCost", "RealmRecruits", "Disciples", "DiscLooks", "DiscShiny", "DiscMut", "Index", "Built", "Pulled", "Dots", "IndexNew", "RebirthPrice", "RebirthOpen", "RebirthNeed", "FreeRecruits" } do
 	player:GetAttributeChangedSignal(a):Connect(refreshStatic)
 end
 player:GetAttributeChangedSignal("HasHall"):Connect(function()
@@ -1546,6 +1622,19 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.tide, "TextColor3", tideLeft > 0 and TIDE or TIDE_LIGHT)
 		put(ui.tide, "TextSize", tideLeft > 0 and px(13) or px(12))
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
+	end
+
+	-- Heavenly Weather line under the tide line, in the weather's colour
+	local wx = Config.weather(workspace:GetAttribute("Weather"))
+	local wLeft = (workspace:GetAttribute("WeatherUntil") or 0) - now
+	local wText = (wx and wLeft > 0) and string.format("%s %d:%02d", wx.name, wLeft // 60, math.floor(wLeft % 60)) or ""
+	if ui.weather.Text ~= wText then
+		put(ui.weather, "Text", wText)
+		put(ui.weatherRow, "Visible", wText ~= "")
+		if wx then
+			put(ui.weather, "TextColor3", wx.color:Lerp(Color3.new(1, 1, 1), 0.3))
+			put(ui.weatherGem, "BackgroundColor3", wx.color)
+		end
 	end
 
 	-- the Rebirth seal wobbles gold once the rebirth price is held; the first rebirths also say so
@@ -1718,6 +1807,15 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 		return
 	elseif kind == "expand" then
 		toast("More land!", Color3.fromHex("9FF5C8"), 3)
+		return
+	elseif kind == "weather" then -- Heavenly Weather started: `a` = its key
+		local w = Config.weather(a)
+		if w then
+			weatherBanner(w)
+		end
+		return
+	elseif kind == "weatherSoon" then
+		toast(string.format("The heavens stir · weather in %ds", a), Color3.fromHex("D9C8FF"), 3)
 		return
 	elseif kind == "tideSoon" then
 		toast(string.format("Spirit Tide in %ds", a), Color3.fromHex("9FD0FF"), 3)

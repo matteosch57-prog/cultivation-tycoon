@@ -587,6 +587,19 @@ local function discShiny(d)
 	return d.discShiny
 end
 
+-- Heavenly Weather mutations (2026-10-25, Grow a Garden): data.discMut[i] = the mutation of
+-- data.disciples[i] ("Dewy", Config.WEATHERS `mut`; "" = none), one more parallel list like discShiny
+local function discMut(d)
+	d.discMut = d.discMut or {}
+	for i = #d.discMut + 1, #d.disciples do
+		d.discMut[i] = ""
+	end
+	for i = #d.discMut, #d.disciples + 1, -1 do
+		d.discMut[i] = nil
+	end
+	return d.discMut
+end
+
 -- The list is kept sorted strongest first; only the first maxDisciples work (the rest are
 -- benched, e.g. after a breakthrough resets the Quarters). `s.passes` = game passes owned (Shop).
 -- Karma Shop node level (0 = not bought)
@@ -617,11 +630,12 @@ local function discipleMult(s, price)
 	local max = maxDisciples(s)
 	local looks = discLooks(data)
 	local shiny = discShiny(data)
+	local muts = discMut(data)
 	for i, name in data.disciples do
 		if i > max then
 			break
 		end
-		local bonus = Config.discBonus(name, shiny[i])
+		local bonus = Config.discBonus(name, shiny[i], muts[i])
 		if not price then
 			bonus *= Config.discipleStarMult((data.index or {})[Config.indexKey(name, looks[i])])
 		end
@@ -646,6 +660,30 @@ end
 
 local function tideOn()
 	return (workspace:GetAttribute("TideUntil") or 0) > workspace:GetServerTimeNow()
+end
+
+-- Heavenly Weather (Config.WEATHERS): Weather (its key) / WeatherUntil / WeatherNext are Workspace
+-- attributes (server time) so clients draw the sky, the banner and the HUD line. The weather running
+-- now (its Config row), nil for a clear sky.
+local function weatherNow()
+	if (workspace:GetAttribute("WeatherUntil") or 0) <= workspace:GetServerTimeNow() then
+		return nil
+	end
+	return Config.weather(workspace:GetAttribute("Weather"))
+end
+
+local function startWeather(w)
+	local now = workspace:GetServerTimeNow()
+	workspace:SetAttribute("Weather", w.key)
+	workspace:SetAttribute("WeatherUntil", now + w.duration)
+	workspace:SetAttribute("WeatherLast", now)
+	notify:FireAllClients("weather", w.key, w.duration)
+	local n = 0
+	for _, s in sessions do
+		n += 1
+		s.data.weatherSeen = true
+	end
+	print(string.format("[Tycoon] weather %s started, %d players", w.key, n))
 end
 
 -- Friends here (D35): [player] = { [other player] = true } for Roblox friends on this server, checked
@@ -822,6 +860,13 @@ local function publish(player)
 	end
 	player:SetAttribute("DiscShiny", table.concat(shinyMarks, ","))
 	player:SetAttribute("ShinyIndex", table.concat(shinyKeys, ";"))
+	-- weather mutations: each seated disciple's ("Dewy" / "", as DiscShiny) and the index marks found ("key#Dewy;...")
+	local mutKeys = {}
+	for key in d.mutIndex or {} do
+		table.insert(mutKeys, key)
+	end
+	player:SetAttribute("DiscMut", table.concat(discMut(d), ","))
+	player:SetAttribute("MutIndex", table.concat(mutKeys, ";"))
 	-- pity: recruits since each guarantee's rarity or better ("Celestial=812;Dao Ancestor=2140")
 	local pity = {}
 	for _, p in Config.PITY do
@@ -978,6 +1023,51 @@ end
 -- LightEmission keeps them gold), draw in front (ZOffset), are bigger, and a warm light marks the seat.
 -- Recheck 10:03: the light lit the whole deck (now a short range at the cushion) and the burst hid in
 -- the aura's circle behind the head (now higher, bigger and drawn in front of it)
+-- a mutated disciple's seat (Heavenly Weather): the Mutation attribute (DiscipleInspect's card) and a
+-- slow rise of motes in its weather's colour from the cushion, under the Shiny glints when it has both
+local function mutationGlow(m, mut)
+	local w = Config.mutation(mut)
+	m:SetAttribute("Mutation", mut)
+	local at = m:FindFirstChild("Cushion") or m.PrimaryPart
+	if not w or not at then
+		return
+	end
+	local ring = Instance.new("Part")
+	ring.Name = "MutationRing"
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CanTouch = false
+	ring.Transparency = 1
+	ring.Size = Vector3.new(4, 0.2, 4)
+	ring.CFrame = CFrame.new(at.Position) * CFrame.new(0, 0.3, 0)
+	ring.Parent = m
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "MutationMotes"
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Shape = Enum.ParticleEmitterShape.Cylinder
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Rate = 18
+	e.Lifetime = NumberRange.new(1.6, 2.2)
+	e.Speed = NumberRange.new(1.5, 2.5)
+	e.SpreadAngle = Vector2.new(0, 0)
+	e.Rotation = NumberRange.new(0, 360)
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+	e.Color = ColorSequence.new(w.color)
+	e.LightEmission = 0.6
+	e.LightInfluence = 0
+	e.Brightness = 2.5
+	e.ZOffset = 1
+	e.Parent = ring
+	local light = Instance.new("PointLight")
+	light.Name = "MutationLight"
+	light.Color = w.color
+	light.Brightness = 1.5
+	light.Range = 3
+	light.Parent = ring
+end
+
 local SHINY_GOLD = Color3.fromHex("FFD34D")
 local SHINY_WARM = Color3.fromRGB(255, 244, 196)
 local function shinySparkle(m)
@@ -1112,8 +1202,9 @@ local function buildDisciples(s, newcomer)
 	local want = { [false] = {}, [true] = {} }
 	local looks = discLooks(s.data)
 	local shinies = discShiny(s.data)
+	local muts = discMut(s.data)
 	local function seatKey(i)
-		return Config.indexKey(s.data.disciples[i], looks[i]) .. (shinies[i] and "#s" or "")
+		return Config.indexKey(s.data.disciples[i], looks[i]) .. (shinies[i] and "#s" or "") .. (muts[i] ~= "" and "#" .. muts[i] or "")
 	end
 	for slot in s.data.disciples do
 		if slot > max then
@@ -1128,7 +1219,8 @@ local function buildDisciples(s, newcomer)
 	local taken = {}
 	for _, m in folder:GetChildren() do
 		local slot = tonumber(m.Name:match("^Disciple(%d+)$"))
-		local key = m:GetAttribute("Disciple") and m:GetAttribute("Disciple") .. (m:GetAttribute("Shiny") and "#s" or "")
+		local mut = m:GetAttribute("Mutation")
+		local key = m:GetAttribute("Disciple") and m:GetAttribute("Disciple") .. (m:GetAttribute("Shiny") and "#s" or "") .. (mut and "#" .. mut or "")
 		local w = slot and want[onIsle(slot)]
 		if slot and slot <= max and key and (w[key] or 0) > 0 and not taken[slot] then
 			w[key] -= 1
@@ -1165,6 +1257,9 @@ local function buildDisciples(s, newcomer)
 				m:SetAttribute("Disciple", base)
 				if shinies[i] then
 					shinySparkle(m)
+				end
+				if muts[i] ~= "" then
+					mutationGlow(m, muts[i])
 				end
 			end
 		end
@@ -2102,8 +2197,9 @@ end
 local rng = Random.new()
 
 -- one roll for `d` (a save): the weights (the shown odds, R8), then pity (Config.PITY: `at` rolls in a
--- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE). Returns the rarity
--- and whether it is Shiny.
+-- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE), then the weather's
+-- mutation (Config.WEATHERS `chance`, only while one runs). Returns the rarity, whether it is Shiny and
+-- its mutation ("" = none).
 local function roll(d)
 	local total = 0
 	for _, r in Config.RARITIES do
@@ -2129,12 +2225,15 @@ local function roll(d)
 			d.pity[p.rarity] = 0
 		end
 	end
-	return Config.RARITIES[pick], rng:NextNumber() < Config.SHINY_CHANCE
+	local shiny = rng:NextNumber() < Config.SHINY_CHANCE
+	local w = weatherNow()
+	local mut = (w and rng:NextNumber() < w.chance) and w.mut or ""
+	return Config.RARITIES[pick], shiny, mut
 end
 
--- strongest first: { name, look, shiny } entries by their bonus (Shiny counts)
+-- strongest first: { name, look, shiny, mutation } entries by their bonus (Shiny and mutations count)
 local function byBonus(a, b)
-	return Config.discBonus(a[1], a[3]) > Config.discBonus(b[1], b[3])
+	return Config.discBonus(a[1], a[3], a[4]) > Config.discBonus(b[1], b[3], b[4])
 end
 
 -- The disciple index (D60): one more pull of `name` in `look`; a new star can reach a summons step
@@ -2162,22 +2261,24 @@ end
 -- it in the index. Returns kept (true when it works a seat; false = the sect is full of stronger ones
 -- and it left, `force` keeps it on the bench instead), its look, its index stars after, and whether
 -- this pull lit a new star.
-local function addDisciple(s, name, force, noBuild, look, shiny)
+local function addDisciple(s, name, force, noBuild, look, shiny, mut)
 	local d = s.data
 	look = look or Config.DISCIPLE_LOOKS[math.random(#Config.DISCIPLE_LOOKS)]
 	shiny = shiny == true
+	mut = Config.mutation(mut) and mut or ""
 	local looks = discLooks(d)
 	local shinies = discShiny(d)
+	local muts = discMut(d)
 	local list = {}
 	for i, n in d.disciples do
-		list[i] = { n, looks[i], shinies[i] }
+		list[i] = { n, looks[i], shinies[i], muts[i] }
 	end
 	local max = maxDisciples(s)
 	table.sort(list, byBonus)
-	local kept = #list < max or Config.discBonus(name, shiny) > Config.discBonus(list[max][1], list[max][3])
+	local kept = #list < max or Config.discBonus(name, shiny, mut) > Config.discBonus(list[max][1], list[max][3], list[max][4])
 	if kept or force then
 		-- full: the newcomer takes the weakest working seat (it joins and the list re-sorts)
-		table.insert(list, { name, look, shiny })
+		table.insert(list, { name, look, shiny, mut })
 	end
 	table.sort(list, byBonus)
 	-- keep at most as many as the largest possible sect (benched ones beyond the slots), dropping
@@ -2187,7 +2288,7 @@ local function addDisciple(s, name, force, noBuild, look, shiny)
 	local keep = {}
 	for pass = 1, 2 do -- a bought one is never Shiny: mark plain copies first, then any (old saves)
 		for i, e in list do -- strongest first: the bought copies are the strongest plain ones of their name
-			if not keep[i] and (paid[e[1]] or 0) > 0 and (pass == 2 or not e[3]) then
+			if not keep[i] and (paid[e[1]] or 0) > 0 and (pass == 2 or not (e[3] or e[4] ~= "")) then
 				paid[e[1]] -= 1
 				keep[i] = true
 			end
@@ -2204,13 +2305,18 @@ local function addDisciple(s, name, force, noBuild, look, shiny)
 	table.clear(d.disciples)
 	table.clear(looks)
 	table.clear(shinies)
+	table.clear(muts)
 	for i, e in list do
-		d.disciples[i], looks[i], shinies[i] = e[1], e[2], e[3] == true
+		d.disciples[i], looks[i], shinies[i], muts[i] = e[1], e[2], e[3] == true, e[4] or ""
 	end
 	local starsBefore, stars = indexAdd(s, name, look)
 	if shiny then
 		d.shinyIndex = d.shinyIndex or {}
 		d.shinyIndex[Config.indexKey(name, look)] = true
+	end
+	if mut ~= "" then
+		d.mutIndex = d.mutIndex or {}
+		d.mutIndex[Config.indexKey(name, look) .. "#" .. mut] = true
 	end
 	if not noBuild then -- a multi-recruit rebuilds once at the end
 		buildDisciples(s, kept and Config.indexKey(name, look) or nil)
@@ -2260,12 +2366,12 @@ chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	s.data.pulled = s.data.pulled or {}
 	local results, rolled, bestKey, bestBonus = {}, {}, nil, -1
 	for _ = 1, want do
-		local r, shiny = roll(s.data)
-		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny)
-		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny })
+		local r, shiny, mut = roll(s.data)
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny, mut)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny, mut = mut })
 		-- a rolled rarity keeps its "first pulled" mark, as with a recruit
 		s.data.pulled[r.name] = true
-		local bonus = Config.discBonus(r.name, shiny)
+		local bonus = Config.discBonus(r.name, shiny, mut)
 		if kept and bonus > bestBonus then
 			bestKey, bestBonus = Config.indexKey(r.name, look), bonus
 		end
@@ -2298,17 +2404,17 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
 		Telemetry.sink(player, s.data, cost, "recruit")
 	end
-	local results, best, bestLook, bestShiny, bestKept, bestKeptBonus, bestKeptKey = {}, nil, nil, false, false, -1, nil
+	local results, best, bestLook, bestShiny, bestMut, bestKept, bestKeptBonus, bestKeptKey = {}, nil, nil, false, "", false, -1, nil
 	local rolled = {} -- ["rarity|kept"] = count: one Recruit event per outcome, not one per roll (an
 	-- x50 alone was a quarter of the server's minute analytics budget, Telemetry `spend`)
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
-		local r, shiny = roll(s.data)
-		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny)
-		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny })
-		local bonus = Config.discBonus(r.name, shiny)
-		if not best or bonus > Config.discBonus(best, bestShiny) then
-			best, bestLook, bestShiny = r.name, look, shiny
+		local r, shiny, mut = roll(s.data)
+		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny, mut)
+		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny, mut = mut })
+		local bonus = Config.discBonus(r.name, shiny, mut)
+		if not best or bonus > Config.discBonus(best, bestShiny, bestMut) then
+			best, bestLook, bestShiny, bestMut = r.name, look, shiny, mut
 		end
 		if kept and bonus > bestKeptBonus then
 			bestKept, bestKeptBonus, bestKeptKey = true, bonus, Config.indexKey(r.name, look)
@@ -2332,7 +2438,7 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		Telemetry.funnel(player, s.data)
 	end
 	Missions.bump(player, "recruit", want)
-	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, kept = bestKept, results = results }
+	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, mut = bestMut, kept = bestKept, results = results }
 end
 
 -- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
@@ -3283,6 +3389,53 @@ local function tideTick()
 	end
 end
 
+-- Heavenly Weather schedule (Config.WEATHERS): a slot every WEATHER_INTERVAL rolls one weather by
+-- weight; a heads-up toast WEATHER_WARN s before. A save that never saw weather gets an early Spirit
+-- Rain at WEATHER_NEWCOMER_AT s of its session (Config.WEATHER_NEWCOMER_GAP).
+local weatherWarned = false
+workspace:SetAttribute("WeatherNext", workspace:GetServerTimeNow() + Config.WEATHER_FIRST)
+local function rollWeather()
+	local x = rng:NextNumber()
+	for _, w in Config.WEATHERS do
+		x -= w.weight
+		if x <= 0 then
+			return w
+		end
+	end
+	return Config.WEATHERS[1]
+end
+local function weatherTick()
+	local now = workspace:GetServerTimeNow()
+	local nextAt = workspace:GetAttribute("WeatherNext")
+	if not weatherWarned and now >= nextAt - Config.WEATHER_WARN then
+		weatherWarned = true
+		notify:FireAllClients("weatherSoon", math.max(1, math.ceil(nextAt - now)))
+	end
+	if now >= nextAt then
+		weatherWarned = false
+		workspace:SetAttribute("WeatherNext", nextAt + Config.WEATHER_INTERVAL)
+		if not weatherNow() then
+			startWeather(rollWeather())
+		end
+		return
+	end
+	if weatherNow() then
+		for _, s in sessions do
+			s.data.weatherSeen = true -- joined while it runs: they saw it
+		end
+		return
+	end
+	if nextAt - now < Config.WEATHER_NEWCOMER_GAP or now - (workspace:GetAttribute("WeatherLast") or -math.huge) < Config.WEATHER_NEWCOMER_GAP then
+		return
+	end
+	for _, s in sessions do
+		if not s.data.weatherSeen and (s.playTime or 0) >= Config.WEATHER_NEWCOMER_AT then
+			startWeather(Config.WEATHERS[1])
+			return
+		end
+	end
+end
+
 -- income tick + autosave
 local sinceSave = 0
 while true do
@@ -3291,6 +3444,10 @@ while true do
 	local okTide, tideErr = pcall(tideTick)
 	if not okTide then
 		warn("[Tycoon] spirit tide tick failed:", tideErr)
+	end
+	local okWeather, weatherErr = pcall(weatherTick)
+	if not okWeather then
+		warn("[Tycoon] weather tick failed:", weatherErr)
 	end
 	for player, s in sessions do
 		-- one player's error must not stop this loop: it pays everyone's qi and runs every autosave

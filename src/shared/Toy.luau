@@ -758,6 +758,27 @@ local function shinyMarks(box, size)
 	end
 end
 
+-- A weather mutation (Heavenly Weather, Config.WEATHERS): a glow behind `box` in its weather's colour
+-- and a small outlined gem of that colour on its bottom-left corner (Shiny's gold mark sits bottom-right)
+function Toy.mutationMark(box, size, mut)
+	local w = Config.mutation(mut)
+	if not w then
+		return
+	end
+	Toy.atlasPiece(box, "glow", size * 1.25, size * 1.25, w.color, 0.35, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 1 })
+	local g = math.max(Toy.px(9), math.floor(size * 0.24))
+	local gem = Toy.frame(box, { Name = "Mutation", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.16, 0.84), Size = UDim2.fromOffset(g, g), BackgroundTransparency = 0, BackgroundColor3 = WHITE, Rotation = 45, ZIndex = 9 })
+	Toy.corner(gem, UDim.new(0, math.floor(g * 0.25)))
+	local fill = Instance.new("UIGradient")
+	fill.Rotation = 45
+	fill.Color = ColorSequence.new(w.color:Lerp(WHITE, 0.55), w.color:Lerp(Toy.INK, 0.2))
+	fill.Parent = gem
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = math.max(1.5, g * 0.16)
+	st.Parent = gem
+end
+
 -- A disciple of rarity `rarityName` exactly as the mock draws it: the moving aura and the disciple,
 -- straight on whatever is behind (no backdrop disc; owner 2026-10-21: "why a background anyway").
 -- Every aura piece stays inside the box. `noAura` draws the bare disciple filling the box.
@@ -783,8 +804,8 @@ end
 
 -- `look` (a DISCIPLE_LOOKS key) draws that named disciple's face once the face sheet is uploaded (the
 -- rarity's figure until then, and wherever the look is unknown: the Shop, gifts); `shiny` adds the
--- sparkles.
-function Toy.disciple(parent, size, rarityName, props, noAura, look, shiny)
+-- sparkles, `mut` (a weather mutation, "Dewy") its glow and gem.
+function Toy.disciple(parent, size, rarityName, props, noAura, look, shiny, mut)
 	local idx = Config.rarityIndex(rarityName)
 	local out
 	if noAura then
@@ -794,6 +815,9 @@ function Toy.disciple(parent, size, rarityName, props, noAura, look, shiny)
 	end
 	if shiny then
 		shinyMarks(out, size)
+	end
+	if mut and mut ~= "" then
+		Toy.mutationMark(out, size, mut)
 	end
 	return out
 end
@@ -863,7 +887,7 @@ Toy.darkPill = darkPill
 -- (the star colour of each full row of five), the glass cap, the named disciple's face in its moving
 -- rarity aura, Shiny sparkles. Not found: a slate card, a dark shape and a "?".
 -- `w` = the card's width in px (height 0.89 of it). opts (all optional):
---   found (default true), shiny, stars (a star row under the card; nil = none), count (a "xN" pill,
+--   found (default true), shiny, mut (a weather mutation, "Dewy"), stars (a star row under the card; nil = none), count (a "xN" pill,
 --   top left), tag (a text pill at the foot, e.g. "Isle 2"), new (a red NEW tag), name (its name
 --   under the card, shrunk to fit), order (LayoutOrder).
 -- Returns the cell (the card + its lines) and a transparent TextButton over the card for a tap.
@@ -896,7 +920,7 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	Toy.glass(face, rad)
 	local faced = Config.DISCIPLE_FACES.image ~= "" and look ~= nil
 	if found then
-		Toy.disciple(face, w, rarityName, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, faced and px(1) or math.floor(w * 0.075)), ZIndex = 2 }, false, look, opts.shiny)
+		Toy.disciple(face, w, rarityName, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, faced and px(1) or math.floor(w * 0.075)), ZIndex = 2 }, false, look, opts.shiny, opts.mut)
 	else
 		local fig = Toy.disciple(face, math.floor(w * (faced and 0.85 or 0.7)), rarityName, faced and { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 2 } or { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, px(4)), ZIndex = 2 }, true, look)
 		fig.ImageColor3 = SHAPE -- never pulled: a dark shape

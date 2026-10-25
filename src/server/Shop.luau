@@ -334,7 +334,7 @@ local function mayBuy(player, s, it)
 		-- holding DISCIPLE_CAP bought ones (they are never trimmed, so this bounds the list and the
 		-- save now that disciples have no buy limit)
 		local list = s.data.disciples
-		local weakest = list[#list] and Config.discBonus(list[#list], (s.data.discShiny or {})[#list]) or 0
+		local weakest = list[#list] and Config.discBonus(list[#list], (s.data.discShiny or {})[#list], (s.data.discMut or {})[#list]) or 0
 		local paid = 0
 		for _, n in s.data.boughtDisciples or {} do
 			paid += n

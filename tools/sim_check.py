@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sim_game import load, DEFAULT_CONFIG  # noqa: E402  (the Config.luau parser only)
+from sim_game import load, DEFAULT_CONFIG, weather_clock  # noqa: E402  (the Config.luau parser and the weather schedule)
 
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
@@ -126,6 +126,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         return 1 + sum(d * (1 + per * sum(1 for at in C["INDEX_STARS"] if S["index"].get(getattr(d, "key", None), 0) >= at)) for d in seated)
 
     pity = {}
+    wx = {"now": None}  # the weather running this second (sim_game.weather_clock), None between sessions
 
     def roll():  # Main roll: weights, then Config.PITY, then Shiny; returns (rarity index, shiny)
         x = rng.uniform(0, wsum)
@@ -141,14 +142,19 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 pick = t
             if pick >= t:
                 pity[t] = 0
-        return pick, C.get("SHINY_CHANCE", 0) > 0 and rng.random() < C["SHINY_CHANCE"]
+        shiny = C.get("SHINY_CHANCE", 0) > 0 and rng.random() < C["SHINY_CHANCE"]
+        w = wx["now"]  # Heavenly Weather: its mutation's mult (1 = none)
+        mult = w["mult"] if w and rng.random() < w["chance"] else 1
+        if mult > 1:
+            log["mutations"] = log.get("mutations", 0) + 1
+        return pick, shiny, mult
 
-    def seat(i, shiny=False):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+    def seat(i, shiny=False, mult=1):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
         if isinstance(i, tuple):
-            i, shiny = i
+            i, shiny, mult = i
         # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
         key = (i, rng.randrange(4))
-        d = Disc(rar[i][1] * (C.get("SHINY_MULT", 1) if shiny else 1))  # Config.discBonus
+        d = Disc(rar[i][1] * (C.get("SHINY_MULT", 1) if shiny else 1) * mult)  # Config.discBonus
         d.key = key
         S["disc"].append(d)
         S["disc"].sort(reverse=True)
@@ -311,6 +317,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     eager_at = None
     for day in range(days):
         for sess in range(K["per_day"]):
+            wx["now"] = None  # offline, chest and streak rolls happen between sessions: clear sky
             if clock["play"]:
                 away = min(gap, C["OFFLINE_CAP"] + C["DAO_OFFLINE_SECONDS"] * lvl("meditation"))
                 add("offline", cache["away"] * away * C["OFFLINE_RATE"])
@@ -333,10 +340,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                 seat(roll())
             recalc()
             tide0 = rng.uniform(0, C["TIDE_INTERVAL"])
+            weather_at = weather_clock(C, seed * 100003 + clock["play"], tide0, newcomer=clock["play"] == 0)
             walk_until = None
             bank, last_buy = S["qi"], clock["play"]  # pads paid from the qi a session starts with are not waits
             for s in range(int(K["session"] * 60)):
                 clock["play"] += 1
+                wx["now"] = weather_at(s)
                 if sess == 0 and s == 600:  # free Shop gift (DOT_SHOP_FIRST), a blessing given and received
                     add("shop free gift", cache["away"] * C["SHOP_FREE_SECONDS"])
                     add("incense blessing", cache["away"] * C["BLESS_SECONDS"] * bless)

@@ -106,6 +106,25 @@ local function fill(page)
 	Toy.atlasPiece(head, "sparkle", px(16), px(16), GOLD, 0, { LayoutOrder = 1 }) -- the font has no ✦
 	text(head, "Shiny", px(14), GOLD, { LayoutOrder = 2 })
 	text(shiny, string.format("%s of every recruit, x%s qi", pct(Config.SHINY_CHANCE * 100), tostring(Config.SHINY_MULT)), px(13), WHITE, { LayoutOrder = 2 })
+	-- Heavenly Weather (Config.WEATHERS): a recruit made while one runs can come out with its mutation
+	local wBox = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 11 })
+	Toy.list(wBox, false, px(1), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	text(wBox, "During weather", px(14), Color3.fromHex("D9C8FF"), { LayoutOrder = 0 })
+	local nowKey = (workspace:GetAttribute("WeatherUntil") or 0) > workspace:GetServerTimeNow() and workspace:GetAttribute("Weather")
+	for i, w in Config.WEATHERS do
+		local line = frame(wBox, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
+		Toy.list(line, true, px(4))
+		local gem = frame(line, { Size = UDim2.fromOffset(px(9), px(9)), BackgroundTransparency = 0, BackgroundColor3 = w.color, Rotation = 45, LayoutOrder = 1 })
+		Toy.corner(gem, UDim.new(0, px(2)))
+		local gs = Instance.new("UIStroke")
+		gs.Color = INK
+		gs.Thickness = px(2)
+		gs.Parent = gem
+		text(line, string.format("%s: %s %s x%s", w.name, pct(w.chance * 100), w.mut, tostring(w.mult)), px(12), w.key == nowKey and w.color or WHITE, { LayoutOrder = 2 })
+		if w.key == nowKey then
+			text(line, "now", px(12), GOLD, { LayoutOrder = 3 })
+		end
+	end
 	return refresh
 end
 

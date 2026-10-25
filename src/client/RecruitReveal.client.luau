@@ -140,18 +140,22 @@ end
 local function cardHead(card, rarityName, one, faceSize, nameSize)
 	local px = Toy.px
 	local rarity = Config.rarity(rarityName)
-	local look, shiny = one and one.look, one and one.shiny
-	Toy.disciple(card, faceSize, rarityName, { LayoutOrder = 1 }, true, look, shiny) -- the reveal draws its own aura
+	local look, shiny, mut = one and one.look, one and one.shiny, one and one.mut
+	Toy.disciple(card, faceSize, rarityName, { LayoutOrder = 1 }, true, look, shiny, mut) -- the reveal draws its own aura
 	if look then
 		Toy.text(card, Config.discipleName(rarityName, look) .. "!", nameSize, WHITE, { LayoutOrder = 2 })
 	end
 	local tag = Toy.frame(card, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(tag, true, px(6))
+	local w = Config.mutation(mut)
+	if w then -- a weather mutation (Heavenly Weather) in its weather's colour, first
+		Toy.text(tag, string.format("%s x%s", w.mut, tostring(w.mult)), math.floor(nameSize * 0.55), w.color, { LayoutOrder = 0 })
+	end
 	if shiny then
 		Toy.text(tag, "Shiny", math.floor(nameSize * 0.55), GOLD, { LayoutOrder = 1 })
 	end
 	local label = Toy.text(tag, look and rarityName or rarityName .. "!", look and math.floor(nameSize * 0.55) or nameSize, rarity.color, { LayoutOrder = 2 })
-	return label, Config.discBonus(rarityName, shiny)
+	return label, Config.discBonus(rarityName, shiny, mut)
 end
 
 local function start(rarityName, kept, one)
@@ -421,7 +425,7 @@ local function startMulti(results)
 	local endAt = zoomAt + M.hold
 	local best = 1
 	for i, r in results do
-		if Config.discBonus(r.rarity, r.shiny) > Config.discBonus(results[best].rarity, results[best].shiny) then
+		if Config.discBonus(r.rarity, r.shiny, r.mut) > Config.discBonus(results[best].rarity, results[best].shiny, results[best].mut) then
 			best = i
 		end
 	end
@@ -501,7 +505,7 @@ local function startMulti(results)
 		tst.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		tst.Parent = it.tile
 		local faced = Config.DISCIPLE_FACES.image ~= "" and r.look -- a face fills the tile, the old figure stands on its floor
-		Toy.disciple(it.tile, size, r.rarity, faced and { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.96, 0.96), ZIndex = 5 } or { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true, r.look, r.shiny)
+		Toy.disciple(it.tile, size, r.rarity, faced and { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.96, 0.96), ZIndex = 5 } or { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1.08), Size = UDim2.fromScale(0.9, 0.9), ZIndex = 5 }, true, r.look, r.shiny, r.mut)
 		if r.newStar then -- this pull lit an index star (D60): that star, in its colour, in the tile's corner
 			Toy.text(it.tile, "★", math.max(px(10), size * 0.34), Config.starColor(r.stars), { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -px(1), 0, 0), ZIndex = 7 })
 		end
