@@ -75,7 +75,7 @@ local function chiwen(m, at, toward, s, color) -- a ridge beast facing the ridge
 	P(m, Vector3.new(0.7, 0.8, 0.9) * s, cf * CFrame.new(0, 1.7 * s, -1 * s), color, Enum.Material.Metal)
 end
 local function crystal(m, at, s, color)
-	local p = P(m, Vector3.new(1.2, 3.4, 1.2) * s, CFrame.new(at + Vector3.new(0, 1.7 * s, 0)) * CFrame.Angles(0, math.rad(45), math.rad(8)), color, Enum.Material.Glass)
+	local p = P(m, Vector3.new(1.7, 4.8, 1.7) * s, CFrame.new(at + Vector3.new(0, 2.4 * s, 0)) * CFrame.Angles(0, math.rad(45), math.rad(8)), color, Enum.Material.Glass)
 	p.Transparency = 0.15
 end
 local function crescent(m, at, s, color)
@@ -100,9 +100,9 @@ local function feather(m, at, s, color)
 	end
 end
 local function star(m, at, s, color)
-	P(m, Vector3.new(0.4, 2, 0.4) * s, CFrame.new(at + Vector3.new(0, 1 * s, 0)), PAL.stoneLight, Enum.Material.Metal)
+	P(m, Vector3.new(0.5, 2.4, 0.5) * s, CFrame.new(at + Vector3.new(0, 1.2 * s, 0)), PAL.stoneLight, Enum.Material.Metal)
 	for k = 0, 2 do
-		P(m, Vector3.new(0.3, 1.8, 0.3) * s, CFrame.new(at + Vector3.new(0, 2.6 * s, 0)) * CFrame.Angles(0, 0, k * math.pi / 3), color, Enum.Material.Neon)
+		P(m, Vector3.new(0.5, 3.2, 0.5) * s, CFrame.new(at + Vector3.new(0, 3.4 * s, 0)) * CFrame.Angles(0, 0, k * math.pi / 3), color, Enum.Material.Neon)
 	end
 end
 

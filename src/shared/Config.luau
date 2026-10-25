@@ -1109,7 +1109,7 @@ Config.SECT_STYLES = {
 		map = { tile = hex("E8B030"), tileDark = hex("B07E18"), vermilion = hex("A3221B"), plaster = hex("B8352B"), gold = { hex("FFD24A"), Enum.Material.Foil }, stone = { hex("F2F2EE"), Enum.Material.Marble }, stoneLight = hex("FFFFFF") },
 		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.6, 0), size = 0.5 } },
 	{ id = "maple", name = "Autumn Maple", rebirth = 7, orn = "pearl", ornColor = hex("FFB347"), swatch = { hex("C2452D"), hex("FFB347") },
-		map = { tile = hex("C2452D"), tileDark = hex("8E2E1E"), vermilion = hex("6B3A22"), plaster = hex("F5E6CC"), gold = hex("FFB347"), timber = hex("4A2C1C"), jade = hex("E08A3C") },
+		map = { tile = hex("C2452D"), tileDark = hex("8E2E1E"), vermilion = hex("6B3A22"), plaster = hex("F5E6CC"), gold = hex("FFB347"), timber = hex("4A2C1C") }, -- jade left alone: it is the ponds too (Play check 2026-10-25)
 		fx = { color = hex("FF9A3C"), accel = Vector3.new(0.6, -1, 0), size = 0.6 } },
 	{ id = "abyss", name = "Abyssal Jade", rebirth = 8, orn = "pearl", ornColor = hex("7FFFE0"), swatch = { hex("1F5F5B"), hex("7FFFE0") },
 		map = { tile = hex("1F5F5B"), tileDark = hex("143F3C"), vermilion = hex("2E7F74"), plaster = { hex("CFEDE6"), Enum.Material.Marble }, gold = hex("9FE8D6"), stone = { hex("8FB8B0"), Enum.Material.Marble }, stoneLight = hex("B4D6CF"), timber = hex("23463F"), timberDark = hex("142B27") },

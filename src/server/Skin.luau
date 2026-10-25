@@ -15,15 +15,30 @@ local SectStyle = require(script.Parent:WaitForChild("SectStyle"))
 local Skin = {}
 
 local NEAR = 0.09 -- summed RGB distance (0..3) inside which a part counts as that PAL colour
+local NEAR_STYLE = 0.14 -- a Sect Style repaints the whole hall: the kit's off-palette shades too
 
 local KEYS = {}
 for k, c in Style.PAL do
 	table.insert(KEYS, { key = k, color = c })
 end
 
-local function nearest(c)
-	local best, bd = nil, NEAR
-	for _, e in KEYS do
+-- a Sect Style also catches the kit colours that sit off PAL (Play check 2026-10-25: the level 5 Main Hall
+-- roof is Kit's gold tile, so it took the style's trim; tile ends, ridges and the painted frieze kept the
+-- Imperial colours). `w` / `b` = how far the result is lightened / darkened, so the shading steps stay.
+local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
+local STYLE_KEYS = table.clone(KEYS)
+for _, base in { Style.PAL.tile, Color3.fromHex("D9A43A"), Color3.fromHex("8C6A44") } do -- Kit: art tile, GOLD_TILE, the humble hall
+	table.insert(STYLE_KEYS, { key = "tile", color = base })
+	table.insert(STYLE_KEYS, { key = "tile", color = base:Lerp(WHITE, 0.15), w = 0.15 }) -- tile ends
+	table.insert(STYLE_KEYS, { key = "tile", color = base:Lerp(BLACK, 0.3), b = 0.3 }) -- ridges
+end
+table.insert(STYLE_KEYS, { key = "vermilion", color = Color3.fromHex("8E2620"), b = 0.25 }) -- Kit.RED_DARK
+table.insert(STYLE_KEYS, { key = "tileDark", color = Color3.fromHex("2F6F55") }) -- Kit.PAINT_GREEN frieze
+table.insert(STYLE_KEYS, { key = "tileDark", color = Color3.fromHex("2E5A8C") }) -- Kit.PAINT_BLUE
+
+local function nearest(c, keys, near)
+	local best, bd = nil, near
+	for _, e in keys do
 		local d = math.abs(c.R - e.color.R) + math.abs(c.G - e.color.G) + math.abs(c.B - e.color.B)
 		if d < bd then
 			best, bd = e, d
@@ -36,17 +51,23 @@ local function clamp01(x)
 	return math.clamp(x, 0, 1)
 end
 
--- move every part matched to a PAL key onto `map` (a grade's or a Sect Style's)
-function Skin.recolour(model, map)
+-- move every part matched to a PAL key onto `map` (a grade's or, with `wide`, a Sect Style's)
+function Skin.recolour(model, map, wide)
 	if next(map) == nil then
 		return
 	end
+	local keys, near = wide and STYLE_KEYS or KEYS, wide and NEAR_STYLE or NEAR
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") and p.Material ~= Enum.Material.Neon then
-			local e = nearest(p.Color)
+			local e = nearest(p.Color, keys, near)
 			local t = e and map[e.key]
 			if t then
 				local c = typeof(t) == "table" and t[1] or t
+				if e.w then
+					c = c:Lerp(WHITE, e.w)
+				elseif e.b then
+					c = c:Lerp(BLACK, e.b)
+				end
 				local o = p.Color
 				p.Color = Color3.new(clamp01(c.R + o.R - e.color.R), clamp01(c.G + o.G - e.color.G), clamp01(c.B + o.B - e.color.B))
 				if typeof(t) == "table" and t[2] then
@@ -61,7 +82,9 @@ end
 function Skin.apply(model, realm, lives, style)
 	if style then
 		model:SetAttribute("Skin", style.name)
-		SectStyle.dress(model, style, Skin.recolour)
+		SectStyle.dress(model, style, function(m, map)
+			Skin.recolour(m, map, true)
+		end)
 		return
 	end
 	local grade = Config.skinFor(realm, lives)
