@@ -293,6 +293,17 @@ function Player:session(seconds)
 				self:note("altar")
 			end
 		end
+		-- Auto Build (D85) runs on the server whatever the player is doing
+		local auto = W:autoBuild()
+		if auto then
+			self.autoBuilds = (self.autoBuilds or 0) + 1
+			local gap = (W.d.playSec or 0) - self.gaps.last
+			self.gaps.longest = math.max(self.gaps.longest, gap)
+			self.gaps.last = (W.d.playSec or 0)
+			if auto.kind == "build" then
+				self:note(auto.id)
+			end
+		end
 		if self.busy > 0 then
 			self.busy -= 1
 		else

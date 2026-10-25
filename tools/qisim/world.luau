@@ -10,6 +10,7 @@ function World.new(E, opts)
 	local P = E.newPlayer(opts.id or 1)
 	self.player = P
 	local d = self.M.defaultData()
+	d.everBuilt = {} -- Main onJoin: a new save has built nothing yet (Auto Build, D85)
 	self.d = d
 	self.s = { player = P, data = d, passes = opts.passes or {}, inGroup = opts.inGroup == true, plot = {} }
 	E.sessions[P] = self.s
@@ -222,6 +223,7 @@ function World:buy(o)
 	if o.kind == "build" then
 		self.sink.build = (self.sink.build or 0) + o.cost
 		d.owned[o.id] = true
+		d.everBuilt[o.id] = true
 		s.padPrice = nil
 		if o.id == "platform" then
 			M.giveIdleChest(s) -- the idle chest, once the first recruits are done too (the Recruit handler gives it then)
@@ -253,6 +255,36 @@ function World:buy(o)
 		self.src.breakthrough = (self.src.breakthrough or 0) + startQi
 	end
 	return true
+end
+
+-- Main autoBuildTick (D85): an offer built or hired before builds itself once affordable, in the HUD
+-- "Next" order (Config.guidePick), one per AUTO_BUILD_GAP s; never the breakthrough, the chest or a hire.
+-- Returns the offer bought, or nil
+function World:autoBuild()
+	local C, s, d = self.C, self.s, self.d
+	if d.autoOff or not C.autoBuildOpen(d) or self:now() < (s.autoAt or 0) then
+		return nil
+	end
+	local can = {}
+	for _, o in self:offers() do
+		if o.kind == "build" and d.everBuilt[o.id] and d.qi >= o.cost then
+			table.insert(can, { o = o, GetAttribute = function(p, k)
+				if k == "PadId" then
+					return p.o.id
+				elseif k == "Cost" then
+					return p.o.cost
+				end
+				return nil
+			end })
+		end
+	end
+	if #can == 0 then
+		return nil
+	end
+	local o = C.guidePick(can).o
+	s.autoAt = self:now() + C.AUTO_BUILD_GAP
+	self:buy(o)
+	return o
 end
 
 -- an orb picked up (checkOrbs)

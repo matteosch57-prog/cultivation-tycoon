@@ -82,6 +82,9 @@ daoFn.Parent = remotes
 local handsFn = Instance.new("RemoteFunction")
 handsFn.Name = "HandsBuild"
 handsFn.Parent = remotes
+local autoFn = Instance.new("RemoteFunction")
+autoFn.Name = "AutoBuild" -- the HUD's Auto Build switch (D85): on / off
+autoFn.Parent = remotes
 local groupFn = Instance.new("RemoteFunction")
 groupFn.Name = "ClaimGroup"
 groupFn.Parent = remotes
@@ -864,6 +867,9 @@ local function publish(player)
 	player:SetAttribute("RebirthKarma", karmaGain(d))
 	-- the next realm waits for more rebirths (their gyms): the HUD and the screen say so
 	player:SetAttribute("RealmNeedsRebirths", Config.rebirthsFor(d.realm + 1))
+	-- Auto Build (D85): open (the HUD shows its switch) and switched off by the player
+	player:SetAttribute("AutoBuildOpen", Config.autoBuildOpen(d))
+	player:SetAttribute("AutoBuildOff", d.autoOff == true)
 	Dots.publish(player, s) -- which red dots are lit (Dots.luau)
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
@@ -1231,9 +1237,44 @@ local function offerBreakthrough(player, s, info)
 	notify:FireClient(player, "breakthroughAsk", info.cost)
 end
 
+-- Auto Build (D85, Mega Mansion Tycoon's pass, free): a pad marked Auto (built before, in any life) that
+-- the owner can pay builds itself, in the HUD "Next" order, one per AUTO_BUILD_GAP s. The breakthrough
+-- pad only opens its confirm screen, so it is never taken here; neither are the idle chest and hires
+-- (hires are a payback choice: auto hiring them starved the pads a realm needs, qisim 2026-10-25).
+local function autoBuildTick(player, s)
+	local d = s.data
+	if not s.ready or s.reincBusy or d.autoOff or not s.padData or not Config.autoBuildOpen(d) then
+		return
+	end
+	local now = os.clock()
+	if now < (s.autoAt or 0) then
+		return
+	end
+	local can = {}
+	for part, info in s.padData do
+		if part.Parent and not info.busy and not info.confirm and part:GetAttribute("Auto") and d.qi >= info.cost then
+			table.insert(can, part)
+		end
+	end
+	if #can == 0 then
+		return
+	end
+	local part = Config.guidePick(can)
+	local title, at = part:GetAttribute("Title"), part.Position
+	s.autoAt = now + Config.AUTO_BUILD_GAP
+	s.autoNow = true
+	buyPad(s, part, s.padData[part])
+	s.autoNow = nil
+	s.autoBuilt = (s.autoBuilt or 0) + 1
+	notify:FireClient(player, "autoBuilt", title, at)
+end
+
 -- Every 0.1 s: is an owner standing on one of their pads? (horizontal distance + height band)
 local PAD_REACH = 2.6 -- the pad top is 4 studs wide
 local function checkPads()
+	for player, s in sessions do
+		autoBuildTick(player, s)
+	end
 	for player, s in sessions do
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -1413,6 +1454,7 @@ refreshPads = function(player, s)
 				local part
 				part = makePad(player, s, pad, cost, pad.name, income, function()
 					s.data.owned[pad.id] = true
+					s.data.everBuilt[pad.id] = true -- Auto Build rebuilds it from now on (D85)
 					s.padPrice = nil -- every open pad is priced again from the new income
 					Telemetry.sink(player, s.data, part:GetAttribute("Cost") or cost, pad.id)
 					Telemetry.custom(player, "Build", pad.id, Telemetry.realmBucket(s.data.realm), Telemetry.minuteBucket(s.data.playSec or 0))
@@ -1457,10 +1499,13 @@ refreshPads = function(player, s)
 					end
 					refreshPads(player, s)
 					publish(player)
-					notify:FireClient(player, "built", pad.name)
+					if not s.autoNow then -- an auto build has its own toast (autoBuildTick)
+						notify:FireClient(player, "built", pad.name)
+					end
 					Shop.maybeWelcome(player, s, pad)
 					Shop.maybeStarter(player, s, pad)
 				end)
+				part:SetAttribute("Auto", s.data.everBuilt[pad.id] == true) -- built before: Auto Build takes it (D85)
 				s.pads[pad.id] = part
 			end
 		end
@@ -1852,6 +1897,17 @@ local function onJoin(player)
 			got[tostring(k)] = v
 		end
 		data.streak.got = got
+	end
+	-- Auto Build (D85): what the save has built before. A save from before it counts what it owns now
+	-- and every required pad of the realms below its best (a breakthrough needed them)
+	if data.everBuilt == nil then
+		data.everBuilt = {}
+		local below = math.max(data.best or 1, data.soulPeak or 0) - 1
+		for _, pad in Config.PADS do
+			if data.owned[pad.id] or (below >= 1 and Config.neededForBreakthrough(pad) and Config.padOpen(pad, below)) then
+				data.everBuilt[pad.id] = true
+			end
+		end
 	end
 	-- read before anything can save: a save (autosave, a receipt) stamps `last` with now
 	local lastSeen = data.last
@@ -2653,6 +2709,7 @@ local function reincarnate(player, s)
 	for _, pad in Config.PADS do
 		if Config.padOpen(pad, d.realm) then
 			d.owned[pad.id] = true
+			d.everBuilt[pad.id] = true
 		end
 	end
 	d.qi = 0
@@ -2726,6 +2783,22 @@ handsFn.OnServerInvoke = function(player, padId)
 	end
 	buyPad(s, part, info)
 	Telemetry.custom(player, "Feature", "hands", Telemetry.realmBucket(s.data.realm))
+	return true
+end
+
+-- the HUD's Auto Build switch (D85): `on` = true switches it on, false off (kept in the save)
+autoFn.OnServerInvoke = function(player, on)
+	if not Guard.allow(player, "AutoBuild") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	if not s or type(on) ~= "boolean" or not Config.autoBuildOpen(s.data) then
+		return false
+	end
+	s.data.autoOff = not on
+	s.autoAt = os.clock() + Config.AUTO_BUILD_GAP -- switched on: the first build follows the tap, not with it
+	publish(player)
+	Telemetry.custom(player, "Feature", on and "autoOn" or "autoOff", Telemetry.realmBucket(s.data.realm))
 	return true
 end
 
@@ -2888,6 +2961,7 @@ if game:GetService("RunService"):IsStudio() then
 		local s = sessions[player]
 		if s then
 			s.data = defaultData()
+			s.data.everBuilt = {} -- a new save has built nothing (onJoin seeds it)
 			rebuild(s)
 			refreshPads(player, s)
 			publish(player)

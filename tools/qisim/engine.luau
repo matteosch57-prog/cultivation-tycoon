@@ -42,6 +42,10 @@ local MIRRORS = {
 		"s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)",
 		"local gain = math.floor(rate(s) * Config.ORB_VALUE)", -- orbs
 		"if #s.orbs >= Config.ORB_MAX then",
+		"s.data.everBuilt[pad.id] = true -- Auto Build rebuilds it from now on (D85)", -- Auto Build
+		"local part = Config.guidePick(can)",
+		"s.autoAt = now + Config.AUTO_BUILD_GAP",
+		"d.everBuilt[pad.id] = true",
 	},
 	shop = { "local gain = math.floor(api.rate(s, true) * Config.SHOP_FREE_SECONDS)" },
 	dots = { "return (d.playSec or 0) >= Config.DOT_SHOP_FIRST and d.shopFreeDay ~= os.time() // 86400" },
