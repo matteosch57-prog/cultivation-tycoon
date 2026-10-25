@@ -2283,36 +2283,10 @@ chestFn.OnServerInvoke = clearsBusy("chest summon", function(player, count)
 	return { results = results, left = s.data.chestSummons }
 end)
 
--- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
--- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
-recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
-	if not Guard.allow(player, "Recruit") then
-		return nil -- over its call budget (Guard)
-	end
-	local s = sessions[player]
-	if not s or s.recruiting then
-		return nil
-	end
-	if not s.data.owned.hall then
-		return { ok = false, reason = "Build the Disciple Hall first" }
-	end
-	local want = 1
-	for _, n in Config.RECRUIT_COUNTS do
-		if count == n then
-			want = n
-		end
-	end
-	-- the tutorial's free recruit (FREE_RECRUITS with the first Disciple Hall): one, at no qi, and it
-	-- does not raise the next price
-	local free = (s.data.freeRecruits or 0) > 0
-	if free then
-		want = 1
-	end
-	local cost = free and 0 or Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
-	if s.data.qi < cost then
-		return { ok = false, reason = "Not enough Qi" }
-	end
-	s.recruiting = true
+-- one recruit press of `want`, paid (`cost`) or the tutorial's free one: rolls, seats, telemetry.
+-- Shared by the Recruit button and the rebirth's leftover recruits (Config.leftoverRecruits); `quiet`
+-- leaves the seating and the publish to the caller (many presses in one go).
+local function recruitPress(player, s, want, free, cost, quiet)
 	s.data.recruited += want -- lifetime (telemetry)
 	if free then
 		s.data.freeRecruits -= 1
@@ -2348,16 +2322,52 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 		local rarity, fate = string.match(key, "^(.-)|(%a+)$")
 		Telemetry.customValue(player, "Recruit", n, rarity, Telemetry.realmBucket(s.data.realm), fate)
 	end
-	buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
 	if s.data.recruited >= Config.CHEST_AFTER_RECRUITS and s.data.recruited - want < Config.CHEST_AFTER_RECRUITS then
 		giveIdleChest(s) -- the first recruits are done: the idle chest arrives, full (its green pad)
 		refreshPads(player, s)
 	end
-	publish(player)
-	Telemetry.funnel(player, s.data)
-	s.recruiting = false
+	if not quiet then
+		buildDisciples(s, bestKeptKey) -- once, only the best newcomer arrives with its entrance
+		publish(player)
+		Telemetry.funnel(player, s.data)
+	end
 	Missions.bump(player, "recruit", want)
 	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, kept = bestKept, results = results }
+end
+
+-- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
+-- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
+recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
+	if not Guard.allow(player, "Recruit") then
+		return nil -- over its call budget (Guard)
+	end
+	local s = sessions[player]
+	if not s or s.recruiting then
+		return nil
+	end
+	if not s.data.owned.hall then
+		return { ok = false, reason = "Build the Disciple Hall first" }
+	end
+	local want = 1
+	for _, n in Config.RECRUIT_COUNTS do
+		if count == n then
+			want = n
+		end
+	end
+	-- the tutorial's free recruit (FREE_RECRUITS with the first Disciple Hall): one, at no qi, and it
+	-- does not raise the next price
+	local free = (s.data.freeRecruits or 0) > 0
+	if free then
+		want = 1
+	end
+	local cost = free and 0 or Config.recruitBatchCost(s.data.realm, s.data.realmRecruits or 0, want)
+	if s.data.qi < cost then
+		return { ok = false, reason = "Not enough Qi" }
+	end
+	s.recruiting = true
+	local res = recruitPress(player, s, want, free, cost)
+	s.recruiting = false
+	return res
 end)
 
 -- Pill (Alchemy Furnace): brewed every PILL_INTERVAL; using it doubles qi/s for PILL_DURATION.
@@ -2707,6 +2717,16 @@ local function reincarnate(player, s)
 	if (d.qi or 0) < price or not Config.rebirthOpen(d.realm, rebirths(d), d.owned) then
 		return nil
 	end
+	-- the leftover recruits (Config.leftoverRecruits): qi resets, so what is over the price becomes
+	-- disciples first (they are kept)
+	local leftover = 0
+	if d.owned.hall and (d.freeRecruits or 0) == 0 and not s.recruiting then
+		local presses, total = Config.leftoverRecruits(d.realm, d.realmRecruits or 0, d.qi - price)
+		for _, n in presses do
+			recruitPress(player, s, n, false, Config.recruitBatchCost(d.realm, d.realmRecruits or 0, n), true)
+		end
+		leftover = total
+	end
 	local gained = karmaGain(d)
 	local lifeSec = (d.playSec or 0) - (d.lifeStart or 0)
 	d.qi -= price
@@ -2752,7 +2772,7 @@ local function reincarnate(player, s)
 		notify:FireClient(player, "sectStyle", newStyle.name)
 	end
 	task.defer(Missions.bump, player, "rebirth", 1)
-	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)) }
+	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)), recruits = leftover }
 end
 
 -- Styles page: wear an unlocked Sect Style or "classic" (the D53 ladder); the sect is rebuilt in it

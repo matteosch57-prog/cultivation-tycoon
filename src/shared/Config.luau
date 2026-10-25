@@ -889,7 +889,7 @@ Config.PRICE_FLOOR_FROM_LIFE = 2
 -- or a pill in between bring the next pad sooner. Felt waits (qisim, orbs and pills in): realm 1
 -- ~10 s, 2-3 ~30 s, 4-7 1-4 min, 8-10 14-25 min (owner: "realm 8-10 may be 20-30m of wait per pad
 -- for a full f2p"). Realms past the table use its last entry.
-Config.PAD_SECONDS = { 5, 30, 40, 65, 110, 220, 800, 5000, 6000, 7000 } -- realms 2-7 trimmed ~25% (owner pick 2026-10-24: the Main Hall last and paid hires had slowed the climb ~40%)
+Config.PAD_SECONDS = { 5, 30, 30, 40, 110, 220, 800, 5000, 6000, 7000 } -- realms 2-7 trimmed ~25% (owner pick 2026-10-24: the Main Hall last and paid hires had slowed the climb ~40%); realms 3-4 40/65 -> 30/40 (owner pick 2026-10-25: live rebirth 2 at 62 min in one sitting, target ~35; qisim onesitslow 61 -> 35, long game unchanged)
 -- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
 Config.PAD_SPREAD = 0.3
 -- the Main Hall is the big step of a realm (owner 2026-10-24: "the main hall price between steps should
@@ -1283,6 +1283,29 @@ function Config.recruitBatchCost(realm, recruits, n)
 	return total
 end
 
+-- the rebirth's leftover recruits (owner pick 2026-10-25, the simulators' Buy Max): qi resets at a
+-- rebirth, so the Rebirth button first spends what is over the price on recruits, biggest press
+-- first. Returns the presses ({ n, ... }) and how many recruits they make. qisim: players spent ~3 min
+-- tapping x1 / x10 here before the first rebirth (live rebirth 1 at 10.2 min, realm 2 done at ~7).
+Config.LEFTOVER_MAX_PRESSES = 40
+function Config.leftoverRecruits(realm, recruits, spare)
+	local presses, total = {}, 0
+	for i = #Config.RECRUIT_COUNTS, 1, -1 do
+		local n = Config.RECRUIT_COUNTS[i]
+		while #presses < Config.LEFTOVER_MAX_PRESSES do
+			local cost = Config.recruitBatchCost(realm, recruits, n)
+			if cost > spare then
+				break
+			end
+			spare -= cost
+			recruits += Config.recruitStep(n)
+			total += n
+			table.insert(presses, n)
+		end
+	end
+	return presses, total
+end
+
 -- how far one press of `n` recruits moves data.realmRecruits: one per recruit
 function Config.recruitStep(n)
 	return n
@@ -1524,8 +1547,10 @@ end
 -- The building looks thread reads Config.padRealm for its skin steps.
 Config.REALM_PADS = {
 	{ "path", "vein1", "lanterns", "mainhall1", "bridge_fields", "platform", "path_heart", "garden", "grove_heart", "vein2", "mainhall2", "bridge_dao", "furnace", "bridge_disciples", "hall", "array" },
-	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "firelotus2", "grove_dao", "expand1", "bamboo", "training", "lotus1" },
-	{ "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2", "lotus2" },
+	{ "path_fields", "grove_fields", "vein3", "firelotus1", "gate", "path_dao", "mainhall3", "path_disciples", "quarters1", "grove_dao", "expand1", "lotus1" },
+	-- Fire Lotus 2, Bamboo and Training Ground came from realm 2 (owner pick 2026-10-25: first rebirth
+	-- ~6-7 min; realm 2 is walk-bound, qisim one sitting 9.8 -> 6.4 min with the leftover recruits)
+	{ "firelotus2", "bamboo", "training", "garden2", "grove_disciples", "mainhall4", "tea1", "spring1", "koi", "quarters2", "garden3", "tea2", "expand2", "spring2", "lotus2" },
 	{ "bell", "bridge_summit", "pagoda1", "path_summit", "library", "moongate", "jade1", "grove_summit", "pagoda2", "thunder1", "mainhall5", "jade2", "thunder2", "jade3", "lotus3", "lotus4", "lotus5", "lotus6", "lotus7", "lotus8" },
 }
 local padRealm = {}

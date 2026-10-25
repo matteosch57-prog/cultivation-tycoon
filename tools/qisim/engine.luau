@@ -65,7 +65,7 @@ local MIRRORS = {
 local FUNCTIONS = {
 	"hasIdleChest", "deepCopy", "defaultData", "discLooks", "discShiny", "dao", "maxDisciples", "rebirths", "karmaGain",
 	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "padRate", "pricePads", "giveIdleChest", "roll", "byBonus",
-	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "reincarnate",
+	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "recruitPress", "reincarnate",
 }
 local HANDLERS = { "chestFn", "recruitFn", "pillFn", "giftFn", "streakFn", "welcomeFn", "daoFn" }
 

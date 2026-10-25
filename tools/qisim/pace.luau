@@ -44,11 +44,10 @@ local function runOne(seed)
 	local W = World.new(E, { passes = {}, inGroup = false })
 	local prof = Player.PROFILES[profName]
 	local P = Player.new(W, prof, {})
-	P.leftover = process.env.PACE_LEFTOVER ~= nil -- the rebirth screen's "recruit with leftover qi" (option)
 	if process.env.PACE_EVENTS then
 		local call0 = W.call
 		W.call = function(self, fn, kind, n, ...)
-			if fn == "recruitFn" then
+			if fn == "recruitFn" and type(n) == "number" then
 				P:note("recruit x" .. tostring(n) .. " qi " .. math.floor(W.d.qi))
 			end
 			return call0(self, fn, kind, n, ...)

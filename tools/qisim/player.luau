@@ -184,14 +184,8 @@ function Player:act()
 	if C.rebirthOpen(d.realm, M.rebirths(d), d.owned) and d.qi >= C.rebirthPrice(M.rebirths(d)) then
 		self.rebirthSeen = self.rebirthSeen or (d.playSec or 0)
 		-- qi goes to 0 at a rebirth and disciples stay: spend what is over the price on recruits first
-		if self.leftover then -- one tap on the rebirth screen recruits with all the qi over the price, then rebirths
-			for i = #C.RECRUIT_COUNTS, 1, -1 do
-				local n = C.RECRUIT_COUNTS[i]
-				while (d.playSec or 0) - self.rebirthSeen >= prof.rebirthDelay and d.owned.hall and C.recruitBatchCost(d.realm, d.realmRecruits or 0, n) <= d.qi - C.rebirthPrice(M.rebirths(d)) do
-					W:call("recruitFn", "recruit", n)
-				end
-			end
-		elseif d.owned.hall then
+		-- (since 2026-10-25 the Rebirth button does that itself: Config.leftoverRecruits in Main reincarnate)
+		if d.owned.hall and not C.leftoverRecruits then
 			local spare = d.qi - C.rebirthPrice(M.rebirths(d))
 			for i = #C.RECRUIT_COUNTS, 1, -1 do
 				local n = C.RECRUIT_COUNTS[i]
