@@ -36,6 +36,11 @@ table.insert(STYLE_KEYS, { key = "vermilion", color = Color3.fromHex("8E2620"), 
 table.insert(STYLE_KEYS, { key = "tileDark", color = Color3.fromHex("2F6F55") }) -- Kit.PAINT_GREEN frieze
 table.insert(STYLE_KEYS, { key = "tileDark", color = Color3.fromHex("2E5A8C") }) -- Kit.PAINT_BLUE
 
+local NATURAL = {}
+for _, m in { "Rock", "Slate", "Ground", "Grass", "LeafyGrass", "Sand", "Mud", "Limestone", "Sandstone", "Pebble", "Salt", "CrackedLava", "Glacier", "Water" } do
+	NATURAL[Enum.Material[m]] = true
+end
+
 local function nearest(c, keys, near)
 	local best, bd = nil, near
 	for _, e in keys do
@@ -58,7 +63,8 @@ function Skin.recolour(model, map, wide)
 	end
 	local keys, near = wide and STYLE_KEYS or KEYS, wide and NEAR_STYLE or NEAR
 	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") and p.Material ~= Enum.Material.Neon then
+		-- a style leaves nature alone (Play check: the lotus isles' rock took the roof colour)
+		if p:IsA("BasePart") and p.Material ~= Enum.Material.Neon and not (wide and NATURAL[p.Material]) then
 			local e = nearest(p.Color, keys, near)
 			local t = e and map[e.key]
 			if t then

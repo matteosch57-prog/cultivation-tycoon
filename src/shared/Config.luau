@@ -1120,11 +1120,13 @@ Config.SECT_STYLES = {
 	{ id = "cloud", name = "Heavenly Cloud", rebirth = 10, orn = "pearl", ornColor = hex("FFFFFF"), swatch = { hex("F2F6FA"), hex("FFD36A") },
 		map = { tile = hex("FFE7A0"), tileDark = hex("E0C070"), vermilion = hex("FFFFFF"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = { hex("FFD36A"), Enum.Material.Foil }, stone = { hex("F4F6F8"), Enum.Material.Marble }, stoneLight = hex("FFFFFF"), timber = hex("E8DCC4"), timberDark = hex("B8A888") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.3, 0.2, 0), size = 1.2 } },
-	{ id = "starfall", name = "Starfall", rebirth = 15, orn = "star", ornColor = hex("FFFFFF"), swatch = { hex("1B2450"), hex("DDE6FF") },
-		map = { tile = hex("1B2450"), tileDark = hex("101636"), vermilion = hex("2A3570"), plaster = hex("DDE6FF"), gold = hex("DDE6FF"), stone = hex("3A4366"), stoneLight = hex("4C5680"), timber = hex("1B2040"), timberDark = hex("10142A") },
+	{ id = "starfall", name = "Starfall", rebirth = 15, orn = "star", ornColor = hex("FFFFFF"), swatch = { hex("12142A"), hex("D4DCEE") },
+		-- night itself: near-black roofs, dark violet walls, silver trim (Moon Palace is the blue-and-white one)
+		map = { tile = hex("12142A"), tileDark = hex("0A0C1C"), vermilion = hex("2A1F4A"), plaster = hex("1E2240"), gold = { hex("D4DCEE"), Enum.Material.Metal }, stone = hex("2A2E48"), stoneLight = hex("3A3F5E"), timber = hex("181A30"), timberDark = hex("0E1020") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0, -0.6, 0), size = 0.5, light = 1 } },
-	{ id = "goldlotus", name = "Golden Lotus", rebirth = 20, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("FFD24A"), hex("FFF3C4") },
-		map = { tile = { hex("FFD24A"), Enum.Material.Foil }, tileDark = hex("D9A43A"), vermilion = { hex("F2C14E"), Enum.Material.Foil }, plaster = hex("FFF3C4"), gold = { hex("FFF0A0"), Enum.Material.Foil }, stone = hex("F0DCA0"), stoneLight = hex("FFF0C8"), timber = hex("C8962E"), timberDark = hex("8E6A1E") },
+	{ id = "goldlotus", name = "Golden Lotus", rebirth = 20, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("FFD24A"), hex("FFFFFF") },
+		-- gold set in white jade, so the shapes read (gold on gold melted together)
+		map = { tile = { hex("FFD24A"), Enum.Material.Foil }, tileDark = hex("C8962E"), vermilion = { hex("F2C14E"), Enum.Material.Foil }, plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = hex("FFF6D8"), stone = { hex("F4F4F0"), Enum.Material.Marble }, stoneLight = hex("FFFFFF"), timber = hex("E8E2D4"), timberDark = hex("B8AE98") },
 		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.8, 0), size = 0.6, light = 1 } },
 }
 function Config.sectStyle(id)
