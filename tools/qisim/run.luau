@@ -118,6 +118,18 @@ local function ledger(t)
 	end
 	return table.concat(s, ", ")
 end
+-- QISIM_TIMELINE=1: realm and rebirth times of the median seed, and how long each step took
+if process.env.QISIM_TIMELINE then
+	local last, line = 0, {}
+	for _, e in R.P.events do
+		if e.code:match("^realm%d+_life") or e.code:match("^rebirth%d+$") or (e.code:match("^open%d+$") and R.P.first[e.code] == e.t and not line[e.code]) then
+			line[e.code] = true
+			table.insert(line, string.format("%s %s (+%.1f)", e.code, fmt(e.t), (e.t - last) / 60))
+			last = e.t
+		end
+	end
+	print("  timeline: " .. table.concat(line, ", "))
+end
 print("  qi sources: " .. ledger(R.W.src))
 print("  qi sinks: " .. ledger(R.W.sink))
 local errs = 0

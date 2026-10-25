@@ -151,6 +151,10 @@ local function refresh()
 	ui.fill.Size = UDim2.fromScale(math.clamp(qi / math.max(price, 1), 0, 1), 1)
 	ui.fill.BackgroundColor3 = ready and JADE or GOLD
 	ui.gain.Text = "+" .. commas(player:GetAttribute("RebirthKarma") or 0)
+	-- the leftover recruits (Config.leftoverRecruits): the server spends the qi over the price first
+	local _, extra = Config.leftoverRecruits(player:GetAttribute("Realm") or 1, player:GetAttribute("RealmRecruits") or 0, qi - price)
+	ui.leftover.Visible = ready and extra > 0
+	ui.leftover.Text = "+" .. commas(extra) .. " recruits from leftover qi"
 
 	-- the next realm waits for rebirths (Config.REBIRTH_REALMS): say which one this opens
 	local need = player:GetAttribute("RealmNeedsRebirths") or 0
@@ -424,6 +428,7 @@ build = function()
 	ui.styleSwatch.LayoutOrder = 1
 	ui.styleName = text(ui.style, "", px(18), Color3.fromHex("FFD6E4"), { LayoutOrder = 2 })
 
+	ui.leftover = text(body, "", px(18), Color3.fromHex("C9FFE4"), { LayoutOrder = 11, Visible = false })
 	ui.need = text(body, "", px(18), Color3.fromHex("FFB3A8"), { LayoutOrder = 12, Visible = false })
 	Toy.frame(body, { Size = UDim2.fromOffset(1, px(4)), LayoutOrder = 14 })
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(230), px(48)), JADE, px(14))
@@ -501,7 +506,7 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
-local watched = { "Qi", "Realm", "Karma", "Lives", "Rebirths", "SectStyle", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
+local watched = { "Qi", "Realm", "RealmRecruits", "Karma", "Lives", "Rebirths", "SectStyle", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)
 end

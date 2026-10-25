@@ -345,12 +345,19 @@ function World:call(handler, cause, ...)
 end
 
 function World:reincarnate()
-	local before = self.d.qi
+	local before, recruits0 = self.d.qi, self.d.realmRecruits or 0
+	local realm0 = self.d.realm
 	local res = self.M.reincarnate(self.player, self.s)
 	if res then
 		local price = self.C.rebirthPrice(self.d.lives - 2)
+		-- the leftover recruits Main reincarnate bought before the reset (Config.leftoverRecruits)
+		local spent = 0
+		if res.recruits and res.recruits > 0 then
+			spent = self.C.recruitBatchCost(realm0, recruits0, res.recruits)
+			self.sink.recruit = (self.sink.recruit or 0) + spent
+		end
 		self.sink.rebirth = (self.sink.rebirth or 0) + price
-		self.sink.reset = (self.sink.reset or 0) + (before - price)
+		self.sink.reset = (self.sink.reset or 0) + (before - price - spent)
 		self.s.btCost = nil
 	end
 	return res
