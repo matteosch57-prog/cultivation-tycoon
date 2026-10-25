@@ -13,6 +13,10 @@ Player.PROFILES = {
 	engaged = { perDay = 3, minutes = 15, react = 3.5, path = 1.3, orbEvery = 40, patience = 15, pillDelay = 15, giftDelay = 10, rebirthDelay = 15, recruitBias = 2 },
 	hooked = { perDay = 4, minutes = 26, react = 3, path = 1.25, orbEvery = 30, patience = 10, pillDelay = 8, giftDelay = 5, rebirthDelay = 8, recruitBias = 2 },
 	regular = { perDay = 2, minutes = 30, react = 3.5, path = 1.3, orbEvery = 30, patience = 15, pillDelay = 10, giftDelay = 10, rebirthDelay = 10, recruitBias = 2 },
+	-- live first session (2026-10-25 data): rebirth 2 players do it in one long sitting, no offline pay between
+	onesit = { perDay = 1, minutes = 90, react = 3.5, path = 1.3, orbEvery = 40, patience = 15, pillDelay = 15, giftDelay = 10, rebirthDelay = 15, recruitBias = 2 },
+	-- same sitting at the median player's pace (react 4.5 s, orbs every 60 s)
+	onesitslow = { perDay = 1, minutes = 90, react = 4.5, path = 1.35, orbEvery = 60, patience = 20, pillDelay = 30, giftDelay = 20, rebirthDelay = 30, recruitBias = 2 },
 }
 -- karma: cheapest comfort first (the old sims' order)
 Player.DAO_ORDER = { "hands", "isles", "elixir", "meditation", "seat", "echo" }
@@ -174,10 +178,20 @@ function Player:act()
 			return prof.react * 2
 		end
 	end
+	if C.rebirthOpen(d.realm, M.rebirths(d), d.owned) then
+		self:note("open" .. M.rebirths(d) + 1)
+	end
 	if C.rebirthOpen(d.realm, M.rebirths(d), d.owned) and d.qi >= C.rebirthPrice(M.rebirths(d)) then
 		self.rebirthSeen = self.rebirthSeen or (d.playSec or 0)
 		-- qi goes to 0 at a rebirth and disciples stay: spend what is over the price on recruits first
-		if d.owned.hall then
+		if self.leftover then -- one tap on the rebirth screen recruits with all the qi over the price, then rebirths
+			for i = #C.RECRUIT_COUNTS, 1, -1 do
+				local n = C.RECRUIT_COUNTS[i]
+				while (d.playSec or 0) - self.rebirthSeen >= prof.rebirthDelay and d.owned.hall and C.recruitBatchCost(d.realm, d.realmRecruits or 0, n) <= d.qi - C.rebirthPrice(M.rebirths(d)) do
+					W:call("recruitFn", "recruit", n)
+				end
+			end
+		elseif d.owned.hall then
 			local spare = d.qi - C.rebirthPrice(M.rebirths(d))
 			for i = #C.RECRUIT_COUNTS, 1, -1 do
 				local n = C.RECRUIT_COUNTS[i]
