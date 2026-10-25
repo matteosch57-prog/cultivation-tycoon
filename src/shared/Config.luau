@@ -1089,7 +1089,8 @@ end
 -- ladder). `swatch` = the tile and the trim on its page tile.
 Config.SECT_STYLES = {
 	{ id = "snow", name = "Snow Lotus", rebirth = 1, orn = "crystal", ornColor = hex("A8E4FF"), swatch = { hex("CFE3F2"), hex("A8E4FF") },
-		map = { tile = { hex("EEF4FA"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("DDE8F2"), plaster = hex("FFFFFF"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("8FA6BA"), timberDark = hex("5C7389"), jade = hex("A8E4FF") },
+		-- snow on a winter temple: white roofs over deep lacquer, so the snow reads (pale-on-pale washed out)
+		map = { tile = { hex("F4F8FC"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("7E2A30"), plaster = hex("F2F4F7"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("4A3A3A"), timberDark = hex("2E2426"), jade = hex("A8E4FF") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.4, -2, 0), size = 0.5 } },
 	{ id = "volcano", name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
 		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("7A1F14"), plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
@@ -1104,7 +1105,8 @@ Config.SECT_STYLES = {
 		map = { tile = hex("3A3550"), tileDark = hex("272338"), vermilion = hex("4B3C7A"), plaster = { hex("8B8FA0"), Enum.Material.Slate }, gold = hex("F5D04A"), stone = { hex("5C606B"), Enum.Material.Slate }, stoneLight = hex("6E727D") },
 		fx = { color = hex("C8B8FF"), accel = Vector3.new(0, 0, 0), size = 0.5, light = 1 } },
 	{ id = "dragon", name = "Dragon Emperor", rebirth = 6, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("E0A82E"), hex("A3221B") },
-		map = { tile = hex("E0A82E"), tileDark = hex("B07E18"), vermilion = hex("A3221B"), plaster = hex("F3DFB0"), gold = { hex("FFD24A"), Enum.Material.Foil }, stone = hex("E2D2A8") },
+		-- the Forbidden City: imperial yellow glaze, red walls and columns, white marble terraces
+		map = { tile = hex("E8B030"), tileDark = hex("B07E18"), vermilion = hex("A3221B"), plaster = hex("B8352B"), gold = { hex("FFD24A"), Enum.Material.Foil }, stone = { hex("F2F2EE"), Enum.Material.Marble }, stoneLight = hex("FFFFFF") },
 		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.6, 0), size = 0.5 } },
 	{ id = "maple", name = "Autumn Maple", rebirth = 7, orn = "pearl", ornColor = hex("FFB347"), swatch = { hex("C2452D"), hex("FFB347") },
 		map = { tile = hex("C2452D"), tileDark = hex("8E2E1E"), vermilion = hex("6B3A22"), plaster = hex("F5E6CC"), gold = hex("FFB347"), timber = hex("4A2C1C"), jade = hex("E08A3C") },

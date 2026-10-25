@@ -50,3 +50,26 @@ ridge ornaments + one ambience emitter a peak), `Skin.apply` wears the style (el
 a rebirth that unlocks one wears it at once ("New style!" toast), the Rebirth screen names the style
 the next rebirth unlocks, and a Sect Styles page (Rebirth screen) wears any unlocked one or Classic
 (`SetSectStyle` remote). The overhead title says "3rd Life · Volcano Forge".
+
+## Each style's reference (2026-10-25, owner: "mock all styles ... from close, base it on research")
+PS99's 99 areas each own one theme (Snow Village / Icy Peaks, Volcano / Obsidian Cave, Cherry Blossom,
+Autumn, Atlantis, Fire Dojo...: [thenerdstash](https://thenerdstash.com/all-biomes-in-pet-simulator-99-how-to-unlock-them/));
+our styles take one of those themes each and dress it in real Chinese palace rules
+([Wikipedia, imperial roof decoration](https://en.wikipedia.org/wiki/Imperial_roof_decoration): ridge
+beasts, a dragon at the tail; [chinatravel, Forbidden City](https://chinatravel.com/beijing/forbidden-city/architecture):
+yellow glaze for the emperor, red walls and columns, white marble terraces, black tiles on the library
+against fire, green for princes, blue for calm).
+| Rebirth | Style | Theme source | Signature |
+|---|---|---|---|
+| 1 | Snow Lotus | PS99 Snow Village / Icy Peaks, winter temples | snow roofs over deep lacquer, ice crystals on ridges, falling snow |
+| 2 | Volcano Forge | PS99 Volcano / Obsidian Cave; black fire-guard tiles | black tiles, basalt walls, orange trim, lava pearl + ridge beasts, embers |
+| 3 | Sakura Spring | PS99 Cherry Blossom | pink roofs, white walls, petals |
+| 4 | Moon Palace | Chang'e's Guanghan Palace; Temple of Heaven blue | deep blue tiles, white marble, crescent finials |
+| 5 | Thunder Peak | storm peaks (realm 9 lightning) | violet slate, gold lightning rods, sparks |
+| 6 | Dragon Emperor | Forbidden City | yellow glaze, red walls, white marble, gold pearl + green ridge beasts |
+| 7 | Autumn Maple | PS99 Autumn | maple-red roofs, amber trim, falling leaves |
+| 8 | Abyssal Jade | PS99 Atlantis / Coral Reef; green princely tiles | deep teal tiles, jade marble, glowing pearls |
+| 9 | Phoenix Flame | PS99 Fire Dojo; fenghuang at the ridge head | crimson tiles, gold feather finials, rising sparks |
+| 10 | Heavenly Cloud | xianxia heavenly palace | white marble, pale gold tiles, cloud motes |
+| 15 | Starfall | night sky | navy tiles, silver, star finials |
+| 20 | Golden Lotus | the top grade | gold everywhere |
