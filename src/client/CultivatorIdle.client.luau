@@ -377,7 +377,8 @@ task.spawn(function()
 					end
 				end
 				f.shiny = f.shiny or f.model:FindFirstChild("ShinyOutline")
-				for _, h in { f.rim, f.fan, f.shiny } do
+				f.mut = f.mut or f.model:FindFirstChild("MutationOutline") -- a weather mutation's tint (Main mutationGlow)
+				for _, h in { f.rim, f.fan, f.shiny, f.mut } do
 					local on = lit and hl < b.HL
 					if on then
 						hl += 1

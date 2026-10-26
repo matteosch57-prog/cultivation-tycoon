@@ -3,8 +3,8 @@
 -- rank page (the reward path, every mission, the dailies). Everything comes from the server's "Missions"
 -- attribute (Missions.luau, JSON); the server alone counts and pays (R9). A finished mission flies a gold
 -- "+N ★" line, a paid reward or a rank up a bigger one (Notify "mission").
--- Config.MISSION_HUD: "list" = the tracker (picks A and B), "button" = a Missions button and the nearest
--- mission only (pick C). Config.MISSION_DAILY_ON: the daily row (B, C).
+-- The tracker is one glass panel (owner pick A 2026-10-26) with a tab that hides it down to the rank badge
+-- (MissionsHidden, saved). Config.MISSION_DAILY_ON: the daily row.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -147,41 +147,6 @@ local function missionRow(parent, x, w, size, order, daily)
 	return row
 end
 
--- the rank header: a gold badge with the number, the name, the stars to the next reward, the bar
-local function rankHeader(parent, m, w, size, order)
-	local head = Instance.new("TextButton")
-	head.Text = ""
-	head.AutoButtonColor = false
-	head.BackgroundColor3 = PANEL
-	head.BackgroundTransparency = 0.05
-	head.Size = UDim2.fromOffset(w, 0)
-	head.AutomaticSize = Enum.AutomaticSize.Y
-	head.LayoutOrder = order or 0
-	head.Parent = parent
-	corner(head, UDim.new(0, px(12)))
-	local st = Instance.new("UIStroke")
-	st.Color = GOLD
-	st.Thickness = px(3)
-	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	st.Parent = head
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(8)), UDim.new(0, px(8))
-	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(4)), UDim.new(0, px(6))
-	pad.Parent = head
-	Toy.list(head, false, px(3), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
-	local line = frame(head, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 1 })
-	Toy.list(line, true, px(6), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
-	local badge = frame(line, { Size = UDim2.fromOffset(px(22), px(22)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("F0B400"), LayoutOrder = 1 })
-	corner(badge, UDim.new(1, 0))
-	text(badge, tostring(m.rank), px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
-	text(line, m.name, size + px(1), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-	local total = m.path[#m.path].at
-	text(line, string.format("★ %d/%d", m.stars, total), size, GOLD, { LayoutOrder = 3 })
-	local _, fill = bar(head, px(8), GOLD, 2) -- the whole rank, as the count beside it reads
-	fill.Size = UDim2.fromScale(math.clamp(m.stars / math.max(1, total), 0, 1), 1)
-	return head
-end
-
 -- what a reward pays, as one short line and its colour
 local function rewardWords(r)
 	if r.rarity then
@@ -208,7 +173,7 @@ end
 ---------------------------------------------------------------------------- the tracker
 local tracker -- the frame beside the left rail
 local page -- the open rank page, or nil
-local drawPage
+local drawPage, drawTracker
 
 local function leftRail()
 	local slots = player:FindFirstChild("HudSlots")
@@ -232,7 +197,116 @@ local function place()
 	end
 end
 
-local function drawTracker()
+-- the icon of a mission's group (the HUD's icon sheet)
+local GROUP_ICON = { build = "hall", recruit = "disciple", orb = "qi", gift = "gift", pill = "pill", altar = "altar", bless = "like", breakthrough = "goal", rebirth = "rebirth", streak = "chest" }
+
+-- a chevron drawn from two bars (the font has no arrow glyph): points left when `open`
+local function chevron(parent, size, open)
+	local box = frame(parent, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(size, size), ZIndex = 4 })
+	for k, rot in { 45, -45 } do
+		local b = frame(box, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, (k == 1 and -1 or 1) * size * 0.18),
+			Size = UDim2.fromOffset(size * 0.55, math.max(3, size * 0.16)),
+			Rotation = open and -rot or rot,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = Color3.fromHex("E8E0F0"),
+			ZIndex = 4,
+		})
+		corner(b, UDim.new(1, 0))
+	end
+	return box
+end
+
+local hidden = false -- the player's choice (MissionsHidden, saved by the server)
+local dotOn = false -- a mission finished while hidden: the badge's red dot
+
+local function setHidden(v)
+	hidden = v
+	if not v then
+		dotOn = false
+	end
+	local ev = remotes:FindFirstChild("MissionsHide")
+	if ev then
+		ev:FireServer(v)
+	end
+end
+
+-- the gold rank badge (a button)
+local function rankBadge(parent, rank, size, order)
+	local b = Instance.new("TextButton")
+	b.Text = ""
+	b.AutoButtonColor = false
+	b.Size = UDim2.fromOffset(size, size)
+	b.BackgroundColor3 = Color3.fromHex("F0B400")
+	b.LayoutOrder = order or 0
+	b.Parent = parent
+	corner(b, UDim.new(1, 0))
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new(Color3.fromHex("FFF0A0"), Color3.fromHex("E09A00"))
+	g.Rotation = 90
+	g.Parent = b
+	local st = Instance.new("UIStroke")
+	st.Color = Toy.INK
+	st.Thickness = math.max(2, size * 0.09)
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = b
+	text(b, tostring(rank), math.floor(size * 0.55), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	return b
+end
+
+-- the small square tab that hides or shows the list
+local function hideTab(parent, size, open, order)
+	local t = Instance.new("TextButton")
+	t.Text = ""
+	t.AutoButtonColor = false
+	t.Size = UDim2.fromOffset(size, size)
+	t.BackgroundColor3 = Color3.new(1, 1, 1)
+	t.BackgroundTransparency = 0.88
+	t.LayoutOrder = order or 9
+	t.Parent = parent
+	corner(t, UDim.new(0, math.floor(size * 0.3)))
+	chevron(t, math.floor(size * 0.55), open)
+	Toy.feel(t)
+	t.Activated:Connect(function()
+		setHidden(open)
+		drawTracker()
+	end)
+	return t
+end
+
+-- one row of the glass panel: the group's icon, the words and stars, the count on the right, a slim bar
+local function panelRow(parent, x, w, size, order, daily)
+	local row = frame(parent, { Size = UDim2.fromOffset(w, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order })
+	local icon = px(size * 2)
+	local well = frame(row, { Size = UDim2.fromOffset(icon, icon), BackgroundTransparency = 0, BackgroundColor3 = daily and Color3.fromHex("2B4466") or Color3.fromHex("3A2F48") })
+	corner(well, UDim.new(1, 0))
+	local ws = Instance.new("UIStroke")
+	ws.Color = Toy.INK
+	ws.Thickness = px(2)
+	ws.Parent = well
+	Toy.icon(well, GROUP_ICON[x.g] or "goal", icon - px(8), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local col = frame(row, { Position = UDim2.fromOffset(icon + px(8), 0), Size = UDim2.new(1, -(icon + px(8)), 0, 0), AutomaticSize = Enum.AutomaticSize.Y })
+	Toy.list(col, false, px(3), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	local top = frame(col, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 1 })
+	local words = frame(top, { AutomaticSize = Enum.AutomaticSize.XY })
+	Toy.list(words, true, px(4), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	if daily then
+		text(words, "Daily ·", size, DAILY, { LayoutOrder = 0 })
+	end
+	text(words, x.text, size, Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	stars(words, x.stars, size - px(3), { LayoutOrder = 2 })
+	if x.need > 1 then
+		text(top, string.format("%d/%d", math.min(x.n, x.need), x.need), size - px(2), MUTED, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, px(1)) })
+	end
+	local _, fill = bar(col, px(6), daily and JADE or GOLD, 2)
+	fill.Parent.BackgroundColor3 = Color3.new(0, 0, 0)
+	fill.Parent.BackgroundTransparency = 0.55
+	fill.Size = UDim2.fromScale(math.clamp(x.n / math.max(1, x.need), 0, 1), 1)
+	return row
+end
+
+function drawTracker()
 	local S, phone = computeScale()
 	Toy.S = S
 	if tracker then
@@ -243,59 +317,89 @@ local function drawTracker()
 	if not m then
 		return
 	end
-	local w = phone and px(210) or px(250)
-	local size = phone and px(12) or px(14)
-	tracker = frame(gui, { Name = "Tracker", AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(w, 0) })
-	Toy.list(tracker, false, px(5), { HorizontalAlignment = Enum.HorizontalAlignment.Left, VerticalAlignment = Enum.VerticalAlignment.Top })
-	if Config.MISSION_HUD == "button" then
-		-- pick C: the Missions button and only the nearest mission beside it
-		local row = frame(tracker, { AutomaticSize = Enum.AutomaticSize.XY })
-		Toy.list(row, true, px(8))
-		local holder, btn = Toy.button(row, UDim2.fromOffset(px(44), px(44)), GOLD, px(22))
-		holder.LayoutOrder = 1
-		Toy.icon(btn, "goal", px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-		Toy.feel(btn)
-		btn.Activated:Connect(function()
+	local size = phone and px(12) or px(15)
+	local badgeSize = px(phone and 26 or 30)
+	tracker = frame(gui, { Name = "Tracker", AutomaticSize = Enum.AutomaticSize.XY })
+	if hidden then
+		-- hidden: the rank badge (opens the page, red dot when a mission finished) and the tab to show
+		Toy.list(tracker, true, px(8), { VerticalAlignment = Enum.VerticalAlignment.Center })
+		local b = rankBadge(tracker, m.rank, px(phone and 40 or 46), 1)
+		Toy.feel(b)
+		b.Activated:Connect(function()
 			drawPage(true)
 		end)
-		local best
-		for _, x in m.slots do
-			if not best or x.n / x.need > best.n / best.need then
-				best = x
+		Toy.dot(b, px(16), { Visible = dotOn })
+		local holder = frame(tracker, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = PANEL, LayoutOrder = 2 })
+		corner(holder, UDim.new(0, px(10)))
+		hideTab(holder, px(30), false)
+		place()
+		return
+	end
+	local w = phone and px(250) or px(320)
+	-- one glass panel (owner pick A 2026-10-26: Pet Sim 99 / Bee Swarm quest list), a hard ink shadow under it
+	local shadow = frame(tracker, { Position = UDim2.fromOffset(0, px(4)), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = Toy.INK })
+	corner(shadow, UDim.new(0, px(16)))
+	local card = Instance.new("TextButton")
+	card.Text = ""
+	card.AutoButtonColor = false
+	card.Size = UDim2.fromOffset(w, 0)
+	card.AutomaticSize = Enum.AutomaticSize.Y
+	card.BackgroundColor3 = Color3.fromHex("2A2036")
+	card.BackgroundTransparency = 0.08
+	card.Selectable = false -- a gamepad selects the hide tab, not the whole card (Play check)
+	card.Parent = tracker
+	corner(card, UDim.new(0, px(16)))
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromHex("B9AEC8"))
+	grad.Rotation = 90
+	grad.Parent = card
+	local cs = Instance.new("UIStroke")
+	cs.Color = Toy.INK
+	cs.Thickness = px(3)
+	cs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	cs.Parent = card
+	card.Activated:Connect(function()
+		drawPage(true)
+	end)
+	shadow.Size = UDim2.fromOffset(w, 0)
+	card:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		shadow.Size = UDim2.fromOffset(w, card.AbsoluteSize.Y)
+	end)
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(10)), UDim.new(0, px(10))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(7)), UDim.new(0, px(10))
+	pad.Parent = card
+	Toy.list(card, false, px(8), { HorizontalAlignment = Enum.HorizontalAlignment.Left, VerticalAlignment = Enum.VerticalAlignment.Top })
+	local inner = w - px(20)
+	-- header: badge, rank name, stars of the rank, the hide tab
+	local head = frame(card, { Size = UDim2.fromOffset(inner, badgeSize), LayoutOrder = 0 })
+	local left = frame(head, { AutomaticSize = Enum.AutomaticSize.XY, Size = UDim2.fromScale(0, 1) })
+	Toy.list(left, true, px(8), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	rankBadge(left, m.rank, badgeSize, 1).Activated:Connect(function()
+		drawPage(true)
+	end)
+	text(left, m.name, size + px(3), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	local right = frame(head, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.fromScale(0, 1) })
+	Toy.list(right, true, px(8), { HorizontalAlignment = Enum.HorizontalAlignment.Right })
+	text(right, string.format("★ %d/%d", m.stars, m.path[#m.path].at), size + px(1), GOLD, { LayoutOrder = 1 })
+	hideTab(right, badgeSize, true, 2)
+	local line = frame(card, { Size = UDim2.fromOffset(inner, px(2)), BackgroundTransparency = 0.88, BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 1 })
+	line.Name = "Divider"
+	for i, x in m.slots do
+		panelRow(card, x, inner, size, 1 + i)
+	end
+	if Config.MISSION_DAILY_ON and #m.daily > 0 then
+		local nextD
+		for _, x in m.daily do
+			if x.n < x.need then
+				nextD = x
+				break
 			end
 		end
-		if best then
-			missionRow(row, best, w - px(52), size, 2)
-		end
-	else
-		local head = rankHeader(tracker, m, w, size, 0)
-		Toy.feel(head)
-		head.Activated:Connect(function()
-			drawPage(true)
-		end)
-		for i, x in m.slots do
-			missionRow(tracker, x, w, size, i)
-		end
-		if Config.MISSION_DAILY_ON and #m.daily > 0 then
-			local left, nextD = 0, nil
-			for _, x in m.daily do
-				if x.n < x.need then
-					left += 1
-					nextD = nextD or x
-				end
-			end
-			local dh = panel(tracker, { Size = UDim2.fromOffset(w, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 20 }, Color3.fromHex("1D2F4A"), 0.1)
-			local pad = Instance.new("UIPadding")
-			pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(8)), UDim.new(0, px(8))
-			pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(2)), UDim.new(0, px(2))
-			pad.Parent = dh
-			Toy.list(dh, true, px(6), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
-			Toy.icon(dh, "chest", size + px(4), { LayoutOrder = 1 })
-			text(dh, string.format("Daily %d/%d", #m.daily - left, #m.daily), size - px(1), DAILY, { LayoutOrder = 2 })
-			text(dh, m.chest and "Chest claimed" or ("new in " .. clock(m.resetIn)), size - px(2), MUTED, { LayoutOrder = 3 })
-			if nextD then
-				missionRow(tracker, nextD, w, size, 21, true)
-			end
+		if nextD then
+			panelRow(card, nextD, inner, size, 20, true)
+		else
+			text(card, m.chest and "Daily chest claimed · new in " .. clock(m.resetIn) or "Daily done", size - px(1), QI, { LayoutOrder = 20 })
 		end
 	end
 	place()
@@ -405,7 +509,18 @@ drawPage = function(open)
 		end
 		local words, color = rewardWords(r)
 		text(cell, "★" .. r.at, px(13), GOLD, { LayoutOrder = 2, ZIndex = 2 })
-		text(cell, last and (words .. " + rank up") or words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })
+		local relic = last and Config.MISSION_RELICS and Config.MISSION_RELICS[m.rank]
+		if last then
+			-- the last node gets wider lines (Play check: its words wrapped in four), the relic on its own
+			cell.Size = UDim2.fromOffset(node + px(90), 0)
+			cell.Position -= UDim2.fromOffset(px(10), 0)
+			text(cell, words .. " + rank up", px(11), color, { LayoutOrder = 3, ZIndex = 2 })
+			if relic then
+				text(cell, "+ Relic: " .. relic, px(11), GOLD, { LayoutOrder = 4, ZIndex = 2 })
+			end
+		else
+			text(cell, words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })
+		end
 	end
 	-- missions and dailies side by side
 	local cols = frame(body, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 3 })
@@ -433,8 +548,26 @@ drawPage = function(open)
 end
 
 ---------------------------------------------------------------------------- toasts
+local onMission
 local toastY = 0 -- under the HUD's "built" toast (y 0.3): the 5th build and its mission land together
+-- full screens a toast waits for (Play check: the free summons chest opened under the mission toasts)
+local WAIT_FOR = { "IdleChest", "RecruitReveal" }
+local function busyScreen()
+	for _, name in WAIT_FOR do
+		local g = playerGui:FindFirstChild(name)
+		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 local function toast(str, color, big)
+	local waited = 0
+	while busyScreen() and waited < 30 do
+		task.wait(0.5)
+		waited += 0.5
+	end
 	local S = computeScale()
 	Toy.S = S
 	local t = text(gui, str, px(big and 30 or 22), color or GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.38, toastY), TextTransparency = 1 })
@@ -456,9 +589,15 @@ local function toast(str, color, big)
 	end)
 end
 
-remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, finished, paid, chest)
-	if kind ~= "mission" then
-		return
+remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, ...)
+	if kind == "mission" then
+		task.spawn(onMission, ...) -- its toasts may wait for a full screen to close
+	end
+end)
+function onMission(finished, paid, chest)
+	if hidden and #(finished or {}) > 0 then
+		dotOn = true -- the hidden list's badge shows a red dot until it is opened again
+		drawTracker()
 	end
 	for _, f in finished or {} do
 		toast(string.format("+%d ★ · %s", f.stars, f.text), f.daily and DAILY or GOLD)
@@ -487,9 +626,17 @@ remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, finished, pa
 	if chest then
 		toast(string.format("Daily chest: +%s qi · %d summons", short(chest.qi), chest.summons or 0), DAILY, true)
 	end
-end)
+end
 
 ---------------------------------------------------------------------------- wiring
+hidden = player:GetAttribute("MissionsHidden") == true
+player:GetAttributeChangedSignal("MissionsHidden"):Connect(function()
+	local v = player:GetAttribute("MissionsHidden") == true
+	if v ~= hidden then
+		hidden = v
+		drawTracker()
+	end
+end)
 player:GetAttributeChangedSignal("Missions"):Connect(function()
 	drawTracker()
 	if page then

@@ -203,7 +203,9 @@ Config.DAO = {
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
-	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
+	-- owner 2026-10-26 ("then the karmic shop is useless no?"): with Auto Build (D85) Hands makes it full,
+	-- Mega Mansion Tycoon's whole-house Auto Build: new buildings build themselves too
+	{ key = "hands", name = "Heavenly Hands", line = "Auto Build for new buildings", costs = { 5 } },
 	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
 	-- "isle") are offered every life from then on, and are built with qi like any pad
 	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
@@ -1732,7 +1734,6 @@ Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: th
 -- seconds of income (no tide, no pill), free summons (into the idle chest's summons), pill seconds of
 -- 2x qi, a disciple of `rarity`.
 Config.MISSIONS_ON = true
-Config.MISSION_HUD = "list" -- "list": rank bar + missions beside the left rail (picks A, B); "button": a Missions button + the nearest mission (C)
 Config.MISSION_DAILY_ON = true -- the 3 daily missions and their chest (picks B, C)
 Config.MISSION_SLOTS = { 2, 3, 3, 3, 4 } -- by rank, the last entry for every rank after
 Config.MISSION_TIER_AT = { [2] = { rank = 1, done = 2 }, [3] = { rank = 2, done = 0 }, [4] = { rank = 5, done = 0 } } -- a tier opens at that rank after `done` missions in it

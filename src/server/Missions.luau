@@ -229,6 +229,7 @@ function Missions.push(player, s)
 	}
 	player:SetAttribute("Missions", HttpService:JSONEncode(out))
 	player:SetAttribute("MissionRank", m.rank) -- the rank alone, for the Relic Hall and others
+	player:SetAttribute("MissionsHidden", s.data.missionsHidden == true) -- the tracker folded to its badge
 end
 
 -- top up the slots and today's dailies, then send them (join, a new day, a change of what can be drawn)
@@ -311,6 +312,21 @@ end
 
 function Missions.init(deps)
 	api = deps
+	-- the tracker's hide tab (Missions.client): the choice is saved with the player
+	if deps.remotes then
+		local Guard = require(script.Parent:WaitForChild("Guard"))
+		local hideEv = Instance.new("RemoteEvent")
+		hideEv.Name = "MissionsHide"
+		hideEv.OnServerEvent:Connect(function(player, v)
+			local s = api.sessions[player]
+			if type(v) ~= "boolean" or not s or not s.data or not Guard.allow(player, "MissionsHide") then
+				return
+			end
+			s.data.missionsHidden = v
+			player:SetAttribute("MissionsHidden", v)
+		end)
+		hideEv.Parent = deps.remotes
+	end
 	-- a new UTC day: fresh dailies without a rejoin
 	task.spawn(function()
 		local day = today()
