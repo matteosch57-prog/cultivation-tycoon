@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
@@ -506,6 +507,30 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
+-- the gold Rebirth pad on the peak (Main refreshPads, a rebirth gate realm) opens this screen
+remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind)
+	if kind == "rebirthAsk" then
+		open()
+	end
+end)
+-- the first rebirths (Config.REBIRTH_TIP_TIMES) open this screen by themselves once the price is held,
+-- after any other card (thread "Keep new players past 10 minutes": players stopped at a full realm 2
+-- with the price held and nothing pointing at the Rebirth seal)
+local autoOpened -- the life (rebirths done) whose screen already opened by itself
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local life = player:GetAttribute("Rebirths") or 0
+		local held = player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge)
+		if held and autoOpened ~= life and life < Config.REBIRTH_TIP_TIMES and not gui.Enabled then
+			autoOpened = life
+			Screens.waitClear(playerGui, "Reincarnation", 2)
+			if player:GetAttribute("RebirthOpen") and (player:GetAttribute("Rebirths") or 0) == life then
+				open()
+			end
+		end
+	end
+end)
 local watched = { "Qi", "Realm", "RealmRecruits", "Karma", "Lives", "Rebirths", "SectStyle", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)
