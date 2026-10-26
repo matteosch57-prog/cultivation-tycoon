@@ -307,7 +307,7 @@ function World:pickOrb()
 		return 0
 	end
 	s.orbs -= 1
-	local gain = math.floor(self.M.rate(s) * self.C.ORB_VALUE)
+	local gain = math.floor(self.M.rate(s) * self.C.ORB_VALUE * (1 + self.C.DAO_ORB * self.M.dao(d, "magnet")))
 	d.qi += gain
 	self.src.orb = (self.src.orb or 0) + gain
 	d.tips = d.tips or {}

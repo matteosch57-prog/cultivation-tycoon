@@ -116,8 +116,10 @@ Config.REALMS = {
 Config.REBIRTH_PRICE = 100000
 Config.REBIRTH_PRICE_STEP = 50000
 Config.REBIRTH_BONUS = 0.5 -- Economy: +50% a rebirth (Muscle Legends' literal +5% made every life longer)
-Config.REBIRTH_KARMA = 2
-Config.REBIRTH_KARMA_STEP = 1
+-- karma x10 (2026-10-26 Karma Upgrades): bigger numbers, the same flow (saves from before are scaled
+-- once at join, data.karma10)
+Config.REBIRTH_KARMA = 20
+Config.REBIRTH_KARMA_STEP = 10
 -- realm -> rebirths needed to break through into it (realms not listed are always open)
 Config.REBIRTH_REALMS = { [3] = 1, [5] = 2, [7] = 4, [9] = 6, [11] = 9, [13] = 12, [15] = 16, [17] = 20 } -- Economy sim (first rebirth ~11 to 15 min)
 -- a faster start (owner 2026-10-24: "make realm 1-2 20% faster still, and life 1 too"): in realms up to
@@ -197,18 +199,25 @@ function Config.rebirthsFor(realm)
 	return need
 end
 -- Karma Shop (the Dao Tree): permanent nodes bought with karma, `costs[i]` = price of level i.
--- Comfort and choices, all capped; nothing copies a paid pass (2x qi, auto orbs, VIP).
+-- Pet Simulator 99's Upgrades, copied (owner 2026-10-26: "rebirth is not rewarding cause you can't buy
+-- shit, we should do a better skill menu"; mocks docs/art/mocks/karma_upgrades.html, pick A): ten lines,
+-- each a small step a level, the first levels cheap and the last steep, so every rebirth buys a few
+-- levels and the deep ones stay a long goal. Nothing copies a paid pass (2x qi, auto orbs, VIP).
 Config.DAO = {
-	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 25 } },
-	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
-	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
-	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
+	{ key = "fortune", name = "Sect Fortune", line = "+10% Qi", costs = { 10, 20, 30, 50, 80, 120, 180, 260, 380, 550 } },
+	{ key = "luck", name = "Heaven's Favor", line = "+5% rare recruits", costs = { 20, 40, 80, 150, 250 } },
+	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 50, 100, 200, 350, 550 } },
+	{ key = "magnet", name = "Spirit Magnet", line = "+25% orb Qi", costs = { 10, 25, 50, 100, 200 } },
+	{ key = "steps", name = "Swift Steps", line = "+10% walk speed", costs = { 10, 30, 60 } },
+	{ key = "elixir", name = "Elixir Mastery", line = "Pills +30 s", costs = { 50, 150, 250, 400, 600 } },
+	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 50, 150, 300, 500 } },
+	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 80, 160, 320, 640, 1280 } },
 	-- owner 2026-10-26 ("then the karmic shop is useless no?"): with Auto Build (D85) Hands makes it full,
 	-- Mega Mansion Tycoon's whole-house Auto Build: new buildings build themselves too
-	{ key = "hands", name = "Heavenly Hands", line = "Auto Build for new buildings", costs = { 5 } },
+	{ key = "hands", name = "Heavenly Hands", line = "Auto Build new buildings", costs = { 50 } },
 	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
 	-- "isle") are offered every life from then on, and are built with qi like any pad
-	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
+	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 120, 300 } }, -- level 2: isles 4 to 8
 }
 Config.HANDS_COOLDOWN = 0.4 -- s between two Heavenly Hands builds (server side)
 -- Auto Build (D85, owner 2026-10-25: "long term isn't so interesting once you build the same things
@@ -229,6 +238,23 @@ end
 Config.DAO_PILL_SECONDS = 30 -- elixir, per level
 Config.DAO_OFFLINE_SECONDS = 2 * 3600 -- meditation, per level
 Config.DAO_ECHO = 0.1 -- echo, karma per level
+Config.DAO_QI = 0.1 -- fortune, qi per level (out of the prices, like the rebirth boost)
+Config.DAO_LUCK = 0.05 -- luck, every rarity above the first weighs this much more per level
+Config.DAO_ORB = 0.25 -- magnet, orb qi per level
+Config.DAO_WALK = 0.1 -- steps, walk speed per level
+-- the walk speed with `steps` Swift Steps levels (Movement.client, SwordRide's walk back)
+function Config.walkSpeed(steps)
+	return Config.MOVE.walk * (1 + Config.DAO_WALK * (steps or 0))
+end
+-- the recruit weights with `luck` Heaven's Favor levels: { [rarity index] = weight }, what roll and the
+-- odds sheet both read
+function Config.rarityWeights(luck)
+	local w = {}
+	for i, r in Config.RARITIES do
+		w[i] = if i > 1 then r.weight * (1 + Config.DAO_LUCK * (luck or 0)) else r.weight
+	end
+	return w
+end
 function Config.daoNode(key)
 	for _, n in Config.DAO do
 		if n.key == key then
@@ -824,6 +850,13 @@ Config.INDEX_STEP_STARS = 10
 -- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
 Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
+-- Weather marks (owner 2026-10-26 "index whatever you recommend", Bee Swarm Simulator's gifted marks):
+-- each index entry has one mark per weather mutation (data.mutIndex), lit the first time that disciple
+-- comes in that mutation. Every MARK_STEP marks pays MARK_STEP_SUMMONS free summons; all of them
+-- (#RARITIES x #DISCIPLE_LOOKS x #WEATHERS) pay MARK_FULL_BONUS qi forever, kept out of prices like the index
+Config.MARK_STEP = 12
+Config.MARK_STEP_SUMMONS = 3
+Config.MARK_FULL_BONUS = 0.1
 Config.DISCIPLE_CAP = 41 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
@@ -957,10 +990,10 @@ Config.WEATHER_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after t
 Config.WEATHER_INTERVAL = Config.TIDE_INTERVAL
 Config.WEATHER_WARN = 20 -- s of heads-up toast before a slot
 Config.WEATHERS = {
-	{ key = "rain", name = "Spirit Rain", mut = "Dewy", chance = 0.2, mult = 2, weight = 0.62, duration = 150, color = Color3.fromRGB(111, 183, 255) },
-	{ key = "thunder", name = "Thunder Tribulation", mut = "Thunderborn", chance = 0.1, mult = 4, weight = 0.22, duration = 120, color = Color3.fromRGB(199, 155, 255) },
-	{ key = "blood", name = "Blood Moon", mut = "Bloodlit", chance = 0.1, mult = 5, weight = 0.11, duration = 150, color = Color3.fromRGB(255, 93, 108) },
-	{ key = "star", name = "Starfall", mut = "Starforged", chance = 0.05, mult = 10, weight = 0.05, duration = 120, color = Color3.fromRGB(159, 243, 255) },
+	{ key = "rain", name = "Spirit Rain", mut = "Dewy", chance = 0.2, mult = 2, weight = 0.62, duration = 150, color = Color3.fromRGB(111, 183, 255), tint = Color3.fromRGB(64, 156, 255), motion = "ebb" },
+	{ key = "thunder", name = "Thunder Tribulation", mut = "Thunderborn", chance = 0.1, mult = 4, weight = 0.22, duration = 120, color = Color3.fromRGB(199, 155, 255), tint = Color3.fromRGB(255, 226, 52), motion = "spark" },
+	{ key = "blood", name = "Blood Moon", mut = "Bloodlit", chance = 0.1, mult = 5, weight = 0.11, duration = 150, color = Color3.fromRGB(255, 93, 108), tint = Color3.fromRGB(226, 24, 48), motion = "beat" },
+	{ key = "star", name = "Starfall", mut = "Starforged", chance = 0.05, mult = 10, weight = 0.05, duration = 120, color = Color3.fromRGB(159, 243, 255), tint = Color3.fromRGB(255, 110, 220), motion = "rainbow" },
 }
 -- a save that never saw weather (data.weatherSeen nil) gets a Spirit Rain for its server at
 -- WEATHER_NEWCOMER_AT s of its session, unless weather is on or a slot opens within WEATHER_NEWCOMER_GAP s
@@ -975,6 +1008,32 @@ function Config.weather(key)
 		end
 	end
 	return nil
+end
+
+-- A mutation's own look (owner 2026-10-26 "B but with a different per type": the figure and its card
+-- washed in the mutation's colour, each moving its own way so all four tell apart on a phone).
+-- `tint` is the mutation's colour (not the sky's `color`: lavender and pale cyan vanished on purple and
+-- white robes, Studio check 2026-10-26); `motion` how it moves. At time `t` (s) returns the colour now
+-- and a level 0..1 (how strong the wash is now):
+--   ebb      Dewy: rises and falls slowly, like water
+--   spark    Thunderborn: flickers on and off fast, like a spark
+--   beat     Bloodlit: a double heartbeat every 1.2 s
+--   rainbow  Starforged: cycles green, cyan, blue, violet and back (Pet Simulator 99's Rainbow pets),
+--            never yellow or red, where it looked like Thunderborn or Bloodlit (Studio check 2026-10-26)
+function Config.mutLook(w, t)
+	if w.motion == "rainbow" then
+		local k = (t * 0.3) % 2
+		return Color3.fromHSV(0.3 + 0.48 * (k < 1 and k or 2 - k), 0.7, 1), 0.8
+	elseif w.motion == "spark" then
+		local n = math.noise(t * 7, 0.5) -- -1..1, smooth but quick
+		-- peaks lower than the others: at full strength the face and robe vanished into a gold statue
+		return w.tint:Lerp(Color3.new(1, 1, 1), n > 0.25 and 0.3 or 0), n > -0.15 and 0.67 or 0.2
+	elseif w.motion == "beat" then
+		local p = (t % 1.2) / 1.2
+		local beat = math.max(math.exp(-((p - 0.08) / 0.05) ^ 2), 0.7 * math.exp(-((p - 0.3) / 0.05) ^ 2))
+		return w.tint, 0.3 + 0.7 * beat
+	end
+	return w.tint, 0.5 + 0.5 * math.sin(t * math.pi * 2 / 3)
 end
 
 -- the weather whose mutation is `mut` (its name, "Dewy"), nil for none
@@ -1482,18 +1541,20 @@ end
 -- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
 -- by row, in the mock's ORDER. Robux is Roblox's own icon (ROBUX_ICON, ships with the client).
 Config.ICON_ATLAS = {
-	image = "rbxassetid://117949315010532", -- 35 icons (trophy, bell, three swords added), uploaded 2026-10-23
+	image = "rbxassetid://81348838869688", -- 40 icons (Karma Upgrades: fortune, luck, magnet, steps, isles added), uploaded 2026-10-26
 	cell = 128,
 	keys = {
 		-- cell 4 (disciple) is unused: Toy draws the disciple atlas figure
 		qi = 0, karma = 1, shop = 3, pill = 5, gift = 6, tide = 7,
 		hall = 8, goal = 9, x2 = 10, auto = 11, vip = 12, hands = 13, rebirth = 14, like = 15,
 		invite = 16, group = 17, palm = 18, chest = 19, altar = 20, pack1 = 21, pack2 = 22, pack3 = 23,
-		sworn = 24, seat = 25, isles = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
+		sworn = 24, seat = 25, foundation = 26, elixir = 27, meditation = 28, echo = 29, trophy = 30,
 		bag = 3, -- the shop's qi pouch
 		tidebell = 31, -- the Tide Bell's own bell (docs/art/mocks/icons.js, key "bell")
 		-- the three Flying Swords (D76); a sword key missing here falls back to Toy's drawn glyph
 		swordJade = 32, swordHeavenly = 33, swordCelestial = 34,
+		-- the Karma Upgrades lines (2026-10-26, docs/art/mocks/icons.js)
+		fortune = 35, luck = 36, magnet = 37, steps = 38, isles = 39,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
@@ -1553,8 +1614,25 @@ end
 function Config.discipleStarMult(count)
 	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)
 end
-function Config.indexMult(index)
-	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
+-- `marks` = the weather marks found (Config.markCount); every one of them adds MARK_FULL_BONUS
+function Config.indexMult(index, marks)
+	local full = (marks or 0) >= Config.markTotal() and 1 + Config.MARK_FULL_BONUS or 1
+	return (1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)) * full
+end
+
+-- weather marks: every rarity x look x weather mutation, and how many of a data.mutIndex are lit
+function Config.markTotal()
+	return #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.WEATHERS
+end
+function Config.markCount(mutIndex)
+	local n = 0
+	for key in mutIndex or {} do
+		local mut = string.match(key, "#(.+)$")
+		if Config.mutation(mut) then
+			n += 1
+		end
+	end
+	return n
 end
 
 -- seconds from the Recruit press to the burst (Juice lights the platform then)

@@ -150,7 +150,7 @@ def load(path):
     if "BREAKTHROUGH_SECONDS" in env:
         env["BT_S"] = env["BREAKTHROUGH_SECONDS"]
     for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
-                     VIP_SLOTS=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1,
+                     VIP_SLOTS=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1, DAO_QI=0, DAO_LUCK=0, DAO_ORB=0, DAO_WALK=0,
                      REINC_REALM=10, PAST_LIVES_MULT=3, WORKER_MAX=0, WORKER_BONUS=0, WORKER_COST=[0.5, 1, 2],
                      REALM_COST_LATE=env.get("REALM_COST_MULT", 8), REALM_COST_LATE_FROM=99).items():
         env.setdefault(k, v)
@@ -204,6 +204,23 @@ def weather_clock(C, seed, phase, newcomer=False):
 
 
 DAO_ORDER = ["hands", "isles", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
+
+
+def spend_karma(C, S):
+    """Karma Shop (Config.DAO): the cheapest next level of any line, again while karma covers one (the
+    red dots point at whatever is affordable; 2026-10-26 Karma Upgrades = PS99 Upgrades). Ties: DAO_ORDER
+    first, then the Config order."""
+    keys = sorted(C["DAO"], key=lambda k: DAO_ORDER.index(k) if k in DAO_ORDER else len(DAO_ORDER))
+    while True:
+        best = None
+        for k in keys:
+            costs, lv = C["DAO"][k], S["dao"].get(k, 0)
+            if lv < len(costs) and S["karma"] >= costs[lv] and (best is None or costs[lv] < C["DAO"][best][S["dao"].get(best, 0)]):
+                best = k
+        if best is None:
+            return
+        S["karma"] -= C["DAO"][best][S["dao"].get(best, 0)]
+        S["dao"][best] = S["dao"].get(best, 0) + 1
 
 
 def simulate(C, kind, seed, days, lives=99, trace=False):
@@ -283,16 +300,20 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 past = C["REBIRTH_POW"] ** (S["life"] - 1)
         # Harmony (Config.harmonyMult): every owned path or grove, capped
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
-        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm * idx_mult()
+        fortune = 1 + C["DAO_QI"] * lvl("fortune")  # Sect Fortune (Karma Shop), out of the prices
+        return b * C["REALM_INCOME_MULT"] ** (S["realm"] - 1) * dmult() * x2 * past * harm * idx_mult() * fortune
 
     # INDEX_STARS (disciple index lever): pulls of one rarity x look give stars at these counts;
     # each star adds INDEX_STAR_BONUS income (outside the price income); every INDEX_STEP_STARS stars
     # pays INDEX_STEP_SUMMONS free summons
-    idx = {"pulls": {}, "stars": 0, "paid_steps": 0}
+    idx = {"pulls": {}, "stars": 0, "paid_steps": 0, "marks": set(), "mark_steps": 0}
     out["index"] = idx
 
     def idx_mult():
-        return 1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]
+        full = 1
+        if C.get("MARK_STEP") and len(idx["marks"]) >= len(C["RARITIES"]) * int(C.get("INDEX_LOOKS", 4)) * len(C.get("WEATHERS", [])):
+            full += C.get("MARK_FULL_BONUS", 0)
+        return (1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]) * full
 
     def star_of(key):  # Config.indexStars: the stars of one entry
         n = idx["pulls"].get(key, 0)
@@ -325,15 +346,18 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         harm = 1 + min(C["HARMONY_STEP"] * sum(1 for i in S["owned"] if pads[i].get("kind") in ("path", "grove")), C["HARMONY_MAX"])
         if not C.get("HARMONY_IN_PRICE"):  # D67: Harmony is left out of prices (Main priceRate)
             rb *= harm
+        rb *= 1 + C["DAO_QI"] * lvl("fortune")  # Sect Fortune: out of the prices like the rebirth boost
         return base() / (x2 * idx_mult() * rb) * dmult(True) / dmult()
 
     pity = {}  # PITY (Main roll): {tier index: rolls since that tier or better}
     wx = {"now": None}  # the weather running this second (weather_clock), None between sessions
 
     def roll():  # Main roll: the weights, then pity (Config.PITY), then Shiny (SHINY_CHANCE x SHINY_MULT)
-        x = rng.uniform(0, sum(w for w, _ in C["RARITIES"]))
+        luck = 1 + C["DAO_LUCK"] * lvl("luck")  # Heaven's Favor: every rarity above the first weighs more
+        ws = [w if i == 0 else w * luck for i, (w, _) in enumerate(C["RARITIES"])]
+        x = rng.uniform(0, sum(ws))
         pick = 0
-        for i, (w, b) in enumerate(C["RARITIES"]):
+        for i, w in enumerate(ws):
             x -= w
             if x <= 0:
                 pick = i
@@ -347,12 +371,30 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         b = C["RARITIES"][pick][1]
         if C.get("SHINY_CHANCE") and rng.random() < C["SHINY_CHANCE"]:
             b *= C.get("SHINY_MULT", 1)
+        mut = None
         if wx["now"] and rng.random() < wx["now"]["chance"]:  # Heavenly Weather: its mutation
             b *= wx["now"]["mult"]
+            mut = wx["now"]["key"]
             out["mutations"] = out.get("mutations", 0) + 1
         d = Disc(b)
         d.key = idx_record(pick)
+        if mut and d.key is not None:
+            mark_record(d.key + (mut,))
         return d
+
+    # Weather marks (Config.MARK_*): one per index entry x weather mutation; every MARK_STEP pays
+    # MARK_STEP_SUMMONS free summons, all of them MARK_FULL_BONUS income (outside the price income)
+    def mark_record(key):
+        if not C.get("MARK_STEP") or key in idx["marks"]:
+            return
+        idx["marks"].add(key)
+        steps = len(idx["marks"]) // int(C["MARK_STEP"])
+        while idx["mark_steps"] < steps:
+            idx["mark_steps"] += 1
+            for _ in range(int(C.get("MARK_STEP_SUMMONS", 0))):
+                S["disciples"].append(roll())
+            S["disciples"].sort(reverse=True)
+            del S["disciples"][C["DISCIPLE_CAP"] + vip:]
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
     # the first REALM_PADS[r] pads of the ladder (sorted by unlock, then list order); the rest wait
@@ -444,11 +486,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         S.update(realm=land, qi=0.0, workers={}, realm_recruits=0, pill_ready=False, pill_t=0.0, boost=0.0)
         S.pop("bt_frozen", None)
         S["owned"] = {p["id"] for p in C["PADS"] if in_realm(p, land)}
-        for k in DAO_ORDER:
-            costs = C["DAO"].get(k)
-            while costs and lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
-                S["karma"] -= costs[lvl(k)]
-                S["dao"][k] = lvl(k) + 1
+        spend_karma(C, S)
         life_start_play, life_start_day = played, day
 
     if C["WELCOME_QI"]:
@@ -502,7 +540,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
             if not C.get("GIFT_DAILY") or S.get("gift_day") != day:
                 S.update(gift_day=day, gift_i=0, gift_play=0)
             gift_i = S["gift_i"]
-            walk = 0 if lvl("hands") else st["walk"] * C["WALK_SCALE"]  # WALK_SCALE: islets' longer walks
+            walk = 0 if lvl("hands") else st["walk"] * C["WALK_SCALE"] / (1 + C["DAO_WALK"] * lvl("steps"))  # WALK_SCALE: islets' longer walks; Swift Steps
             for s in range(int(K["session"] * 60)):
                 played += 1
                 wx["now"] = weather_at(s)
@@ -531,7 +569,7 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                     if S["orb_t"] >= C["ORB_INTERVAL"]:
                         S["orb_t"], S["orbs"] = 0, min(C["ORB_MAX"], S["orbs"] + 1)
                 if S["orbs"] and (auto_orbs or s % st["orb_every"] == 0):
-                    src("qi orbs", S["orbs"] * int(r * C["ORB_VALUE"]))
+                    src("qi orbs", S["orbs"] * int(r * C["ORB_VALUE"] * (1 + C["DAO_ORB"] * lvl("magnet"))))
                     S["orbs"] = 0
                 S["gift_play"] = S.get("gift_play", 0) + 1
                 if gift_i < len(C["GIFT_TIMES"]) and S["gift_play"] >= C["GIFT_TIMES"][gift_i]:
