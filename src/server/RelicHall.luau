@@ -179,8 +179,8 @@ function RelicHall.show(plot, rank, newest)
 					d.Color = LOCKED
 					d.Material = Enum.Material.Glass
 					d.Transparency = math.max(d.Transparency, 0.3)
-				elseif d:IsA("ParticleEmitter") then
-					d.Enabled = false
+				elseif d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Light") then
+					d.Enabled = false -- Style.cauldron (relic 5) brings a Fire and a PointLight
 				end
 			end
 		elseif i == newest then
