@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -188,8 +189,18 @@ local function place()
 	local rail = leftRail()
 	local S = Toy.S
 	if rail and rail.Parent then
-		local x = rail.AbsolutePosition.X + rail.AbsoluteSize.X + px(10)
-		local y = rail.AbsolutePosition.Y + px(4)
+		-- AbsolutePosition (the rail's, the chat's) is measured under the Roblox top bar, this gui starts above
+		-- it (IgnoreGuiInset): without the origin the panel sat one top bar too high, behind the Roblox menus
+		local origin = gui.AbsolutePosition
+		local x = rail.AbsolutePosition.X - origin.X + rail.AbsoluteSize.X + px(10)
+		local y = rail.AbsolutePosition.Y - origin.Y + px(4)
+		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them
+		for _, cls in { "ChatWindowConfiguration", "ChatInputBarConfiguration" } do
+			local c = TextChatService:FindFirstChildOfClass(cls)
+			if c and c.Enabled and c.AbsoluteSize.Y > 0 and c.AbsolutePosition.X - origin.X + c.AbsoluteSize.X > x then
+				y = math.max(y, c.AbsolutePosition.Y - origin.Y + c.AbsoluteSize.Y + px(10))
+			end
+		end
 		tracker.Position = UDim2.fromOffset(x, y)
 		tracker.Visible = rail.Visible and rail.Parent.Visible ~= false and page == nil -- hidden under a full screen (the HUD hides its rail)
 	else

@@ -23,6 +23,7 @@ local ServerHealth = require(script.Parent:WaitForChild("ServerHealth"))
 local RealmLook = require(script.Parent:WaitForChild("RealmLook"))
 local Skin = require(script.Parent:WaitForChild("Skin"))
 local SectStyle = require(script.Parent:WaitForChild("SectStyle"))
+local RelicHall = require(script.Parent:WaitForChild("RelicHall"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local RankBoard = require(script.Parent:WaitForChild("RankBoard"))
 local HubShop = require(script.Parent:WaitForChild("HubShop"))
@@ -519,6 +520,7 @@ local function buildPlots()
 		Shop.buildIsland(plot)
 		buildIdleChest(plot)
 		Bless.build(plot) -- the incense shrine visitors bless (Bless.luau)
+		RelicHall.show(plot, 1) -- the Relic Terrace, all silhouettes until an owner comes
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()
@@ -2202,6 +2204,7 @@ local function onJoin(player)
 
 	rebuild(s)
 	refreshPads(player, s)
+	RelicHall.show(s.plot, type(data.missions) == "table" and data.missions.rank or 1)
 	publish(player)
 	publishFriends(player)
 	publishSettings(player, data)
@@ -2295,6 +2298,7 @@ local function onLeave(player)
 	s.plot.styleGround = nil -- the next owner's lawn starts green
 	buildGrounds(s.plot, {}) -- back to a fresh peak for the next owner
 	Bless.refresh(s.plot) -- a cold shrine for the next owner
+	RelicHall.show(s.plot, 1)
 end
 
 -- Recruit ----------------------------------------------------------------------------
@@ -3307,6 +3311,15 @@ if game:GetService("RunService"):IsStudio() then
 				end
 				return true
 			end
+			if key == "relicRank" then
+				-- DebugSet:Invoke(player, "relicRank", 5) sets the Sect Missions rank and shows the Relic
+				-- Terrace as a rank up to it would (the newest relic bursts)
+				s.data.missions = s.data.missions or { rank = 1, stars = 0, paid = 0, done = 0, starter = 1, total = 0, slots = {} }
+				s.data.missions.rank = value
+				RelicHall.show(s.plot, value, value - 1)
+				Missions.push(player, s)
+				return true
+			end
 			if key == "altar" then
 				Altar.debugOpen() -- DebugSet:Invoke(player, "altar") opens a Heavenly Altar round now
 				return true
@@ -3433,6 +3446,16 @@ Missions.init({
 		}
 	end,
 })
+-- a rank up earns that rank's relic on the Relic Terrace (RelicHall): it lands with a gold burst
+Missions.onRank(function(player, rank)
+	local s = sessions[player]
+	local name = Config.MISSION_RELICS[rank - 1]
+	if not (s and s.plot and name) then
+		return
+	end
+	RelicHall.show(s.plot, rank, rank - 1)
+	notify:FireClient(player, "relic", name)
+end)
 setupLighting()
 buildPlots()
 

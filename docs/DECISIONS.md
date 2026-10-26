@@ -588,6 +588,11 @@ the log as a D-number.
   Rebirth screen names the next one, and the Sect Styles page (Rebirth screen) wears any unlocked one
   or Classic (the D53 ladder). The overhead title shows the style. Why: from rebirth 3 every rebuild
   looked the same. Next: a Relic Hall that never resets, filled by mission progress (owner, mock first).
+- **D87 Relic Terrace (owner pick B 2026-10-26; mocks `docs/art/mocks/2026-10-26_relic_*.png`):** a
+  small isle bridged off the peak's west rim with ten plinths under a "Relics" gate (`RelicHall.luau`).
+  Finishing Sect Missions rank N earns `Config.MISSION_RELICS[N]`, shown in colour for good with a gold
+  burst and a "New relic!" toast; the rest stand as dark silhouettes (Animal Crossing museum stands).
+  Never resets. Why: something that keeps growing across rebirths.
 - **D85b Heavenly Hands = full Auto Build (owner 2026-10-26: "then the karmic shop is useless no?"):**
   with Hands bought (Karma Shop, 5 karma), Auto Build also takes buildings never built before (Mega
   Mansion Tycoon's whole-house Auto Build); the Hands tap button stays. qisim median / engaged 14 days x

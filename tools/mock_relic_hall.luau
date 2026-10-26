@@ -130,6 +130,8 @@ local function relic(parent, cf, i)
 			elseif d:IsA("ParticleEmitter") then
 				d.Enabled = false
 				d:Clear()
+			elseif d:IsA("Fire") or d:IsA("Smoke") or d:IsA("Sparkles") or d:IsA("Light") or d:IsA("Beam") or d:IsA("Trail") then
+				d.Enabled = false -- a locked relic shows no flame or glow (Style.cauldron's fire stayed lit)
 			end
 		end
 	end
