@@ -2165,7 +2165,10 @@ local function onJoin(player)
 	end
 	-- paid here on join, no GO to press (owner 2026-10-24, after new players left on the intro: "remove
 	-- the go and just make them start with qi"); NewSave lets the client hold its day-one cards back
-	if data.welcomed == false then
+	-- read before the stamp below: a brand-new save must still get its tips and the free recruit
+	-- (live bug 2026-10-24 to 10-26: the stamp ran first, so every new save had every tip marked seen)
+	local newSave = data.welcomed == false
+	if newSave then
 		data.welcomed = true
 		data.qi += Config.WELCOME_QI
 		Telemetry.source(player, data, Config.WELCOME_QI, "welcome")
@@ -2173,7 +2176,7 @@ local function onJoin(player)
 	end
 	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
 	if data.tips == nil then
-		data.tips = data.welcomed and { orb = true, pill = true, chest = true, recruit = true } or {}
+		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
