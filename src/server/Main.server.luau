@@ -2950,7 +2950,7 @@ daoFn.OnServerInvoke = function(player, key)
 	local d = s.data
 	d.dao = d.dao or {}
 	local lv = d.dao[key] or 0
-	local cost = node.costs[lv + 1]
+	local cost = Config.daoCost(node, lv)
 	if not cost or (d.karma or 0) < cost then
 		return false
 	end

@@ -96,13 +96,16 @@ def load(path):
             p["req"].append(b)
     rar = [(float(w), float(b)) for w, b in re.findall(r"weight = ([\d.]+), bonus = ([\d.]+)", "\n".join(block("RARITIES")))]
     env["RARITY_NAMES"] = re.findall(r'name = "([^"]+)", weight', "\n".join(block("RARITIES")))
-    dao = {}
+    dao, dao_more = {}, {}
     for line in block("DAO"):
         m = re.search(r'key = "(\w+)".*?costs = \{([^}]*)\}', line)
         if m:
             dao[m.group(1)] = [int(x) for x in re.findall(r"\d+", m.group(2))]
+            mo = re.search(r"more = (\d+)", line)  # an endless line (Config.daoCost)
+            if mo:
+                dao_more[m.group(1)] = int(mo.group(1))
     workers = re.findall(r"^\s*(\w+) = \{ name", "\n".join(block("WORKERS")), re.M)
-    env.update(PADS=pads, RARITIES=rar, DAO=dao, WORKER_PADS=workers)
+    env.update(PADS=pads, RARITIES=rar, DAO=dao, DAO_MORE=dao_more, WORKER_PADS=workers)
     # Heavenly Weather (2026-10-25): Config.WEATHERS rows -> [{key, chance, mult, weight, duration}]
     env["WEATHERS"] = [dict(key=k, chance=float(c), mult=float(m), weight=float(w), duration=int(d)) for k, c, m, w, d in
                        re.findall(r'key = "(\w+)".*?chance = ([\d.]+), mult = ([\d.]+), weight = ([\d.]+), duration = (\d+)', "\n".join(block("WEATHERS")))]
@@ -206,21 +209,31 @@ def weather_clock(C, seed, phase, newcomer=False):
 DAO_ORDER = ["hands", "isles", "foundation", "elixir", "meditation", "sworn", "seat", "echo"]  # sworn: gone in D44 (skipped)  # cheapest comfort first
 
 
+def dao_cost(C, k, lv):
+    """Config.daoCost: the price of level lv + 1 of line k, None when maxed (`more` = endless)."""
+    costs, more = C["DAO"][k], C.get("DAO_MORE", {}).get(k)
+    if lv < len(costs):
+        return costs[lv]
+    return costs[-1] + more * (lv + 1 - len(costs)) if more else None
+
+
 def spend_karma(C, S):
     """Karma Shop (Config.DAO): the cheapest next level of any line, again while karma covers one (the
     red dots point at whatever is affordable; 2026-10-26 Karma Upgrades = PS99 Upgrades). Ties: DAO_ORDER
-    first, then the Config order."""
+    first, then the Config order. Returns the levels bought."""
     keys = sorted(C["DAO"], key=lambda k: DAO_ORDER.index(k) if k in DAO_ORDER else len(DAO_ORDER))
+    bought = 0
     while True:
-        best = None
+        best, best_cost = None, None
         for k in keys:
-            costs, lv = C["DAO"][k], S["dao"].get(k, 0)
-            if lv < len(costs) and S["karma"] >= costs[lv] and (best is None or costs[lv] < C["DAO"][best][S["dao"].get(best, 0)]):
-                best = k
+            c = dao_cost(C, k, S["dao"].get(k, 0))
+            if c is not None and S["karma"] >= c and (best is None or c < best_cost):
+                best, best_cost = k, c
         if best is None:
-            return
-        S["karma"] -= C["DAO"][best][S["dao"].get(best, 0)]
+            return bought
+        S["karma"] -= best_cost
         S["dao"][best] = S["dao"].get(best, 0) + 1
+        bought += 1
 
 
 def simulate(C, kind, seed, days, lives=99, trace=False):
