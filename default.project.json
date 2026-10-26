@@ -18,6 +18,12 @@
         "$path": "src/server"
       }
     },
+    "ServerStorage": {
+      "$ignoreUnknownInstances": true,
+      "RelicModels": {
+        "$path": "assets/relics"
+      }
+    },
     "StarterGui": {
       "$ignoreUnknownInstances": true,
       "$properties": { "ScreenOrientation": "LandscapeSensor" }
