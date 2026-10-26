@@ -1068,12 +1068,12 @@ local function mutationGlow(m, mut)
 	e.Shape = Enum.ParticleEmitterShape.Cylinder
 	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
 	e.EmissionDirection = Enum.NormalId.Top
-	e.Rate = 18
+	e.Rate = 10 -- Play check 2026-10-26: ~780 particles round a busy platform, too many for a phone
 	e.Lifetime = NumberRange.new(1.6, 2.2)
 	e.Speed = NumberRange.new(1.5, 2.5)
 	e.SpreadAngle = Vector2.new(0, 0)
 	e.Rotation = NumberRange.new(0, 360)
-	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
 	e.Color = ColorSequence.new(w.color)
 	e.LightEmission = 0.6
 	e.LightInfluence = 0
@@ -1087,22 +1087,22 @@ local function mutationGlow(m, mut)
 	local LOOKS = {
 		Dewy = { -- water drips running off the body
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 10,
+			Rate = 8,
 			Lifetime = NumberRange.new(0.8, 1.2),
 			Speed = NumberRange.new(2, 4),
 			Acceleration = Vector3.new(0, -14, 0),
 			EmissionDirection = Enum.NormalId.Bottom,
 			SpreadAngle = Vector2.new(60, 60),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.32), NumberSequenceKeypoint.new(1, 0.12) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.2) }),
 			Squash = NumberSequence.new(1.2),
 		},
 		Thunderborn = { -- violet sparks crackling out in every direction
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 26,
+			Rate = 14,
 			Lifetime = NumberRange.new(0.12, 0.3),
 			Speed = NumberRange.new(8, 14),
 			SpreadAngle = Vector2.new(180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.85), NumberSequenceKeypoint.new(1, 0) }),
 			Rotation = NumberRange.new(0, 360),
 		},
 		Bloodlit = { -- red mist rising slowly off the body
@@ -1118,11 +1118,11 @@ local function mutationGlow(m, mut)
 		},
 		Starforged = { -- small stars twinkling all round the figure
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 14,
+			Rate = 10,
 			Lifetime = NumberRange.new(0.9, 1.4),
 			Speed = NumberRange.new(0.5, 1.5),
 			SpreadAngle = Vector2.new(180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.5), NumberSequenceKeypoint.new(1, 0) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.75), NumberSequenceKeypoint.new(1, 0) }),
 			Rotation = NumberRange.new(0, 360),
 			RotSpeed = NumberRange.new(-120, 120),
 		},
@@ -1148,6 +1148,18 @@ local function mutationGlow(m, mut)
 			fx[k] = v
 		end
 		fx.Parent = torso
+		-- the figure in its weather's colour (Play check 2026-10-26: the particles alone were subtle in
+		-- daylight, Grow a Garden recolours a mutated crop): a tinted fill and outline, switched on for the
+		-- nearest figures only by CultivatorIdle's Highlight budget, shared with the Shiny outline
+		local h = Instance.new("Highlight")
+		h.Name = "MutationOutline"
+		h.Adornee = avatar
+		h.FillColor = w.color
+		h.FillTransparency = 0.72
+		h.OutlineColor = w.color
+		h.OutlineTransparency = 0.2
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Parent = m
 	end)
 end
 
