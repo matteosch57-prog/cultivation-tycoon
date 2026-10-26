@@ -1868,6 +1868,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "relic" then -- a Sect Missions rank up earned a relic on the Relic Terrace (`a` = its name)
 		task.delay(2.5, toast, "New relic: " .. a .. "!", GOLD, 4)
 		return
+	elseif kind == "freeRecruit" then -- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE)
+		toast("Free recruit!", GOLD, 3)
+		return
 	elseif kind == "realmLook" then
 		toast(a, GOLD, 4) -- what this realm changed on the peak (Config.realmLookLine)
 		return

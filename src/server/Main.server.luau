@@ -2431,7 +2431,8 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		s.data.freeRecruits -= 1
 		s.data.tips = s.data.tips or {}
 		s.data.tips.recruit = true
-		s.data.seeDisciple = s.data.owned.platform == true -- next: walk to the platform to see it
+		s.data.seeDisciple = s.data.owned.platform == true and not s.data.freeMore -- next: walk to the platform to see it (the first one only)
+		s.data.freeUsedAt = s.data.playSec or 0 -- the next one (Config.FREE_RECRUIT_MORE) counts from here
 	else
 		s.data.qi -= cost
 		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
@@ -3549,6 +3550,10 @@ while true do
 					d.pillReady = true
 					notify:FireClient(player, "pill")
 				end
+			end
+			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
+			if Config.freeRecruitTick(d) then
+				notify:FireClient(player, "freeRecruit")
 			end
 			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
 			if d.seeDisciple then
