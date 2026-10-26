@@ -203,8 +203,11 @@ end
 -- shit, we should do a better skill menu"; mocks docs/art/mocks/karma_upgrades.html, pick A): ten lines,
 -- each a small step a level, the first levels cheap and the last steep, so every rebirth buys a few
 -- levels and the deep ones stay a long goal. Nothing copies a paid pass (2x qi, auto orbs, VIP).
+-- `more` = the line goes on past its list, each level `more` karma dearer than the one before (owner
+-- 2026-10-26: "can you buy stuff at each reinc at least?": a cheapest-first player buys at least one
+-- level every rebirth up to rebirth 100, checked by tools/sim_game.py's spend_karma).
 Config.DAO = {
-	{ key = "fortune", name = "Sect Fortune", line = "+10% Qi", costs = { 10, 20, 30, 50, 80, 120, 180, 260, 380, 550 } },
+	{ key = "fortune", name = "Sect Fortune", line = "+10% Qi", costs = { 10, 20, 30, 50, 80, 120, 180, 260, 330, 400 }, more = 15 },
 	{ key = "luck", name = "Heaven's Favor", line = "+5% rare recruits", costs = { 20, 40, 80, 150, 250 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 50, 100, 200, 350, 550 } },
 	{ key = "magnet", name = "Spirit Magnet", line = "+25% orb Qi", costs = { 10, 25, 50, 100, 200 } },
@@ -254,6 +257,14 @@ function Config.rarityWeights(luck)
 		w[i] = if i > 1 then r.weight * (1 + Config.DAO_LUCK * (luck or 0)) else r.weight
 	end
 	return w
+end
+-- the price of level `lv + 1` of `node` (`lv` = the level owned), nil when the line is maxed
+function Config.daoCost(node, lv)
+	local n = #node.costs
+	if lv < n then
+		return node.costs[lv + 1]
+	end
+	return if node.more then node.costs[n] + node.more * (lv + 1 - n) else nil
 end
 function Config.daoNode(key)
 	for _, n in Config.DAO do

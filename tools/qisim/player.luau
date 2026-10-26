@@ -173,7 +173,7 @@ function Player:act()
 	end
 	local pick, pickCost
 	for _, node in C.DAO do
-		local cost = node.costs[M.dao(d, node.key) + 1]
+		local cost = C.daoCost(node, M.dao(d, node.key))
 		if cost and (d.karma or 0) >= cost and (not pickCost or cost < pickCost) then
 			pick, pickCost = node.key, cost
 		end
