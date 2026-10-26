@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Karma Upgrades mocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- 2026-10-26 "rebirth is not rewarding cause you can't buy shit, we should do a better skill menu".
+     ?opt=A|B|C, rendered 1280x620 with playwright to karma_upgrades_<opt>.png.
+     A = PS99 Upgrades: 10 lines with many cheap-to-steep levels, every rebirth buys something
+     B = the same lines as a Dao Tree (Cookie Clicker heavenly upgrades: a node opens its children)
+     C = A + a Rebirth Road (PS99 rank rewards: every rebirth also hands a free perk) -->
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:Fredoka,sans-serif}
+:root{--ink:#1b1420;--sw:4px;--bw:3px;--br:14px;--sh:4px}
+.scene{position:relative;width:100vw;height:100vh;background:url('../captures/26_check_full_peak.jpg') center/cover}
+.veil{position:absolute;inset:0;background:rgba(20,14,30,.62)}
+.big{color:#fff;font-weight:700;-webkit-text-stroke:var(--sw) var(--ink);paint-order:stroke fill;letter-spacing:.3px;line-height:1.05;white-space:nowrap}
+.toy{border:var(--bw) solid var(--ink);border-radius:var(--br);box-shadow:0 var(--sh) 0 var(--ink);position:relative;display:flex;align-items:center;justify-content:center}
+.toy::after{content:"";position:absolute;left:10%;right:10%;top:9%;height:18%;border-radius:999px;background:rgba(255,255,255,.38);pointer-events:none}
+.lbl{position:absolute;left:8px;top:6px;font:600 13px sans-serif;color:#fff;background:rgba(0,0,0,.7);padding:4px 12px;border-radius:6px;z-index:50;white-space:nowrap}
+.row{display:flex;gap:16px;align-items:flex-start;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:2px;width:118px}
+.pip{width:8px;height:8px;border-radius:50%;border:2px solid var(--ink);background:#3a2d40}
+.pip.on{background:#ffe36b}
+.dot{position:absolute;right:-6px;top:-6px;width:18px;height:18px;border-radius:50%;background:#ff4b4b;border:3px solid var(--ink);z-index:4}
+.lock{filter:grayscale(1) brightness(.7)}
+</style></head>
+<body><div class="scene"><div class="veil"></div><div id="ui"></div><div class="lbl" id="lbl"></div></div>
+<script>
+const opt=new URLSearchParams(location.search).get('opt')||'A';
+const INK='#1b1420';
+const karma=s=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24" fill="#b48cff" stroke="${INK}" stroke-width="5"/><circle cx="32" cy="32" r="11" fill="#efe4ff" stroke="${INK}" stroke-width="4"/><circle cx="24" cy="22" r="4" fill="#fff" opacity=".8"/></svg>`;
+const IC={
+ fortune:`<path d="M32 6C42 16 50 25 50 36a18 18 0 0 1-36 0C14 25 22 16 32 6z" fill="#6fd6ae" stroke="${INK}" stroke-width="3"/><path d="M44 44h14M51 37v14" stroke="#ffe36b" stroke-width="6" stroke-linecap="round"/><path d="M44 44h14M51 37v14" stroke="${INK}" stroke-width="2" stroke-linecap="round" opacity=".5"/>`,
+ steps:`<path d="M18 50c-2-10 2-20 10-24l6-12c3-5 10-2 8 3l-4 10 10 4c5 2 6 8 2 12l-6 7z" fill="#ffd34d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M4 30h10M2 40h12M6 50h8" stroke="#fff" stroke-width="4" stroke-linecap="round"/>`,
+ magnet:`<path d="M14 14v18a18 18 0 0 0 36 0V14H38v18a6 6 0 0 1-12 0V14z" fill="#e65b4f" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><rect x="14" y="10" width="12" height="9" fill="#e8e8f0" stroke="${INK}" stroke-width="3"/><rect x="38" y="10" width="12" height="9" fill="#e8e8f0" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="58" r="5" fill="#6fd6ae" stroke="${INK}" stroke-width="2"/>`,
+ luck:`<path d="M32 6l7 15 16 2-12 11 3 16-14-8-14 8 3-16L9 23l16-2z" fill="#ffe36b" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="48" r="9" fill="#9fd0ff" stroke="${INK}" stroke-width="3"/>`,
+ seat:`<rect x="10" y="42" width="44" height="12" rx="6" fill="#e65b4f" stroke="${INK}" stroke-width="3"/><rect x="25" y="25" width="14" height="18" rx="6" fill="#9a6bff" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="18" r="8" fill="#f2cfae" stroke="${INK}" stroke-width="3"/>`,
+ elixir:`<g transform="rotate(-35 32 32)"><rect x="12" y="22" width="22" height="20" rx="10" fill="#e65b4f" stroke="${INK}" stroke-width="3"/><rect x="30" y="22" width="22" height="20" rx="10" fill="#fff4dc" stroke="${INK}" stroke-width="3"/></g>`,
+ meditation:`<circle cx="30" cy="32" r="20" fill="#ffe36b" stroke="${INK}" stroke-width="3"/><circle cx="40" cy="26" r="16" fill="#d9c9ff"/>`,
+ echo:`<circle cx="22" cy="40" r="13" fill="#b48cff" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="26" r="16" fill="#b48cff" stroke="${INK}" stroke-width="3"/><circle cx="42" cy="26" r="7" fill="#efe4ff"/>`,
+ hands:`<path d="M14 40c0-5 6-6 8-2l3 5V18a4 4 0 0 1 8 0v14-18a4 4 0 0 1 8 0v18-14a4 4 0 0 1 8 0v22c0 10-6 18-16 18h-4c-8 0-11-6-15-11z" fill="#ffd34d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M18 10l14-7 14 7z" fill="#c0392b" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`,
+ isles:`<ellipse cx="32" cy="44" rx="24" ry="9" fill="#8a5a3c" stroke="${INK}" stroke-width="3"/><path d="M32 12c6 8 10 16 0 28-10-12-6-20 0-28z" fill="#ffb3d9" stroke="${INK}" stroke-width="3"/><path d="M14 30c8 0 14 4 18 10-10 2-16-2-18-10zM50 30c-8 0-14 4-18 10 10 2 16-2 18-10z" fill="#ff8fc8" stroke="${INK}" stroke-width="3"/>`,
+};
+const icon=(k,s)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64">${IC[k]}</svg>`;
+const TILE={fortune:'#9ff5c8',steps:'#fff0a6',magnet:'#ffc9a6',luck:'#9fd0ff',seat:'#ffd36b',elixir:'#ffb3a8',meditation:'#d9c9ff',echo:'#e6d4ff',hands:'#fff0a6',isles:'#ffd1ea'};
+// key, name, line, costs (karma x10), level owned in the mock (a player after rebirth 3, 60 karma)
+const N=[
+ ['fortune','Sect Fortune','+10% Qi',[10,20,30,50,80,120,180,260,380,550],2],
+ ['luck',"Heaven's Favor",'+5% rare recruits',[20,40,80,150,250],1],
+ ['seat','Disciple Seat','+1 disciple slot',[50,100,200,350,550],0],
+ ['magnet','Spirit Magnet','+25% orb Qi',[10,25,50,100,200],1],
+ ['steps','Swift Steps','+10% walk speed',[10,30,60],1],
+ ['elixir','Elixir Mastery','Pills +30 s',[50,150,250,400,600],0],
+ ['meditation','Deep Meditation','+2 h offline Qi',[50,150,300,500],0],
+ ['echo','Soul Echo','+10% Karma',[80,160,320,640,1280],0],
+ ['hands','Heavenly Hands','Auto Build new buildings',[50],0],
+ ['isles','Floating Isles','Unlock the Lotus Isles',[120,300],0],
+];
+const HAVE=60;
+const price=(c,max,lock)=>`<div class="toy" style="width:74px;height:26px;--br:9px;--sh:3px;background:${max||lock?'#c9c2d3':(c<=HAVE?'#47d16c':'#59a07f')};gap:3px">${max||lock?'':karma(17)}<span class="big" style="font-size:14px;--sw:3px">${max?'Max':lock?'Locked':c}</span></div>`;
+const tile=(n,i,o={})=>{const [k,name,line,costs,lv]=n;const c=costs[lv];const max=lv>=costs.length;const lock=o.lock;
+ return `<div class="col ${lock?'lock':''}" style="transform:rotate(${o.flat?0:[-2,1.5,-1,2,1,-1.5,2,-1,1.5,-2][i]}deg)"><div class="toy" style="width:56px;height:56px;--br:16px;background:${TILE[k]}">${icon(k,42)}${!lock&&!max&&c<=HAVE?'<div class="dot"></div>':''}</div><div class="big" style="font-size:14px;--sw:3px">${name}</div><div class="big" style="font-size:11px;--sw:2.5px;color:#c9ffe4">${line}</div><div style="display:flex;gap:2px;margin:2px 0 3px">${costs.map((_,l)=>`<div class="pip ${l<lv?'on':''}"></div>`).join('')}</div>${price(c,max,lock)}</div>`};
+const head=t=>`<div style="display:flex;gap:12px;align-items:center"><div class="toy" style="width:34px;height:34px;--br:10px;background:#59d39f"><span class="big" style="font-size:20px">&lt;</span></div><div class="big" style="font-size:30px;--sw:6px;color:#ffe36b;transform:rotate(-2deg)">${t}</div><div class="toy" style="width:34px;height:34px;--br:10px;background:#ff6b5e"><span class="big" style="font-size:20px">X</span></div></div>
+ <div style="display:flex;align-items:center;gap:4px">${karma(24)}<span class="big" style="font-size:20px;color:#e6d4ff">${HAVE}</span></div>`;
+let h='',label='';
+const center=inner=>`<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">${inner}</div>`;
+if(opt==='A'){
+ label='A (recommended) PS99 Upgrades: 10 lines, 1 to 10 levels each, first levels cheap, every rebirth buys 2-4 levels';
+ h=center(`${head('Karma Shop')}<div class="row">${N.slice(0,5).map((n,i)=>tile(n,i)).join('')}</div><div class="row">${N.slice(5).map((n,i)=>tile(n,i+5)).join('')}</div>`);
+}else if(opt==='B'){
+ label='B Dao Tree (Cookie Clicker heavenly upgrades): same lines on 3 branches, a node opens the ones above it';
+ const at={fortune:[0,2],magnet:[0,1],echo:[0,0],seat:[1,2],luck:[1,1],isles:[1,0],steps:[2,2],elixir:[2,1],meditation:[2,0]};
+ const W=200,H=128,X0=0;
+ let lines='',nodes='';
+ const by=Object.fromEntries(N.map(n=>[n[0],n]));
+ Object.entries(at).forEach(([k,[c,r]])=>{
+  const x=c*W, y=r*H; const n=by[k]; const parentOwned = r===2 || by[Object.keys(at).find(q=>at[q][0]===c&&at[q][1]===r+1)][4]>0;
+  if(r<2) lines+=`<line x1="${x+59}" y1="${y+40}" x2="${x+59}" y2="${y+H+10}" stroke="${parentOwned?'#ffe36b':'#6b5a7a'}" stroke-width="8"/><line x1="${x+59}" y1="${y+40}" x2="${x+59}" y2="${y+H+10}" stroke="${INK}" stroke-width="2" opacity=".6"/>`;
+  nodes+=`<div style="position:absolute;left:${x}px;top:${y}px">${tile(n,0,{flat:1,lock:!parentOwned})}</div>`;
+ });
+ const br=(t,c)=>`<div class="big" style="position:absolute;left:${c*W}px;top:${3*H-4}px;width:118px;text-align:center;font-size:16px;color:#ffe36b">${t}</div>`;
+ h=center(`${head('Dao Tree')}<div style="position:relative;width:${2*W+118}px;height:${3*H+16}px"><svg style="position:absolute;inset:0" width="${2*W+118}" height="${3*H}">${lines}</svg>${nodes}${br('Wealth',0)}${br('Disciples',1)}${br('Path',2)}</div>`)
+   +`<div style="position:absolute;right:80px;top:50%;transform:translateY(-50%)">${tile(by.hands,0,{flat:1})}<div class="big" style="font-size:12px;--sw:3px;text-align:center;margin-top:6px;color:#c9ffe4">root, always open</div></div>`;
+}else{
+ label='C = A + Rebirth Road (PS99 rank rewards): every rebirth also gives a free perk on top of the karma';
+ const R=[[1,'fortune','+10% Qi'],[2,'seat','+1 seat'],[3,'magnet','Orbs x2'],[4,'luck','+10% luck'],[5,'seat','+1 seat'],[6,'hands','Auto Build'],[7,'fortune','+25% Qi'],[8,'seat','+1 seat'],[10,'isles','Lotus Isle']];
+ const done=3;
+ const step=([n,k,t],i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:92px;${n<=done?'':'opacity:.95'}"><div class="big" style="font-size:13px;--sw:3px;color:${n<=done?'#9ff5c8':'#fff'}">Rebirth ${n}</div><div class="toy ${n>done+1?'lock':''}" style="width:54px;height:54px;--br:27px;background:${n<=done?'#9ff5c8':n===done+1?'#ffe36b':TILE[k]}">${icon(k,38)}${n<=done?`<div style="position:absolute;right:-6px;bottom:-6px" class="toy" ><span class="big" style="font-size:14px;background:#47d16c;border-radius:50%;padding:2px 5px">✓</span></div>`:''}</div><div class="big" style="font-size:12px;--sw:3px;color:#ffe9a6">${t}</div></div>`;
+ h=`<div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:10px">
+ <div class="big" style="font-size:32px;--sw:6px;color:#ffe36b">Rebirth</div>
+ <div style="display:flex;align-items:center;gap:10px"><span class="big" style="font-size:24px;color:#c9ffe4">x2.5 Qi</span><span class="big" style="font-size:24px">-&gt;</span><span class="big" style="font-size:34px;color:#ffe36b">x3 Qi</span><span class="big" style="font-size:22px;color:#e6d4ff;margin-left:16px">+50</span>${karma(26)}</div>
+ <div style="position:relative;display:flex;gap:2px;padding:10px 14px;border-radius:20px;background:rgba(58,45,64,.85);border:3px solid ${INK}"><div style="position:absolute;left:60px;right:60px;top:56px;height:8px;background:#6b5a7a;border-radius:4px"></div><div style="position:absolute;left:60px;width:${(done)*94}px;top:56px;height:8px;background:#9ff5c8;border-radius:4px"></div>${R.map(step).join('')}</div>
+ <div class="big" style="font-size:15px;--sw:3px;color:#fff">Next rebirth also gives <span style="color:#ffe36b">+10% luck</span>, free</div>
+ <div style="display:flex;gap:18px;margin-top:4px"><div class="toy" style="width:200px;height:46px;background:#ffe36b"><span class="big" style="font-size:22px">Rebirth</span></div><div class="toy" style="width:170px;height:46px;background:#b48cff;gap:6px">${karma(24)}<span class="big" style="font-size:18px">Karma Shop</span><div class="dot"></div></div></div></div>`;
+}
+document.getElementById('ui').innerHTML=h;document.getElementById('lbl').textContent=label;
+</script></body></html>

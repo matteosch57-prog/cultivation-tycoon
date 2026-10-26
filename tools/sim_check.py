@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sim_game import load, DEFAULT_CONFIG, weather_clock  # noqa: E402  (the Config.luau parser and the weather schedule)
+from sim_game import load, DEFAULT_CONFIG, weather_clock, spend_karma  # noqa: E402  (the Config.luau parser, the weather schedule, the Karma Shop buyer)
 
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
@@ -129,9 +129,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     wx = {"now": None}  # the weather running this second (sim_game.weather_clock), None between sessions
 
     def roll():  # Main roll: weights, then Config.PITY, then Shiny; returns (rarity index, shiny)
-        x = rng.uniform(0, wsum)
+        luck = 1 + C.get("DAO_LUCK", 0) * lvl("luck")  # Config.rarityWeights: Heaven's Favor
+        ws = [w if i == 0 else w * luck for i, (w, _) in enumerate(rar)]
+        x = rng.uniform(0, sum(ws))
         pick = 0
-        for i, (w, b) in enumerate(rar):
+        for i, w in enumerate(ws):
             x -= w
             if x <= 0:
                 pick = i
@@ -202,13 +204,15 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
         if C.get("MARK_STEP") and len(S["marks"]) >= len(rar) * 4 * len(C.get("WEATHERS", [])):
             idx *= 1 + C.get("MARK_FULL_BONUS", 0)
-        cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
+        fortune = 1 + C.get("DAO_QI", 0) * lvl("fortune")  # Sect Fortune (Karma Shop), out of priceRate
+        cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"]) * fortune  # rate(s, true) (no group)
 
     def plan1_base():  # the price income: rate(s, true) without the 2x pass, Welcome Pouch, rebirth, Robux disciples
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)
         dm = dmult()
         paid = sum(rar[names.index(n)][1] for n in S["bought"] if n in names)
-        return cache["away"] / x2 / (1 + S["welcome"]) / reb / dm * max(1.0, dm - paid)
+        fortune = 1 + C.get("DAO_QI", 0) * lvl("fortune")  # padRate leaves Sect Fortune out too
+        return cache["away"] / x2 / (1 + S["welcome"]) / reb / fortune / dm * max(1.0, dm - paid)
 
     def pad_seconds():  # Config.padSeconds
         T = C["PAD_SECONDS"]
@@ -275,11 +279,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         snap.clear()
         S["owned"] = {p["id"] for p in C["PADS"] if RO[p["id"]] <= 1}
         S.pop("bt", None)
-        for k in ("hands", "isles", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
-            costs = C["DAO"].get(k, [])
-            while lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
-                S["karma"] -= costs[lvl(k)]
-                S["dao"][k] = lvl(k) + 1
+        spend_karma(C, S)  # karma: the cheapest next level first, while it covers one
         clock["life_t"] = clock["play"]
         clock["realm_t"] = clock["play"]
         recalc()
@@ -375,7 +375,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                     if S["orb_t"] >= C["ORB_INTERVAL"]:
                         S["orb_t"], S["orbs"] = 0, min(C["ORB_MAX"], S["orbs"] + 1)
                 if S["orbs"] and (auto or s % K["orb_every"] == 0):
-                    add("qi orbs", S["orbs"] * live * C["ORB_VALUE"])
+                    add("qi orbs", S["orbs"] * live * C["ORB_VALUE"] * (1 + C.get("DAO_ORB", 0) * lvl("magnet")))
                     S["orbs"] = 0
                 if missions:
                     mission_stars(STAR_RATE)
@@ -461,7 +461,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         recalc()
                     continue
                 if S["qi"] >= tcost:
-                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"])
+                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"] / (1 + C.get("DAO_WALK", 0) * lvl("steps")))
                     if s >= walk_until:
                         walk_until = None
                         pay("buildings", tcost)

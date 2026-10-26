@@ -57,7 +57,7 @@ function SwordRide.stop(player, reason)
 	if r.hum and r.hum.Parent then
 		-- back to the walker's speed: Movement.client sets MOVE.walk on the client, so the server's own
 		-- copy of WalkSpeed (16) is not the one to restore (Studio 2026-10-23)
-		r.hum.WalkSpeed = Config.MOVE.walk
+		r.hum.WalkSpeed = Config.walkSpeed(player:GetAttribute("Dao_steps")) -- with Swift Steps (Karma Shop)
 	end
 	player:SetAttribute("Riding", nil)
 	if reason and reason ~= "player" and reason ~= "gone" and reason ~= "switch" then -- a tier switch from the picker is no "Off the sword"
