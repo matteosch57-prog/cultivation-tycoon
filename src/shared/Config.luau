@@ -1137,7 +1137,7 @@ Config.SECT_STYLES = {
 		-- snow on a winter temple: white roofs over deep lacquer, so the snow reads (pale-on-pale washed out)
 		map = { tile = { hex("F4F8FC"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("7E2A30"), plaster = hex("F2F4F7"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("4A3A3A"), timberDark = hex("2E2426"), jade = hex("A8E4FF") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.4, -2, 0), size = 0.5 } },
-	{ id = "volcano", ground = { Enum.Material.CrackedLava, hex("2A2220") }, name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
+	{ id = "volcano", ground = { Enum.Material.CrackedLava, hex("A8401C") }, name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
 		-- vermilion 4A1610: 7A1F14 read bright red under the place lighting
 		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("4A1610"), plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
 		fx = { color = hex("FF8A2A"), accel = Vector3.new(0, 2.5, 0), size = 0.4, light = 1 } },
@@ -1147,20 +1147,20 @@ Config.SECT_STYLES = {
 	{ id = "moon", ground = { Enum.Material.Glacier, hex("C9D6EA") }, name = "Moon Palace", rebirth = 4, orn = "crescent", ornColor = hex("E8EEF8"), swatch = { hex("2D3E73"), hex("E8EEF8") },
 		map = { tile = hex("2D3E73"), tileDark = hex("1E2A52"), vermilion = hex("E9EEF6"), plaster = { hex("FFFFFF"), Enum.Material.Marble }, gold = hex("D8E2F0"), stone = { hex("E4E9F1"), Enum.Material.Marble }, stoneLight = hex("F2F5F9"), timber = hex("5A6788"), timberDark = hex("323C58") },
 		fx = { color = hex("CFE0FF"), accel = Vector3.new(0, 0.4, 0), size = 0.6 } },
-	{ id = "thunder", ground = { Enum.Material.Slate, hex("4A4E5A") }, name = "Thunder Peak", rebirth = 5, orn = "rod", ornColor = hex("B9A8FF"), swatch = { hex("3A3550"), hex("F5D04A") },
+	{ id = "thunder", ground = { Enum.Material.Slate, hex("6E7890") }, name = "Thunder Peak", rebirth = 5, orn = "rod", ornColor = hex("B9A8FF"), swatch = { hex("3A3550"), hex("F5D04A") },
 		map = { tile = hex("3A3550"), tileDark = hex("272338"), vermilion = hex("4B3C7A"), plaster = { hex("8B8FA0"), Enum.Material.Slate }, gold = hex("F5D04A"), stone = { hex("5C606B"), Enum.Material.Slate }, stoneLight = hex("6E727D") },
 		fx = { color = hex("C8B8FF"), accel = Vector3.new(0, 0, 0), size = 0.5, light = 1 } },
 	{ id = "dragon", ground = { Enum.Material.Pavement, hex("EEEDE6") }, name = "Dragon Emperor", rebirth = 6, orn = "dragon", ornColor = hex("FFE27A"), swatch = { hex("E0A82E"), hex("A3221B") },
 		-- the Forbidden City: imperial yellow glaze, red walls and columns, white marble terraces
 		map = { tile = hex("E8B030"), tileDark = hex("B07E18"), vermilion = hex("A3221B"), plaster = hex("B8352B"), gold = { hex("FFD24A"), Enum.Material.Foil }, stone = { hex("F2F2EE"), Enum.Material.Marble }, stoneLight = hex("FFFFFF") },
 		fx = { color = hex("FFE07A"), accel = Vector3.new(0, 0.6, 0), size = 0.5 } },
-	{ id = "maple", ground = { Enum.Material.Mud, hex("C0602A") }, name = "Autumn Maple", rebirth = 7, orn = "pearl", ornColor = hex("FFB347"), swatch = { hex("C2452D"), hex("FFB347") },
+	{ id = "maple", ground = { Enum.Material.Mud, hex("E0922E") }, name = "Autumn Maple", rebirth = 7, orn = "pearl", ornColor = hex("FFB347"), swatch = { hex("C2452D"), hex("FFB347") },
 		map = { tile = hex("C2452D"), tileDark = hex("8E2E1E"), vermilion = hex("6B3A22"), plaster = hex("F5E6CC"), gold = hex("FFB347"), timber = hex("4A2C1C") }, -- jade left alone: it is the ponds too (Play check 2026-10-25)
 		fx = { color = hex("FF9A3C"), accel = Vector3.new(0.6, -1, 0), size = 0.6 } },
 	{ id = "abyss", ground = { Enum.Material.Asphalt, hex("2F6B62") }, name = "Abyssal Jade", rebirth = 8, orn = "pearl", ornColor = hex("7FFFE0"), swatch = { hex("1F5F5B"), hex("7FFFE0") },
 		map = { tile = hex("1F5F5B"), tileDark = hex("143F3C"), vermilion = hex("2E7F74"), plaster = { hex("CFEDE6"), Enum.Material.Marble }, gold = hex("9FE8D6"), stone = { hex("8FB8B0"), Enum.Material.Marble }, stoneLight = hex("B4D6CF"), timber = hex("23463F"), timberDark = hex("142B27") },
 		fx = { color = hex("7FFFE0"), accel = Vector3.new(0, 0.8, 0), size = 0.5, light = 1 } },
-	{ id = "phoenix", ground = { Enum.Material.Sandstone, hex("B8553A") }, name = "Phoenix Flame", rebirth = 9, orn = "feather", ornColor = hex("FFC24A"), swatch = { hex("B3202A"), hex("FFC24A") },
+	{ id = "phoenix", ground = { Enum.Material.Sandstone, hex("9E2A22") }, name = "Phoenix Flame", rebirth = 9, orn = "feather", ornColor = hex("FFC24A"), swatch = { hex("B3202A"), hex("FFC24A") },
 		map = { tile = hex("B3202A"), tileDark = hex("7E141B"), vermilion = hex("E05A1F"), plaster = hex("FFF1D6"), gold = { hex("FFC24A"), Enum.Material.Foil }, stone = hex("E8D2B0") },
 		fx = { color = hex("FFB04A"), accel = Vector3.new(0, 2, 0), size = 0.5, light = 1 } },
 	{ id = "cloud", ground = { Enum.Material.Ice, hex("F7F9FC") }, name = "Heavenly Cloud", rebirth = 10, orn = "pearl", ornColor = hex("FFFFFF"), swatch = { hex("F2F6FA"), hex("FFD36A") },

@@ -46,6 +46,8 @@ local MIRRORS = {
 		"local part = Config.guidePick(can)",
 		"s.autoAt = now + Config.AUTO_BUILD_GAP",
 		"d.everBuilt[pad.id] = true",
+		"workspace:SetAttribute(\"WeatherNext\", nextAt + Config.WEATHER_INTERVAL)", -- Heavenly Weather slots
+		"startWeather(rollWeather())",
 	},
 	shop = { "local gain = math.floor(api.rate(s, true) * Config.SHOP_FREE_SECONDS)" },
 	dots = { "return (d.playSec or 0) >= Config.DOT_SHOP_FIRST and d.shopFreeDay ~= os.time() // 86400" },
@@ -63,9 +65,9 @@ local MIRRORS = {
 
 -- the Main functions run as they are, in Main's order
 local FUNCTIONS = {
-	"hasIdleChest", "deepCopy", "defaultData", "discLooks", "discShiny", "dao", "maxDisciples", "rebirths", "karmaGain",
-	"discipleMult", "boosted", "startTide", "tideOn", "friendCount", "rate", "priceRate", "padRate", "pricePads", "giveIdleChest", "roll", "byBonus",
-	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "recruitPress", "reincarnate",
+	"hasIdleChest", "deepCopy", "defaultData", "discLooks", "discShiny", "discMut", "dao", "maxDisciples", "rebirths", "karmaGain",
+	"discipleMult", "boosted", "startTide", "tideOn", "weatherNow", "startWeather", "friendCount", "rate", "priceRate", "padRate", "pricePads", "giveIdleChest", "roll", "byBonus",
+	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "recruitPress", "reincarnate", "rollWeather",
 }
 local HANDLERS = { "chestFn", "recruitFn", "pillFn", "giftFn", "streakFn", "welcomeFn", "daoFn" }
 

@@ -74,6 +74,10 @@ function World:join()
 	-- the server this session joins: its tide and altar clocks start at a random point
 	self.tideNext = self:now() + math.random(0, C.TIDE_INTERVAL)
 	self.altarNext = self.tideNext + C.TIDE_INTERVAL / 2
+	self.weatherNext = self.tideNext + C.WEATHER_FIRST - C.TIDE_FIRST -- Heavenly Weather slots, half a tide off
+	if self.weatherNext - self:now() > C.WEATHER_INTERVAL then
+		self.weatherNext -= C.WEATHER_INTERVAL
+	end
 	return offlineGain, away
 end
 
@@ -89,6 +93,12 @@ function World:tick(dt)
 	if self:now() >= self.tideNext then
 		self.tideNext += C.TIDE_INTERVAL
 		M.startTide()
+	end
+	if self:now() >= self.weatherNext then -- Main weatherTick: a slot rolls a weather unless one runs
+		self.weatherNext += C.WEATHER_INTERVAL
+		if not M.weatherNow() then
+			M.startWeather(M.rollWeather())
+		end
 	end
 	local gain = M.rate(s) * dt
 	d.qi += gain
