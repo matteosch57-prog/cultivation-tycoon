@@ -83,7 +83,7 @@ end
 
 -- the rising layer of each mutation (the Sol's RNG ring of flames), from just under the hips
 local RISE = {
-	Dewy = { Texture = SMOKE, Size = { 1.2, 2.2 }, Speed = { 2, 3.5 }, Rate = 20, Life = { 1, 1.4 }, Trans = 0.15 },
+	Dewy = { Texture = SMOKE, Size = { 1, 1.8 }, Speed = { 2, 3.5 }, Rate = 14, Life = { 1, 1.4 }, Trans = 0.35 },
 	Thunderborn = { Texture = SPARKLE, Size = { 0.9, 0 }, Speed = { 5, 8 }, Rate = 26, Life = { 0.3, 0.5 }, Trans = 0 },
 	Bloodlit = { Texture = FIRE, Size = { 1.6, 0.4 }, Speed = { 3, 5 }, Rate = 22, Life = { 0.7, 1 }, Trans = 0.2 },
 	Starforged = { Texture = SPARKLE, Size = { 0.7, 0 }, Speed = { 2, 3 }, Rate = 18, Life = { 1, 1.5 }, Trans = 0 },
@@ -92,7 +92,7 @@ local RISE = {
 local ORBIT = {
 	Dewy = { n = 4, rad = 2.4, y = 0.8, size = 0.5, speed = 1.2 },
 	Bloodlit = { n = 6, rad = 2.2, y = 0, size = 0.42, speed = -0.8, step = 1.6 },
-	Starforged = { n = 5, rad = 1.9, head = -1, size = 0.45, speed = 1.8 },
+	Starforged = { n = 5, rad = 2.6, head = -1.6, size = 0.45, speed = 1.8 }, -- wide of the face (Play check)
 }
 
 local function build(m, w)
@@ -107,7 +107,17 @@ local function build(m, w)
 	a.folder = Instance.new("Folder")
 	a.folder.Name = m.Name
 	a.folder.Parent = folder
-	-- the pool: flat glow discs breathing on the cushion
+	-- the pool: flat glow discs breathing on the cushion, no wider than the gap to the next seat (on the
+	-- platform the seats are close: full-size pools ran into one white disc over the cushions, Play
+	-- check 2026-10-26)
+	local gap = 8
+	for _, other in CollectionService:GetTagged(TAG) do
+		local os2 = other ~= m and (other:FindFirstChild("Cushion") or other.PrimaryPart)
+		if os2 then
+			gap = math.min(gap, (os2.Position - seat.Position).Magnitude)
+		end
+	end
+	local poolSize = math.clamp(gap * 0.6, 2.5, 5)
 	local pool = part(a.folder, { CFrame = CFrame.new(seat.Position + Vector3.new(0, seat.Size.Y / 2 + 0.1, 0)) })
 	table.insert(a.emitters, emitter(pool, {
 		Texture = GLOW,
@@ -116,14 +126,16 @@ local function build(m, w)
 		Speed = NumberRange.new(0.01),
 		Rate = 3,
 		Lifetime = NumberRange.new(1.6, 2),
-		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 5), NumberSequenceKeypoint.new(1, 7.5) }),
-		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.35), NumberSequenceKeypoint.new(1, 1) }),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, poolSize), NumberSequenceKeypoint.new(1, poolSize * 1.4) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.4), NumberSequenceKeypoint.new(1, 1) }),
 		Color = colors(w),
-		LightEmission = 0.8,
+		LightEmission = 0.4,
+		Brightness = 2,
 	}))
 	-- the rising ring, moved with the hips every frame
 	local r = RISE[w.mut]
-	a.rise = part(a.folder, { Size = Vector3.new(4.2, 0.2, 4.2) })
+	local ringW = math.clamp(gap * 0.55, 2.6, 4.2)
+	a.rise = part(a.folder, { Size = Vector3.new(ringW, 0.2, ringW) })
 	table.insert(a.emitters, emitter(a.rise, {
 		Texture = r.Texture,
 		Shape = Enum.ParticleEmitterShape.Cylinder,
