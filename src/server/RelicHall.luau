@@ -183,7 +183,12 @@ local function silhouette(item)
 					d.TextureID = ""
 				end)
 			end
-		elseif d:IsA("SurfaceAppearance") or d:IsA("Decal") or d:IsA("SurfaceGui") then
+		elseif d:IsA("Decal") then
+			-- tinted, not removed: the Phoenix Fan is two decals on an invisible part (removed, the
+			-- locked fan showed nothing at all)
+			d.Color3 = LOCKED
+			d.Transparency = math.max(d.Transparency, 0.3)
+		elseif d:IsA("SurfaceAppearance") or d:IsA("SurfaceGui") then
 			d:Destroy()
 		elseif d:IsA("ParticleEmitter") or d:IsA("Fire") or d:IsA("Light") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Smoke") or d:IsA("Sparkles") then
 			d.Enabled = false -- Style.cauldron (relic 5) brings a Fire and a PointLight
