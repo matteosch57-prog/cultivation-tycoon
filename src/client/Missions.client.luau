@@ -433,11 +433,11 @@ drawPage = function(open)
 end
 
 ---------------------------------------------------------------------------- toasts
-local toastY = 0
+local toastY = 0 -- under the HUD's "built" toast (y 0.3): the 5th build and its mission land together
 local function toast(str, color, big)
 	local S = computeScale()
 	Toy.S = S
-	local t = text(gui, str, px(big and 30 or 22), color or GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.26, toastY), TextTransparency = 1 })
+	local t = text(gui, str, px(big and 30 or 22), color or GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.38, toastY), TextTransparency = 1 })
 	toastY += px(big and 40 or 30)
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.6
