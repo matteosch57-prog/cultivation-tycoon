@@ -12,6 +12,13 @@ local Missions = {}
 local api -- { sessions, rate, publish, notify, telemetry, giveSummons, addDisciple, ctx }
 
 local rng = Random.new()
+local rankWatchers = {} -- Missions.onRank: other modules told of a rank up (the Relic Hall)
+
+-- fn(player, rank) after every rank up (rank = the new rank, 2+); read the current one from
+-- player:GetAttribute("MissionRank") or s.data.missions.rank
+function Missions.onRank(fn)
+	table.insert(rankWatchers, fn)
+end
 
 local function today()
 	return os.time() // 86400
@@ -191,6 +198,9 @@ local function addStars(player, s, n)
 			m.stars -= r.at
 			m.paid, m.done = 0, 0
 			got.rankUp = Config.missionRank(m.rank)
+			for _, fn in rankWatchers do
+				task.spawn(fn, player, m.rank)
+			end
 			api.telemetry.custom(player, "Mission", "rank", tostring(m.rank), api.telemetry.minuteBucket(s.data.playSec or 0))
 		end
 		table.insert(paid, got)
@@ -218,6 +228,7 @@ function Missions.push(player, s)
 		resetIn = (today() + 1) * 86400 - os.time(),
 	}
 	player:SetAttribute("Missions", HttpService:JSONEncode(out))
+	player:SetAttribute("MissionRank", m.rank) -- the rank alone, for the Relic Hall and others
 end
 
 -- top up the slots and today's dailies, then send them (join, a new day, a change of what can be drawn)
