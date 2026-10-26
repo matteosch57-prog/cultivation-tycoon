@@ -374,6 +374,23 @@ local function buildGrounds(plot, owned)
 		sign.Name = "Sign"
 		plot.label = nameBoard(plot, sign)
 	end
+	-- the Sect Style's ground (rebuild sets plot.styleGround): the lawn, terrain and its lip, in the style's material
+	local sg = plot.styleGround
+	if sg then
+		for _, i in Config.ISLETS do
+			local c = plot.frame * Vector3.new(i.x, 0, i.z)
+			local r = i.r * 1.05 + 6
+			local region = Region3.new(Vector3.new(c.X - r, -24, c.Z - r), Vector3.new(c.X + r, 8, c.Z + r)):ExpandToGrid(4)
+			workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.LeafyGrass, sg[1])
+			workspace.Terrain:ReplaceMaterial(region, 4, Enum.Material.Grass, sg[1])
+		end
+		for _, part in g:GetDescendants() do
+			if part:IsA("BasePart") and (part.Material == Enum.Material.LeafyGrass or part.Material == Enum.Material.Grass) then
+				part.Material = sg[1]
+				part.Color = sg[2]
+			end
+		end
+	end
 	g.Parent = plot.folder
 	plot.grounds = g
 	plot.radius = radius
@@ -528,6 +545,9 @@ local function setupLighting()
 	workspace.Terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("7DAA5C")) -- the island lawn
 	workspace.Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromHex("86B35E")) -- meadow patches (tall blades)
 	workspace.Terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromHex("A8957A")) -- packed earth under buildings
+	for _, st in Config.SECT_STYLES do -- each Sect Style's lawn material (Config ground)
+		workspace.Terrain:SetMaterialColor(st.ground[1], st.ground[2])
+	end
 	pcall(function()
 		workspace.Terrain.Decoration = true
 	end)
@@ -1456,6 +1476,13 @@ local function rebuild(s)
 	-- the island's size follows the expansions owned (a breakthrough shrinks it back)
 	local land = landKey(s.data.owned)
 	s.plot.realm = s.data.realm
+	-- a Sect Style brings its own ground: a new style redraws the grounds in it (buildGrounds)
+	local worn = Config.wornStyle(s.data.sectStyle, rebirths(s.data))
+	local ground = worn and worn.ground or nil
+	if s.plot.styleGround ~= ground then
+		s.plot.styleGround = ground
+		s.plot.radius = nil
+	end
 	if s.plot.radius == nil or s.plot.landKey ~= land then
 		s.plot.landKey = land
 		buildGrounds(s.plot, s.data.owned)
@@ -2189,6 +2216,7 @@ local function onLeave(player)
 	setPlotLabel(s.plot, "Unclaimed Peak")
 	s.plot.realm = nil
 	s.plot.landKey = nil
+	s.plot.styleGround = nil -- the next owner's lawn starts green
 	buildGrounds(s.plot, {}) -- back to a fresh peak for the next owner
 	Bless.refresh(s.plot) -- a cold shrine for the next owner
 end
