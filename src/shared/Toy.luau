@@ -930,8 +930,9 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
 	corner(rim, UDim.new(0, rad - px(3)))
 	local rs = Instance.new("UIStroke")
-	rs.Color = full or (found and r.color:Lerp(WHITE, 0.35) or Color3.fromHex("5E5270"))
-	rs.Thickness = full and px(3) or px(2)
+	local mw = found and Config.mutation(opts.mut)
+	rs.Color = full or (mw and mw.color) or (found and r.color:Lerp(WHITE, 0.35) or Color3.fromHex("5E5270"))
+	rs.Thickness = (full or mw) and px(3) or px(2)
 	rs.Parent = rim
 	if found and opts.shiny then -- a clear gold mark, the sparkles alone are easy to miss (Play check 2026-10-23)
 		local m = math.max(px(14), math.floor(w * 0.36)) -- the atlas sparkle in gold (the font has no ✦)
@@ -942,6 +943,20 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	end
 	if opts.tag then
 		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(10), WHITE, { ZIndex = 7 })
+	end
+	if mw then -- a weather mutation (Play check 2026-10-26: the glow alone was easy to miss): its name on a
+		-- pill of its colour across the card's top edge
+		local tag = frame(holder, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = mw.color, ZIndex = 8 })
+		corner(tag, UDim.new(1, 0))
+		local ts = Instance.new("UIStroke")
+		ts.Color = Toy.INK
+		ts.Thickness = px(2)
+		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		ts.Parent = tag
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(4)), UDim.new(0, px(4))
+		pad.Parent = tag
+		Toy.text(tag, mw.mut, math.max(px(9), math.floor(w * 0.17)), WHITE, { ZIndex = 9 })
 	end
 	if opts.new then
 		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
