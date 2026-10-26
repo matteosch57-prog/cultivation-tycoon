@@ -346,6 +346,7 @@ function drawTracker()
 	card.AutomaticSize = Enum.AutomaticSize.Y
 	card.BackgroundColor3 = Color3.fromHex("2A2036")
 	card.BackgroundTransparency = 0.08
+	card.Selectable = false -- a gamepad selects the hide tab, not the whole card (Play check)
 	card.Parent = tracker
 	corner(card, UDim.new(0, px(16)))
 	local grad = Instance.new("UIGradient")
@@ -509,7 +510,17 @@ drawPage = function(open)
 		local words, color = rewardWords(r)
 		text(cell, "★" .. r.at, px(13), GOLD, { LayoutOrder = 2, ZIndex = 2 })
 		local relic = last and Config.MISSION_RELICS and Config.MISSION_RELICS[m.rank]
-		text(cell, last and (words .. " + rank up" .. (relic and ("\n+ Relic: " .. relic) or "")) or words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })
+		if last then
+			-- the last node gets wider lines (Play check: its words wrapped in four), the relic on its own
+			cell.Size = UDim2.fromOffset(node + px(90), 0)
+			cell.Position -= UDim2.fromOffset(px(10), 0)
+			text(cell, words .. " + rank up", px(11), color, { LayoutOrder = 3, ZIndex = 2 })
+			if relic then
+				text(cell, "+ Relic: " .. relic, px(11), GOLD, { LayoutOrder = 4, ZIndex = 2 })
+			end
+		else
+			text(cell, words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })
+		end
 	end
 	-- missions and dailies side by side
 	local cols = frame(body, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 3 })
@@ -537,8 +548,26 @@ drawPage = function(open)
 end
 
 ---------------------------------------------------------------------------- toasts
+local onMission
 local toastY = 0 -- under the HUD's "built" toast (y 0.3): the 5th build and its mission land together
+-- full screens a toast waits for (Play check: the free summons chest opened under the mission toasts)
+local WAIT_FOR = { "IdleChest", "RecruitReveal" }
+local function busyScreen()
+	for _, name in WAIT_FOR do
+		local g = playerGui:FindFirstChild(name)
+		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 local function toast(str, color, big)
+	local waited = 0
+	while busyScreen() and waited < 30 do
+		task.wait(0.5)
+		waited += 0.5
+	end
 	local S = computeScale()
 	Toy.S = S
 	local t = text(gui, str, px(big and 30 or 22), color or GOLD, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.38, toastY), TextTransparency = 1 })
@@ -560,10 +589,12 @@ local function toast(str, color, big)
 	end)
 end
 
-remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, finished, paid, chest)
-	if kind ~= "mission" then
-		return
+remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, ...)
+	if kind == "mission" then
+		task.spawn(onMission, ...) -- its toasts may wait for a full screen to close
 	end
+end)
+function onMission(finished, paid, chest)
 	if hidden and #(finished or {}) > 0 then
 		dotOn = true -- the hidden list's badge shows a red dot until it is opened again
 		drawTracker()
@@ -595,7 +626,7 @@ remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind, finished, pa
 	if chest then
 		toast(string.format("Daily chest: +%s qi · %d summons", short(chest.qi), chest.summons or 0), DAILY, true)
 	end
-end)
+end
 
 ---------------------------------------------------------------------------- wiring
 hidden = player:GetAttribute("MissionsHidden") == true
