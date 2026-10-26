@@ -259,6 +259,7 @@ end
 ---------------------------------------------------------------------------------------------
 -- build
 local toastLayer
+local autoToast -- the last Auto Build toast (the next one replaces it)
 local rebuildAll -- forward
 local popGain -- forward
 local toast -- forward (it used to live on `ui`, which build() replaces: the recruit button
@@ -1021,6 +1022,7 @@ toast = function(pieces, color, hold)
 		task.wait(0.55)
 		t:Destroy()
 	end)
+	return t
 end
 
 -- The Tide Bell banner (mock docs/art/mocks/tide_bell_banner.jpg, owner pick 2026-10-23): a blue toy
@@ -1805,6 +1807,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "indexStep" then -- the disciple index paid a step (D60): `a` free summons
 		toast(string.format("Index step! +%d free summons", a), GOLD, 3)
 		return
+	elseif kind == "markStep" then -- weather marks paid a step: `a` free summons
+		toast(string.format("Weather marks! +%d free summons", a), GOLD, 3)
+		return
 	elseif kind == "expand" then
 		toast("More land!", Color3.fromHex("9FF5C8"), 3)
 		return
@@ -1906,7 +1911,11 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	if kind == "built" then
 		toast(a .. "!", Color3.fromHex("9FF5C8"), 1.6)
 	elseif kind == "autoBuilt" then -- Auto Build (D85): the gold hand built it
-		toast({ { icon = "hands", text = tostring(a) .. "!" } }, GOLD, 1.6)
+		-- a cascade builds every 1.2 s: the new name replaces the last one instead of drawing over it
+		if autoToast and autoToast.Parent then
+			autoToast:Destroy()
+		end
+		autoToast = toast({ { icon = "hands", text = tostring(a) .. "!" } }, GOLD, 1.6)
 	elseif kind == "offline" then
 		toast({ "Away", { icon = "qi", text = "+" .. short(a) } }, Color3.fromHex("9FD0FF"), 5)
 	elseif kind == "breakthrough" then

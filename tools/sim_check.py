@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sim_game import load, DEFAULT_CONFIG, weather_clock  # noqa: E402  (the Config.luau parser and the weather schedule)
+from sim_game import load, DEFAULT_CONFIG, weather_clock, spend_karma  # noqa: E402  (the Config.luau parser, the weather schedule, the Karma Shop buyer)
 
 # Config.STREAK (D58) is a table of tables the parser skips: copied here, checked against Config by hand
 STREAK = [dict(qi=300, summons=1), dict(rarity="Immortal", again=3), dict(qi=600, summons=2), dict(qi=900),
@@ -83,7 +83,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     gates = C.get("REBIRTH_REALMS", {})
 
     keep = {e.split("=")[0].strip() for e in C["PAD_KEEP"]}
-    S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
+    S = dict(marks=set(), msteps=0, realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[], ever=set(), best=1)
 
@@ -129,9 +129,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     wx = {"now": None}  # the weather running this second (sim_game.weather_clock), None between sessions
 
     def roll():  # Main roll: weights, then Config.PITY, then Shiny; returns (rarity index, shiny)
-        x = rng.uniform(0, wsum)
+        luck = 1 + C.get("DAO_LUCK", 0) * lvl("luck")  # Config.rarityWeights: Heaven's Favor
+        ws = [w if i == 0 else w * luck for i, (w, _) in enumerate(rar)]
+        x = rng.uniform(0, sum(ws))
         pick = 0
-        for i, (w, b) in enumerate(rar):
+        for i, w in enumerate(ws):
             x -= w
             if x <= 0:
                 pick = i
@@ -147,11 +149,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         mult = w["mult"] if w and rng.random() < w["chance"] else 1
         if mult > 1:
             log["mutations"] = log.get("mutations", 0) + 1
-        return pick, shiny, mult
+        return pick, shiny, mult, (w["key"] if mult > 1 else None)
 
-    def seat(i, shiny=False, mult=1):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+    def seat(i, shiny=False, mult=1, mut=None):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
         if isinstance(i, tuple):
-            i, shiny, mult = i
+            i, shiny, mult, mut = i
         # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
         key = (i, rng.randrange(4))
         d = Disc(rar[i][1] * (C.get("SHINY_MULT", 1) if shiny else 1) * mult)  # Config.discBonus
@@ -167,6 +169,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             if steps > S["steps"]:
                 S["chest"] += (steps - S["steps"]) * int(C["INDEX_STEP_SUMMONS"])
                 S["steps"] = steps
+        if mut and C.get("MARK_STEP") and key + (mut,) not in S["marks"]:  # weather marks (Config.MARK_*)
+            S["marks"].add(key + (mut,))
+            msteps = len(S["marks"]) // int(C["MARK_STEP"])
+            if msteps > S["msteps"]:
+                S["chest"] += (msteps - S["msteps"]) * int(C["MARK_STEP_SUMMONS"])
+                S["msteps"] = msteps
 
     def stars():
         return sum(1 for k, n in S["index"].items() for at in C["INDEX_STARS"] if n >= at)
@@ -194,13 +202,17 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         cache["price"] = price * (harmony() if C.get("HARMONY_IN_PRICE") else 1)
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)  # Config.rebirthMult
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
-        cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
+        if C.get("MARK_STEP") and len(S["marks"]) >= len(rar) * 4 * len(C.get("WEATHERS", [])):
+            idx *= 1 + C.get("MARK_FULL_BONUS", 0)
+        fortune = 1 + C.get("DAO_QI", 0) * lvl("fortune")  # Sect Fortune (Karma Shop), out of priceRate
+        cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"]) * fortune  # rate(s, true) (no group)
 
     def plan1_base():  # the price income: rate(s, true) without the 2x pass, Welcome Pouch, rebirth, Robux disciples
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)
         dm = dmult()
         paid = sum(rar[names.index(n)][1] for n in S["bought"] if n in names)
-        return cache["away"] / x2 / (1 + S["welcome"]) / reb / dm * max(1.0, dm - paid)
+        fortune = 1 + C.get("DAO_QI", 0) * lvl("fortune")  # padRate leaves Sect Fortune out too
+        return cache["away"] / x2 / (1 + S["welcome"]) / reb / fortune / dm * max(1.0, dm - paid)
 
     def pad_seconds():  # Config.padSeconds
         T = C["PAD_SECONDS"]
@@ -267,11 +279,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         snap.clear()
         S["owned"] = {p["id"] for p in C["PADS"] if RO[p["id"]] <= 1}
         S.pop("bt", None)
-        for k in ("hands", "isles", "elixir", "meditation", "seat", "echo"):  # karma: cheapest comfort first
-            costs = C["DAO"].get(k, [])
-            while lvl(k) < len(costs) and S["karma"] >= costs[lvl(k)]:
-                S["karma"] -= costs[lvl(k)]
-                S["dao"][k] = lvl(k) + 1
+        spend_karma(C, S)  # karma: the cheapest next level first, while it covers one
         clock["life_t"] = clock["play"]
         clock["realm_t"] = clock["play"]
         recalc()
@@ -367,7 +375,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                     if S["orb_t"] >= C["ORB_INTERVAL"]:
                         S["orb_t"], S["orbs"] = 0, min(C["ORB_MAX"], S["orbs"] + 1)
                 if S["orbs"] and (auto or s % K["orb_every"] == 0):
-                    add("qi orbs", S["orbs"] * live * C["ORB_VALUE"])
+                    add("qi orbs", S["orbs"] * live * C["ORB_VALUE"] * (1 + C.get("DAO_ORB", 0) * lvl("magnet")))
                     S["orbs"] = 0
                 if missions:
                     mission_stars(STAR_RATE)
@@ -453,7 +461,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                         recalc()
                     continue
                 if S["qi"] >= tcost:
-                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"])
+                    walk_until = walk_until if walk_until is not None else s + (0 if lvl("hands") or auto_build(target["id"]) else K["walk"] / (1 + C.get("DAO_WALK", 0) * lvl("steps")))
                     if s >= walk_until:
                         walk_until = None
                         pay("buildings", tcost)

@@ -742,12 +742,13 @@ local function rate(s, away)
 	local favorite = data.favoriteClaimed and 1 + Config.FAVORITE_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
-	local index = Config.indexMult(data.index) -- the disciple index's stars (D60)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index
+	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
+	local fortune = 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune (Karma Shop)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
--- realm and the disciples. Not a pill, the tide, friends, the group, the favorite gift, the rebirth boost, Harmony (D67:
+-- realm and the disciples. Not a pill, the tide, friends, the group, the favorite gift, the rebirth boost, Sect Fortune, Harmony (D67:
 -- inside it the floor ate most of its +20%), the index (nor a disciple's own stars) or a paid multiplier (2x Qi pass, Welcome
 -- Pouch), so those make every goal come sooner instead of raising its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
 local function priceRate(s)
@@ -776,6 +777,7 @@ local function padRate(s)
 		r /= 1 + Config.FAVORITE_BONUS -- the favorite gift never raises a price (out of priceRate too)
 	end
 	r /= Config.rebirthMult(rebirths(data))
+	r /= 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune never raises a price either
 	local dm = discipleMult(s)
 	local paid = 0
 	for name, n in data.boughtDisciples or {} do
@@ -1047,6 +1049,18 @@ end
 -- the aura's circle behind the head (now higher, bigger and drawn in front of it)
 -- a mutated disciple's seat (Heavenly Weather): the Mutation attribute (DiscipleInspect's card) and a
 -- slow rise of motes in its weather's colour from the cushion (no PointLight: owner's no-fake-light rule), under the Shiny glints when it has both
+-- a mutation's particle colours: its tint, or the whole rainbow for Starforged
+local function mutColors(w)
+	if w.motion == "rainbow" then
+		local keys = {}
+		for i = 0, 6 do -- green to violet, Config.mutLook's range
+			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(0.3 + 0.48 * i / 6, 0.6, 1)))
+		end
+		return ColorSequence.new(keys)
+	end
+	return ColorSequence.new(w.tint:Lerp(Color3.new(1, 1, 1), 0.3), w.tint)
+end
+
 local function mutationGlow(m, mut)
 	local w = Config.mutation(mut)
 	m:SetAttribute("Mutation", mut)
@@ -1076,7 +1090,7 @@ local function mutationGlow(m, mut)
 	e.SpreadAngle = Vector2.new(0, 0)
 	e.Rotation = NumberRange.new(0, 360)
 	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
-	e.Color = ColorSequence.new(w.color)
+	e.Color = mutColors(w)
 	e.LightEmission = 0.6
 	e.LightInfluence = 0
 	e.Brightness = 2.5
@@ -1098,7 +1112,7 @@ local function mutationGlow(m, mut)
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.2) }),
 			Squash = NumberSequence.new(1.2),
 		},
-		Thunderborn = { -- violet sparks crackling out in every direction
+		Thunderborn = { -- yellow sparks crackling out in every direction
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
 			Rate = 14,
 			Lifetime = NumberRange.new(0.12, 0.3),
@@ -1141,7 +1155,7 @@ local function mutationGlow(m, mut)
 		end
 		local fx = Instance.new("ParticleEmitter")
 		fx.Name = "MutationFx"
-		fx.Color = ColorSequence.new(w.color:Lerp(Color3.new(1, 1, 1), 0.25), w.color)
+		fx.Color = mutColors(w)
 		fx.LightEmission = 0.7
 		fx.LightInfluence = 0
 		fx.Brightness = 2
@@ -1150,16 +1164,23 @@ local function mutationGlow(m, mut)
 			fx[k] = v
 		end
 		fx.Parent = torso
-		-- the figure in its weather's colour (Play check 2026-10-26: the particles alone were subtle in
-		-- daylight, Grow a Garden recolours a mutated crop): a tinted fill and outline, switched on for the
-		-- nearest figures only by CultivatorIdle's Highlight budget, shared with the Shiny outline
+		-- the figure washed in its mutation's colour (owner pick 2026-10-26 "B but with a different per
+		-- type", Grow a Garden recolours a mutated crop): a strong fill and outline that CultivatorIdle
+		-- moves each mutation's own way (Config.mutLook) and switches on for the nearest figures only (its
+		-- Highlight budget, shared with the Shiny outline)
+		-- the figure's own rim Highlight goes: Roblox draws one Highlight per adornee and a disabled rim
+		-- still claims it, so the wash never showed (Studio check 2026-10-26)
+		local rim = avatar:FindFirstChild("Rim") or avatar:WaitForChild("Rim", 2)
+		if rim then
+			rim:Destroy()
+		end
 		local h = Instance.new("Highlight")
 		h.Name = "MutationOutline"
 		h.Adornee = avatar
-		h.FillColor = w.color
-		h.FillTransparency = 0.72
-		h.OutlineColor = w.color
-		h.OutlineTransparency = 0.2
+		h.FillColor = w.tint
+		h.FillTransparency = 0.4
+		h.OutlineColor = w.tint
+		h.OutlineTransparency = 0
 		h.DepthMode = Enum.HighlightDepthMode.Occluded
 		h.Parent = m
 	end)
@@ -1451,7 +1472,7 @@ local function autoBuildTick(player, s)
 	end
 	local can = {}
 	for part, info in s.padData do
-		if part.Parent and not info.busy and not info.confirm and part:GetAttribute("Auto") and d.qi >= info.cost then
+		if part.Parent and not info.busy and not info.confirm and not info.rebirth and part:GetAttribute("Auto") and d.qi >= info.cost then
 			table.insert(can, part)
 		end
 	end
@@ -1496,6 +1517,9 @@ local function checkPads()
 						if info.confirm then
 							s.padHold = true -- once per step on: closing the screen on the pad does not reopen it
 							offerBreakthrough(player, s, info)
+						elseif info.rebirth then
+							s.padHold = true
+							notify:FireClient(player, "rebirthAsk")
 						elseif s.data.qi >= info.cost then
 							s.padHold = true
 							buyPad(s, part, info)
@@ -1630,6 +1654,12 @@ refreshPads = function(player, s)
 	end
 	if all then
 		wanted.breakthrough = true
+		-- the realm is a rebirth gate (thread "Keep new players past 10 minutes", owner pick): a gold
+		-- Rebirth pad where the breakthrough pad stands, so the trail leads on (live: 13% of first
+		-- sessions ended here with nothing on the trail; tycoons put the rebirth button on the plot)
+		if Config.rebirthOpen(s.data.realm, rebirths(s.data), s.data.owned) then
+			wanted.rebirth = true
+		end
 	end
 	local ready = {}
 	for _, pad in Config.PADS do
@@ -1820,6 +1850,14 @@ refreshPads = function(player, s)
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 		s.padData[s.pads.breakthrough].confirm = true
+	end
+	if wanted.rebirth and not s.pads.rebirth then
+		local price = Config.rebirthPrice(rebirths(s.data))
+		-- never bought: standing on it opens the Rebirth screen (Reincarnation.client), at any qi, so
+		-- its card shows the wait while the price fills
+		s.pads.rebirth = makePad(player, s, { id = "rebirth", x = 0, z = 14 }, price, "Rebirth", 0, function() end, "rebirth")
+		s.pads.rebirth.Color = Color3.fromRGB(255, 210, 90)
+		s.padData[s.pads.rebirth].rebirth = true
 	end
 	Shop.refreshPeak(s) -- the shop items that stand where they act (passes at the entrance, pill, orbs)
 end
@@ -2089,6 +2127,11 @@ local function onJoin(player)
 			end
 		end
 	end
+	-- karma went x10 (2026-10-26 Karma Upgrades): a save from before holds the old small amount
+	if not data.karma10 then
+		data.karma = (data.karma or 0) * 10
+		data.karma10 = true
+	end
 	for id, n in data.workers or {} do -- WORKER_MAX went from 3 to 2 (owner 2026-10-22)
 		data.workers[id] = math.min(n, Config.WORKER_MAX)
 	end
@@ -2152,7 +2195,10 @@ local function onJoin(player)
 	end
 	-- paid here on join, no GO to press (owner 2026-10-24, after new players left on the intro: "remove
 	-- the go and just make them start with qi"); NewSave lets the client hold its day-one cards back
-	if data.welcomed == false then
+	-- read before the stamp below: a brand-new save must still get its tips and the free recruit
+	-- (live bug 2026-10-24 to 10-26: the stamp ran first, so every new save had every tip marked seen)
+	local newSave = data.welcomed == false
+	if newSave then
 		data.welcomed = true
 		data.qi += Config.WELCOME_QI
 		Telemetry.source(player, data, Config.WELCOME_QI, "welcome")
@@ -2160,7 +2206,7 @@ local function onJoin(player)
 	end
 	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
 	if data.tips == nil then
-		data.tips = data.welcomed and { orb = true, pill = true, chest = true, recruit = true } or {}
+		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
@@ -2304,19 +2350,20 @@ end
 -- Recruit ----------------------------------------------------------------------------
 local rng = Random.new()
 
--- one roll for `d` (a save): the weights (the shown odds, R8), then pity (Config.PITY: `at` rolls in a
+-- one roll for `d` (a save): the weights (the shown odds, R8; Heaven's Favor raises the rare ones), then pity (Config.PITY: `at` rolls in a
 -- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE), then the weather's
 -- mutation (Config.WEATHERS `chance`, only while one runs). Returns the rarity, whether it is Shiny and
 -- its mutation ("" = none).
 local function roll(d)
+	local weights = Config.rarityWeights(dao(d, "luck")) -- Heaven's Favor (Karma Shop)
 	local total = 0
-	for _, r in Config.RARITIES do
-		total += r.weight
+	for _, w in weights do
+		total += w
 	end
 	local x = rng:NextNumber(0, total)
 	local pick = 1
-	for i, r in Config.RARITIES do
-		x -= r.weight
+	for i in Config.RARITIES do
+		x -= weights[i]
 		if x <= 0 then
 			pick = i
 			break
@@ -2424,7 +2471,16 @@ local function addDisciple(s, name, force, noBuild, look, shiny, mut)
 	end
 	if mut ~= "" then
 		d.mutIndex = d.mutIndex or {}
-		d.mutIndex[Config.indexKey(name, look) .. "#" .. mut] = true
+		local key = Config.indexKey(name, look) .. "#" .. mut
+		if not d.mutIndex[key] then -- a new weather mark: every MARK_STEP of them pays free summons
+			d.mutIndex[key] = true
+			local steps = Config.markCount(d.mutIndex) // Config.MARK_STEP
+			if steps > (d.markSteps or 0) then
+				giveSummons(s, (steps - (d.markSteps or 0)) * Config.MARK_STEP_SUMMONS)
+				d.markSteps = steps
+				notify:FireClient(s.player, "markStep", Config.MARK_STEP_SUMMONS)
+			end
+		end
 	end
 	if not noBuild then -- a multi-recruit rebuilds once at the end
 		buildDisciples(s, kept and Config.indexKey(name, look) or nil)
@@ -3073,6 +3129,10 @@ handsFn.OnServerInvoke = function(player, padId)
 		offerBreakthrough(player, s, info) -- the breakthrough still waits for its Confirm
 		return true
 	end
+	if info.rebirth then
+		notify:FireClient(player, "rebirthAsk") -- the rebirth still waits for its own screen
+		return true
+	end
 	buyPad(s, part, info)
 	Telemetry.custom(player, "Feature", "hands", Telemetry.realmBucket(s.data.realm))
 	return true
@@ -3210,7 +3270,7 @@ local function checkOrbs(player, s, hrp)
 			table.remove(s.orbs, i)
 		elseif (orb.Position - hrp.Position).Magnitude < 4.5 or (auto and os.clock() - (orb:GetAttribute("Age") or 0) > 1.5) then
 			local walked = (orb.Position - hrp.Position).Magnitude < 4.5
-			local gain = math.floor(rate(s) * Config.ORB_VALUE)
+			local gain = math.floor(rate(s) * Config.ORB_VALUE * (1 + Config.DAO_ORB * dao(s.data, "magnet")))
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))

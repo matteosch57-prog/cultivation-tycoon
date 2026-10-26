@@ -38,6 +38,14 @@ local function ring(at)
 	end)
 end
 
+-- a Swift Steps level bought now speeds the walk at once (never a sword ride's speed)
+player:GetAttributeChangedSignal("Dao_steps"):Connect(function()
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if hum and not player:GetAttribute("Riding") then
+		hum.WalkSpeed = Config.walkSpeed(player:GetAttribute("Dao_steps"))
+	end
+end)
+
 local conns = {}
 local function setup(char)
 	for _, c in conns do
@@ -46,7 +54,7 @@ local function setup(char)
 	table.clear(conns)
 	local hum = char:WaitForChild("Humanoid")
 	local root = char:WaitForChild("HumanoidRootPart")
-	hum.WalkSpeed = MOVE.walk
+	hum.WalkSpeed = Config.walkSpeed(player:GetAttribute("Dao_steps")) -- Swift Steps (Karma Shop)
 	hum.UseJumpPower = false
 	hum.JumpHeight = MOVE.jumpHeight
 	-- the player's own animations stay untouched (owner 2026-10-22: "I want to use my avatar

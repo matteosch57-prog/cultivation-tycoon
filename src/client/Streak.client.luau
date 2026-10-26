@@ -21,6 +21,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
@@ -420,19 +421,9 @@ local function show()
 	end)
 end
 
--- the card never opens over another screen (owner 2026-10-23): it waits until each of these is gone.
--- A screen counts while its gui is Enabled and draws something (Gifts and Intro stay Enabled, emptied);
--- the Friends gui always holds its HUD row, so only its card counts
-local COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest", "MissionsPage" }
+-- the card never opens over another screen (owner 2026-10-23; the list lives in Shared.Screens)
 local function covered()
-	for _, name in COVERS do
-		local g = playerGui:FindFirstChild(name)
-		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
-			return true
-		end
-	end
-	local friends = playerGui:FindFirstChild("Friends")
-	return friends ~= nil and friends:FindFirstChild("Card") ~= nil
+	return Screens.covered(playerGui, "Streak")
 end
 
 -- once a day, after the launch screen and the gift (a new save waits FIRST_DELAY s)

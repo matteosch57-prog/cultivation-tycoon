@@ -135,7 +135,10 @@ local function card(m)
 	Toy.text(box, info.name, 18, Color3.new(1, 1, 1), { LayoutOrder = 0 })
 	Toy.text(box, (info.shiny and "Shiny " or "") .. info.rarity.name, 14, info.rarity.color, { LayoutOrder = 1 })
 	if info.mut then -- a weather mutation (Heavenly Weather): its name and mult in its weather's colour
-		Toy.text(box, string.format("%s x%s", info.mut.mut, tostring(info.mut.mult)), 14, info.mut.color, { LayoutOrder = 1 })
+		local t = Toy.text(box, string.format("%s x%s", info.mut.mut, tostring(info.mut.mult)), 14, info.mut.tint, { LayoutOrder = 1 })
+		Toy.mutMove(t, info.mut, function(c)
+			t.TextColor3 = c
+		end)
 	end
 	Toy.stars(box, info.stars, 22, { LayoutOrder = 2 })
 	local _, label = Toy.amount(box, "qi", 18, Color3.new(1, 1, 1), { LayoutOrder = 3 })

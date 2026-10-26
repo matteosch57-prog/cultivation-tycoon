@@ -63,11 +63,17 @@ local function fill(page)
 	Toy.list(right, false, px(8))
 	local rows = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	Toy.list(rows, false, px(3), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	-- the odds this player rolls: Heaven's Favor (Karma Shop) raises the rare ones (server roll)
+	local weights = Config.rarityWeights(player:GetAttribute("Dao_luck"))
+	local total = 0
+	for _, w in weights do
+		total += w
+	end
 	for i, r in Config.RARITIES do
 		local row = frame(rows, { Size = UDim2.fromOffset(px(250), px(24)), LayoutOrder = i })
 		Toy.disciple(row, px(26), r.name, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) }, true, Config.DISCIPLE_LOOKS[1])
 		text(row, r.name, px(15), r.color, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(32), 0.5, 0) })
-		text(row, pct(r.weight), px(15), WHITE, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
+		text(row, pct(weights[i] / total * 100), px(15), WHITE, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
 	end
 	text(body, "Each is one of 4 disciples of that rarity, equally likely.", px(11), SOFT, { LayoutOrder = 2 })
 	body = right
@@ -76,7 +82,9 @@ local function fill(page)
 	for i, p in Config.PITY do
 		local r = Config.rarity(p.rarity)
 		local box = frame(body, { Size = UDim2.fromOffset(px(230), px(40)), LayoutOrder = i })
-		text(box, p.rarity .. " or better by " .. commas(p.at), px(13), r.color, { Position = UDim2.fromOffset(0, 0) })
+		-- "Dao Ancestor+" on the left, "350 / 5,000" on the right: the long "or better by 5,000" ran into
+		-- the count (Studio check 2026-10-26)
+		text(box, p.rarity .. "+", px(13), r.color, { Position = UDim2.fromOffset(0, 0) })
 		local label = text(box, "", px(13), WHITE, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0) })
 		local bar = frame(box, { AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, px(14)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("110C18"), ClipsDescendants = true })
 		Toy.corner(bar, UDim.new(1, 0))
@@ -114,13 +122,16 @@ local function fill(page)
 	for i, w in Config.WEATHERS do
 		local line = frame(wBox, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
 		Toy.list(line, true, px(4))
-		local gem = frame(line, { Size = UDim2.fromOffset(px(9), px(9)), BackgroundTransparency = 0, BackgroundColor3 = w.color, Rotation = 45, LayoutOrder = 1 })
+		local gem = frame(line, { Size = UDim2.fromOffset(px(9), px(9)), BackgroundTransparency = 0, BackgroundColor3 = w.tint, Rotation = 45, LayoutOrder = 1 })
+		Toy.mutMove(gem, w, function(c) -- the mutation's own colour and motion (Config.mutLook)
+			gem.BackgroundColor3 = c
+		end)
 		Toy.corner(gem, UDim.new(0, px(2)))
 		local gs = Instance.new("UIStroke")
 		gs.Color = INK
 		gs.Thickness = px(2)
 		gs.Parent = gem
-		text(line, string.format("%s: %s %s x%s", w.name, pct(w.chance * 100), w.mut, tostring(w.mult)), px(12), w.key == nowKey and w.color or WHITE, { LayoutOrder = 2 })
+		text(line, string.format("%s: %s %s x%s", w.name, pct(w.chance * 100), w.mut, tostring(w.mult)), px(12), w.key == nowKey and w.tint or WHITE, { LayoutOrder = 2 })
 		if w.key == nowKey then
 			text(line, "now", px(12), GOLD, { LayoutOrder = 3 })
 		end

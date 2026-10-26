@@ -130,7 +130,7 @@ local RING1, RING2 = 12, 8
 local function makeArray(pad, kind)
 	local ground = pad.Position.Y - pad.Size.X / 2 -- the anchor is a cylinder lying on its X axis
 	local c = CFrame.new(pad.Position.X, ground, pad.Position.Z)
-	local k = kind == "breakthrough" and 1.25 or 1
+	local k = (kind == "breakthrough" or kind == "rebirth") and 1.25 or 1
 	local up = CFrame.Angles(0, 0, math.pi / 2)
 	local cyl = Enum.PartType.Cylinder
 	local slate = Enum.Material.Slate

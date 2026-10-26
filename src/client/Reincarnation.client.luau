@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
@@ -23,9 +24,9 @@ local JADE = Color3.fromHex("59D39F")
 local CONFIRM = Color3.fromHex("FF8A5C")
 local LOCKED = Color3.fromHex("C9C2D3")
 local KARMA = Color3.fromHex("D9B8FF")
-local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", rebirth = "FFC9A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6" }
-local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1 }
-local PER_ROW = 4
+local TILE = { fortune = "9FF5C8", luck = "9FD0FF", seat = "FFD36B", magnet = "FFC9A6", steps = "FFF0A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6", isles = "FFD1EA" }
+local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1, 1.5, -2 }
+local PER_ROW = 5 -- Karma Shop tiles per row (ten lines, PS99 Upgrades)
 
 -- the red dots lit when this screen opened (server Dots.luau): a snapshot, so they stay on while the
 -- screen is open although the server clears its own as soon as MenuOpened arrives
@@ -506,6 +507,30 @@ close = function()
 end
 
 openEvent.Event:Connect(open)
+-- the gold Rebirth pad on the peak (Main refreshPads, a rebirth gate realm) opens this screen
+remotes:WaitForChild("Notify").OnClientEvent:Connect(function(kind)
+	if kind == "rebirthAsk" then
+		open()
+	end
+end)
+-- the first rebirths (Config.REBIRTH_TIP_TIMES) open this screen by themselves once the price is held,
+-- after any other card (thread "Keep new players past 10 minutes": players stopped at a full realm 2
+-- with the price held and nothing pointing at the Rebirth seal)
+local autoOpened -- the life (rebirths done) whose screen already opened by itself
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local life = player:GetAttribute("Rebirths") or 0
+		local held = player:GetAttribute("RebirthOpen") and (player:GetAttribute("Qi") or 0) >= (player:GetAttribute("RebirthPrice") or math.huge)
+		if held and autoOpened ~= life and life < Config.REBIRTH_TIP_TIMES and not gui.Enabled then
+			autoOpened = life
+			Screens.waitClear(playerGui, "Reincarnation", 2)
+			if player:GetAttribute("RebirthOpen") and (player:GetAttribute("Rebirths") or 0) == life then
+				open()
+			end
+		end
+	end
+end)
 local watched = { "Qi", "Realm", "RealmRecruits", "Karma", "Lives", "Rebirths", "SectStyle", "RebirthPrice", "RebirthMult", "NextRebirthMult", "RebirthKarma", "RealmNeedsRebirths", "RebirthOpen" }
 for _, n in Config.DAO do
 	table.insert(watched, "Dao_" .. n.key)

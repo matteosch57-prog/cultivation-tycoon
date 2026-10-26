@@ -758,21 +758,59 @@ local function shinyMarks(box, size)
 	end
 end
 
--- A weather mutation (Heavenly Weather, Config.WEATHERS): a glow behind `box` in its weather's colour
+-- Things drawn in a mutation's colour that move its way (owner pick 2026-10-26 "B but with a different
+-- per type", Config.mutLook): `fn(color, level)` runs about 20 times a second while `inst` is in the
+-- game. One Heartbeat for all of them, on the client only.
+local movers = {}
+local moverConn
+function Toy.mutMove(inst, w, fn)
+	fn(Config.mutLook(w, os.clock()))
+	if not RunService:IsClient() then
+		return
+	end
+	movers[inst] = { w = w, fn = fn }
+	if moverConn then
+		return
+	end
+	local acc = 0
+	moverConn = RunService.Heartbeat:Connect(function(dt)
+		acc += dt
+		if acc < 0.05 then
+			return
+		end
+		acc = 0
+		local t = os.clock()
+		for i, e in movers do
+			if i.Parent then
+				e.fn(Config.mutLook(e.w, t))
+			elseif not i:IsDescendantOf(game) then
+				movers[i] = nil
+			end
+		end
+	end)
+end
+
+-- A weather mutation (Heavenly Weather, Config.WEATHERS): a glow behind `box` in its mutation's colour
 -- and a small outlined gem of that colour on its bottom-left corner (Shiny's gold mark sits bottom-right)
 function Toy.mutationMark(box, size, mut)
 	local w = Config.mutation(mut)
 	if not w then
 		return
 	end
-	Toy.atlasPiece(box, "glow", size * 1.25, size * 1.25, w.color, 0.35, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 1 })
+	local glow = Toy.atlasPiece(box, "glow", size * 1.25, size * 1.25, w.tint, 0.35, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 1 })
 	local g = math.max(Toy.px(9), math.floor(size * 0.24))
 	local gem = Toy.frame(box, { Name = "Mutation", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.16, 0.84), Size = UDim2.fromOffset(g, g), BackgroundTransparency = 0, BackgroundColor3 = WHITE, Rotation = 45, ZIndex = 9 })
 	Toy.corner(gem, UDim.new(0, math.floor(g * 0.25)))
 	local fill = Instance.new("UIGradient")
 	fill.Rotation = 45
-	fill.Color = ColorSequence.new(w.color:Lerp(WHITE, 0.55), w.color:Lerp(Toy.INK, 0.2))
 	fill.Parent = gem
+	Toy.mutMove(gem, w, function(c, level)
+		fill.Color = ColorSequence.new(c:Lerp(WHITE, 0.55), c:Lerp(Toy.INK, 0.2))
+		if glow then
+			glow.ImageColor3 = c
+			glow.ImageTransparency = 0.6 - 0.35 * level
+		end
+	end)
 	local st = Instance.new("UIStroke")
 	st.Color = Toy.INK
 	st.Thickness = math.max(1.5, g * 0.16)
@@ -889,7 +927,8 @@ Toy.darkPill = darkPill
 -- `w` = the card's width in px (height 0.89 of it). opts (all optional):
 --   found (default true), shiny, mut (a weather mutation, "Dewy"), stars (a star row under the card; nil = none), count (a "xN" pill,
 --   top left), tag (a text pill at the foot, e.g. "Isle 2"), new (a red NEW tag), name (its name
---   under the card, shrunk to fit), order (LayoutOrder).
+--   under the card, shrunk to fit), marks ({ [mutation] = true }: the index's weather marks, a row of
+--   diamonds under the stars), order (LayoutOrder).
 -- Returns the cell (the card + its lines) and a transparent TextButton over the card for a tap.
 local SHAPE = Color3.fromHex("241C2C")
 function Toy.discipleTile(parent, w, rarityName, look, opts)
@@ -912,6 +951,31 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	grad.Rotation = 90
 	grad.Color = found and ColorSequence.new(r.color:Lerp(WHITE, 0.62), r.color:Lerp(Toy.INK, 0.12)) or ColorSequence.new(Color3.fromHex("4A3F57"), Color3.fromHex("2A2232"))
 	grad.Parent = face
+	local mw = found and Config.mutation(opts.mut)
+	if mw then
+		-- a weather mutation (owner pick 2026-10-26 "B but with a different per type", Pet Simulator 99's
+		-- Golden and Rainbow cards): the whole card in the mutation's colour, moving its way
+		-- (Config.mutLook: Dewy ebbs, Thunderborn flickers, Bloodlit beats, Starforged cycles the
+		-- rainbow), and a light sweeping across it
+		local wash = frame(face, { Name = "Wash", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BackgroundColor3 = WHITE, ZIndex = 1 })
+		Toy.mutMove(face, mw, function(c, level)
+			grad.Color = ColorSequence.new(c:Lerp(WHITE, 0.5), c:Lerp(Toy.INK, 0.2))
+			wash.BackgroundTransparency = 1 - 0.3 * level
+		end)
+		local sweep = frame(face, { Name = "Sweep", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0, BackgroundColor3 = WHITE, ZIndex = 4 })
+		local sg = Instance.new("UIGradient")
+		sg.Rotation = 20
+		sg.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.36, 1),
+			NumberSequenceKeypoint.new(0.5, 0.25),
+			NumberSequenceKeypoint.new(0.64, 1),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		sg.Offset = Vector2.new(-1, 0)
+		sg.Parent = sweep
+		TweenService:Create(sg, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, false, 1.6), { Offset = Vector2.new(1, 0) }):Play()
+	end
 	local st = Instance.new("UIStroke")
 	st.Color = Toy.INK
 	st.Thickness = px(3)
@@ -930,10 +994,14 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	local rim = frame(face, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, -px(5), 1, -px(5)), ZIndex = 5 })
 	corner(rim, UDim.new(0, rad - px(3)))
 	local rs = Instance.new("UIStroke")
-	local mw = found and Config.mutation(opts.mut)
-	rs.Color = full or (mw and mw.color) or (found and r.color:Lerp(WHITE, 0.35) or Color3.fromHex("5E5270"))
+	rs.Color = full or (found and r.color:Lerp(WHITE, 0.35) or Color3.fromHex("5E5270"))
 	rs.Thickness = (full or mw) and px(3) or px(2)
 	rs.Parent = rim
+	if mw and not full then
+		Toy.mutMove(rim, mw, function(c)
+			rs.Color = c:Lerp(WHITE, 0.3)
+		end)
+	end
 	if found and opts.shiny then -- a clear gold mark, the sparkles alone are easy to miss (Play check 2026-10-23)
 		local m = math.max(px(14), math.floor(w * 0.36)) -- the atlas sparkle in gold (the font has no ✦)
 		Toy.atlasPiece(face, "sparkle", m, m, Color3.fromHex("FFD34D"), 0, { Position = UDim2.new(1, -m * 0.45, 1, -m * 0.45), ZIndex = 7 })
@@ -943,20 +1011,6 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	end
 	if opts.tag then
 		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(10), WHITE, { ZIndex = 7 })
-	end
-	if mw then -- a weather mutation (Play check 2026-10-26: the glow alone was easy to miss): its name on a
-		-- pill of its colour across the card's top edge
-		local tag = frame(holder, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = mw.color, ZIndex = 8 })
-		corner(tag, UDim.new(1, 0))
-		local ts = Instance.new("UIStroke")
-		ts.Color = Toy.INK
-		ts.Thickness = px(2)
-		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		ts.Parent = tag
-		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(4)), UDim.new(0, px(4))
-		pad.Parent = tag
-		Toy.text(tag, mw.mut, math.max(px(9), math.floor(w * 0.17)), WHITE, { ZIndex = 9 })
 	end
 	if opts.new then
 		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
@@ -974,8 +1028,29 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	if opts.stars then -- on a dark pill (Toy.stars: gold, then red, then blue)
 		Toy.stars(darkPill(cell, { LayoutOrder = 2 }), stars, math.max(px(9), math.floor(w * 0.2)))
 	end
+	if opts.marks and found then
+		-- weather marks (Bee Swarm Simulator's gifted marks, owner 2026-10-26 "index whatever you
+		-- recommend"): a diamond per weather mutation, lit in its colour once this disciple came in it
+		local d = math.max(px(9), math.floor(w * 0.17)) -- ~8 px read tiny on a phone (Studio check 2026-10-26)
+		local row = frame(cell, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
+		Toy.list(row, true, math.floor(d * 0.55))
+		for i, mut in Config.WEATHERS do
+			local box = frame(row, { Size = UDim2.fromOffset(d + px(2), d + px(2)), LayoutOrder = i })
+			local gem = frame(box, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(d, d), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("3A3046"), Rotation = 45 })
+			corner(gem, UDim.new(0, math.max(1, math.floor(d * 0.2))))
+			local gs = Instance.new("UIStroke")
+			gs.Color = Toy.INK
+			gs.Thickness = math.max(1, px(1.5))
+			gs.Parent = gem
+			if opts.marks[mut.mut] then
+				Toy.mutMove(gem, mut, function(c)
+					gem.BackgroundColor3 = c
+				end)
+			end
+		end
+	end
 	if opts.name and look then -- shrunk to the card's width, never cut (R4)
-		local n = Toy.text(cell, Config.discipleName(rarityName, look), px(11), WHITE, { LayoutOrder = 3, AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.fromOffset(w + px(8), px(12)), TextScaled = true })
+		local n = Toy.text(cell, Config.discipleName(rarityName, look), px(11), WHITE, { LayoutOrder = 4, AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.fromOffset(w + px(8), px(12)), TextScaled = true })
 		local lim = Instance.new("UITextSizeConstraint")
 		lim.MaxTextSize = px(11)
 		lim.Parent = n

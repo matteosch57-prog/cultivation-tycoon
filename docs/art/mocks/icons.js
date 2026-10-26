@@ -137,7 +137,16 @@ const swordIcon = (blade, edge, guard) => [
 NEW.swordJade = swordIcon("#CFF7E6", "#FFFFFF", C.jade);
 NEW.swordHeavenly = swordIcon(C.gold, "#FFF6CC", C.red);
 NEW.swordCelestial = swordIcon("#9FD8FF", "#FFFFFF", C.gold);
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial"];
+// Karma Upgrades (2026-10-26, PS99 Upgrades copy): Sect Fortune (a qi drop with a gold plus), Heaven's
+// Favor (a gold star with a blue gem), Spirit Magnet (a red horseshoe, a qi drop caught), Swift Steps (a
+// gold boot with wind lines), Floating Isles (a pink lotus on a floating rock). Cells 35 to 39
+NEW.fortune = [{ d: drop(28, 36, .95), c: C.qi }, { d: circ(22, 30, 4), c: C.qiHi, k: "flat" }, { d: "M42 44 H58 M50 36 V52", c: C.gold, k: "line", w: 6, ol: true }];
+NEW.luck = [{ d: "M30 4 L37 19 L53 21 L41 32 L44 48 L30 40 L16 48 L19 32 L7 21 L23 19 Z", c: C.gold }, { d: circ(48, 48, 10), c: C.blue }, { d: circ(45, 45, 3), c: "#fff", k: "flat" }];
+NEW.magnet = [{ d: "M12 10 H26 V32 A6 6 0 0 0 38 32 V10 H52 V32 A20 20 0 0 1 12 32 Z", c: C.red }, { d: rr(12, 8, 14, 9, 2), c: C.cream }, { d: rr(38, 8, 14, 9, 2), c: C.cream }, { d: drop(52, 52, .36), c: C.qi }];
+NEW.steps = [{ d: "M24 8 H40 V34 L52 38 C59 40 59 50 52 50 H24 Z", c: C.gold }, { d: rr(22, 48, 36, 8, 3), c: C.wood }, { d: rr(22, 6, 20, 7, 3), c: C.red }, { d: "M4 24 H16 M2 34 H16 M6 44 H16", c: C.white, k: "line", w: 4, ol: true }];
+NEW.isles = [{ d: "M8 42 C8 36 56 36 56 42 C52 54 40 60 32 60 C24 60 12 54 8 42 Z", c: C.wood }, { d: "M8 42 C8 36 56 36 56 42 C48 46 16 46 8 42 Z", c: C.jade },
+  { d: "M14 30 C24 28 30 32 32 40 C22 42 16 38 14 30 Z", c: "#FF8FC8" }, { d: "M50 30 C40 28 34 32 32 40 C42 42 48 38 50 30 Z", c: "#FF8FC8" }, { d: "M32 8 C40 18 42 30 32 40 C22 30 24 18 32 8 Z", c: "#FFB8DE" }];
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial", "fortune", "luck", "magnet", "steps", "isles"];
 const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
@@ -145,6 +154,11 @@ LABEL.bell = "Bell";
 LABEL.swordJade = "Jade";
 LABEL.swordHeavenly = "Heavenly";
 LABEL.swordCelestial = "Celestial";
+LABEL.fortune = "Fortune";
+LABEL.luck = "Luck";
+LABEL.magnet = "Magnet";
+LABEL.steps = "Steps";
+LABEL.isles = "Isles";
 let uid = 0;
 function shade(c, f) { // f < 1 darker, > 1 lighter
   const n = parseInt(c.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
