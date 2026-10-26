@@ -97,14 +97,14 @@ return function(CultivatorsModule)
 
 	-- wisps rising round the body to the waist and above (the ring of flames)
 	local RISE = {
-		Dewy = { Texture = SMOKE, Size = { 1.4, 2.4 }, Speed = { 2, 3.5 }, Rate = 14, Life = { 1, 1.4 }, Trans = 0.45 },
+		Dewy = { Texture = SMOKE, Size = { 1.2, 2.2 }, Speed = { 2, 3.5 }, Rate = 20, Life = { 1, 1.4 }, Trans = 0.15 },
 		Thunderborn = { Texture = SPARKLE, Size = { 0.9, 0 }, Speed = { 5, 8 }, Rate = 26, Life = { 0.3, 0.5 }, Trans = 0 },
 		Bloodlit = { Texture = FIRE, Size = { 1.6, 0.4 }, Speed = { 3, 5 }, Rate = 22, Life = { 0.7, 1 }, Trans = 0.2 },
 		Starforged = { Texture = SPARKLE, Size = { 0.7, 0 }, Speed = { 2, 3 }, Rate = 18, Life = { 1, 1.5 }, Trans = 0 },
 	}
 	local function rising(m, cf, w)
 		local r = RISE[w.mut]
-		local ring = anchor(m, cf * CFrame.new(0, 0.4, 0), Vector3.new(4.2, 0.2, 4.2), "AuraRise")
+		local ring = anchor(m, cf * CFrame.new(0, -0.6, 0), Vector3.new(4.2, 0.2, 4.2), "AuraRise") -- from just under the hips
 		emitter(ring, {
 			Texture = r.Texture,
 			Shape = Enum.ParticleEmitterShape.Cylinder,
@@ -147,20 +147,21 @@ return function(CultivatorsModule)
 		end
 		return b
 	end
-	local function orbiters(m, cf, w)
+	-- cf here is at the hips (look.apply); `head` = the top of the head above it
+	local function orbiters(m, cf, w, head)
 		if w.mut == "Thunderborn" then
 			-- short jagged arcs jumping round the body, a new pair every 0.15-0.35 s
 			task.spawn(function()
 				while m.Parent do
-					for _ = 1, 2 do
+					for _ = 1, 3 do
 						local a = math.random() * math.pi * 2
-						local from = cf * CFrame.new(math.cos(a) * 1.6, 0.8 + math.random() * 2.6, math.sin(a) * 1.6)
+						local from = cf * CFrame.new(math.cos(a) * 1.6, -0.6 + math.random() * 2.8, math.sin(a) * 1.6)
 						local b2 = a + (math.random() - 0.5) * 1.8
-						local to = cf * CFrame.new(math.cos(b2) * 1.9, 0.8 + math.random() * 2.8, math.sin(b2) * 1.9)
+						local to = cf * CFrame.new(math.cos(b2) * 2.1, -0.6 + math.random() * 3, math.sin(b2) * 2.1)
 						local last = from.Position
 						for i = 1, 4 do
 							local nextAt = from.Position:Lerp(to.Position, i / 4) + (i < 4 and Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 0.7 or Vector3.zero)
-							local seg = anchor(m, CFrame.lookAt((last + nextAt) / 2, nextAt), Vector3.new(0.12, 0.12, (nextAt - last).Magnitude), "Arc")
+							local seg = anchor(m, CFrame.lookAt((last + nextAt) / 2, nextAt), Vector3.new(0.2, 0.2, (nextAt - last).Magnitude), "Arc")
 							seg.Transparency = 0
 							seg.Material = Enum.Material.Neon
 							seg.Color = w.tint:Lerp(WHITE, 0.4)
@@ -176,28 +177,28 @@ return function(CultivatorsModule)
 			return
 		end
 		local hub = anchor(m, cf * CFrame.new(0, 0, 0), Vector3.new(0.2, 0.2, 0.2), "OrbitHub")
-		local n, rad, y, size, speed = 4, 2.3, 2.4, 0.35, 1.2
+		local n, rad, y, size, speed = 4, 2.4, 0.8, 0.5, 1.2
 		if w.mut == "Bloodlit" then
-			n, rad, y, size, speed = 6, 2.1, 1.4, 0.22, -0.8
+			n, rad, y, size, speed = 6, 2.2, 0, 0.42, -0.8
 		elseif w.mut == "Starforged" then
-			n, rad, y, size, speed = 5, 1.7, 5.2, 0.3, 1.8
+			n, rad, y, size, speed = 5, 1.9, head - 1, 0.45, 1.8
 		end
 		for i = 1, n do
 			local a = i / n * math.pi * 2
 			local c = w.motion == "rainbow" and Color3.fromHSV(0.3 + 0.48 * i / n, 0.6, 1) or w.tint:Lerp(WHITE, 0.3)
 			orb(hub, CFrame.new(math.cos(a) * rad, y + (w.mut == "Bloodlit" and (i % 2) * 1.6 or 0), math.sin(a) * rad), size, c, {
 				Texture = w.mut == "Bloodlit" and FIRE or SPARKLE,
-				Rate = 12,
-				Lifetime = NumberRange.new(0.4, 0.7),
+				Rate = 24, -- a trail behind each as it circles
+				Lifetime = NumberRange.new(0.6, 0.9),
 				Speed = NumberRange.new(0.2),
-				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 2.4), NumberSequenceKeypoint.new(1, 0) }),
+				Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 2.6), NumberSequenceKeypoint.new(1, 0) }),
 				Color = ColorSequence.new(c),
 			})
 		end
 		if w.mut == "Starforged" then -- a halo arc over the head (Grow a Garden's Rainbow arc)
 			for i = 1, 16 do
 				local a = i / 16 * math.pi * 2
-				local seg = anchor(m, cf * CFrame.new(math.cos(a) * 0.9, 5.6, math.sin(a) * 0.9) * CFrame.Angles(0, -a, 0), Vector3.new(0.12, 0.12, 0.42), "Halo")
+				local seg = anchor(m, cf * CFrame.new(math.cos(a) * 1, head + 0.5, math.sin(a) * 1) * CFrame.Angles(0, -a, 0), Vector3.new(0.16, 0.16, 0.46), "Halo")
 				seg.Transparency = 0
 				seg.Material = Enum.Material.Neon
 				seg.Color = Color3.fromHSV(0.3 + 0.48 * i / 16, 0.55, 1)
@@ -230,9 +231,9 @@ return function(CultivatorsModule)
 			EmissionDirection = Enum.NormalId.Top,
 			SpreadAngle = Vector2.new(0, 0),
 			Speed = NumberRange.new(6, 9),
-			Rate = 16,
+			Rate = 32,
 			Lifetime = NumberRange.new(0.8, 1.1),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.1) }),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0.2) }),
 			Squash = NumberSequence.new(2.5), -- tall streaks (as the rain)
 			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
 			Color = colors(w),
@@ -240,18 +241,18 @@ return function(CultivatorsModule)
 	end
 
 	local looks = {
-		{ text = "A Sol's RNG", apply = function(m, cf, w)
+		{ text = "A Sol's RNG", apply = function(m, cf, hips, head, w)
 			pool(m, cf, w)
-			rising(m, cf, w)
-			orbiters(m, cf, w)
+			rising(m, hips, w)
+			orbiters(m, hips, w, head)
 		end },
-		{ text = "B Light", apply = function(m, cf, w)
+		{ text = "B Light", apply = function(m, cf, hips, head, w)
 			pool(m, cf, w)
-			orbiters(m, cf, w)
+			orbiters(m, hips, w, head)
 		end },
-		{ text = "C Sigil", apply = function(m, cf, w)
+		{ text = "C Sigil", apply = function(m, cf, hips, head, w)
 			sigil(m, cf, w)
-			orbiters(m, cf, w)
+			orbiters(m, hips, w, head)
 		end },
 	}
 
@@ -276,8 +277,18 @@ return function(CultivatorsModule)
 		for c, w in Config.WEATHERS do
 			local cf = ORIGIN * CFrame.new((c - 1) * GAP, 0, (r - 1) * ROW)
 			local m = Cultivators.build(root, cf, "lotus", elder, Config.RARITIES)
-			-- the real platform figure keeps its rarity rim (no wash): only the aura is new
-			task.spawn(look.apply, m, cf, w)
+			-- the real platform figure keeps its rarity rim (no wash): only the aura is new.
+			-- CultivatorIdle switches far figures' emitters off: force them on for the captures on the client
+			-- the seated figure floats ~2 studs over its cushion (Studio check 2026-10-26): the rising layer and
+			-- the orbiters go round the body, from its hips; the pool and the sigil stay on the cushion
+			task.spawn(function()
+				local avatar = m:WaitForChild("Avatar", 10)
+				local torso = avatar and (avatar:FindFirstChild("UpperTorso") or avatar.PrimaryPart)
+				local headPart = avatar and avatar:FindFirstChild("Head")
+				local hipY = torso and (torso.Position.Y - cf.Y - 1) or 2
+				local headY = headPart and (headPart.Position.Y + headPart.Size.Y / 2 - cf.Y - hipY) or 4
+				look.apply(m, cf, cf * CFrame.new(0, hipY, 0), headY, w)
+			end)
 			label(cf * CFrame.new(0, 0.6, -4.5), (c == 1 and look.text .. " · " or "") .. w.mut)
 		end
 	end
