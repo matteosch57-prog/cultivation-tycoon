@@ -1748,6 +1748,10 @@ Config.MISSION_RANKS = {
 	{ name = "Protector", rewards = { { at = 32, qiSec = 480 }, { at = 70, summons = 4 }, { at = 113, pill = 900 }, { at = 160, qiSec = 720 }, { at = 208, summons = 6 }, { at = 259, summons = 6, rarity = "Celestial" } } },
 	{ name = "Sect Master", rewards = { { at = 40, qiSec = 600 }, { at = 88, summons = 5 }, { at = 140, pill = 1200 }, { at = 196, qiSec = 900 }, { at = 256, summons = 6 }, { at = 319, summons = 8, rarity = "Celestial" } } },
 }
+-- The Relic Hall (owner 2026-10-25: "a building always on showing some relics based on progression of
+-- quests"): finishing rank N earns MISSION_RELICS[N], shown in the hall for good (never reset). Rank 1
+-- shows the ten as dark silhouettes, so the first relic lands with the first rank up (~7-10 min).
+Config.MISSION_RELICS = { "Golden Broom", "Practice Sword", "Incense Burner", "Jade Seal", "Bronze Ding", "Phoenix Fan", "Sect Scroll", "Hall Bell", "Sword in Stone", "Dragon Pearl" }
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier
