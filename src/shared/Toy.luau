@@ -939,14 +939,15 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 		Toy.atlasPiece(face, "sparkle", m, m, Color3.fromHex("FFD34D"), 0, { Position = UDim2.new(1, -m * 0.45, 1, -m * 0.45), ZIndex = 7 })
 	end
 	if found and opts.count then
-		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), px(3)), ZIndex = 6 }), "x" .. opts.count, px(10), WHITE, { ZIndex = 7 })
+		Toy.text(darkPill(face, { Position = UDim2.fromOffset(px(3), mw and px(9) or px(3)), ZIndex = 6 }), "x" .. opts.count, px(10), WHITE, { ZIndex = 7 })
 	end
 	if opts.tag then
 		Toy.text(darkPill(face, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -px(2)), ZIndex = 6 }), opts.tag, px(10), WHITE, { ZIndex = 7 })
 	end
 	if mw then -- a weather mutation (Play check 2026-10-26: the glow alone was easy to miss): its name on a
-		-- pill of its colour across the card's top edge
-		local tag = frame(holder, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = mw.color, ZIndex = 8 })
+		-- pill of its colour across the card's top edge, the card's width with the name shrunk to fit (a
+		-- small Index card cut "Thunderborn" to "Thunde", Studio check 2026-10-26)
+		local tag = frame(holder, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, px(1)), Size = UDim2.fromOffset(w - px(2), math.max(px(13), math.floor(w * 0.24))), BackgroundTransparency = 0, BackgroundColor3 = mw.color, ZIndex = 8 })
 		corner(tag, UDim.new(1, 0))
 		local ts = Instance.new("UIStroke")
 		ts.Color = Toy.INK
@@ -954,12 +955,16 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 		ts.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		ts.Parent = tag
 		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(4)), UDim.new(0, px(4))
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(3)), UDim.new(0, px(3))
 		pad.Parent = tag
-		Toy.text(tag, mw.mut, math.max(px(9), math.floor(w * 0.17)), WHITE, { ZIndex = 9 })
+		local n = Toy.text(tag, mw.mut, math.max(px(9), math.floor(w * 0.17)), WHITE, { ZIndex = 9, AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.fromScale(1, 1), TextScaled = true })
+		local lim = Instance.new("UITextSizeConstraint")
+		lim.MaxTextSize = math.max(px(9), math.floor(w * 0.17))
+		lim.Parent = n
 	end
 	if opts.new then
-		local tag = frame(holder, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, px(3), 0, px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
+		-- over a mutation pill it sits higher, so the two never cover each other
+		local tag = frame(holder, { AnchorPoint = Vector2.new(1, mw and 1 or 0.5), Position = UDim2.new(1, px(3), 0, mw and -px(4) or px(1)), AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("FF4D4D"), Rotation = 8, ZIndex = 8 })
 		corner(tag, UDim.new(0, px(4)))
 		local ts = Instance.new("UIStroke")
 		ts.Color = Toy.INK

@@ -88,10 +88,12 @@ local rain = emitter({
 	Orientation = Enum.ParticleOrientation.VelocityParallel,
 	Speed = NumberRange.new(70, 90),
 	Lifetime = NumberRange.new(0.7, 0.9),
-	Size = NumberSequence.new(0.14),
+	Size = NumberSequence.new(0.18),
 	Squash = NumberSequence.new(3.2), -- a soft blob stretched tall: a streak
-	Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0.75) }),
-	LightEmission = 0.3,
+	-- no glow and a grey-blue tone: a glowing white streak vanished against the day sky (Studio check
+	-- 2026-10-26), a darker one reads on sky and ground alike
+	Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.6) }),
+	LightEmission = 0,
 	SpreadAngle = Vector2.new(4, 4),
 })
 local petals = emitter({
@@ -109,8 +111,8 @@ local petals = emitter({
 })
 
 local KINDS = {
-	rain = { rain = 260, rainColor = Color3.fromRGB(205, 225, 255) },
-	thunder = { rain = 420, rainColor = Color3.fromRGB(215, 200, 255), bolts = true },
+	rain = { rain = 260, rainColor = Color3.fromRGB(150, 175, 215) },
+	thunder = { rain = 420, rainColor = Color3.fromRGB(165, 150, 215), bolts = true },
 	blood = { petals = 30, petalColor = Color3.fromRGB(255, 80, 96), moon = Color3.fromRGB(255, 70, 80) },
 	star = { petals = 14, petalColor = Color3.fromRGB(190, 250, 255), stars = true },
 }
@@ -125,13 +127,18 @@ local function focus()
 	return cam and cam.Focus.Position or Vector3.zero
 end
 
--- a jagged bolt of Neon from the clouds to a spot near the camera's focus, a flash, then thunder
+-- a jagged bolt of Neon from the clouds to the ground in front of the camera, a flash, then thunder
 local function bolt(color)
 	local cam = camera()
 	if not cam then
 		return
 	end
-	local ground = focus() + Vector3.new(math.random(-60, 60), 0, math.random(-60, 60))
+	-- in front of the camera, 50-130 studs out and off to either side, so it lands in view (around the
+	-- focus it was mostly behind or under a level camera, Studio check 2026-10-26)
+	local look = cam.CFrame.LookVector * Vector3.new(1, 0, 1)
+	look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
+	local side = Vector3.new(-look.Z, 0, look.X)
+	local ground = Vector3.new(cam.CFrame.Position.X, focus().Y, cam.CFrame.Position.Z) + look * math.random(50, 130) + side * math.random(-50, 50)
 	local top = ground + Vector3.new(math.random(-20, 20), 170, math.random(-20, 20))
 	local folder = Instance.new("Folder")
 	folder.Name = "WeatherBolt"
@@ -238,7 +245,9 @@ local function start(key)
 		petals.Enabled = true
 	end
 	if k.moon then
-		moon = part({ Name = "WeatherMoon", Material = Enum.Material.Neon, Color = k.moon, Shape = Enum.PartType.Ball, Size = Vector3.new(90, 90, 90), Transparency = 1 })
+		-- 300 studs off at a third of the size: the same in the sky, and still drawn (at 900 Studio and low
+		-- graphics never drew it, Studio check 2026-10-26)
+		moon = part({ Name = "WeatherMoon", Material = Enum.Material.Neon, Color = k.moon, Shape = Enum.PartType.Ball, Size = Vector3.new(30, 30, 30), Transparency = 1 })
 		moon.Parent = camera()
 		tween(moon, FADE, { Transparency = 0.05 })
 	end
@@ -274,7 +283,7 @@ RunService.RenderStepped:Connect(function()
 	local at = cam.CFrame.Position
 	field.CFrame = CFrame.new(at.X, at.Y + 45, at.Z)
 	if moon then
-		moon.CFrame = CFrame.new(at + MOON_DIR * 900)
+		moon.CFrame = CFrame.new(at + MOON_DIR * 300)
 	end
 end)
 
