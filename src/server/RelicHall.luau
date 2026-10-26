@@ -118,10 +118,11 @@ local function isleFrame(plot)
 	return plot.frame * CFrame.lookAt(ISLE, RIM) * CFrame.Angles(0, math.pi, 0)
 end
 
--- plinth i's top-centre cf: front row 1-5 low, back row 6-10 a step up
+-- plinth i's top-centre cf: front row 1-5 low, back row 6-10 two steps up and set half a gap over, so
+-- every back relic and plaque shows between the front ones (Play check: a 1.6 rise hid them)
 local function spot(at, i)
 	local back = i > 5
-	return at * CFrame.new(-12 + ((i - 1) % 5) * 6, back and 3.2 or 1.6, back and -3.5 or 3.5)
+	return at * CFrame.new((back and -9.625 or -12.375) + ((i - 1) % 5) * 5.5, back and 4 or 1.6, back and -4.5 or 3.5)
 end
 
 -- the isle, its bridge, the terrace and the gate: built once per peak (they never change)
@@ -132,20 +133,24 @@ function RelicHall.build(plot)
 	local m = Instance.new("Model")
 	m.Name = "RelicTerrace"
 	local at = isleFrame(plot)
-	Style.island(m, at, ISLE_R, 77, nil, false)
+	Style.island(m, at, ISLE_R, 77, function(x, z) -- no boulders against the terrace
+		return math.abs(x) < 20 and math.abs(z) < 12
+	end, false)
 	local rim = plot.frame * RIM
 	Style.bridge(m, rim + Vector3.new(0, 0.05, 0), (at * Vector3.new(0, 0.05, ISLE_R - 3)), 6)
 	-- two marble tiers, railing on the sides and back, the gate at the back
 	P(m, Vector3.new(34, 1.6, 16), at * CFrame.new(0, 0.8, 0), PAL.stoneLight, Enum.Material.Marble)
-	P(m, Vector3.new(34, 1.6, 7), at * CFrame.new(0, 2.4, -4.5), PAL.stoneLight, Enum.Material.Marble)
-	P(m, Vector3.new(34.4, 0.25, 0.4), at * CFrame.new(0, 3.3, -1), PAL.gold, Enum.Material.Metal)
+	P(m, Vector3.new(34, 1.2, 8), at * CFrame.new(0, 2.2, -4), PAL.stoneLight, Enum.Material.Marble) -- a 1.2 step
+	P(m, Vector3.new(34, 2.4, 6), at * CFrame.new(0, 2.8, -5), PAL.stoneLight, Enum.Material.Marble) -- and another
+	P(m, Vector3.new(34.4, 0.25, 0.4), at * CFrame.new(0, 2.9, 0), PAL.gold, Enum.Material.Metal)
+	P(m, Vector3.new(34.4, 0.25, 0.4), at * CFrame.new(0, 4.1, -2), PAL.gold, Enum.Material.Metal)
 	P(m, Vector3.new(8, 0.8, 3), at * CFrame.new(0, 0.4, 9.5), PAL.stone) -- the step up from the bridge
 	for _, s in { -1, 1 } do
-		Kit.railing(m, (at * CFrame.new(s * 17, 3.2, -8)).Position, (at * CFrame.new(s * 17, 3.2, -1)).Position, 2)
-		Kit.railing(m, (at * CFrame.new(s * 17, 1.6, -1)).Position, (at * CFrame.new(s * 17, 1.6, 8)).Position, 2)
-		Kit.railing(m, (at * CFrame.new(s * 17, 3.2, -8)).Position, (at * CFrame.new(s * 8, 3.2, -8)).Position, 2)
+		Kit.railing(m, (at * CFrame.new(s * 17, 4, -8)).Position, (at * CFrame.new(s * 17, 4, -2)).Position, 2)
+		Kit.railing(m, (at * CFrame.new(s * 17, 1.6, 0)).Position, (at * CFrame.new(s * 17, 1.6, 8)).Position, 2)
+		Kit.railing(m, (at * CFrame.new(s * 17, 4, -8)).Position, (at * CFrame.new(s * 8, 4, -8)).Position, 2)
 	end
-	Kit.gate(m, at * CFrame.new(0, 3.2, -8), 12, 11, "Relics")
+	Kit.gate(m, at * CFrame.new(0, 4, -8), 12, 11, "Relics")
 	m.Parent = plot.folder
 	plot.relicIsle = m
 end
