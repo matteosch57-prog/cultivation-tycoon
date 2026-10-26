@@ -672,6 +672,13 @@ end
 -- `qiSec` seconds of income (no tide, no pill), `summons` free summons (into the idle chest's pool)
 -- and/or a disciple of `rarity`; a disciple day pays once per save, a repeat pays `again` instead.
 -- Economy check 2026-10-22 (tools/sim_game.py STREAK): pace unchanged, the streak is 0.2-1.4% of all qi.
+-- a brand-new save's first Daily Blessing (owner pick 2026-10-26, thread "Keep new players past 10
+-- minutes"): it waits for the first breakthrough, then STREAK_NEW_AFTER s, so it lands where 22% of
+-- new players left (within 60 s of the first breakthrough) and realm 1 keeps its buying pace (at
+-- 81 s it paid ~57K against ~9.5K held). STREAK_NEW_LATEST s of play shows it anyway.
+Config.STREAK_NEW_REALM = 2
+Config.STREAK_NEW_AFTER = 45
+Config.STREAK_NEW_LATEST = 420
 Config.STREAK = {
 	{ qiSec = 300, summons = 1 },
 	{ rarity = "Immortal", again = { summons = 3 } },
