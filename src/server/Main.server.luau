@@ -1714,7 +1714,8 @@ refreshPads = function(player, s)
 					Shop.maybeWelcome(player, s, pad)
 					Shop.maybeStarter(player, s, pad)
 				end)
-				part:SetAttribute("Auto", s.data.everBuilt[pad.id] == true) -- built before: Auto Build takes it (D85)
+				-- built before, or Heavenly Hands owned (full Auto Build): Auto Build takes it (D85)
+				part:SetAttribute("Auto", s.data.everBuilt[pad.id] == true or dao(s.data, "hands") > 0)
 				s.pads[pad.id] = part
 			end
 		end
@@ -3029,6 +3030,13 @@ daoFn.OnServerInvoke = function(player, key)
 	Telemetry.karma(player, d, false, cost, key)
 	if key == "seat" then
 		buildDisciples(s) -- a benched disciple takes the new seat
+	elseif key == "hands" then
+		-- Heavenly Hands = full Auto Build (D85): the open pads never built before join it now
+		for id, part in s.pads do
+			if Config.padById(id) then
+				part:SetAttribute("Auto", true)
+			end
+		end
 	elseif key == "isles" then
 		refreshPads(player, s) -- the Lotus Isle pads open now
 	end

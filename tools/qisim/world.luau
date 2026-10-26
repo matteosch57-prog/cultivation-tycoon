@@ -12,7 +12,7 @@ function World.new(E, opts)
 	local d = self.M.defaultData()
 	d.everBuilt = {} -- Main onJoin: a new save has built nothing yet (Auto Build, D85)
 	self.d = d
-	self.s = { player = P, data = d, passes = opts.passes or {}, inGroup = opts.inGroup == true, plot = {} }
+	self.s = { player = P, data = d, passes = opts.passes or {}, inGroup = opts.inGroup == true, plot = {}, pads = {} }
 	E.sessions[P] = self.s
 	self.src, self.sink = {}, {} -- the qi ledger by cause
 	self.lastSeen = nil
@@ -280,7 +280,7 @@ function World:autoBuild()
 	end
 	local can = {}
 	for _, o in self:offers() do
-		if o.kind == "build" and d.everBuilt[o.id] and d.qi >= o.cost then
+		if o.kind == "build" and (d.everBuilt[o.id] or self.M.dao(d, "hands") > 0) and d.qi >= o.cost then
 			table.insert(can, { o = o, GetAttribute = function(p, k)
 				if k == "PadId" then
 					return p.o.id

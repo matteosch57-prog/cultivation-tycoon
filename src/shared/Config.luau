@@ -203,7 +203,9 @@ Config.DAO = {
 	{ key = "elixir", name = "Elixir Mastery", line = "Pills last 30 s more", costs = { 5, 15 } },
 	{ key = "meditation", name = "Deep Meditation", line = "+2 h offline Qi", costs = { 5, 15 } },
 	{ key = "echo", name = "Soul Echo", line = "+10% Karma", costs = { 8, 16, 32, 64, 128 } },
-	{ key = "hands", name = "Heavenly Hands", line = "Build without walking", costs = { 5 } },
+	-- owner 2026-10-26 ("then the karmic shop is useless no?"): with Auto Build (D85) Hands makes it full,
+	-- Mega Mansion Tycoon's whole-house Auto Build: new buildings build themselves too
+	{ key = "hands", name = "Heavenly Hands", line = "Auto Build for new buildings", costs = { 5 } },
 	-- owner 2026-10-23 ("karma + pads once unlocked"): bought once, the Floating Lotus Isle pads (kind
 	-- "isle") are offered every life from then on, and are built with qi like any pad
 	{ key = "isles", name = "Floating Isles", line = "Unlock the Lotus Isles", costs = { 12, 30 } }, -- level 2: isles 4 to 8
