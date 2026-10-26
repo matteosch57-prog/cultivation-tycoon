@@ -1044,7 +1044,7 @@ end
 -- Recheck 10:03: the light lit the whole deck (now a short range at the cushion) and the burst hid in
 -- the aura's circle behind the head (now higher, bigger and drawn in front of it)
 -- a mutated disciple's seat (Heavenly Weather): the Mutation attribute (DiscipleInspect's card) and a
--- slow rise of motes in its weather's colour from the cushion, under the Shiny glints when it has both
+-- slow rise of motes in its weather's colour from the cushion (no PointLight: owner's no-fake-light rule), under the Shiny glints when it has both
 local function mutationGlow(m, mut)
 	local w = Config.mutation(mut)
 	m:SetAttribute("Mutation", mut)
@@ -1080,14 +1080,9 @@ local function mutationGlow(m, mut)
 	e.Brightness = 2.5
 	e.ZOffset = 1
 	e.Parent = ring
-	local light = Instance.new("PointLight")
-	light.Name = "MutationLight"
-	light.Color = w.color
-	light.Brightness = 1.5
-	light.Range = 3
-	light.Parent = ring
 	-- on the figure itself (owner 2026-10-26 "for the models of disciples too", like Grow a Garden's
-	-- mutated crops): each mutation its own look, emitters on the torso, no Highlight (the HL budget is
+	-- mutated crops): each mutation its own look, emitters on the torso, no light (owner rule: light comes from
+	-- the sky or a visible lamp) and no Highlight (the HL budget is
 	-- the Shiny outline's; Dewy alone is 1 in 5 rain recruits)
 	local LOOKS = {
 		Dewy = { -- water drips running off the body
@@ -1153,12 +1148,6 @@ local function mutationGlow(m, mut)
 			fx[k] = v
 		end
 		fx.Parent = torso
-		local glow = Instance.new("PointLight")
-		glow.Name = "MutationFigureLight"
-		glow.Color = w.color
-		glow.Brightness = 1.2
-		glow.Range = 5
-		glow.Parent = torso
 	end)
 end
 
