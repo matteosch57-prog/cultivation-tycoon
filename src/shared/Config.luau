@@ -985,10 +985,12 @@ end
 --   ebb      Dewy: rises and falls slowly, like water
 --   spark    Thunderborn: flickers on and off fast, like a spark
 --   beat     Bloodlit: a double heartbeat every 1.2 s
---   rainbow  Starforged: cycles through the rainbow (Pet Simulator 99's Rainbow pets)
+--   rainbow  Starforged: cycles green, cyan, blue, violet and back (Pet Simulator 99's Rainbow pets),
+--            never yellow or red, where it looked like Thunderborn or Bloodlit (Studio check 2026-10-26)
 function Config.mutLook(w, t)
 	if w.motion == "rainbow" then
-		return Color3.fromHSV((t * 0.3) % 1, 0.7, 1), 0.8
+		local k = (t * 0.3) % 2
+		return Color3.fromHSV(0.3 + 0.48 * (k < 1 and k or 2 - k), 0.7, 1), 0.8
 	elseif w.motion == "spark" then
 		local n = math.noise(t * 7, 0.5) -- -1..1, smooth but quick
 		-- peaks lower than the others: at full strength the face and robe vanished into a gold statue

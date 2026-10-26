@@ -90,11 +90,11 @@ local rain = emitter({
 	Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 	Speed = NumberRange.new(70, 90),
 	Lifetime = NumberRange.new(0.7, 0.9),
-	Size = NumberSequence.new(0.18),
+	Size = NumberSequence.new(0.38),
 	Squash = NumberSequence.new(3.2), -- a soft blob stretched tall: a streak
 	-- no glow and a grey-blue tone: a glowing white streak vanished against the day sky (Studio check
 	-- 2026-10-26), a darker one reads on sky and ground alike
-	Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.6) }),
+	Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0.5) }),
 	LightEmission = 0,
 	SpreadAngle = Vector2.new(4, 4),
 })

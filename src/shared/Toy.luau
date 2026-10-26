@@ -967,9 +967,9 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 		sg.Rotation = 20
 		sg.Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.42, 1),
-			NumberSequenceKeypoint.new(0.5, 0.45),
-			NumberSequenceKeypoint.new(0.58, 1),
+			NumberSequenceKeypoint.new(0.36, 1),
+			NumberSequenceKeypoint.new(0.5, 0.25),
+			NumberSequenceKeypoint.new(0.64, 1),
 			NumberSequenceKeypoint.new(1, 1),
 		})
 		sg.Offset = Vector2.new(-1, 0)
@@ -1031,7 +1031,7 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	if opts.marks and found then
 		-- weather marks (Bee Swarm Simulator's gifted marks, owner 2026-10-26 "index whatever you
 		-- recommend"): a diamond per weather mutation, lit in its colour once this disciple came in it
-		local d = math.max(px(7), math.floor(w * 0.13))
+		local d = math.max(px(9), math.floor(w * 0.17)) -- ~8 px read tiny on a phone (Studio check 2026-10-26)
 		local row = frame(cell, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 		Toy.list(row, true, math.floor(d * 0.55))
 		for i, mut in Config.WEATHERS do
