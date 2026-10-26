@@ -743,11 +743,12 @@ local function rate(s, away)
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
 	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index
+	local fortune = 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune (Karma Shop)
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
--- realm and the disciples. Not a pill, the tide, friends, the group, the favorite gift, the rebirth boost, Harmony (D67:
+-- realm and the disciples. Not a pill, the tide, friends, the group, the favorite gift, the rebirth boost, Sect Fortune, Harmony (D67:
 -- inside it the floor ate most of its +20%), the index (nor a disciple's own stars) or a paid multiplier (2x Qi pass, Welcome
 -- Pouch), so those make every goal come sooner instead of raising its price with the income. (Leaving the disciples out too made lives 4x faster: sim 2026-10-22.)
 local function priceRate(s)
@@ -776,6 +777,7 @@ local function padRate(s)
 		r /= 1 + Config.FAVORITE_BONUS -- the favorite gift never raises a price (out of priceRate too)
 	end
 	r /= Config.rebirthMult(rebirths(data))
+	r /= 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune never raises a price either
 	local dm = discipleMult(s)
 	local paid = 0
 	for name, n in data.boughtDisciples or {} do
@@ -2108,6 +2110,11 @@ local function onJoin(player)
 			end
 		end
 	end
+	-- karma went x10 (2026-10-26 Karma Upgrades): a save from before holds the old small amount
+	if not data.karma10 then
+		data.karma = (data.karma or 0) * 10
+		data.karma10 = true
+	end
 	for id, n in data.workers or {} do -- WORKER_MAX went from 3 to 2 (owner 2026-10-22)
 		data.workers[id] = math.min(n, Config.WORKER_MAX)
 	end
@@ -2171,7 +2178,10 @@ local function onJoin(player)
 	end
 	-- paid here on join, no GO to press (owner 2026-10-24, after new players left on the intro: "remove
 	-- the go and just make them start with qi"); NewSave lets the client hold its day-one cards back
-	if data.welcomed == false then
+	-- read before the stamp below: a brand-new save must still get its tips and the free recruit
+	-- (live bug 2026-10-24 to 10-26: the stamp ran first, so every new save had every tip marked seen)
+	local newSave = data.welcomed == false
+	if newSave then
 		data.welcomed = true
 		data.qi += Config.WELCOME_QI
 		Telemetry.source(player, data, Config.WELCOME_QI, "welcome")
@@ -2179,7 +2189,7 @@ local function onJoin(player)
 	end
 	-- first-time tips (D50): a new save gets each once; a save from before them knows the game
 	if data.tips == nil then
-		data.tips = data.welcomed and { orb = true, pill = true, chest = true, recruit = true } or {}
+		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
@@ -2323,19 +2333,20 @@ end
 -- Recruit ----------------------------------------------------------------------------
 local rng = Random.new()
 
--- one roll for `d` (a save): the weights (the shown odds, R8), then pity (Config.PITY: `at` rolls in a
+-- one roll for `d` (a save): the weights (the shown odds, R8; Heaven's Favor raises the rare ones), then pity (Config.PITY: `at` rolls in a
 -- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE), then the weather's
 -- mutation (Config.WEATHERS `chance`, only while one runs). Returns the rarity, whether it is Shiny and
 -- its mutation ("" = none).
 local function roll(d)
+	local weights = Config.rarityWeights(dao(d, "luck")) -- Heaven's Favor (Karma Shop)
 	local total = 0
-	for _, r in Config.RARITIES do
-		total += r.weight
+	for _, w in weights do
+		total += w
 	end
 	local x = rng:NextNumber(0, total)
 	local pick = 1
-	for i, r in Config.RARITIES do
-		x -= r.weight
+	for i in Config.RARITIES do
+		x -= weights[i]
 		if x <= 0 then
 			pick = i
 			break
@@ -3238,7 +3249,7 @@ local function checkOrbs(player, s, hrp)
 			table.remove(s.orbs, i)
 		elseif (orb.Position - hrp.Position).Magnitude < 4.5 or (auto and os.clock() - (orb:GetAttribute("Age") or 0) > 1.5) then
 			local walked = (orb.Position - hrp.Position).Magnitude < 4.5
-			local gain = math.floor(rate(s) * Config.ORB_VALUE)
+			local gain = math.floor(rate(s) * Config.ORB_VALUE * (1 + Config.DAO_ORB * dao(s.data, "magnet")))
 			s.data.qi += gain
 			s.orbEarned = (s.orbEarned or 0) + gain
 			Telemetry.custom(player, "Feature", "orb", Telemetry.realmBucket(s.data.realm))

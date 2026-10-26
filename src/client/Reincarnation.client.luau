@@ -23,9 +23,9 @@ local JADE = Color3.fromHex("59D39F")
 local CONFIRM = Color3.fromHex("FF8A5C")
 local LOCKED = Color3.fromHex("C9C2D3")
 local KARMA = Color3.fromHex("D9B8FF")
-local TILE = { sworn = "9FD0FF", seat = "FFD36B", foundation = "9FF5C8", rebirth = "FFC9A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6" }
-local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1 }
-local PER_ROW = 4
+local TILE = { fortune = "9FF5C8", luck = "9FD0FF", seat = "FFD36B", magnet = "FFC9A6", steps = "FFF0A6", elixir = "FFB3A8", meditation = "C9C2FF", echo = "E6C9FF", hands = "FFF0A6", isles = "FFD1EA" }
+local TILT = { -2, 1.5, -1, 2, 1, -1.5, 2, -1, 1.5, -2 }
+local PER_ROW = 5 -- Karma Shop tiles per row (ten lines, PS99 Upgrades)
 
 -- the red dots lit when this screen opened (server Dots.luau): a snapshot, so they stay on while the
 -- screen is open although the server clears its own as soon as MenuOpened arrives

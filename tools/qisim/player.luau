@@ -18,8 +18,8 @@ Player.PROFILES = {
 	-- same sitting at the median player's pace (react 4.5 s, orbs every 60 s)
 	onesitslow = { perDay = 1, minutes = 90, react = 4.5, path = 1.35, orbEvery = 60, patience = 20, pillDelay = 30, giftDelay = 20, rebirthDelay = 30, recruitBias = 2 },
 }
--- karma: cheapest comfort first (the old sims' order)
-Player.DAO_ORDER = { "hands", "isles", "elixir", "meditation", "seat", "echo" }
+-- karma: the cheapest next level of any line first (the red dots light whatever karma covers; ties in
+-- Config.DAO order). 2026-10-26 Karma Upgrades (PS99 Upgrades)
 local SPAWN = { x = 0, z = 64 } -- placeOnPeak: (0, ISLAND_RADIUS - 8)
 
 local function dist(a, b)
@@ -53,7 +53,7 @@ end
 
 function Player:walk(to)
 	local C = self.W.C
-	local secs = dist(self.pos, to) * self.prof.path / C.MOVE.walk
+	local secs = dist(self.pos, to) * self.prof.path / C.walkSpeed(self.W.M.dao(self.W.d, "steps")) -- Swift Steps
 	self.pos = { x = to.x, z = to.z }
 	return secs
 end
@@ -168,15 +168,18 @@ function Player:act()
 			return prof.react
 		end
 	end
-	for _, key in Player.DAO_ORDER do
-		local node = C.daoNode(key)
-		local lv = M.dao(d, key)
-		local cost = node and node.costs[lv + 1]
-		if cost and (d.karma or 0) >= cost then
-			W:call("daoFn", "karma", key)
-			self:note("dao_" .. key .. (lv + 1))
-			return prof.react * 2
+	local pick, pickCost
+	for _, node in C.DAO do
+		local cost = node.costs[M.dao(d, node.key) + 1]
+		if cost and (d.karma or 0) >= cost and (not pickCost or cost < pickCost) then
+			pick, pickCost = node.key, cost
 		end
+	end
+	if pick then
+		local lv = M.dao(d, pick)
+		W:call("daoFn", "karma", pick)
+		self:note("dao_" .. pick .. (lv + 1))
+		return prof.react * 2
 	end
 	if C.rebirthOpen(d.realm, M.rebirths(d), d.owned) then
 		self:note("open" .. M.rebirths(d) + 1)

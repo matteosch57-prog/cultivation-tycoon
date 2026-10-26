@@ -63,11 +63,17 @@ local function fill(page)
 	Toy.list(right, false, px(8))
 	local rows = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 1 })
 	Toy.list(rows, false, px(3), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	-- the odds this player rolls: Heaven's Favor (Karma Shop) raises the rare ones (server roll)
+	local weights = Config.rarityWeights(player:GetAttribute("Dao_luck"))
+	local total = 0
+	for _, w in weights do
+		total += w
+	end
 	for i, r in Config.RARITIES do
 		local row = frame(rows, { Size = UDim2.fromOffset(px(250), px(24)), LayoutOrder = i })
 		Toy.disciple(row, px(26), r.name, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5) }, true, Config.DISCIPLE_LOOKS[1])
 		text(row, r.name, px(15), r.color, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, px(32), 0.5, 0) })
-		text(row, pct(r.weight), px(15), WHITE, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
+		text(row, pct(weights[i] / total * 100), px(15), WHITE, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0) })
 	end
 	text(body, "Each is one of 4 disciples of that rarity, equally likely.", px(11), SOFT, { LayoutOrder = 2 })
 	body = right
