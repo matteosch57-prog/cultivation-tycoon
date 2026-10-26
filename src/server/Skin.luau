@@ -91,6 +91,15 @@ function Skin.apply(model, realm, lives, style)
 		SectStyle.dress(model, style, function(m, map)
 			Skin.recolour(m, map, true)
 		end)
+		-- the lotus isles' grass tops wear the style's ground like the lawn (Play check 2026-10-26)
+		if model.Name:match("^lotus%d") then
+			for _, p in model:GetDescendants() do
+				if p:IsA("BasePart") and (p.Material == Enum.Material.Grass or p.Material == Enum.Material.LeafyGrass) then
+					p.Material = style.ground[1]
+					p.Color = style.ground[2]
+				end
+			end
+		end
 		return
 	end
 	local grade = Config.skinFor(realm, lives)
