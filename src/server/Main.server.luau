@@ -1166,6 +1166,12 @@ local function mutationGlow(m, mut)
 		-- type", Grow a Garden recolours a mutated crop): a strong fill and outline that CultivatorIdle
 		-- moves each mutation's own way (Config.mutLook) and switches on for the nearest figures only (its
 		-- Highlight budget, shared with the Shiny outline)
+		-- the figure's own rim Highlight goes: Roblox draws one Highlight per adornee and a disabled rim
+		-- still claims it, so the wash never showed (Studio check 2026-10-26)
+		local rim = avatar:FindFirstChild("Rim") or avatar:WaitForChild("Rim", 2)
+		if rim then
+			rim:Destroy()
+		end
 		local h = Instance.new("Highlight")
 		h.Name = "MutationOutline"
 		h.Adornee = avatar
