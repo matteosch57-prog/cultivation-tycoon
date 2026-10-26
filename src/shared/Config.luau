@@ -1137,7 +1137,7 @@ Config.SECT_STYLES = {
 		-- snow on a winter temple: white roofs over deep lacquer, so the snow reads (pale-on-pale washed out)
 		map = { tile = { hex("F4F8FC"), Enum.Material.Snow }, tileDark = hex("C6D6E4"), vermilion = hex("7E2A30"), plaster = hex("F2F4F7"), gold = hex("CFE6FF"), stone = { hex("E3ECF4"), Enum.Material.Marble }, stoneLight = hex("F2F6FA"), timber = hex("4A3A3A"), timberDark = hex("2E2426"), jade = hex("A8E4FF") },
 		fx = { color = hex("FFFFFF"), accel = Vector3.new(0.4, -2, 0), size = 0.5 } },
-	{ id = "volcano", ground = { Enum.Material.CrackedLava, hex("5A2A1E") }, name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
+	{ id = "volcano", ground = { Enum.Material.CrackedLava, hex("A8401C") }, name = "Volcano Forge", rebirth = 2, orn = "forge", ornColor = hex("FF6A1A"), swatch = { hex("2F2A2A"), hex("FF6A1A") },
 		-- vermilion 4A1610: 7A1F14 read bright red under the place lighting
 		map = { tile = hex("2F2A2A"), tileDark = hex("1E1A1A"), vermilion = hex("4A1610"), plaster = { hex("3A3330"), Enum.Material.Basalt }, gold = hex("FF8A2A"), stone = { hex("3B3634"), Enum.Material.Basalt }, stoneLight = hex("4A4441"), timber = hex("2A1E19"), timberDark = hex("1A120E") },
 		fx = { color = hex("FF8A2A"), accel = Vector3.new(0, 2.5, 0), size = 0.4, light = 1 } },
