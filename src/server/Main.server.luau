@@ -3387,6 +3387,7 @@ Bless.init({
 })
 Missions.init({
 	sessions = sessions,
+	remotes = remotes,
 	rate = rate,
 	publish = publish,
 	notify = notify,

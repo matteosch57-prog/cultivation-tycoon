@@ -1732,7 +1732,6 @@ Config.NIGHT_BED = { id = 9112762281, vol = 0.18 } -- Crickets And Cicadas 1: th
 -- seconds of income (no tide, no pill), free summons (into the idle chest's summons), pill seconds of
 -- 2x qi, a disciple of `rarity`.
 Config.MISSIONS_ON = true
-Config.MISSION_HUD = "list" -- "list": rank bar + missions beside the left rail (picks A, B); "button": a Missions button + the nearest mission (C)
 Config.MISSION_DAILY_ON = true -- the 3 daily missions and their chest (picks B, C)
 Config.MISSION_SLOTS = { 2, 3, 3, 3, 4 } -- by rank, the last entry for every rank after
 Config.MISSION_TIER_AT = { [2] = { rank = 1, done = 2 }, [3] = { rank = 2, done = 0 }, [4] = { rank = 5, done = 0 } } -- a tier opens at that rank after `done` missions in it
