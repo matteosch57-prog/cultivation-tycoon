@@ -18,6 +18,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text = Toy.px, Toy.text
 local GOLD = Color3.fromHex("FFE36B")
@@ -281,7 +282,11 @@ end
 
 remotes.Notify.OnClientEvent:Connect(function(kind, a)
 	if kind == "breakthroughAsk" then
-		open(a)
+		-- never over another card (a fresh save had it open on top of the chest card)
+		task.spawn(function()
+			Screens.waitClear(playerGui, "Breakthrough", 0.3)
+			open(a)
+		end)
 	end
 end)
 player:GetAttributeChangedSignal("Qi"):Connect(function()
