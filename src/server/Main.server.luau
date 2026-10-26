@@ -2012,7 +2012,6 @@ local function faceCamera(player, cf)
 	player:SetAttribute("FaceTurn", (player:GetAttribute("FaceTurn") or 0) + 1)
 end
 
-local FIRST_PAD_STAND = 7 -- studs before the Stone Path pad (outside PAD_REACH)
 -- on the peak's hub-side rim, facing into the island
 local function peakStand(plot)
 	return plot.frame * CFrame.new(0, 4, (plot.radius or Config.ISLAND_RADIUS) - 8)
@@ -2023,13 +2022,6 @@ local function placeOnPeak(player)
 	local char = player.Character
 	if s and char then
 		local at = peakStand(s.plot)
-		-- a save with nothing built lands a few studs before the first pad, facing it (thread "Keep new
-		-- players past 10 minutes": the stand is 24 studs from the Stone Path, and the first wait of a
-		-- new session most often ended at that first buy)
-		local first = Config.padById("path")
-		if first and next(s.data.owned) == nil then
-			at = s.plot.frame * CFrame.new(first.x, 4, first.z + FIRST_PAD_STAND)
-		end
 		char:PivotTo(at)
 		faceCamera(player, at)
 	end
