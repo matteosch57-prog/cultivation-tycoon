@@ -1086,6 +1086,80 @@ local function mutationGlow(m, mut)
 	light.Brightness = 1.5
 	light.Range = 3
 	light.Parent = ring
+	-- on the figure itself (owner 2026-10-26 "for the models of disciples too", like Grow a Garden's
+	-- mutated crops): each mutation its own look, emitters on the torso, no Highlight (the HL budget is
+	-- the Shiny outline's; Dewy alone is 1 in 5 rain recruits)
+	local LOOKS = {
+		Dewy = { -- water drips running off the body
+			Texture = "rbxasset://textures/particles/sparkles_main.dds",
+			Rate = 10,
+			Lifetime = NumberRange.new(0.8, 1.2),
+			Speed = NumberRange.new(2, 4),
+			Acceleration = Vector3.new(0, -14, 0),
+			EmissionDirection = Enum.NormalId.Bottom,
+			SpreadAngle = Vector2.new(60, 60),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.32), NumberSequenceKeypoint.new(1, 0.12) }),
+			Squash = NumberSequence.new(1.2),
+		},
+		Thunderborn = { -- violet sparks crackling out in every direction
+			Texture = "rbxasset://textures/particles/sparkles_main.dds",
+			Rate = 26,
+			Lifetime = NumberRange.new(0.12, 0.3),
+			Speed = NumberRange.new(8, 14),
+			SpreadAngle = Vector2.new(180, 180),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) }),
+			Rotation = NumberRange.new(0, 360),
+		},
+		Bloodlit = { -- red mist rising slowly off the body
+			Texture = "rbxasset://textures/particles/smoke_main.dds",
+			Rate = 6,
+			Lifetime = NumberRange.new(1.6, 2.2),
+			Speed = NumberRange.new(1, 2),
+			EmissionDirection = Enum.NormalId.Top,
+			SpreadAngle = Vector2.new(30, 30),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 2.6) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }),
+			RotSpeed = NumberRange.new(-30, 30),
+		},
+		Starforged = { -- small stars twinkling all round the figure
+			Texture = "rbxasset://textures/particles/sparkles_main.dds",
+			Rate = 14,
+			Lifetime = NumberRange.new(0.9, 1.4),
+			Speed = NumberRange.new(0.5, 1.5),
+			SpreadAngle = Vector2.new(180, 180),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.5), NumberSequenceKeypoint.new(1, 0) }),
+			Rotation = NumberRange.new(0, 360),
+			RotSpeed = NumberRange.new(-120, 120),
+		},
+	}
+	local look = LOOKS[mut]
+	if not look then
+		return
+	end
+	task.spawn(function()
+		local avatar = m:WaitForChild("Avatar", 10) -- Cultivators.build adds the figure a moment later
+		local torso = avatar and (avatar:FindFirstChild("UpperTorso") or avatar:FindFirstChild("Torso") or avatar.PrimaryPart)
+		if not torso or not m.Parent then
+			return
+		end
+		local fx = Instance.new("ParticleEmitter")
+		fx.Name = "MutationFx"
+		fx.Color = ColorSequence.new(w.color:Lerp(Color3.new(1, 1, 1), 0.25), w.color)
+		fx.LightEmission = 0.7
+		fx.LightInfluence = 0
+		fx.Brightness = 2
+		fx.ZOffset = 1
+		for k, v in look do
+			fx[k] = v
+		end
+		fx.Parent = torso
+		local glow = Instance.new("PointLight")
+		glow.Name = "MutationFigureLight"
+		glow.Color = w.color
+		glow.Brightness = 1.2
+		glow.Range = 5
+		glow.Parent = torso
+	end)
 end
 
 local SHINY_GOLD = Color3.fromHex("FFD34D")
