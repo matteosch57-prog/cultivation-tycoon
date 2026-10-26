@@ -17,6 +17,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
 local ChestModel = require(Shared:WaitForChild("ChestModel"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFE36B")
@@ -588,6 +589,11 @@ function show(gain, away, summons, mode)
 	while not player:GetAttribute("LaunchDone") do -- after the launch screen's tap (src/first/Launch)
 		player:GetAttributeChangedSignal("LaunchDone"):Wait()
 	end
+	if gui.Enabled then
+		return
+	end
+	-- one card at a time: wait for the Daily Blessing, a reveal or any other screen to close first
+	Screens.waitClear(playerGui, "IdleChest")
 	if gui.Enabled then
 		return
 	end
