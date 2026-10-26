@@ -1051,8 +1051,8 @@ end
 local function mutColors(w)
 	if w.motion == "rainbow" then
 		local keys = {}
-		for i = 0, 6 do
-			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(i / 6, 0.6, 1)))
+		for i = 0, 6 do -- green to violet, Config.mutLook's range
+			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(0.3 + 0.48 * i / 6, 0.6, 1)))
 		end
 		return ColorSequence.new(keys)
 	end
