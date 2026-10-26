@@ -21,6 +21,7 @@ local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
 local GREY = Color3.fromHex("9A8FA8")
 local JADE = Color3.fromHex("59D39F")
+local WHITE = Color3.new(1, 1, 1)
 local INK = Toy.INK
 
 local openEvent = Instance.new("BindableEvent")
