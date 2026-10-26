@@ -1341,7 +1341,7 @@ local function autoBuildTick(player, s)
 	end
 	local can = {}
 	for part, info in s.padData do
-		if part.Parent and not info.busy and not info.confirm and part:GetAttribute("Auto") and d.qi >= info.cost then
+		if part.Parent and not info.busy and not info.confirm and not info.rebirth and part:GetAttribute("Auto") and d.qi >= info.cost then
 			table.insert(can, part)
 		end
 	end
@@ -1386,6 +1386,9 @@ local function checkPads()
 						if info.confirm then
 							s.padHold = true -- once per step on: closing the screen on the pad does not reopen it
 							offerBreakthrough(player, s, info)
+						elseif info.rebirth then
+							s.padHold = true
+							notify:FireClient(player, "rebirthAsk")
 						elseif s.data.qi >= info.cost then
 							s.padHold = true
 							buyPad(s, part, info)
@@ -1520,6 +1523,12 @@ refreshPads = function(player, s)
 	end
 	if all then
 		wanted.breakthrough = true
+		-- the realm is a rebirth gate (thread "Keep new players past 10 minutes", owner pick): a gold
+		-- Rebirth pad where the breakthrough pad stands, so the trail leads on (live: 13% of first
+		-- sessions ended here with nothing on the trail; tycoons put the rebirth button on the plot)
+		if Config.rebirthOpen(s.data.realm, rebirths(s.data), s.data.owned) then
+			wanted.rebirth = true
+		end
 	end
 	local ready = {}
 	for _, pad in Config.PADS do
@@ -1710,6 +1719,14 @@ refreshPads = function(player, s)
 		end, "breakthrough")
 		s.pads.breakthrough.Color = Color3.fromRGB(255, 210, 90)
 		s.padData[s.pads.breakthrough].confirm = true
+	end
+	if wanted.rebirth and not s.pads.rebirth then
+		local price = Config.rebirthPrice(rebirths(s.data))
+		-- never bought: standing on it opens the Rebirth screen (Reincarnation.client), at any qi, so
+		-- its card shows the wait while the price fills
+		s.pads.rebirth = makePad(player, s, { id = "rebirth", x = 0, z = 14 }, price, "Rebirth", 0, function() end, "rebirth")
+		s.pads.rebirth.Color = Color3.fromRGB(255, 210, 90)
+		s.padData[s.pads.rebirth].rebirth = true
 	end
 	Shop.refreshPeak(s) -- the shop items that stand where they act (passes at the entrance, pill, orbs)
 end
@@ -2979,6 +2996,10 @@ handsFn.OnServerInvoke = function(player, padId)
 	end
 	if info.confirm then
 		offerBreakthrough(player, s, info) -- the breakthrough still waits for its Confirm
+		return true
+	end
+	if info.rebirth then
+		notify:FireClient(player, "rebirthAsk") -- the rebirth still waits for its own screen
 		return true
 	end
 	buyPad(s, part, info)

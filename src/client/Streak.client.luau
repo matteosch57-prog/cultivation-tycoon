@@ -4,7 +4,7 @@
 -- in its rarity aura. Claim asks the server (ClaimStreak, R9: it alone checks the day and pays),
 -- today's tile turns jade, the reward line pops, and the card closes. Shown once a day when
 -- StreakReady, after the launch screen and the Heavenly Gift; on a brand-new save's first session
--- it waits FIRST_DELAY s so the gift and the first steps come first.
+-- it waits for the first breakthrough (Config.STREAK_NEW_*) so realm 1 keeps its own pace.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -21,6 +21,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Toy = require(Shared:WaitForChild("Toy"))
 local Sfx = require(Shared:WaitForChild("Sfx"))
+local Screens = require(Shared:WaitForChild("Screens"))
 
 local px, text, frame = Toy.px, Toy.text, Toy.frame
 local GOLD = Color3.fromHex("FFD34D")
@@ -28,7 +29,6 @@ local JADE = Color3.fromHex("59D39F")
 local CREAM = Color3.fromHex("F3ECFF")
 local PALE_GOLD = Color3.fromHex("FFE9B0")
 local INK = Toy.INK
-local FIRST_DELAY = 90 -- s into a brand-new save's first session
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Streak"
@@ -420,22 +420,22 @@ local function show()
 	end)
 end
 
--- the card never opens over another screen (owner 2026-10-23): it waits until each of these is gone.
--- A screen counts while its gui is Enabled and draws something (Gifts and Intro stay Enabled, emptied);
--- the Friends gui always holds its HUD row, so only its card counts
-local COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest", "MissionsPage" }
+-- the card never opens over another screen (owner 2026-10-23; the list lives in Shared.Screens)
 local function covered()
-	for _, name in COVERS do
-		local g = playerGui:FindFirstChild(name)
-		if g and g:IsA("ScreenGui") and g.Enabled and #g:GetChildren() > 0 then
-			return true
-		end
-	end
-	local friends = playerGui:FindFirstChild("Friends")
-	return friends ~= nil and friends:FindFirstChild("Card") ~= nil
+	return Screens.covered(playerGui, "Streak")
 end
 
--- once a day, after the launch screen and the gift (a new save waits FIRST_DELAY s)
+-- a brand-new save's first card waits for its first breakthrough + STREAK_NEW_AFTER s (or
+-- STREAK_NEW_LATEST s of this session)
+local realmAt -- time() the realm first reached STREAK_NEW_REALM this session
+local function firstCardDue()
+	if (player:GetAttribute("Realm") or 1) >= Config.STREAK_NEW_REALM or (player:GetAttribute("Rebirths") or 0) > 0 then
+		realmAt = realmAt or time()
+		return time() - realmAt >= Config.STREAK_NEW_AFTER
+	end
+	return time() > Config.STREAK_NEW_LATEST
+end
+-- once a day, after the launch screen and the gift (a new save waits: firstCardDue)
 -- (a new save: NewSave since the gift is paid on join, WelcomeQi while an intro was still shown)
 local function newSave()
 	return player:GetAttribute("NewSave") == true or (player:GetAttribute("WelcomeQi") or 0) > 0
@@ -452,7 +452,7 @@ task.spawn(function()
 			if newSave() then
 				hadGift = true
 			end
-			if (not hadGift or time() > FIRST_DELAY) and not covered() then
+			if (not hadGift or firstCardDue()) and not covered() then
 				shownToday = true
 				show()
 			end

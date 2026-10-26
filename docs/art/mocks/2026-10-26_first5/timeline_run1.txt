@@ -1,0 +1,76 @@
+FIRST 5 MINUTES, FRESH SAVE, STUDIO PLAY (2026-10-26, run 2)
+Build: whatever Rojo serves from C:\Work\cultivation-tycoon (integration, HEAD e06bddc at the time), Config.MOCK_DATASTORE = true (fresh player, nothing saved).
+Times are seconds since the player could move (launch screen gone). Full event log: play_log_shifted.txt (play_log_raw.txt = the same with the driver's own clock).
+
+HOW IT WAS PLAYED
+- A client driver walked (Humanoid:MoveTo) to the pad the guide trail picks (Config.guidePick, the same pick Guide.client uses) whenever qi covered its price. When the walk had not landed within ~1 to 12 s it teleported next to the pad and walked on (marked "walk failed"), so the walk times are SHORTER than a real player's.
+- Cards: pressed with the game's own Studio hooks (StreakClaim). The idle chest's "Free summons!" card has NO hook and mouse input is off, so it stayed open from 1:26 to the end: every capture after 1:26 shows it on top. A real player taps Collect.
+- The driver only got into the client at 18.8 s (the MCP call lands late), so the avatar stood still at spawn from 0 to 18.8 s. Real players buy the first pad at a median of 14 s (task 1 report).
+- The breakthrough confirm screen stayed open from 2:21 to 3:33 because I was reading the code, not because the game held it.
+
+LAUNCH
+- Play start to first launch-screen frame: ~1 s. Launch screen ("Gathering qi... %" then "ENTERING"): 9 s (14:22:51 to 14:22:59). Control at 14:23:00, ~10 s after Play start. Run 1 measured the same 9 s.
+- No welcome card: the welcome qi is paid on join (qi 208 at control, +2/s).
+
+TIMELINE
+   0.0  control. HUD + Missions tracker ("Sweeper 0/13: Build 5 buildings, Recruit 3 disciples, Daily: Join a Heavenly Altar fight") + pad card "Stone Path 8". qi 208.
+   0-18.8  avatar idle (driver not in yet).
+  20.1  BUY Stone Path 8 (qi 246)
+  22.5  BUY Meditation Platform 32 (qi 244)
+  25.2  BUY Fields Bridge 16
+  28.1  BUY Disciple Bridge 48
+  30.1  BUY Disciple Hall 96 -> mission toast "+1 star Build 5 buildings". NO free recruit (see FINDING 1).
+  33.8  BUY Alchemy Bridge 160
+  34.4  WAIT nothing affordable: Qi Gathering Array 280, qi 123, +32/s  -> 4.5 s
+  41.1  BUY Qi Gathering Array 280
+  44.3  BUY Spirit Vein 128
+  49.7  BUY Lantern Row 134
+  55.0  BUY Herb Garden 240
+  58.3  BUY Twin Spirit Vein 480
+  59.0  WAIT Alchemy Furnace 960, qi 915, +160/s -> 1.1 s
+  61.9  BUY Alchemy Furnace 960 -> first qi orb pops (+2,754)
+  75.4  BUY Thatched Hut 550 (walk 12.7 s)
+  76    walking to Sect Hall 766 (qi ~5,000): cannot reach it (FINDING 2)
+  81.4  DAILY BLESSING card (Day 1: 5 min qi +1 summon). HUD and tracker hide behind it.
+  84.0  claim -> "+57K qi +1 free summon / See you tomorrow!". qi 9.5K -> 67.6K in one press.
+  85.6  IDLE CHEST card "Free summons! Tap a ball to open it / 1 free summon / Collect" opens 1.6 s after the claim (second modal in a row).
+  86.7  Daily Blessing card closes.
+ 100-138 Sect Hall pad still not bought after 3 walk attempts (qi 70K-80K, i.e. affordable 100x over).
+ 138.6  BUY Sect Hall 766 (only after placing the avatar ON the pad)
+ 140.9  BREAKTHROUGH confirm screen "Qi Condensation -> Foundation Establishment, +7 new, reset, Break through 10,422" (qi 82,924). First breakthrough opens at 2:21.
+ 205.7  toast "Spirit Tide in 30s"
+ 213.4  Break through pressed (qi 113,680) -> Realm 2, toast "Foundation Establishment!"
+ 213.6-220  Auto Build rebuilds Stone Path, Spirit Vein, Lantern Row, Herb Garden, Twin Spirit Vein, Alchemy Furnace, Thatched Hut, Sect Hall by itself ("autoBuilt" toasts, one per ~1.2 s)
+ 216.7  WEATHER banner "Spirit Rain! Recruit now: 20% become Dewy x2 - 2:29" (top centre, over the chest card)
+ 223.5  BUY Third Spirit Vein 5,348
+ 224.1  WAIT Fire Lotus Pond 6,486 -> 0.3 s
+ 227.8  SHOP NUDGE "Need ... more / Get Qi" on the pad card (4 s)
+ 232.1  BUY Fire Lotus Pond 6,486
+ 232.8  WAIT Sect Gate 8,589, +716/s -> 6.4 s
+ 234.9  "Spirit Tide! 2x Qi" (90 s)
+ 243.8  BUY Sect Gate 8,589 -> mission toast "+2 stars Break through to the next realm"
+ 247.5  BUY Expand the Peak 13,506 ("More land!")
+ 248.2  WAIT Disciple Quarters 15,378, +1,972/s -> 5.0 s
+ 257.2  BUY Disciple Quarters 15,378
+ 258.0  WAIT Great Hall 30,609, +2,041/s -> 6.9 s
+ 273.5  BUY Great Hall 30,609 -> "Reward: +16K qi"
+ 274+   NO PAD LEFT. The trail is empty. Left: Miner/Farmer/Alchemist hires 7,741 each, Recruit 2,000, Rebirth 80,000 (open). Disciples recruited: 0.
+ 285.2  toast "Rebirth ready!" (once). Nothing else points anywhere. qi 109K (285 s) -> 200K (305 s) -> 288K (330 s) with nothing on the trail.
+ ~300   toast "The Heavenly Altar opens in 30s at the hub!" drawn over the "Free summons!" title.
+
+WAITS WHERE NOTHING WAS AFFORDABLE (all short): 4.5 s, 1.1 s, 0.3 s, 6.4 s, 0.3 s, 5.0 s, 6.9 s. The longest gap (60 s) came from the unreachable Sect Hall pad, not from qi.
+FREE RECRUIT: never offered (FreeRecruits stayed 0). RECRUIT REVEAL: never happened. FIRST BREAKTHROUGH: offered at 2:21.
+
+FINDINGS
+1. New saves get NO free recruit and NO first-time tips (orb, pill, recruit, chest). src/server/Main.server.luau ~2153: the welcome block sets data.welcomed = true for a new save; the next block (~2160) then sees welcomed = true and marks every tip done ({orb, pill, chest, recruit}). Tips attribute on this fresh save read "orb,pill,recruit,chest". Came in with commit 25d0da3 (2026-10-24 18:08, "Quick start: welcome qi paid on join"). Whether that is in the live build is Matteo's to confirm.
+2. The Sect Hall pad (Pad_mainhall2) could not be reached by walking: the avatar stopped 4.6 studs away; a ray from above the pad hits Sect.Peak1.Built.mainhall1.MainHall1.Core.Part 10 studs up, so the pad seems to sit inside the Thatched Hut. 3 attempts over 60 s; bought only when placed on it. Needs a human walk to confirm (MoveTo is cruder than a player).
+3. Two modals back to back at 1:21 to 1:26 (Daily Blessing, then Free summons 1.6 s after), then the breakthrough screen at 2:21 opens on top of the chest card.
+4. The Daily Blessing pays +57K qi at 1:24 when the player has ~9.5K. After that every price is trivially affordable until the breakthrough.
+5. From ~4:35 the trail is empty in realm 2: no pad, no guide target, 0 disciples. Only a one-off "Rebirth ready!" toast.
+6. Night: from ~1:30 the scene is dark (captures c090s onward).
+7. Text collision: the Altar toast draws over the "Free summons!" title.
+
+CAPTURES (captures\, 1280 px wide, cropped to the game view; c = seconds since control)
+launch_screen_minus9s.jpg, launch_entering_minus1s.jpg, c03s.jpg, c20s.jpg, c45s.jpg, c090s.jpg, c120s.jpg, c180s.jpg, c300s.jpg,
+cpopup_daily_blessing_081s.jpg, cpopup_free_summons_chest_086s.jpg, cpopup_breakthrough_141s.jpg, cpopup_spirit_rain_banner_217s.jpg,
+cpopup_shop_nudge_need_more_228s.jpg, cidle_nothing_to_buy_285s.jpg. Every frame at 1 fps: frames\ (run 2), run1_frames\ (run 1, aborted at ~40 s).

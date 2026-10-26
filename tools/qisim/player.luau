@@ -131,7 +131,10 @@ function Player:act()
 		self:note("iap_welcome")
 		return prof.react * 2
 	end
-	if not self.streakDone then
+	-- a brand-new save's first Blessing waits for the first breakthrough (Config.STREAK_NEW_*, the
+	-- client's firstCardDue; no STREAK_NEW_REALM = the old card at join)
+	local newWait = C.STREAK_NEW_REALM and (d.sessions or 1) <= 1 and (d.best or d.realm or 1) < C.STREAK_NEW_REALM and (d.playSec or 0) < (C.STREAK_NEW_LATEST or 0)
+	if not self.streakDone and not newWait then
 		self.streakDone = true
 		local r = W:call("streakFn", "streak")
 		if r then
