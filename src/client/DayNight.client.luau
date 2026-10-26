@@ -83,9 +83,21 @@ local function nightWeight(now)
 	return k * k * (3 - 2 * k)
 end
 
+-- a brand-new save's first NEW_DAY s stay in daylight (thread "Keep new players past 10 minutes": in 2 of
+-- 4 fresh-save runs the sky went dark by 1:30, the new player's first look at the sect), then the
+-- server's hour blends in over NIGHT_FADE s
+local NEW_DAY = 600
+local player = game:GetService("Players").LocalPlayer
+local function dayHold()
+	if player:GetAttribute("NewSave") ~= true then
+		return 1
+	end
+	return math.clamp((time() - NEW_DAY) / Config.NIGHT_FADE, 0, 1)
+end
+
 local last = nil
 RunService.Heartbeat:Connect(function()
-	local k = nightWeight(workspace:GetServerTimeNow())
+	local k = nightWeight(workspace:GetServerTimeNow()) * dayHold()
 	if last and math.abs(k - last) < 0.002 and k ~= 0 and k ~= 1 then
 		return
 	end

@@ -555,6 +555,31 @@ Config.GUIDE_PRIORITY = { "platform", "bridge_fields", "bridge_disciples", "hall
 -- comes with FREE_RECRUITS free recruits, then the trail leads to the Meditation Platform to see the
 -- newcomer, done within SEE_DISCIPLE_RANGE studs of its centre (Main income tick, Tips.client)
 Config.FREE_RECRUITS = 1
+-- more free recruits in the first minutes (thread "Keep new players past 10 minutes", 2026-10-26: 26% of
+-- new players left between 30 s and 2 min, buying, with the rarity reveal seen once; Pet Simulator 99 /
+-- Bee Swarm open with several starter gifts): after the tutorial's free recruit is used, another comes
+-- FREE_RECRUIT_MORE[n] s of play later (the same "Free recruit!" tip). Only for the save whose hall gave
+-- the tutorial recruit (data.freeUsedAt), so old saves never get them.
+Config.FREE_RECRUIT_MORE = { 45, 45 }
+-- once a second (Main income tick, qisim world): true when a further free recruit was just given
+function Config.freeRecruitTick(d)
+	if not d.freeUsedAt or (d.freeRecruits or 0) > 0 then
+		return false
+	end
+	local n = (d.freeMore or 0) + 1
+	local gap = Config.FREE_RECRUIT_MORE[n]
+	if not gap then
+		d.freeUsedAt = nil
+		return false
+	end
+	if (d.playSec or 0) - d.freeUsedAt < gap then
+		return false
+	end
+	d.freeMore = n
+	d.freeUsedAt = nil
+	d.freeRecruits = 1
+	return true
+end
 Config.SEE_DISCIPLE_RANGE = 22
 -- `pads`: the player's open pad parts (PadId, Cost attributes). Returns the pad to lead to, and
 -- whether it is the priority one

@@ -2012,6 +2012,7 @@ local function faceCamera(player, cf)
 	player:SetAttribute("FaceTurn", (player:GetAttribute("FaceTurn") or 0) + 1)
 end
 
+local FIRST_PAD_STAND = 7 -- studs before the Stone Path pad (outside PAD_REACH)
 -- on the peak's hub-side rim, facing into the island
 local function peakStand(plot)
 	return plot.frame * CFrame.new(0, 4, (plot.radius or Config.ISLAND_RADIUS) - 8)
@@ -2022,6 +2023,13 @@ local function placeOnPeak(player)
 	local char = player.Character
 	if s and char then
 		local at = peakStand(s.plot)
+		-- a save with nothing built lands a few studs before the first pad, facing it (thread "Keep new
+		-- players past 10 minutes": the stand is 24 studs from the Stone Path, and the first wait of a
+		-- new session most often ended at that first buy)
+		local first = Config.padById("path")
+		if first and next(s.data.owned) == nil then
+			at = s.plot.frame * CFrame.new(first.x, 4, first.z + FIRST_PAD_STAND)
+		end
 		char:PivotTo(at)
 		faceCamera(player, at)
 	end
@@ -2562,7 +2570,8 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		s.data.freeRecruits -= 1
 		s.data.tips = s.data.tips or {}
 		s.data.tips.recruit = true
-		s.data.seeDisciple = s.data.owned.platform == true -- next: walk to the platform to see it
+		s.data.seeDisciple = s.data.owned.platform == true and not s.data.freeMore -- next: walk to the platform to see it (the first one only)
+		s.data.freeUsedAt = s.data.playSec or 0 -- the next one (Config.FREE_RECRUIT_MORE) counts from here
 	else
 		s.data.qi -= cost
 		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
@@ -3680,6 +3689,10 @@ while true do
 					d.pillReady = true
 					notify:FireClient(player, "pill")
 				end
+			end
+			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
+			if Config.freeRecruitTick(d) then
+				notify:FireClient(player, "freeRecruit")
 			end
 			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
 			if d.seeDisciple then

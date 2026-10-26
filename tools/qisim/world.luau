@@ -116,6 +116,7 @@ function World:tick(dt)
 	d.weekSec = (d.weekSec or 0) + dt
 	d.peakRate = math.max(d.peakRate or 0, gain / math.max(dt, 1e-3))
 	d.peakSteady = math.max(d.peakSteady or 0, M.rate(s, true))
+	C.freeRecruitTick(d) -- Main income tick: the first minutes' further free recruits
 	if d.owned.furnace and not d.pillReady then
 		d.pillTimer = (d.pillTimer or 0) + dt
 		if d.pillTimer >= C.PILL_INTERVAL then
