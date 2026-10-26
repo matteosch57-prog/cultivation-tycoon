@@ -93,6 +93,16 @@ local close
 local nameLine -- the foot line: the star rule, then the tapped disciple's name (named disciples, 2026-10-23)
 local shinyFound = {}
 local mutFound = {}
+local marksOf
+
+-- the weather marks of one entry: { [mutation] = true }
+marksOf = function(key)
+	local out = {}
+	for _, mut in mutFound[key] or {} do
+		out[mut] = true
+	end
+	return out
+end
 
 -- One entry: the shared disciple tile (Toy.discipleTile, the same card as My Sect and the recruit
 -- reveal), its pulls in the corner and its star row under it. Tap: its name under the grid.
@@ -102,7 +112,7 @@ local function tile(parent, rarity, look, pulls, order)
 	local _, tap = Toy.discipleTile(parent, px(54), rarity.name, look, {
 		found = pulls > 0,
 		shiny = shinyFound[key],
-		mut = mutFound[key] and mutFound[key][1],
+		marks = marksOf(key),
 		stars = stars,
 		count = pulls,
 		new = stars > (seen[key] or 0),
@@ -161,20 +171,43 @@ local function fill(body)
 		end
 	end
 
-	-- the foot: progress to the next summons step
+	-- the foot, side by side (a phone has no height to spare): progress to the next summons step of the
+	-- stars, and of the weather marks (all of them: MARK_FULL_BONUS qi forever)
+	local foot = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 5 })
+	Toy.list(foot, true, px(8))
+	local function bar(order, frac, color, str)
+		local b = frame(foot, { Size = UDim2.fromOffset(px(280), px(20)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("2B2033"), ClipsDescendants = true, LayoutOrder = order })
+		Toy.corner(b, UDim.new(1, 0))
+		local bs = Instance.new("UIStroke")
+		bs.Color = INK
+		bs.Thickness = px(3)
+		bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		bs.Parent = b
+		local f = frame(b, { Size = UDim2.fromScale(math.clamp(frac, 0.03, 1), 1), BackgroundTransparency = 0, BackgroundColor3 = color })
+		Toy.corner(f, UDim.new(1, 0))
+		local t = text(b, str, px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3, AutomaticSize = Enum.AutomaticSize.None, Size = UDim2.new(1, -px(10), 1, 0), TextScaled = true })
+		local lim = Instance.new("UITextSizeConstraint")
+		lim.MaxTextSize = px(13)
+		lim.Parent = t
+		return f
+	end
 	local step = Config.INDEX_STEP_STARS
 	local nextAt = (total // step + 1) * step
-	local bar = frame(body, { Size = UDim2.fromOffset(px(420), px(20)), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("2B2033"), ClipsDescendants = true, LayoutOrder = 5 })
-	Toy.corner(bar, UDim.new(1, 0))
-	local bs = Instance.new("UIStroke")
-	bs.Color = INK
-	bs.Thickness = px(3)
-	bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	bs.Parent = bar
-	local fill = frame(bar, { Size = UDim2.fromScale(math.clamp((total % step) / step, 0.03, 1), 1), BackgroundTransparency = 0, BackgroundColor3 = JADE })
-	Toy.corner(fill, UDim.new(1, 0))
-	local barText = total >= max and "Every star found!" or string.format("%d / %d stars · then +%d free summons", total, math.min(nextAt, max), Config.INDEX_STEP_SUMMONS)
-	text(bar, barText, px(13), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	bar(1, (total % step) / step, JADE, total >= max and "Every star found!" or string.format("%d / %d stars · then +%d free summons", total, math.min(nextAt, max), Config.INDEX_STEP_SUMMONS))
+	local marks, allMarks = 0, Config.markTotal()
+	for _, list in mutFound do
+		marks += #list
+	end
+	local mstep = Config.MARK_STEP
+	local mf = bar(2, marks >= allMarks and 1 or (marks % mstep) / mstep, WHITE, marks >= allMarks and string.format("Every weather mark! +%d%% qi forever", math.floor(Config.MARK_FULL_BONUS * 100 + 0.5))
+		or string.format("%d / %d weather marks · then +%d free summons", marks, math.min((marks // mstep + 1) * mstep, allMarks), Config.MARK_STEP_SUMMONS))
+	local mg = Instance.new("UIGradient") -- the four mutation colours along the fill
+	local keys = {}
+	for i, w in Config.WEATHERS do
+		table.insert(keys, ColorSequenceKeypoint.new((i - 1) / (#Config.WEATHERS - 1), w.tint))
+	end
+	mg.Color = ColorSequence.new(keys)
+	mg.Parent = mf
 	-- "A star at 1, 3, 10, 30, 100 pulls of a disciple in one look, then red stars to 1000, blue to 5000"
 	local n, starsAt, later = Config.STAR_ROW, {}, {}
 	for i, at in Config.INDEX_STARS do

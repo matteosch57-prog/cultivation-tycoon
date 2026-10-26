@@ -83,7 +83,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
     gates = C.get("REBIRTH_REALMS", {})
 
     keep = {e.split("=")[0].strip() for e in C["PAD_KEEP"]}
-    S = dict(realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
+    S = dict(marks=set(), msteps=0, realm=1, qi=0.0, owned=set(), workers={}, disc=[], rr=0, lives=1, karma=0, dao={},
              boost=0, pill_t=0, pill=False, orbs=0, orb_t=0, chest=0,
              welcome=0.0, index={}, steps=0, bought=[], ever=set(), best=1)
 
@@ -147,11 +147,11 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         mult = w["mult"] if w and rng.random() < w["chance"] else 1
         if mult > 1:
             log["mutations"] = log.get("mutations", 0) + 1
-        return pick, shiny, mult
+        return pick, shiny, mult, (w["key"] if mult > 1 else None)
 
-    def seat(i, shiny=False, mult=1):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
+    def seat(i, shiny=False, mult=1, mut=None):  # addDisciple: keep the strongest DISCIPLE_CAP (bought ones never leave)
         if isinstance(i, tuple):
-            i, shiny, mult = i
+            i, shiny, mult, mut = i
         # indexAdd: entry = rarity x look (4 looks), stars at INDEX_STARS pulls
         key = (i, rng.randrange(4))
         d = Disc(rar[i][1] * (C.get("SHINY_MULT", 1) if shiny else 1) * mult)  # Config.discBonus
@@ -167,6 +167,12 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
             if steps > S["steps"]:
                 S["chest"] += (steps - S["steps"]) * int(C["INDEX_STEP_SUMMONS"])
                 S["steps"] = steps
+        if mut and C.get("MARK_STEP") and key + (mut,) not in S["marks"]:  # weather marks (Config.MARK_*)
+            S["marks"].add(key + (mut,))
+            msteps = len(S["marks"]) // int(C["MARK_STEP"])
+            if msteps > S["msteps"]:
+                S["chest"] += (msteps - S["msteps"]) * int(C["MARK_STEP_SUMMONS"])
+                S["msteps"] = msteps
 
     def stars():
         return sum(1 for k, n in S["index"].items() for at in C["INDEX_STARS"] if n >= at)
@@ -194,6 +200,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
         cache["price"] = price * (harmony() if C.get("HARMONY_IN_PRICE") else 1)
         reb = 1 + C["REBIRTH_BONUS"] * (S["lives"] - 1)  # Config.rebirthMult
         idx = 1 + C["INDEX_STAR_BONUS"] * stars()
+        if C.get("MARK_STEP") and len(S["marks"]) >= len(rar) * 4 * len(C.get("WEATHERS", [])):
+            idx *= 1 + C.get("MARK_FULL_BONUS", 0)
         cache["away"] = price * dmult() / dmult(True) * harmony() * reb * idx * x2 * (1 + S["welcome"])  # rate(s, true) (no group)
 
     def plan1_base():  # the price income: rate(s, true) without the 2x pass, Welcome Pouch, rebirth, Robux disciples

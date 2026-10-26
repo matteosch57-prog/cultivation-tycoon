@@ -22,6 +22,7 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local PerfMark = require(Shared:WaitForChild("PerfMark"))
 local PerfScene = require(Shared:WaitForChild("PerfScene"))
 local Rig = require(Shared:WaitForChild("Rig"))
@@ -377,14 +378,38 @@ task.spawn(function()
 					end
 				end
 				f.shiny = f.shiny or f.model:FindFirstChild("ShinyOutline")
-				f.mut = f.mut or f.model:FindFirstChild("MutationOutline") -- a weather mutation's tint (Main mutationGlow)
+				f.mut = f.mut or f.model:FindFirstChild("MutationOutline") -- a weather mutation's wash (Main mutationGlow)
 				for _, h in { f.rim, f.fan, f.shiny, f.mut } do
-					local on = lit and hl < b.HL
+					-- one Highlight on a figure draws at a time: a mutated figure shows its wash, not its rim
+					local on = lit and hl < b.HL and not (h == f.rim and f.mut)
 					if on then
 						hl += 1
 					end
 					setHighlight(h, on)
 				end
+			end
+		end
+	end
+end)
+
+-- a mutated figure's wash moves its mutation's way (owner pick 2026-10-26 "B but with a different per
+-- type", Config.mutLook): ~20 times a second, only the washes the budget left on
+local washT = 0
+RunService.Heartbeat:Connect(function(dt)
+	washT += dt
+	if washT < 0.05 then
+		return
+	end
+	washT = 0
+	local t = os.clock()
+	for m, f in figures do
+		local h = f.mut
+		if h and h.Enabled then
+			local w = Config.mutation(m:GetAttribute("Mutation"))
+			if w then
+				local c, level = Config.mutLook(w, t)
+				h.FillColor, h.OutlineColor = c, c
+				h.FillTransparency = 0.75 - 0.45 * level
 			end
 		end
 	end

@@ -1805,6 +1805,9 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b, c, d)
 	elseif kind == "indexStep" then -- the disciple index paid a step (D60): `a` free summons
 		toast(string.format("Index step! +%d free summons", a), GOLD, 3)
 		return
+	elseif kind == "markStep" then -- weather marks paid a step: `a` free summons
+		toast(string.format("Weather marks! +%d free summons", a), GOLD, 3)
+		return
 	elseif kind == "expand" then
 		toast("More land!", Color3.fromHex("9FF5C8"), 3)
 		return

@@ -149,7 +149,10 @@ local function cardHead(card, rarityName, one, faceSize, nameSize)
 	Toy.list(tag, true, px(6))
 	local w = Config.mutation(mut)
 	if w then -- a weather mutation (Heavenly Weather) in its weather's colour, first
-		Toy.text(tag, string.format("%s x%s", w.mut, tostring(w.mult)), math.floor(nameSize * 0.55), w.color, { LayoutOrder = 0 })
+		local t = Toy.text(tag, string.format("%s x%s", w.mut, tostring(w.mult)), math.floor(nameSize * 0.55), w.tint, { LayoutOrder = 0 })
+		Toy.mutMove(t, w, function(c)
+			t.TextColor3 = c
+		end)
 	end
 	if shiny then
 		Toy.text(tag, "Shiny", math.floor(nameSize * 0.55), GOLD, { LayoutOrder = 1 })

@@ -742,7 +742,7 @@ local function rate(s, away)
 	local favorite = data.favoriteClaimed and 1 + Config.FAVORITE_BONUS or 1
 	local welcome = 1 + (data.qiBonus or 0) -- Welcome Pouch: +10% forever (Shop)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
-	local index = Config.indexMult(data.index) -- the disciple index's stars (D60)
+	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
 	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index
 end
 
@@ -1047,6 +1047,18 @@ end
 -- the aura's circle behind the head (now higher, bigger and drawn in front of it)
 -- a mutated disciple's seat (Heavenly Weather): the Mutation attribute (DiscipleInspect's card) and a
 -- slow rise of motes in its weather's colour from the cushion (no PointLight: owner's no-fake-light rule), under the Shiny glints when it has both
+-- a mutation's particle colours: its tint, or the whole rainbow for Starforged
+local function mutColors(w)
+	if w.motion == "rainbow" then
+		local keys = {}
+		for i = 0, 6 do
+			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(i / 6, 0.6, 1)))
+		end
+		return ColorSequence.new(keys)
+	end
+	return ColorSequence.new(w.tint:Lerp(Color3.new(1, 1, 1), 0.3), w.tint)
+end
+
 local function mutationGlow(m, mut)
 	local w = Config.mutation(mut)
 	m:SetAttribute("Mutation", mut)
@@ -1076,7 +1088,7 @@ local function mutationGlow(m, mut)
 	e.SpreadAngle = Vector2.new(0, 0)
 	e.Rotation = NumberRange.new(0, 360)
 	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
-	e.Color = ColorSequence.new(w.color)
+	e.Color = mutColors(w)
 	e.LightEmission = 0.6
 	e.LightInfluence = 0
 	e.Brightness = 2.5
@@ -1098,7 +1110,7 @@ local function mutationGlow(m, mut)
 			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.2) }),
 			Squash = NumberSequence.new(1.2),
 		},
-		Thunderborn = { -- violet sparks crackling out in every direction
+		Thunderborn = { -- yellow sparks crackling out in every direction
 			Texture = "rbxasset://textures/particles/sparkles_main.dds",
 			Rate = 14,
 			Lifetime = NumberRange.new(0.12, 0.3),
@@ -1141,7 +1153,7 @@ local function mutationGlow(m, mut)
 		end
 		local fx = Instance.new("ParticleEmitter")
 		fx.Name = "MutationFx"
-		fx.Color = ColorSequence.new(w.color:Lerp(Color3.new(1, 1, 1), 0.25), w.color)
+		fx.Color = mutColors(w)
 		fx.LightEmission = 0.7
 		fx.LightInfluence = 0
 		fx.Brightness = 2
@@ -1150,16 +1162,17 @@ local function mutationGlow(m, mut)
 			fx[k] = v
 		end
 		fx.Parent = torso
-		-- the figure in its weather's colour (Play check 2026-10-26: the particles alone were subtle in
-		-- daylight, Grow a Garden recolours a mutated crop): a tinted fill and outline, switched on for the
-		-- nearest figures only by CultivatorIdle's Highlight budget, shared with the Shiny outline
+		-- the figure washed in its mutation's colour (owner pick 2026-10-26 "B but with a different per
+		-- type", Grow a Garden recolours a mutated crop): a strong fill and outline that CultivatorIdle
+		-- moves each mutation's own way (Config.mutLook) and switches on for the nearest figures only (its
+		-- Highlight budget, shared with the Shiny outline)
 		local h = Instance.new("Highlight")
 		h.Name = "MutationOutline"
 		h.Adornee = avatar
-		h.FillColor = w.color
-		h.FillTransparency = 0.72
-		h.OutlineColor = w.color
-		h.OutlineTransparency = 0.2
+		h.FillColor = w.tint
+		h.FillTransparency = 0.4
+		h.OutlineColor = w.tint
+		h.OutlineTransparency = 0
 		h.DepthMode = Enum.HighlightDepthMode.Occluded
 		h.Parent = m
 	end)
@@ -2424,7 +2437,16 @@ local function addDisciple(s, name, force, noBuild, look, shiny, mut)
 	end
 	if mut ~= "" then
 		d.mutIndex = d.mutIndex or {}
-		d.mutIndex[Config.indexKey(name, look) .. "#" .. mut] = true
+		local key = Config.indexKey(name, look) .. "#" .. mut
+		if not d.mutIndex[key] then -- a new weather mark: every MARK_STEP of them pays free summons
+			d.mutIndex[key] = true
+			local steps = Config.markCount(d.mutIndex) // Config.MARK_STEP
+			if steps > (d.markSteps or 0) then
+				giveSummons(s, (steps - (d.markSteps or 0)) * Config.MARK_STEP_SUMMONS)
+				d.markSteps = steps
+				notify:FireClient(s.player, "markStep", Config.MARK_STEP_SUMMONS)
+			end
+		end
 	end
 	if not noBuild then -- a multi-recruit rebuilds once at the end
 		buildDisciples(s, kept and Config.indexKey(name, look) or nil)

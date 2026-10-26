@@ -288,11 +288,14 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
     # INDEX_STARS (disciple index lever): pulls of one rarity x look give stars at these counts;
     # each star adds INDEX_STAR_BONUS income (outside the price income); every INDEX_STEP_STARS stars
     # pays INDEX_STEP_SUMMONS free summons
-    idx = {"pulls": {}, "stars": 0, "paid_steps": 0}
+    idx = {"pulls": {}, "stars": 0, "paid_steps": 0, "marks": set(), "mark_steps": 0}
     out["index"] = idx
 
     def idx_mult():
-        return 1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]
+        full = 1
+        if C.get("MARK_STEP") and len(idx["marks"]) >= len(C["RARITIES"]) * int(C.get("INDEX_LOOKS", 4)) * len(C.get("WEATHERS", [])):
+            full += C.get("MARK_FULL_BONUS", 0)
+        return (1 + C.get("INDEX_STAR_BONUS", 0) * idx["stars"]) * full
 
     def star_of(key):  # Config.indexStars: the stars of one entry
         n = idx["pulls"].get(key, 0)
@@ -347,12 +350,30 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
         b = C["RARITIES"][pick][1]
         if C.get("SHINY_CHANCE") and rng.random() < C["SHINY_CHANCE"]:
             b *= C.get("SHINY_MULT", 1)
+        mut = None
         if wx["now"] and rng.random() < wx["now"]["chance"]:  # Heavenly Weather: its mutation
             b *= wx["now"]["mult"]
+            mut = wx["now"]["key"]
             out["mutations"] = out.get("mutations", 0) + 1
         d = Disc(b)
         d.key = idx_record(pick)
+        if mut and d.key is not None:
+            mark_record(d.key + (mut,))
         return d
+
+    # Weather marks (Config.MARK_*): one per index entry x weather mutation; every MARK_STEP pays
+    # MARK_STEP_SUMMONS free summons, all of them MARK_FULL_BONUS income (outside the price income)
+    def mark_record(key):
+        if not C.get("MARK_STEP") or key in idx["marks"]:
+            return
+        idx["marks"].add(key)
+        steps = len(idx["marks"]) // int(C["MARK_STEP"])
+        while idx["mark_steps"] < steps:
+            idx["mark_steps"] += 1
+            for _ in range(int(C.get("MARK_STEP_SUMMONS", 0))):
+                S["disciples"].append(roll())
+            S["disciples"].sort(reverse=True)
+            del S["disciples"][C["DISCIPLE_CAP"] + vip:]
 
     # REALM_PADS (proposal lever, owner 2026-10-22 "unlock more with the realms"): realm r offers only
     # the first REALM_PADS[r] pads of the ladder (sorted by unlock, then list order); the rest wait

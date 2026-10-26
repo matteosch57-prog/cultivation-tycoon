@@ -143,7 +143,7 @@ local function fillSect(body)
 		tap.Activated:Connect(function()
 			if ui.nameLine then
 				ui.nameLine.Text = (mut and mut.mut .. " " or "") .. (isShiny and "Shiny " or "") .. Config.discipleName(name, look) .. " · " .. name .. " · " .. tag
-				ui.nameLine.TextColor3 = (mut and mut.color or Config.rarity(name).color):Lerp(WHITE, 0.25)
+				ui.nameLine.TextColor3 = (mut and mut.tint or Config.rarity(name).color):Lerp(WHITE, 0.25)
 			end
 		end)
 	end

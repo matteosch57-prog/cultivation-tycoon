@@ -817,6 +817,13 @@ Config.INDEX_STEP_STARS = 10
 -- Kept out of prices like the index (sim_game.py DISCIPLE_STAR_BONUS: +1 life in 30 days at most).
 Config.DISCIPLE_STAR_BONUS = 0.2
 Config.INDEX_STEP_SUMMONS = 3
+-- Weather marks (owner 2026-10-26 "index whatever you recommend", Bee Swarm Simulator's gifted marks):
+-- each index entry has one mark per weather mutation (data.mutIndex), lit the first time that disciple
+-- comes in that mutation. Every MARK_STEP marks pays MARK_STEP_SUMMONS free summons; all of them
+-- (#RARITIES x #DISCIPLE_LOOKS x #WEATHERS) pay MARK_FULL_BONUS qi forever, kept out of prices like the index
+Config.MARK_STEP = 12
+Config.MARK_STEP_SUMMONS = 3
+Config.MARK_FULL_BONUS = 0.1
 Config.DISCIPLE_CAP = 41 -- disciples kept at most (the largest sect's seats: MAX_DISCIPLES + VIP + SLOT_PADS)
 Config.RECEIPTS_KEPT = 50 -- PurchaseIds remembered per player (a retried receipt is granted once)
 -- World shop (research 2026-10-21_shop_placement, mock docs/art/mocks/shop_layout_A.png, D33): each
@@ -950,10 +957,10 @@ Config.WEATHER_FIRST = Config.TIDE_FIRST + Config.TIDE_INTERVAL / 2 -- s after t
 Config.WEATHER_INTERVAL = Config.TIDE_INTERVAL
 Config.WEATHER_WARN = 20 -- s of heads-up toast before a slot
 Config.WEATHERS = {
-	{ key = "rain", name = "Spirit Rain", mut = "Dewy", chance = 0.2, mult = 2, weight = 0.62, duration = 150, color = Color3.fromRGB(111, 183, 255) },
-	{ key = "thunder", name = "Thunder Tribulation", mut = "Thunderborn", chance = 0.1, mult = 4, weight = 0.22, duration = 120, color = Color3.fromRGB(199, 155, 255) },
-	{ key = "blood", name = "Blood Moon", mut = "Bloodlit", chance = 0.1, mult = 5, weight = 0.11, duration = 150, color = Color3.fromRGB(255, 93, 108) },
-	{ key = "star", name = "Starfall", mut = "Starforged", chance = 0.05, mult = 10, weight = 0.05, duration = 120, color = Color3.fromRGB(159, 243, 255) },
+	{ key = "rain", name = "Spirit Rain", mut = "Dewy", chance = 0.2, mult = 2, weight = 0.62, duration = 150, color = Color3.fromRGB(111, 183, 255), tint = Color3.fromRGB(64, 156, 255), motion = "ebb" },
+	{ key = "thunder", name = "Thunder Tribulation", mut = "Thunderborn", chance = 0.1, mult = 4, weight = 0.22, duration = 120, color = Color3.fromRGB(199, 155, 255), tint = Color3.fromRGB(255, 226, 52), motion = "spark" },
+	{ key = "blood", name = "Blood Moon", mut = "Bloodlit", chance = 0.1, mult = 5, weight = 0.11, duration = 150, color = Color3.fromRGB(255, 93, 108), tint = Color3.fromRGB(226, 24, 48), motion = "beat" },
+	{ key = "star", name = "Starfall", mut = "Starforged", chance = 0.05, mult = 10, weight = 0.05, duration = 120, color = Color3.fromRGB(159, 243, 255), tint = Color3.fromRGB(255, 110, 220), motion = "rainbow" },
 }
 -- a save that never saw weather (data.weatherSeen nil) gets a Spirit Rain for its server at
 -- WEATHER_NEWCOMER_AT s of its session, unless weather is on or a slot opens within WEATHER_NEWCOMER_GAP s
@@ -968,6 +975,29 @@ function Config.weather(key)
 		end
 	end
 	return nil
+end
+
+-- A mutation's own look (owner 2026-10-26 "B but with a different per type": the figure and its card
+-- washed in the mutation's colour, each moving its own way so all four tell apart on a phone).
+-- `tint` is the mutation's colour (not the sky's `color`: lavender and pale cyan vanished on purple and
+-- white robes, Studio check 2026-10-26); `motion` how it moves. At time `t` (s) returns the colour now
+-- and a level 0..1 (how strong the wash is now):
+--   ebb      Dewy: rises and falls slowly, like water
+--   spark    Thunderborn: flickers on and off fast, like a spark
+--   beat     Bloodlit: a double heartbeat every 1.2 s
+--   rainbow  Starforged: cycles through the rainbow (Pet Simulator 99's Rainbow pets)
+function Config.mutLook(w, t)
+	if w.motion == "rainbow" then
+		return Color3.fromHSV((t * 0.3) % 1, 0.7, 1), 0.8
+	elseif w.motion == "spark" then
+		local n = math.noise(t * 7, 0.5) -- -1..1, smooth but quick
+		return w.tint:Lerp(Color3.new(1, 1, 1), n > 0.25 and 0.45 or 0), n > -0.15 and 1 or 0.25
+	elseif w.motion == "beat" then
+		local p = (t % 1.2) / 1.2
+		local beat = math.max(math.exp(-((p - 0.08) / 0.05) ^ 2), 0.7 * math.exp(-((p - 0.3) / 0.05) ^ 2))
+		return w.tint, 0.3 + 0.7 * beat
+	end
+	return w.tint, 0.5 + 0.5 * math.sin(t * math.pi * 2 / 3)
 end
 
 -- the weather whose mutation is `mut` (its name, "Dewy"), nil for none
@@ -1546,8 +1576,25 @@ end
 function Config.discipleStarMult(count)
 	return 1 + Config.DISCIPLE_STAR_BONUS * Config.indexStars(count)
 end
-function Config.indexMult(index)
-	return 1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)
+-- `marks` = the weather marks found (Config.markCount); every one of them adds MARK_FULL_BONUS
+function Config.indexMult(index, marks)
+	local full = (marks or 0) >= Config.markTotal() and 1 + Config.MARK_FULL_BONUS or 1
+	return (1 + Config.INDEX_STAR_BONUS * Config.indexTotalStars(index)) * full
+end
+
+-- weather marks: every rarity x look x weather mutation, and how many of a data.mutIndex are lit
+function Config.markTotal()
+	return #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.WEATHERS
+end
+function Config.markCount(mutIndex)
+	local n = 0
+	for key in mutIndex or {} do
+		local mut = string.match(key, "#(.+)$")
+		if Config.mutation(mut) then
+			n += 1
+		end
+	end
+	return n
 end
 
 -- seconds from the Recruit press to the burst (Juice lights the platform then)
