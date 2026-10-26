@@ -597,3 +597,15 @@ the log as a D-number.
   with Hands bought (Karma Shop, 5 karma), Auto Build also takes buildings never built before (Mega
   Mansion Tycoon's whole-house Auto Build); the Hands tap button stays. qisim median / engaged 14 days x
   5 seeds: identical (the sims already counted Hands as no walking).
+- **D88 First 10 minutes (owner 2026-10-26: "this is what we should aim to do better", Roblox's new-user
+  first-session curve 79% 1 min / 38% 5 min / 21% 10 min; journal study `tools/first5_report.luau`, 700
+  first sessions, `docs/art/mocks/2026-10-26_first5/`):** players quit mid buying streak (5-9 s after a
+  buy), not at a wall; the first breakthrough loses the most (22% within 60 s). Fixed: the quick-start
+  welcome (25d0da3) had stamped `welcomed` before the tips read it, so new saves since 2026-10-24 got no
+  free first recruit, no first-time tips, no starter chest. Owner picks: (1) "A and B": a gold Rebirth pad
+  at the breakthrough spot in a rebirth gate realm (trail + HUD Next lead to it, standing on it opens the
+  Rebirth screen, never auto built), and the first `REBIRTH_TIP_TIMES` rebirths open the screen by
+  themselves once the price is held; (2) "A": one card at a time (`Shared.Screens`: free summons, the
+  breakthrough and auto Rebirth screens wait for any open card) and a new save's first Daily Blessing
+  waits for the first breakthrough + `STREAK_NEW_AFTER` s (`STREAK_NEW_LATEST` s at most). qisim
+  onesitslow / median / engaged: realm 2 and rebirth 1 0.1-0.6 min sooner, long game unchanged.
