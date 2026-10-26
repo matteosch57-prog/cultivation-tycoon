@@ -85,7 +85,9 @@ end
 local rain = emitter({
 	Name = "Rain",
 	Texture = "rbxasset://textures/particles/smoke_main.dds",
-	Orientation = Enum.ParticleOrientation.VelocityParallel,
+	-- facing the camera, kept upright: VelocityParallel turned the squashed quads edge-on to a level
+	-- camera and the rain never showed (Studio check 2026-10-26)
+	Orientation = Enum.ParticleOrientation.FacingCameraWorldUp,
 	Speed = NumberRange.new(70, 90),
 	Lifetime = NumberRange.new(0.7, 0.9),
 	Size = NumberSequence.new(0.18),
@@ -245,9 +247,9 @@ local function start(key)
 		petals.Enabled = true
 	end
 	if k.moon then
-		-- 300 studs off at a third of the size: the same in the sky, and still drawn (at 900 Studio and low
+		-- 300 studs off and half the size: a bit bigger in the sky (it read small on a phone), and still drawn (at 900 Studio and low
 		-- graphics never drew it, Studio check 2026-10-26)
-		moon = part({ Name = "WeatherMoon", Material = Enum.Material.Neon, Color = k.moon, Shape = Enum.PartType.Ball, Size = Vector3.new(30, 30, 30), Transparency = 1 })
+		moon = part({ Name = "WeatherMoon", Material = Enum.Material.Neon, Color = k.moon, Shape = Enum.PartType.Ball, Size = Vector3.new(45, 45, 45), Transparency = 1 })
 		moon.Parent = camera()
 		tween(moon, FADE, { Transparency = 0.05 })
 	end

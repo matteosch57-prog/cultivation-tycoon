@@ -991,7 +991,8 @@ function Config.mutLook(w, t)
 		return Color3.fromHSV((t * 0.3) % 1, 0.7, 1), 0.8
 	elseif w.motion == "spark" then
 		local n = math.noise(t * 7, 0.5) -- -1..1, smooth but quick
-		return w.tint:Lerp(Color3.new(1, 1, 1), n > 0.25 and 0.45 or 0), n > -0.15 and 1 or 0.25
+		-- peaks lower than the others: at full strength the face and robe vanished into a gold statue
+		return w.tint:Lerp(Color3.new(1, 1, 1), n > 0.25 and 0.3 or 0), n > -0.15 and 0.67 or 0.2
 	elseif w.motion == "beat" then
 		local p = (t % 1.2) / 1.2
 		local beat = math.max(math.exp(-((p - 0.08) / 0.05) ^ 2), 0.7 * math.exp(-((p - 0.3) / 0.05) ^ 2))
