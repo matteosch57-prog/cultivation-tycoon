@@ -1922,7 +1922,7 @@ function Config.relicMult(rank)
 	local _, gold, rainbow = Config.relicTiers(rank)
 	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
 end
-Config.MISSION_PHONE = "line" -- the phone tracker: "line" (badge + the closest mission), "icons" (one icon each) or "list" (the PC panel)
+Config.MISSION_PHONE = "line" -- the phone tracker: "line" (badge + the mission just moved, else each in turn every 5 s), "icons" (one icon each) or "list" (the PC panel)
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier

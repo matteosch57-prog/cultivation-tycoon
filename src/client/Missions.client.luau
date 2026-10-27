@@ -363,6 +363,8 @@ local function activeList(m)
 	return out
 end
 
+local lastN, focusKey, focusAt, rotation, rotateAt = {}, nil, -math.huge, 0, 0
+local FOCUS_SEC, ROTATE_SEC = 8, 5
 function compactTracker(m)
 	local card = glassStrip()
 	local badge = px(24)
@@ -382,15 +384,26 @@ function compactTracker(m)
 			corner(fill, UDim.new(1, 0))
 		end
 	else
-		local best
+		-- which mission: the one that just moved for FOCUS_SEC, then each in turn every ROTATE_SEC
+		-- (owner 2026-10-27: "the last changing? or it swaps at intervals of time?")
+		local now = os.clock()
+		for i, e in list do
+			local key = e.x.g .. (e.daily and "#d" or "")
+			if lastN[key] and e.x.n > lastN[key] then
+				focusKey, focusAt, rotateAt = key, now, now
+			end
+			lastN[key] = e.x.n
+			e.key, e.i = key, i
+		end
+		local shown
 		for _, e in list do
-			local r = e.x.n / math.max(1, e.x.need)
-			if not best or r > best.r then
-				best = { e = e, r = r }
+			if e.key == focusKey and now - focusAt < FOCUS_SEC then
+				shown = e
 			end
 		end
-		if best then
-			panelRow(card, best.e.x, px(150), px(10), 1, best.e.daily)
+		shown = shown or list[rotation % math.max(1, #list) + 1]
+		if shown then
+			panelRow(card, shown.x, px(150), px(10), 1, shown.daily)
 		end
 		if #list > 1 then
 			text(card, "+" .. (#list - 1), px(11), MUTED, { LayoutOrder = 2 })
@@ -771,5 +784,13 @@ task.spawn(function()
 	while true do
 		task.wait(1)
 		place()
+		-- the phone strip's turn: the next mission every ROTATE_SEC once nothing has moved for FOCUS_SEC
+		local now = os.clock()
+		if tracker and not hidden and not page and Config.MISSION_PHONE == "line" and select(2, computeScale())
+			and now - focusAt >= FOCUS_SEC and now - rotateAt >= ROTATE_SEC then
+			rotateAt = now
+			rotation += 1
+			drawTracker()
+		end
 	end
 end)
