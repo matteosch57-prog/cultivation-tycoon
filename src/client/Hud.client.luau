@@ -260,7 +260,6 @@ end
 -- build
 local toastLayer
 local autoToast -- the last Auto Build toast (the next one replaces it)
-local autoWaiting = 0 -- my pads Auto Build will take (counted with the Next pick)
 local rebuildAll -- forward
 local popGain -- forward
 local toast -- forward (it used to live on `ui`, which build() replaces: the recruit button
@@ -1592,15 +1591,7 @@ RunService.RenderStepped:Connect(function(dt)
 		goalAcc = 0
 		-- Roblox's touch controls appear and resize late (and on rotation): re-place around them
 		layout()
-		local mine = myPads()
-		goalPad = Config.guidePick(mine) -- the recruiting building first, else the cheapest
-		-- the Auto Build count (D85), counted here at 2 Hz, not by a workspace scan every frame
-		autoWaiting = 0
-		for _, p in mine do
-			if p:GetAttribute("Auto") then
-				autoWaiting += 1
-			end
-		end
+		goalPad = Config.guidePick(myPads()) -- the recruiting building first, else the cheapest
 	end
 	if goalPad and goalPad.Parent then
 		put(ui.goal, "Visible", not state.modal)
@@ -1720,7 +1711,7 @@ RunService.RenderStepped:Connect(function(dt)
 
 	if ui.aCol.Visible then
 		local on = not player:GetAttribute("AutoBuildOff")
-		local n = on and autoWaiting or 0
+		local n = on and (player:GetAttribute("AutoWaiting") or 0) or 0 -- the server counts (far pads stream out)
 		put(ui.autoLabel, "Text", not on and "Off" or n > 0 and tostring(n) or "On")
 		put(ui.autoLabel, "TextColor3", on and GOLD or Color3.fromHex("C8C0D0"))
 		put(ui.autoBtn, "BackgroundColor3", on and FACE_READY or FACE)

@@ -950,6 +950,14 @@ local function publish(player)
 	-- Auto Build (D85): open (the HUD shows its switch) and switched off by the player
 	player:SetAttribute("AutoBuildOpen", Config.autoBuildOpen(d))
 	player:SetAttribute("AutoBuildOff", d.autoOff == true)
+	-- the HUD hand's count: counted here, since a streaming client never sees the far pads
+	local waiting = 0
+	for _, part in s.pads or {} do
+		if part.Parent and part:GetAttribute("Auto") then
+			waiting += 1
+		end
+	end
+	player:SetAttribute("AutoWaiting", waiting)
 	Dots.publish(player, s) -- which red dots are lit (Dots.luau)
 	for _, n in Config.DAO do
 		player:SetAttribute("Dao_" .. n.key, dao(d, n.key))
