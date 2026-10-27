@@ -15,6 +15,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 local HttpService = game:GetService("HttpService")
+local TextService = game:GetService("TextService")
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
 local Toy = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Toy"))
 
@@ -378,6 +379,22 @@ task.spawn(function()
 	end
 end)
 
+-- the qi number's width only grows while its length holds (owner 2026-10-27 on iPhone: the digits are
+-- proportional, so each tick resized the top group and the Base / Ranks chips and the phone row jumped);
+-- a new length (a digit more, a reset at breakthrough) measures it afresh
+local function qiWidth()
+	local t = ui.qi.Text
+	local w = TextService:GetTextSize(t, ui.qi.TextSize, Enum.Font.FredokaOne, Vector2.new(10000, 10000)).X + px(4)
+	if #t ~= state.qiLen then
+		state.qiLen, state.qiW = #t, w
+	else
+		state.qiW = math.max(state.qiW, w)
+	end
+	if ui.qi.Size.X.Offset ~= state.qiW then
+		ui.qi.Size = UDim2.fromOffset(state.qiW, 0)
+	end
+end
+
 local function build()
 	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
 	-- destroy them; they re-parent on Rebuilt
@@ -416,7 +433,9 @@ local function build()
 	local colLayout = Instance.new("UIListLayout")
 	colLayout.Padding = UDim.new(0, px(1))
 	colLayout.Parent = col
-	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1, AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left })
+	state.qiLen = nil
+	qiWidth()
 	ui.rate = text(col, "+0/s", px(16), Color3.fromHex("9FF5C8"), { LayoutOrder = 2 })
 	-- Spirit Tide line (mock tycoon_ideas idea 3 A): countdown, then the 2x timer
 	local tideRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
@@ -1324,7 +1343,7 @@ local function layout()
 	if state.phoneMode and inset.Max.X >= rootW - px(60) then
 		local topRight = (ui.top.AbsolutePosition.X - rootPos.X + ui.top.AbsoluteSize.X) / unscale
 		if rootW - px(14) - rowW > topRight + px(10) then
-			stackTop = inset.Min.Y + px(8)
+			stackTop = inset.Min.Y + px(20) -- room for the Fly button's swap badge above it (owner: it was cut)
 		end
 	end
 	need += math.max(0, n - 1) * px(RAIL_GAP)
@@ -1683,7 +1702,11 @@ RunService.RenderStepped:Connect(function(dt)
 	else
 		state.shownQi += diff * math.min(1, dt * 8)
 	end
-	put(ui.qi, "Text", short(state.shownQi))
+	local qiText = short(state.shownQi)
+	if qiText ~= ui.qi.Text then
+		ui.qi.Text = qiText
+		qiWidth()
+	end
 
 	goalAcc += dt
 	if goalAcc > 0.5 then
