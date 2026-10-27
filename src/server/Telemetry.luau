@@ -132,6 +132,10 @@ Telemetry.EVENTS = {
 		},
 		question = "Do sessions with a friend last longer than SessionEnd's (all sessions), do players invite, and does the group gift get claimed (D35)?",
 	},
+	LoadTime = {
+		fields = { "server (PlayerAdded to PeakReady) | enter_<step> (client: Play to the launch screen gone; step = the last one it waited for: loaded | hud | peak | body | skip | timeout)", "seconds (secBucket)", "device (phone | tablet | pc | console; server for the server stage) .. |new or |return" },
+		question = "How long is the loading screen on real devices, and which step makes it long (owner 2026-10-27: \"make the loading more optimized and less long\")?",
+	},
 	ClientFps = {
 		fields = { "zone (PerfScene.ZONES: disciples | hub | peak | bridge | sky)", "median fps of the window (fpsBucket)", "phone | tablet | pc | console" },
 		question = "Where in the world do phones lose fps (owner's Pixel near the disciples, 2026-10-23), and on which devices?",
@@ -314,7 +318,7 @@ local function send(what, fn, ...)
 end
 
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
-local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, AutoBuild = true, ClientFps = true, ClientLoad = true }
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, AutoBuild = true, ClientFps = true, ClientLoad = true, LoadTime = true }
 
 -- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
 function Telemetry.customValue(player, name, value, ...)
@@ -394,7 +398,42 @@ local function num(v, max)
 	v = tonumber(v)
 	return (v and v == v) and math.clamp(v, 0, max) or nil
 end
+local SECONDS = { 2, 4, 6, 8, 10, 15, 20, 30, 60 }
+function Telemetry.secBucket(sec)
+	local lo = 0
+	for _, hi in SECONDS do
+		if sec < hi then
+			return lo .. "-" .. hi
+		end
+		lo = hi
+	end
+	return lo .. "+"
+end
+
+-- load time: the server's join (Main onJoin) or the client's launch screen (Launch.client via
+-- PerfReport, once per join). Also a journal code with the whole seconds, for tools/first5_report
+function Telemetry.loadTime(player, stage, sec, isNew, device)
+	sec = math.clamp(sec, 0, 600)
+	local who = (device or "server") .. (if isNew then "|new" else "|return")
+	if STUDIO then
+		print(string.format("[Tycoon][load] %s %.1f s (%s)", stage, sec, who))
+	end
+	Journal.note(player, string.format("load:%s:%d", stage, math.min(120, math.round(sec))))
+	Telemetry.custom(player, "LoadTime", stage, Telemetry.secBucket(sec), who)
+end
+
+local LAUNCH_LAST = { loaded = true, hud = true, peak = true, body = true, skip = true, timeout = true }
+local launchSent = setmetatable({}, { __mode = "k" })
+
 function Telemetry.clientPerf(player, t)
+	if type(t) == "table" and t.launch == true then
+		local sec = num(t.sec, 600)
+		if sec and LAUNCH_LAST[t.last] and DEVICES[t.device] and not launchSent[player] then
+			launchSent[player] = true
+			Telemetry.loadTime(player, "enter_" .. t.last, sec, t.new == true, t.device)
+		end
+		return
+	end
 	if type(t) ~= "table" or not ZONES[t.zone] or not DEVICES[t.device] then
 		return
 	end

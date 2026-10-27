@@ -94,6 +94,7 @@ end
 
 local close -- forward
 local refreshStyles -- forward (the Styles page)
+local styleIcon -- forward (a Sect Style's icon)
 
 -- an amount of a currency: its icon, then the number (owner: every currency always shows its icon)
 local function amount(parent, key, size, color, props)
@@ -170,8 +171,11 @@ local function refresh()
 	ui.style.Visible = nextStyle ~= nil
 	if nextStyle then
 		ui.styleName.Text = "New style: " .. nextStyle.name
-		ui.styleSwatch.BackgroundColor3 = nextStyle.swatch[1]
-		ui.styleTrim.BackgroundColor3 = nextStyle.swatch[2]
+		if ui.styleIconFor ~= nextStyle.id then
+			ui.styleIconBox:ClearAllChildren()
+			styleIcon(ui.styleIconBox, px(30), nextStyle)
+			ui.styleIconFor = nextStyle.id
+		end
 	end
 
 	-- closed: what it waits for, on the button and spelled out under it (Config.rebirthNeed)
@@ -267,14 +271,29 @@ local function swatch(parent, size, st)
 	return chip, trim
 end
 
+-- a style's own icon (icon sheet cells "style_<id>", owner 2026-10-27 "missing icons"); its colour chip
+-- until the sheet with those cells is live. Returns the icon (or chip) and the chip's trim (nil for an icon)
+styleIcon = function(parent, size, st)
+	local key = "style_" .. (st and st.id or "classic")
+	if Config.ICON_ATLAS.keys[key] then
+		return Toy.icon(parent, key, size), nil
+	end
+	return swatch(parent, size, st)
+end
+
 refreshStyles = function()
 	local done = player:GetAttribute("Rebirths") or 0
 	local worn = player:GetAttribute("SectStyle") or "classic"
 	for _, t in ui.styleTiles do
 		local open = t.st == nil or t.st.rebirth <= done
 		local id = t.st and t.st.id or "classic"
-		t.chip.BackgroundTransparency = open and 0 or 0.6
-		t.trim.BackgroundTransparency = open and 0 or 0.6
+		if t.trim then
+			t.chip.BackgroundTransparency = open and 0 or 0.6
+			t.trim.BackgroundTransparency = open and 0 or 0.6
+		else -- a locked style's icon is a dark silhouette (the index's not-found look)
+			t.chip.ImageColor3 = open and Color3.new(1, 1, 1) or Color3.fromHex("2A2238")
+			t.chip.ImageTransparency = open and 0 or 0.25
+		end
 		if id == worn then
 			t.label.Text = "Wearing"
 			t.button.BackgroundColor3 = GOLD
@@ -307,7 +326,7 @@ local function buildStyles(body)
 		st = st or nil
 		local col = Toy.frame(rows[r], { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i, Rotation = TILT[(i - 1) % #TILT + 1] or 0 })
 		Toy.list(col, false, px(3))
-		local chip, trim = swatch(col, px(48), st)
+		local chip, trim = styleIcon(col, px(52), st)
 		chip.LayoutOrder = 1
 		text(col, st and st.name or "Classic", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 		local bHolder, bBtn = Toy.button(col, UDim2.fromOffset(px(76), px(24)), JADE, px(8))
@@ -449,8 +468,7 @@ build = function()
 	-- the Sect Style it unlocks: its chip and name
 	ui.style = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 10, Rotation = -1, Visible = false })
 	Toy.list(ui.style, true, px(8))
-	ui.styleSwatch, ui.styleTrim = swatch(ui.style, px(26), nil)
-	ui.styleSwatch.LayoutOrder = 1
+	ui.styleIconBox = Toy.frame(ui.style, { Size = UDim2.fromOffset(px(30), px(30)), LayoutOrder = 1 })
 	ui.styleName = text(ui.style, "", px(18), Color3.fromHex("FFD6E4"), { LayoutOrder = 2 })
 
 	ui.leftover = text(body, "", px(18), Color3.fromHex("C9FFE4"), { LayoutOrder = 11, Visible = false })

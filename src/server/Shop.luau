@@ -75,7 +75,32 @@ local function sellsQi(it)
 end
 
 -- Yields: called on join before the offline qi, so the 2x pass counts on it.
-function Shop.onJoin(player, s)
+-- the pass checks start the moment a player joins (load time, owner 2026-10-27: "make the loading
+-- more optimized and less long"): one web call per pass, all at once and alongside the save load,
+-- instead of one after another once the save is in. Shop.onJoin waits for the answers.
+function Shop.prefetch(player)
+	local pre = { left = 0, owns = {} } -- owns[key] = true | false | nil (the check failed)
+	for _, it in Config.SHOP_PASSES do
+		if it.id ~= 0 then
+			pre.left += 1
+			task.spawn(function()
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, it.id)
+				if ok then
+					pre.owns[it.key] = owns == true
+				end
+				pre.left -= 1
+			end)
+		end
+	end
+	return pre
+end
+
+function Shop.onJoin(player, s, pre)
+	pre = pre or Shop.prefetch(player)
+	local t0 = os.clock()
+	while pre.left > 0 and player.Parent and os.clock() - t0 < 15 do
+		task.wait()
+	end
 	s.passes = {}
 	s.qiSaleOff = true -- until PolicyService answers
 	player:SetAttribute("QiSaleOff", true)
@@ -88,7 +113,8 @@ function Shop.onJoin(player, s)
 	local failed = {}
 	for _, it in Config.SHOP_PASSES do
 		if it.id ~= 0 and player.Parent then
-			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, it.id)
+			local owns = pre.owns[it.key]
+			local ok = owns ~= nil
 			if ok and owns then
 				s.passes[it.key] = true
 				player:SetAttribute("Pass_" .. it.key, true)
