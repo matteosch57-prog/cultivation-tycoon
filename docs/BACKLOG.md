@@ -25,3 +25,10 @@ Known gaps not yet in a brief. Delete a line when it is fixed.
 
 ## Docs
 - No doc gate script yet (Gladiator's `tools/check_docs.py` is the model).
+
+## What's new board and patch notes (2026-10-27)
+- Next update: raise `Config.PATCH.id`, rewrite `Config.PATCH.items` (each `go` = `{open = <Player BindableEvent>, arg}` or `{travel = <Teleport where>}`), and write PATCH NOTES 2 in the Heavenly RNG format (copy of 1: `/mnt/project-files/2026-10-27_patch_notes/patch_notes.md`).
+- Settings > What's new > Open: fix e6d804c (the opening click also closed the board) was merged but not Play-tested yet; check it once with a mouse and on phone.
+- What's new on PC size and a real rejoin of an old save were not tested in Studio.
+- Phone: the Karma Shop's bottom "Sect Styles" button is cut off.
+- Discord post: none yet (owner: community post only); the Discord parts of PATCH NOTES 1 still have "Coming next" blanks.
