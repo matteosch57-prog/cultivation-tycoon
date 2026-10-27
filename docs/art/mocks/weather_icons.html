@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- Weather icons mock (owner 2026-10-27: "Weather in index should use an icon, and the weather event
+too. Easier to read."). The four icons are drawn in the game's icon set (icons.js, finish A, cells 40-43),
+then shown three ways where they appear: the Index card's weather marks, the weather banner, the HUD
+weather line and the Odds list.
+  A  Icon alone: the drawing itself; a mark not found yet is its dark shape (Pet Simulator 99's index)
+  B  Badge: the icon on a round badge in the mutation's colour; not found = a grey badge (Anime Vanguards traits)
+  C  Gem: today's diamond, now with the icon inside (keeps the diamond look, adds the meaning) -->
+<html><head><meta charset="utf-8">
+<title>Weather Icons</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1B1420; --panel: #2a2233; --text: #fff; }
+  body { margin: 0; background: #14101a; color: var(--text); font-family: "Fredoka One", "Segoe UI", sans-serif; }
+  .page { width: 1400px; padding: 22px 26px; box-sizing: border-box; }
+  h1 { margin: 0 0 4px; font-size: 32px; }
+  .sub { font: 500 16px "Segoe UI", sans-serif; opacity: .8; margin-bottom: 18px; }
+  .icons { display: flex; gap: 26px; background: linear-gradient(180deg, #8fc9ef 0%, #bfe3f5 60%, #7fbf6a 61%, #5fa24f 100%); border-radius: 18px; padding: 16px 22px; margin-bottom: 20px; }
+  .icons .one { text-align: center; color: var(--ink); font-size: 16px; }
+  .icons svg { width: 110px; height: 110px; display: block; }
+  .opt { background: var(--panel); border-radius: 18px; padding: 14px 18px 18px; margin-bottom: 16px; display: grid; grid-template-columns: 250px 1fr; gap: 18px; align-items: center; }
+  .opt h2 { margin: 0; font-size: 26px; }
+  .opt .why { font: 500 14px "Segoe UI", sans-serif; opacity: .8; margin-top: 6px; }
+  .ctx { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+  .label { font: 600 12px "Segoe UI", sans-serif; opacity: .6; margin-bottom: 6px; }
+  .card { width: 108px; height: 96px; border-radius: 20px; border: 5px solid var(--ink); box-shadow: 0 6px 0 var(--ink); position: relative; overflow: hidden; background: linear-gradient(#e8d8ff, #a46bff); }
+  .card img { position: absolute; left: 50%; top: 50%; width: 92px; transform: translate(-50%, -50%); }
+  .stars { margin: 10px auto 0; width: 108px; text-align: center; font-size: 15px; color: #FFD34D; letter-spacing: 1px; -webkit-text-stroke: 1px var(--ink); }
+  .marks { display: flex; gap: 6px; justify-content: center; margin-top: 6px; width: 108px; }
+  .marks svg { width: 25px; height: 25px; display: block; }
+  .dark svg { filter: brightness(0) opacity(.45); }
+  .badge { width: 25px; height: 25px; border-radius: 50%; border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  .badge svg { width: 21px; height: 21px; }
+  .badge.off { background: #4a3f57 !important; }
+  .badge.off svg { filter: brightness(0) opacity(.5); }
+  .gem { width: 24px; height: 24px; transform: rotate(45deg); border: 2.5px solid var(--ink); border-radius: 5px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; margin: 2px; }
+  .gem svg { width: 20px; height: 20px; transform: rotate(-45deg); }
+  .gem.off { background: #3A3046 !important; }
+  .gem.off svg { filter: brightness(0) opacity(.5); }
+  .banner { display: flex; align-items: center; gap: 12px; padding: 10px 22px 10px 12px; border-radius: 40px; border: 5px solid var(--ink); box-shadow: 0 6px 0 var(--ink); background: linear-gradient(#3b2b62, #1f1638); width: max-content; }
+  .banner .t { font-size: 26px; color: #d9c8ff; -webkit-text-stroke: 1px var(--ink); }
+  .banner .s { font: 600 14px "Segoe UI", sans-serif; opacity: .85; }
+  .banner .ic svg { width: 54px; height: 54px; display: block; }
+  .hud { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border-radius: 20px; background: rgba(30, 23, 38, .85); width: max-content; font-size: 17px; }
+  .hud svg { width: 28px; height: 28px; display: block; }
+  .odds { font: 600 14px "Segoe UI", sans-serif; }
+  .odds .row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .odds svg { width: 22px; height: 22px; display: block; }
+  .now { color: #FFD34D; font-family: "Fredoka One"; }
+  .rainbow { background: conic-gradient(#7CFF9B, #6FE3FF, #6F8BFF, #C77CFF, #7CFF9B) !important; }
+  .src { font: 500 13px "Segoe UI", sans-serif; opacity: .65; margin-top: 10px; }
+  .src a { color: #9fd8ff; }
+</style></head>
+<body>
+<div class="page" id="root"></div>
+<script src="icons.js"></script>
+<script>
+const W = [
+  { key: "rain", name: "Spirit Rain", mut: "Dewy", tint: "#409CFF" },
+  { key: "thunder", name: "Thunder Tribulation", mut: "Thunderborn", tint: "#FFE234" },
+  { key: "blood", name: "Blood Moon", mut: "Bloodlit", tint: "#E21830" },
+  { key: "star", name: "Starfall", mut: "Starforged", tint: "#7CFF9B", rainbow: true },
+];
+const found = { rain: true, thunder: true, blood: false, star: false };
+const ic = k => newIcon(k, "A");
+const face = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M12 60 C12 47 20 40 32 40 C44 40 52 47 52 60 Z" fill="#A46BFF" stroke="#1B1420" stroke-width="3"/><circle cx="32" cy="26" r="13" fill="#F6D2B0" stroke="#1B1420" stroke-width="3"/><path d="M19 25 C19 15 25 12 32 12 C39 12 45 15 45 25 C41 20 36 19 32 21 C28 19 23 20 19 25Z" fill="#1B1420"/></svg>');
+function card(marks) {
+  return `<div><div class="card"><img src="${face}"></div><div class="stars">★★★☆☆</div><div class="marks">${marks}</div></div>`;
+}
+const marksA = () => W.map(w => `<div class="${found[w.key] ? "" : "dark"}">${ic(w.key)}</div>`).join("");
+const marksB = () => W.map(w => `<div class="badge ${found[w.key] ? "" : "off"} ${w.rainbow && found[w.key] ? "rainbow" : ""}" style="background:${w.tint}">${ic(w.key)}</div>`).join("");
+const marksC = () => W.map(w => `<div class="gem ${found[w.key] ? "" : "off"} ${w.rainbow && found[w.key] ? "rainbow" : ""}" style="background:${w.tint}">${ic(w.key)}</div>`).join("");
+const iconFor = {
+  A: k => ic(k),
+  B: k => { const w = W.find(x => x.key === k); return `<div class="badge ${w.rainbow ? "rainbow" : ""}" style="background:${w.tint};width:100%;height:100%">${ic(k)}</div>`; },
+  C: k => { const w = W.find(x => x.key === k); return `<div class="gem ${w.rainbow ? "rainbow" : ""}" style="background:${w.tint};width:72%;height:72%;margin:14%">${ic(k)}</div>`; },
+};
+function contexts(tag, marks) {
+  const f = iconFor[tag];
+  const banner = `<div><div class="label">Weather banner</div><div class="banner"><div class="ic" style="width:54px;height:54px">${f("thunder")}</div><div><div class="t">Thunder Tribulation</div><div class="s">Thunderborn x4 · 10% of recruits</div></div></div></div>`;
+  const hud = `<div><div class="label">HUD line</div><div class="hud"><div style="width:28px;height:28px">${f("thunder")}</div>Thunder 1:42</div></div>`;
+  const odds = `<div><div class="label">Odds: During weather</div><div class="odds">${W.map(w => `<div class="row"><div style="width:22px;height:22px">${f(w.key)}</div>${w.name}: ${w.key === "star" ? "5%" : w.key === "rain" ? "20%" : "10%"} ${w.mut}${w.key === "thunder" ? ' <span class="now">now</span>' : ""}</div>`).join("")}</div></div>`;
+  return `<div class="ctx"><div><div class="label">Index card (2 found, 2 not)</div>${card(marks)}</div>${banner}${hud}${odds}</div>`;
+}
+let h = `<h1>Weather Icons</h1><div class="sub">One icon per weather, in our icon set. Then three ways to show them in the Index, the weather banner, the HUD line and the Odds.</div>`;
+h += `<div class="icons">${W.map(w => `<div class="one">${ic(w.key)}${w.name}</div>`).join("")}</div>`;
+h += `<div class="opt"><div><h2>A · Icon alone</h2><div class="why">The drawing itself. A mark you haven't found is its dark shape, like Pet Simulator 99's index silhouettes.</div></div>${contexts("A", marksA())}</div>`;
+h += `<div class="opt"><div><h2>B · Badge</h2><div class="why">The icon on a round badge in the mutation's colour, like Anime Vanguards' trait badges. Not found yet: a grey badge.</div></div>${contexts("B", marksB())}</div>`;
+h += `<div class="opt"><div><h2>C · Gem</h2><div class="why">Today's diamond, now with the icon inside. Keeps the gem look and adds the meaning.</div></div>${contexts("C", marksC())}</div>`;
+h += `<div class="src">Research: <a href="https://twinfinite.net/guides/rainbow-pets-pet-simulator-99/">Pet Simulator 99 index variants</a>, <a href="https://deltiasgaming.com/grow-a-garden-roblox-complete-mutations-guide">Grow a Garden mutations</a> (each weather has its own symbol in the weather bar).</div>`;
+document.getElementById("root").innerHTML = h;
+</script>
+</body></html>
