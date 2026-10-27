@@ -20,7 +20,14 @@ local function add(inst)
 	for _, p in parts do
 		low = math.min(low, p.Position.Y)
 	end
-	tagged[inst] = { parts = parts, low = low, spread = inst:GetAttribute("RainbowSpread") or 0 }
+	local e = { parts = parts, low = low, spread = inst:GetAttribute("RainbowSpread") or 0 }
+	tagged[inst] = e
+	-- parts that stream in later (Play check: some of a relic's parts came after the tag and stayed gold)
+	inst.DescendantAdded:Connect(function(d)
+		if d:IsA("BasePart") and d.Transparency < 1 and tagged[inst] == e then
+			table.insert(e.parts, d)
+		end
+	end)
 end
 
 CollectionService:GetInstanceAddedSignal("RelicRainbow"):Connect(function(inst)

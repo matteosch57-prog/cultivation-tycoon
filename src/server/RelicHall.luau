@@ -57,7 +57,7 @@ end
 
 -- the ten relics in Config.MISSION_RELICS order; t = the top of the plinth
 local RELICS = {
-	function(m, t) -- Golden Broom
+	function(m, t) -- Sect Broom
 		P(m, Vector3.new(0.35, 4.2, 0.35), t * CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, 0.15), PAL.timber)
 		P(m, Vector3.new(1.8, 1.4, 0.6), t * CFrame.new(0.15, 0.7, 0), GOLD, Enum.Material.Foil)
 	end,
@@ -329,6 +329,12 @@ function RelicHall.show(plot, rank, newest)
 		if i > earned then
 			silhouette(item)
 		elseif tier then
+			-- a relic drawn with decals (the Phoenix Fan: decals on an invisible part) can't be painted, its
+			-- texture stays dark under any tint: a Golden / Rainbow one is our own part build instead
+			if item:FindFirstChildWhichIsA("Decal", true) then
+				item:ClearAllChildren()
+				RELICS[i](item, t * CFrame.new(0, 3.4, 0))
+			end
 			tierLook(m, item, cap, tier, (t * CFrame.new(0, 4.5, 0)).Position)
 		end
 		if i <= earned and i == newest then
