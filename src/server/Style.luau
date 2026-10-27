@@ -1326,7 +1326,7 @@ local function ghost(p)
 	return p
 end
 -- a rod nothing collides with (ropes, stringers): the planks and posts carry the walking
-local WALL_TOP, WALL_FOOT = 16, 2 -- studs over and under the deck: the bridges' invisible side walls
+local WALL_TOP, WALL_FOOT = 24, 2 -- studs over and under the deck: the bridges' invisible side walls (16 let a jump plus cloud step land on the top edge, Play 2026-10-27; 24 held 6 of 6, highest feet ~18.7)
 local function cord(parent, a, b, dia, color)
 	local len = (b - a).Magnitude
 	if len < 0.01 then
@@ -1420,7 +1420,7 @@ function Style.bridge(parent, a, b, width)
 	-- make one leave"): the posts stand 8 studs apart and the ropes collide with nothing, so a step
 	-- sideways went over. Like most Roblox obbies and tycoons' sky walks, a clear wall along each
 	-- side, segment by segment along the sag, from under the deck to over a jump plus its cloud step
-	-- (~14 studs, Config.MOVE): you can jump on the bridge but not off it. Sword riders pass through
+	-- (feet reach ~15-19 studs, Config.MOVE): you can jump on the bridge but not off it. Sword riders pass through
 	-- (SwordFly turns the BridgeWall tag off locally while riding); previews drop them (Main).
 	for _, sx in { -1, 1 } do
 		local prev
