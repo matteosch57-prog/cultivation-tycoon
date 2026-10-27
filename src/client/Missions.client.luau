@@ -650,11 +650,20 @@ player:GetAttributeChangedSignal("MissionsHidden"):Connect(function()
 		drawTracker()
 	end
 end)
+-- one redraw per burst of changes (an orb run or a build streak pushes the state several times a second)
+local redrawing = false
 player:GetAttributeChangedSignal("Missions"):Connect(function()
-	drawTracker()
-	if page then
-		drawPage(true)
+	if redrawing then
+		return
 	end
+	redrawing = true
+	task.delay(0.15, function()
+		redrawing = false
+		drawTracker()
+		if page then
+			drawPage(true)
+		end
+	end)
 end)
 openEvent.Event:Connect(function()
 	drawPage(true)
