@@ -50,7 +50,7 @@ local function compact(n)
 	if n < 1000 then
 		return tostring(n)
 	end
-	local units = { "K", "M", "B", "T", "Qa", "Qi", "Sx" }
+	local units = { "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local v, i = n / 1000, 1
 	while v >= 1000 and i < #units do
 		v /= 1000

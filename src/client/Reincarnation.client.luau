@@ -75,7 +75,7 @@ end
 
 -- 12.3K, 4.5M ... (the qi counter's style)
 local function compact(n)
-	local units, i = { "K", "M", "B", "T", "Qa", "Qn" }, 0
+	local units, i = { "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }, 0
 	while n >= 1000 and i < #units do
 		n /= 1000
 		i += 1

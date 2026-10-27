@@ -41,7 +41,7 @@ local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 
 local function fmt(n)
 	n = math.floor(n or 0)
-	local units = { "", "K", "M", "B", "T", "Qa" }
+	local units = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local i, v = 1, n
 	while v >= 1000 and i < #units do
 		v /= 1000

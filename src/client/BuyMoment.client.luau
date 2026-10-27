@@ -29,7 +29,7 @@ local function short(n)
 		local out = tostring(n):reverse():gsub("(%d%d%d)", "%1,"):reverse()
 		return (out:gsub("^,", ""))
 	end
-	local units = { "M", "B", "T", "Qa", "Qi" }
+	local units = { "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local v, i = n / 1e6, 1
 	while v >= 1000 and i < #units do
 		v /= 1000

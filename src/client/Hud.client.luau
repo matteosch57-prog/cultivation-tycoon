@@ -45,7 +45,7 @@ local function short(n)
 	if n < 1e6 then
 		return commas(n)
 	end
-	local units = { "M", "B", "T", "Qa", "Qi" }
+	local units = { "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local v, i = n / 1e6, 1
 	while v >= 1000 and i < #units do
 		v /= 1000
@@ -60,7 +60,7 @@ local function compact(n) -- for small price tags: 3.5K
 	if n < 1000 then
 		return tostring(n)
 	end
-	local units = { "K", "M", "B", "T", "Qa" }
+	local units = { "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local v, i = n / 1000, 1
 	while v >= 1000 and i < #units do
 		v /= 1000

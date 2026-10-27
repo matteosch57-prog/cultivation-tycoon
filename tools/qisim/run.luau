@@ -48,7 +48,7 @@ local function median(vals)
 	return vals[math.ceil(#vals / 2)]
 end
 print(string.format("### %s (%d x %d min a day, %d days, passes %s, altar %.2f), median of %d seeds", profName, Player.PROFILES[profName].perDay, Player.PROFILES[profName].minutes, days, args[4] or "none", altar, seeds))
-local codes = { "realm2", "rebirth1", "rebirth2", "rebirth3", "rebirth4", "rebirth5", "rebirth6", "rebirth7", "rebirth8", "rebirth9", "rebirth10", "rebirth12", "rebirth15", "rebirth20", "realm5", "realm7", "realm9", "realm11", "realm13", "realm15" }
+local codes = { "realm2", "rebirth1", "rebirth2", "rebirth3", "rebirth4", "rebirth5", "rebirth6", "rebirth7", "rebirth8", "rebirth9", "rebirth10", "rebirth12", "rebirth15", "rebirth20", "rebirth25", "rebirth30", "realm5", "realm7", "realm9", "realm11", "realm13", "realm15" }
 for _, c in codes do
 	local v = {}
 	for _, r in runs do

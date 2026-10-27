@@ -216,7 +216,7 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
 
     def pad_seconds():  # Config.padSeconds
         T = C["PAD_SECONDS"]
-        return T[min(S["realm"], len(T)) - 1] * (1 + C["REBIRTH_BONUS"] * gate(S["realm"]))
+        return T[min(S["realm"], len(T)) - 1]  # 2026-10-27: no rebirth-gate factor (rebirths make every realm faster)
 
     def worker_cost(i):  # Config.workerCost (Main refreshPads: priced from the pad income, again after a buy)
         n = S["workers"].get(i, 0)

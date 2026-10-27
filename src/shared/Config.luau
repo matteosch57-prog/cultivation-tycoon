@@ -962,12 +962,15 @@ Config.PRICE_FLOOR_FROM_LIFE = 2
 -- docs/research/2026-10-24_core_loop_after_10.md, DevForum "price = income x seconds per button"):
 -- each open pad costs PAD_SECONDS[realm] seconds of the pad income (Main padRate: the away rate
 -- without the 2x Qi pass, the Welcome Pouch, Robux disciples or the rebirth boost; free disciples
--- count), times the rebirth boost the realm needs (Config.rebirthsFor), so only rebirths past that
--- make a realm faster. Prices are set when a pad opens and again after every buy, so a recruit, orbs
--- or a pill in between bring the next pad sooner. Felt waits (qisim, orbs and pills in): realm 1
--- ~10 s, 2-3 ~30 s, 4-7 1-4 min, 8-10 14-25 min (owner: "realm 8-10 may be 20-30m of wait per pad
--- for a full f2p"). Realms past the table use its last entry.
-Config.PAD_SECONDS = { 5, 30, 30, 40, 110, 220, 800, 5000, 6000, 7000 } -- realms 2-7 trimmed ~25% (owner pick 2026-10-24: the Main Hall last and paid hires had slowed the climb ~40%); realms 3-4 40/65 -> 30/40 (owner pick 2026-10-25: live rebirth 2 at 62 min in one sitting, target ~35; qisim onesitslow 61 -> 35, long game unchanged)
+-- count), so every rebirth makes every realm faster (a pad takes PAD_SECONDS / rebirthMult s of real
+-- income). Prices are set when a pad opens and again after every buy, so a recruit, orbs or a pill
+-- in between bring the next pad sooner. Realms past the table use its last entry.
+-- 2026-10-27 (owner: "it should be faster, how are people gonna rebirth 25 times"): realms 5+ were
+-- 110/220/800/5000+ s x the rebirth boost the realm needs (realm 8: 15,000 s a pad), so rebirths 3-4
+-- took 2-2.7 h each and rebirth 5 was out of reach. Now flat late and no gate factor: qisim (one
+-- 10 h sitting) rebirth 10 at 2.1 h / 25 at 6.3 h with passes, rebirth 20 at 8.6 h free; sim_check
+-- regular (2 x 30 min a day) ~30-40 min a life throughout, 25 rebirths on day ~14.
+Config.PAD_SECONDS = { 5, 30, 30, 40, 50, 60, 70, 80, 90, 100 }
 -- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
 Config.PAD_SPREAD = 0.3
 -- the Main Hall is the big step of a realm (owner 2026-10-24: "the main hall price between steps should
@@ -1475,9 +1478,9 @@ function Config.padPrice(pad, realm, income, rank, n)
 	return math.floor(math.max(pad.cost, Config.padSeconds(realm) * f * income) * Config.startMult(realm))
 end
 
--- a pad's price in seconds of the pad income (PAD_SECONDS x the rebirth boost the realm needs)
+-- a pad's price in seconds of the pad income (Main padRate leaves the rebirth boost out, so rebirths speed it up)
 function Config.padSeconds(realm)
-	return Config.PAD_SECONDS[math.min(realm, #Config.PAD_SECONDS)] * Config.rebirthMult(Config.rebirthsFor(realm))
+	return Config.PAD_SECONDS[math.min(realm, #Config.PAD_SECONDS)]
 end
 
 -- what a breakthrough leaves standing of `owned` (PAD_KEEP)

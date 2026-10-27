@@ -66,7 +66,7 @@ end
 -- 12.3K / 4.5M (the reward line)
 local function short(n)
 	n = math.floor(n or 0)
-	local units = { "", "K", "M", "B", "T", "Qa", "Qi" }
+	local units = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td" }
 	local i = 1
 	while n >= 1000 * 10 ^ (3 * (i - 1)) and i < #units do
 		i += 1
