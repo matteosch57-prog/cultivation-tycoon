@@ -11,6 +11,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Style = require(script.Parent:WaitForChild("Style"))
+local RelicHall = require(script.Parent:WaitForChild("RelicHall"))
 
 local RealmLook = {}
 
@@ -36,11 +37,12 @@ local function tintedCloud(parent, cf, width, seed, tint, k)
 	return m
 end
 
--- a floating chunk of island: rock blocks narrowing downward, a grass cap
-local function floatingRock(parent, cf, size, rng)
+-- a floating chunk of island: rock blocks narrowing downward, a cap in the lawn's colour (the Sect
+-- Style ground, else grass: a green cap over a styled peak read as a stray island, owner 2026-10-27)
+local function floatingRock(parent, cf, size, rng, cap)
 	local m = Instance.new("Model")
 	m.Name = "Rock"
-	ghost(P(m, Vector3.new(size * 1.1, size * 0.22, size), cf * CFrame.new(0, size * 0.11, 0), PAL.grass))
+	ghost(P(m, Vector3.new(size * 1.1, size * 0.22, size), cf * CFrame.new(0, size * 0.11, 0), cap))
 	for k = 0, 2 do
 		local s = size * (0.95 - k * 0.27)
 		local tilt = CFrame.Angles(rng:NextNumber(-0.25, 0.25), rng:NextNumber(0, math.pi), rng:NextNumber(-0.25, 0.25))
@@ -50,16 +52,57 @@ local function floatingRock(parent, cf, size, rng)
 	return m
 end
 
-local function rocks(parent, frame, radius, seed)
+-- every piece of land a rock must keep clear of (peak frame x, z, r): the islets and all their lobes
+-- (bought or not), the Relic Terrace and the shop island. The rocks once stood 16-28 studs past the
+-- heart rim all round, from before the islets: they poked out of the Fields and Dao islets and the
+-- bridges (owner 2026-10-27: "weird islands").
+local function land()
+	local list = {}
+	for _, i in Config.ISLETS do
+		table.insert(list, { i.x, i.z, i.r })
+	end
+	for _, l in Config.ISLAND_LOBES do
+		table.insert(list, { l.x, l.z, l.r })
+	end
+	table.insert(list, { RelicHall.ISLE.X, RelicHall.ISLE.Z, RelicHall.ISLE_R })
+	table.insert(list, { Config.SHOP_ISLAND_AT.X, Config.SHOP_ISLAND_AT.Z, Config.SHOP_ISLAND_RADIUS })
+	return list
+end
+
+-- how far (x, z) lies from the nearest bridge line, heart rim to the hub (+Z) or to the shop island
+local function bridgeGap(x, z, radius)
+	local best = math.huge
+	for _, to in { Vector2.new(0, radius + 200), Vector2.new(Config.SHOP_ISLAND_AT.X, Config.SHOP_ISLAND_AT.Z) } do
+		local d = to.Unit
+		local t = math.clamp(x * d.X + z * d.Y, 0, to.Magnitude)
+		best = math.min(best, (Vector2.new(x, z) - d * t).Magnitude)
+	end
+	return best
+end
+
+local ROCKS = 7
+local function rocks(parent, frame, radius, seed, cap)
 	local rng = Random.new(seed)
-	local n = 7
-	for i = 1, n do
-		local a = (i - 0.5) / n * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
-		-- keep the bridges (front, +Z) and the shop side clear: skip the front sixth
-		if math.abs(math.atan2(math.sin(a - math.pi / 2), math.cos(a - math.pi / 2))) > 0.55 then
-			local r = radius + rng:NextNumber(16, 28)
-			local cf = frame * CFrame.new(math.cos(a) * r, rng:NextNumber(4, 22), math.sin(a) * r) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
-			floatingRock(parent, cf, rng:NextNumber(10, 16), rng)
+	local lands, placed = land(), {}
+	for _ = 1, 200 do
+		if #placed >= ROCKS then
+			break
+		end
+		local size = rng:NextNumber(10, 16)
+		local a = rng:NextNumber(0, math.pi * 2)
+		local r = radius + rng:NextNumber(24, 42)
+		local x, z = math.cos(a) * r, math.sin(a) * r
+		local ok = bridgeGap(x, z, radius) > size + 10
+		for _, l in lands do
+			ok = ok and math.sqrt((x - l[1]) ^ 2 + (z - l[2]) ^ 2) - l[3] > size + 10
+		end
+		for _, q in placed do
+			ok = ok and (q - Vector2.new(x, z)).Magnitude > size * 2 + 8
+		end
+		if ok then
+			table.insert(placed, Vector2.new(x, z))
+			local cf = frame * CFrame.new(x, rng:NextNumber(4, 22), z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+			floatingRock(parent, cf, size, rng, cap)
 		end
 	end
 end
@@ -114,14 +157,18 @@ function RealmLook.apply(plot)
 	f:SetAttribute("Realm", realm)
 	local frame = plot.frame
 	local tint = Config.realmTint(realm)
-	-- 6: three clouds hugging the rim just under the lawn, tinted with the realm colour
+	-- 6: three clouds hugging the rim under the lawn, tinted with the realm colour. Their crowns rise
+	-- ~0.53 x width over the base (Style.softCloud layers + particle size), so the base sits that far
+	-- down: at -14 they billowed 25+ studs over the lawn and the bridges as fog (owner 2026-10-27)
+	local width = radius * 1.1
 	for i = 0, 2 do
 		local a = math.pi / 2 + math.pi * (0.62 + i * 0.38) -- left, back and right of the peak
 		local r = radius * 0.95
-		tintedCloud(f, frame * CFrame.new(math.cos(a) * r, -14 - i % 2 * 6, math.sin(a) * r) * CFrame.Angles(0, -a, 0), radius * 1.1, plot.index * 13 + i, tint, Config.REALM_TINT_CLOUD)
+		local y = -(width * 0.53 + 6) - i % 2 * 6
+		tintedCloud(f, frame * CFrame.new(math.cos(a) * r, y, math.sin(a) * r) * CFrame.Angles(0, -a, 0), width, plot.index * 13 + i, tint, Config.REALM_TINT_CLOUD)
 	end
 	if realm >= 7 then
-		rocks(f, frame, radius, plot.index * 31)
+		rocks(f, frame, radius, plot.index * 31, plot.styleGround and plot.styleGround[2] or PAL.grass)
 	end
 	if realm >= 8 then
 		Style.waterfall(f, frame, radius, Config.REALM_FALL_ANGLE)
