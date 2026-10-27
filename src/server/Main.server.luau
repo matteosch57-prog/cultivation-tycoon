@@ -7,6 +7,9 @@ local GroupService = game:GetService("GroupService")
 local HttpService = game:GetService("HttpService")
 
 Players.CharacterAutoLoads = false -- first thing: onJoin spawns each avatar on its peak (watchDeath)
+-- boot timing (load time 2026-10-27): a player who lands on a fresh server waits for the whole boot
+-- below before onJoin even starts; printed with the steps, sent as LoadTime "boot" to that player
+local bootMarks = { t0 = os.clock() }
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Builders = require(script.Parent:WaitForChild("Builders"))
@@ -3390,7 +3393,9 @@ local function passChanged(player, s, key)
 end
 
 -- Boot -------------------------------------------------------------------------------
+joinMark(bootMarks, "scripts")
 buildHub()
+joinMark(bootMarks, "hub")
 Altar.init({
 	sessions = sessions,
 	rate = rate,
@@ -3499,8 +3504,10 @@ local showcase = workspace:FindFirstChild("Showcase")
 if showcase then
 	showcase:Destroy()
 end
+joinMark(bootMarks, "init")
 setupLighting()
 buildPlots()
+joinMark(bootMarks, "plots")
 
 -- which build this server runs: a bug report or an Error Report spike is matched to a publish by
 -- this line (the [SRVHEALTH] lines carry the same job prefix)
@@ -3510,7 +3517,10 @@ Players.PlayerAdded:Connect(onJoin)
 Players.PlayerRemoving:Connect(onLeave)
 Ranks.start()
 PlayerAura.start()
+print(string.format("[Tycoon][load] server boot %s (game time %.1f s)", table.concat(bootMarks, ", "), time()))
 for _, p in Players:GetPlayers() do
+	-- here before the boot was done: they waited for it (game time = seconds since the server started)
+	Telemetry.loadTime(p, "boot", time())
 	task.spawn(onJoin, p)
 end
 
