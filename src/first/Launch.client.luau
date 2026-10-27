@@ -51,9 +51,10 @@ local MAX_WAIT = 30 -- s: past this it enters whatever is missing (never a dead 
 -- ready the drop jumps to full, glows a moment and the dive is short; it was ~2 s of padding
 local DIVE = 1.1 -- s of camera dive into the game
 local FULL_HOLD = 0.15 -- s the full, glowing drop shows before the dive
--- s before SKIP shows (owner 2026-10-24: "add a skip in loading, it can be long"); it only shows once
--- the avatar stands on its peak, so a skip never enters without one (the art may still be loading)
-local SKIP_AFTER = 5
+-- SKIP (owner 2026-10-24: "add a skip in loading, it can be long"; 2026-10-27: "have the skip always
+-- ready"): shown from the first frame. It never enters without the avatar on its peak: pressed before
+-- that, it stops waiting for everything else and enters the moment the peak and the body are there
+local wantSkip = false
 
 local function tween(obj, t, props, style, dir, reps, rev, delay)
 	local tw = TweenService:Create(obj, TweenInfo.new(t, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out, reps or 0, rev or false, delay or 0), props)
@@ -285,8 +286,15 @@ conn = RunService.RenderStepped:Connect(function(dt)
 	if clip then
 		clip.Size = UDim2.new(1, 0, fill, 0)
 	end
-	status.Text = if player:GetAttribute("SaveWait") then "Your last server is still saving your sect..." else string.format("Gathering qi... %d%%", math.floor(fill * 100))
-	skipBtn.Visible = os.clock() - startedAt > SKIP_AFTER and steps.peak and steps.body and not player:GetAttribute("SaveWait")
+	status.Text = if player:GetAttribute("SaveWait")
+		then "Your last server is still saving your sect..."
+		elseif wantSkip then "Entering as soon as your peak is ready..."
+		else string.format("Gathering qi... %d%%", math.floor(fill * 100))
+	skipBtn.Visible = not wantSkip and not player:GetAttribute("SaveWait")
+	if wantSkip and steps.peak and steps.body and not ready then
+		skip()
+		return
+	end
 	if fill >= 1 and not ready then
 		ready = true
 		conn:Disconnect()
@@ -359,9 +367,14 @@ local function enter()
 	end)
 end
 
--- SKIP: enter now, the drop not yet full (shown only with the avatar on its peak)
+-- SKIP: enter now, the drop not yet full; before the avatar is on its peak, enter once it is
 skip = function()
-	if ready or not skipBtn.Visible then
+	if ready or player:GetAttribute("SaveWait") then
+		return
+	end
+	if not (steps.peak and steps.body) then
+		wantSkip = true
+		skipBtn.Visible = false
 		return
 	end
 	ready = true
