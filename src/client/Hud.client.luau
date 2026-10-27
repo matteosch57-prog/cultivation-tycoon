@@ -461,7 +461,7 @@ local function build()
 	local LB = phoneRail and Config.HUD_PHONE_BTN or 42 -- the left buttons' size
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
 	left:SetAttribute("Row", phoneRail == "row") -- Missions.client sits its strip under a row, beside a column
-	left:SetAttribute("Btn", px(LB)) -- Friends / Settings size their buttons to match
+	left:SetAttribute("Btn", phoneRail and px(LB) or nil) -- phone only: Friends / Settings size their buttons to match and badge
 	local leftLayout = Instance.new("UIListLayout")
 	leftLayout.Padding = UDim.new(0, px(phoneRail and 8 or RAIL_GAP))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -1257,7 +1257,7 @@ local function layout()
 			y = math.max(top, (ui.top.AbsolutePosition.Y - ui.root.AbsolutePosition.Y + ui.top.AbsoluteSize.Y) / unscale0 + px(6))
 		end
 		ui.left.Position = UDim2.fromOffset(px(12), y)
-		ui.cardBox.Position = UDim2.new(0, px(12), 0, y + ui.left.AbsoluteSize.Y / unscale0 + px(60))
+		ui.cardBox.Position = UDim2.fromOffset(px(12), y + ui.left.AbsoluteSize.Y / unscale0 + px(60))
 		ui.cardBox.AnchorPoint = Vector2.new(0, 0)
 	else
 		ui.left.Position = UDim2.fromOffset(px(12), top)
