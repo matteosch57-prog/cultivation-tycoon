@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
+local bootAt = os.clock()
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -46,8 +47,10 @@ local GOLD = Color3.fromHex("FFD34D")
 local INK = Color3.fromHex("1B1420")
 local FONT = Font.fromEnum(Enum.Font.FredokaOne)
 local MAX_WAIT = 30 -- s: past this it enters whatever is missing (never a dead screen)
-local DIVE = 1.6 -- s of camera dive into the game
-local FULL_HOLD = 0.5 -- s the full, glowing drop shows before the dive
+-- load time (owner 2026-10-27: "make the loading more optimized and less long"): once everything is
+-- ready the drop jumps to full, glows a moment and the dive is short; it was ~2 s of padding
+local DIVE = 1.1 -- s of camera dive into the game
+local FULL_HOLD = 0.15 -- s the full, glowing drop shows before the dive
 -- s before SKIP shows (owner 2026-10-24: "add a skip in loading, it can be long"); it only shows once
 -- the avatar stands on its peak, so a skip never enters without one (the art may still be loading)
 local SKIP_AFTER = 5
@@ -191,8 +194,10 @@ task.spawn(buildDrop)
 -- 3. progress: each step lifts the target; a slow creep keeps it moving while one is pending
 local startedAt = os.clock()
 local steps = { loaded = false, hud = false, peak = false, body = false }
+local lastStep = "loaded" -- the step that finished last: the one the player waited for (LoadTime)
 local WEIGHT = { loaded = 0.3, hud = 0.15, peak = 0.35, body = 0.15 }
-local function recompute()
+local function recompute(step)
+	lastStep = step
 	local t = 0.05
 	for k, done in steps do
 		if done then
@@ -206,29 +211,30 @@ task.spawn(function()
 		game.Loaded:Wait()
 	end
 	steps.loaded = true
-	recompute()
+	recompute("loaded")
 end)
 task.spawn(function()
 	playerGui:WaitForChild("Hud", MAX_WAIT)
 	steps.hud = true
-	recompute()
+	recompute("hud")
 end)
 task.spawn(function()
 	while not player:GetAttribute("PeakReady") do
 		player:GetAttributeChangedSignal("PeakReady"):Wait()
 	end
 	steps.peak = true
-	recompute()
+	recompute("peak")
 end)
 task.spawn(function()
 	local char = player.Character or player.CharacterAdded:Wait()
 	char:WaitForChild("HumanoidRootPart", MAX_WAIT)
 	task.wait(0.3) -- the server's place-on-peak runs 0.2 s after the avatar appears
 	steps.body = true
-	recompute()
+	recompute("body")
 end)
 
 local ready = false
+local skipped = false
 local full, skip
 local skipBtn = Instance.new("TextButton")
 skipBtn.Name = "Skip"
@@ -272,7 +278,7 @@ conn = RunService.RenderStepped:Connect(function(dt)
 	local waited = os.clock() - startedAt
 	local all = steps.loaded and steps.hud and steps.peak and steps.body
 	local goal = if all or waited > MAX_WAIT then 1 else math.min(0.95, target + waited * 0.006)
-	fill += (goal - fill) * math.min(1, dt * 4)
+	fill += (goal - fill) * math.min(1, dt * (if goal == 1 then 14 else 4))
 	if goal == 1 and fill > 0.985 then
 		fill = 1
 	end
@@ -290,12 +296,30 @@ conn = RunService.RenderStepped:Connect(function(dt)
 end)
 
 -- 4. full: a glow, then the camera dives onto the peak and the game opens
+-- the load time, once per join: seconds from this script's start (the first client frame) to the
+-- dive, and the step it waited for last (server: Telemetry.loadTime, event LoadTime)
+local function report(last)
+	task.spawn(function()
+		local sec = os.clock() - bootAt
+		local remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
+		local remote = remotes and remotes:WaitForChild("PerfReport", 10)
+		local shared = ReplicatedStorage:WaitForChild("Shared", 10)
+		local scene = shared and shared:WaitForChild("PerfScene", 10)
+		if remote and scene then
+			local device = require(scene).device()
+			remote:FireServer({ launch = true, sec = sec, last = last, device = device, new = player:GetAttribute("NewSave") == true })
+		end
+	end)
+end
+
 local entered = false
 local function enter()
 	if entered or not ready then
 		return
 	end
 	entered = true
+	local all = steps.loaded and steps.hud and steps.peak and steps.body
+	report(if skipped then "skip" elseif all then lastStep else "timeout")
 	skipBtn:Destroy()
 	local cam = workspace.CurrentCamera
 	local char = player.Character
@@ -327,7 +351,7 @@ local function enter()
 		cam.CFrame = CFrame.lookAt(from, focus)
 		tween(cam, DIVE, { CFrame = finish }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 	end
-	tween(veil, 0.6, { BackgroundTransparency = 1 }, nil, nil, nil, nil, 0.1)
+	tween(veil, 0.45, { BackgroundTransparency = 1 })
 	task.delay(DIVE, function()
 		cam.CameraType = Enum.CameraType.Custom
 		gui:Destroy()
@@ -341,6 +365,7 @@ skip = function()
 		return
 	end
 	ready = true
+	skipped = true
 	conn:Disconnect()
 	enter()
 end
