@@ -83,6 +83,7 @@ task.spawn(function()
 	local byBucket = {} -- [bucket] = { n, buys = {}, idle = {}, last = {[code]=n}, maxGap = {}, gapAt = {[code]=n} }
 	local stepReach, stepLeft60 = {}, {} -- [code] = players who reached it in session 1 / who left within 60 s of it
 	local firstBuy, timelines, cohorts = {}, {}, {}
+	local loadSec = {} -- [stage] = { seconds } from the journal codes load:<stage>:<s> (2026-10-27)
 	local players, noLog = 0, 0
 	local STEPS = {}
 	for _, c in { "buy:platform", "buy:bridge_fields", "buy:bridge_disciples", "buy:hall", "buy:bridge_dao", "buy:array" } do
@@ -112,6 +113,13 @@ task.spawn(function()
 				table.insert(lines, { t = t, c = code })
 				if code == "leave" then
 					break
+				end
+			end
+			for _, l in lines do
+				local stage, sec = l.c:match("^load:([%w_]+):(%d+)$")
+				if stage then
+					loadSec[stage] = loadSec[stage] or {}
+					table.insert(loadSec[stage], tonumber(sec))
 				end
 			end
 			local leaveT = lines[#lines].c == "leave" and lines[#lines].t or len
@@ -182,6 +190,9 @@ task.spawn(function()
 	table.sort(cs)
 	p("cohorts by first join (UTC): %s", table.concat(cs, " "))
 	p("first buy: median %ds (players with a buy: %d)", median(firstBuy), #firstBuy)
+	for stage, t in loadSec do
+		p("load %s: median %ds, n %d", stage, median(t), #t)
+	end
 	local bs = {}
 	for b in byBucket do
 		table.insert(bs, b)
