@@ -174,7 +174,7 @@ end
 ---------------------------------------------------------------------------- the tracker
 local tracker -- the frame beside the left rail
 local page -- the open rank page, or nil
-local drawPage, drawTracker
+local drawPage, drawTracker, compactTracker
 
 local function leftRail()
 	local slots = player:FindFirstChild("HudSlots")
@@ -317,6 +317,86 @@ local function panelRow(parent, x, w, size, order, daily)
 	return row
 end
 
+-- the phone tracker (owner 2026-10-27: "on phone, quests are hiding the view a LOT"): one small glass strip.
+-- MISSION_PHONE "line" = the rank badge, the mission closest to done (icon, words, bar) and the hide tab;
+-- "icons" = the badge, one icon per mission with its count and a slim bar, and the tab. Tap = the page.
+local function glassStrip()
+	local card = Instance.new("TextButton")
+	card.Text = ""
+	card.AutoButtonColor = false
+	card.AutomaticSize = Enum.AutomaticSize.XY
+	card.BackgroundColor3 = Color3.fromHex("2A2036")
+	card.BackgroundTransparency = 0.12
+	card.Selectable = false
+	card.Parent = tracker
+	corner(card, UDim.new(0, px(12)))
+	local cs = Instance.new("UIStroke")
+	cs.Color = Toy.INK
+	cs.Thickness = px(2)
+	cs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	cs.Parent = card
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(5)), UDim.new(0, px(5))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(4)), UDim.new(0, px(4))
+	pad.Parent = card
+	Toy.list(card, true, px(6), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	card.Activated:Connect(function()
+		drawPage(true)
+	end)
+	return card
+end
+
+-- the active missions, the next unfinished daily last
+local function activeList(m)
+	local out = {}
+	for _, x in m.slots do
+		table.insert(out, { x = x })
+	end
+	for _, x in m.daily or {} do
+		if x.n < x.need then
+			table.insert(out, { x = x, daily = true })
+			break
+		end
+	end
+	return out
+end
+
+function compactTracker(m)
+	local card = glassStrip()
+	local badge = px(24)
+	rankBadge(card, m.rank, badge, 0).Activated:Connect(function()
+		drawPage(true)
+	end)
+	local list = activeList(m)
+	if Config.MISSION_PHONE == "icons" then
+		for i, e in list do
+			local cell = frame(card, { Size = UDim2.fromOffset(px(28), px(32)), LayoutOrder = i })
+			local well = frame(cell, { Size = UDim2.fromOffset(px(24), px(24)), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), BackgroundTransparency = 0, BackgroundColor3 = e.daily and Color3.fromHex("2B4466") or Color3.fromHex("3A2F48") })
+			corner(well, UDim.new(1, 0))
+			Toy.icon(well, GROUP_ICON[e.x.g] or "goal", px(18), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+			local track = frame(cell, { Size = UDim2.fromOffset(px(24), px(4)), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), BackgroundTransparency = 0.55, BackgroundColor3 = Color3.new(0, 0, 0) })
+			corner(track, UDim.new(1, 0))
+			local fill = frame(track, { Size = UDim2.fromScale(math.clamp(e.x.n / math.max(1, e.x.need), 0, 1), 1), BackgroundTransparency = 0, BackgroundColor3 = e.daily and JADE or GOLD })
+			corner(fill, UDim.new(1, 0))
+		end
+	else
+		local best
+		for _, e in list do
+			local r = e.x.n / math.max(1, e.x.need)
+			if not best or r > best.r then
+				best = { e = e, r = r }
+			end
+		end
+		if best then
+			panelRow(card, best.e.x, px(150), px(10), 1, best.e.daily)
+		end
+		if #list > 1 then
+			text(card, "+" .. (#list - 1), px(11), MUTED, { LayoutOrder = 2 })
+		end
+	end
+	hideTab(card, px(22), true, 9)
+end
+
 function drawTracker()
 	local S, phone = computeScale()
 	Toy.S = S
@@ -343,6 +423,11 @@ function drawTracker()
 		local holder = frame(tracker, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = PANEL, LayoutOrder = 2 })
 		corner(holder, UDim.new(0, px(10)))
 		hideTab(holder, px(30), false)
+		place()
+		return
+	end
+	if phone and Config.MISSION_PHONE ~= "list" then
+		compactTracker(m)
 		place()
 		return
 	end
