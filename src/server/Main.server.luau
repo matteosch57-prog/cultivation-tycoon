@@ -521,7 +521,7 @@ local function buildPlots()
 		Shop.buildIsland(plot)
 		buildIdleChest(plot)
 		Bless.build(plot) -- the incense shrine visitors bless (Bless.luau)
-		RelicHall.clear(plot) -- the Relic Terrace, empty until an owner comes
+		RelicHall.clear(plot) -- no Relic Terrace until an owner comes
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()

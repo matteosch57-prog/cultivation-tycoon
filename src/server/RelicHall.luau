@@ -318,14 +318,13 @@ end
 
 -- the ten plinths for `rank` (Sect Missions rank: relics 1 .. rank - 1 earned); `newest` = the index of
 -- a relic just earned (a gold burst over it)
--- an unclaimed peak: the isle, terrace and gate only, no plinths (phone budget: the ten relics are ~400
--- parts, the bell stand alone 134, and nobody's progress to show)
+-- an unclaimed peak has no relic isle at all (phone budget: ~685 parts a peak, the gate alone 288, and
+-- nobody's progress to show); RelicHall.show builds it again for the next owner
 function RelicHall.clear(plot)
-	RelicHall.build(plot)
-	if plot.relics then
-		plot.relics:Destroy()
-		plot.relics = nil
+	if plot.relicIsle then
+		plot.relicIsle:Destroy()
 	end
+	plot.relicIsle, plot.relics = nil, nil
 end
 
 -- is `pos` (world) on this peak's relic isle (Relic "visit" telemetry)
