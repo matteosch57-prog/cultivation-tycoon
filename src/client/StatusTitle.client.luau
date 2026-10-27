@@ -39,9 +39,13 @@ local function vipTitle(parent, realm)
 	g.Rotation = 10
 	g.Offset = Vector2.new(-0.6, 0)
 	g.Parent = t
-	TweenService:Create(g, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, 1.2), {
+	local shine = TweenService:Create(g, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, 1.2), {
 		Offset = Vector2.new(0.6, 0),
-	}):Play()
+	})
+	shine:Play()
+	g.Destroying:Connect(function()
+		shine:Cancel() -- an endless tween: stop it with its title (each redraw and respawn makes a new one)
+	end)
 	row.Parent = parent
 end
 
