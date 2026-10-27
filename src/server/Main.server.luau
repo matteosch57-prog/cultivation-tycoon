@@ -1844,13 +1844,22 @@ end
 -- the Roblox friends of `player` on this server, both ways; yields (one web call per other player)
 local function findFriends(player)
 	local mine = {}
+	local left = 0
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
-			local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
-			if ok and yes then
-				mine[other] = true
-			end
+			left += 1
+			task.spawn(function() -- all at once (load time 2026-10-27), not one call after another
+				local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
+				if ok and yes then
+					mine[other] = true
+				end
+				left -= 1
+			end)
 		end
+	end
+	local t0 = os.clock()
+	while left > 0 and player.Parent and os.clock() - t0 < 10 do
+		task.wait()
 	end
 	if not player.Parent then
 		return mine
@@ -1961,7 +1970,24 @@ local function repairTutorial(data)
 	return fixed
 end
 
+-- join timing (owner 2026-10-27: "make the loading more optimized and less long"): seconds from
+-- PlayerAdded to each server step, printed in Studio, the total sent as LoadTime "server"
+local function joinMark(t, step)
+	table.insert(t, string.format("%s %.1f", step, os.clock() - t.t0))
+end
+
 local function onJoin(player)
+	local marks = { t0 = os.clock() }
+	-- the web checks start now and run while the friends and the save load (they only need the id)
+	local passPre = Shop.prefetch(player)
+	local groupPre = { done = Config.GROUP_ID <= 0 }
+	if not groupPre.done then
+		task.spawn(function()
+			local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID)
+			groupPre.member = okG and member == true
+			groupPre.done = true
+		end)
+	end
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
 	local realm = Instance.new("IntValue")
@@ -1974,6 +2000,7 @@ local function onJoin(player)
 	ls.Parent = player
 
 	local friends = findFriends(player)
+	joinMark(marks, "friends")
 	if not player.Parent then
 		return
 	end
@@ -2002,6 +2029,7 @@ local function onJoin(player)
 	setPlotLabel(plot, player.DisplayName .. "'s Sect")
 	local sessionId = SaveStore.newSessionId()
 	local data, loaded, reason = load(player, sessionId)
+	joinMark(marks, "save")
 	if store and not loaded and player.Parent then
 		plot.owner = nil
 		setPlotLabel(plot, "Unclaimed Peak")
@@ -2080,12 +2108,16 @@ local function onJoin(player)
 	Bless.mark(player, s)
 	Missions.refresh(player, s) -- Sect Missions: top up the slots and today's dailies
 	Journal.attach(player, data) -- the player's own action journal (docs/design/DATA.md)
-	Shop.onJoin(player, s) -- yields for the pass checks
+	Shop.onJoin(player, s, passPre) -- yields until the pass checks started at join answer
 	SwordRide.onJoin(player, s)
 	if Config.GROUP_ID > 0 then
-		local okG, member = pcall(player.IsInGroup, player, Config.GROUP_ID) -- yields; before the offline qi
-		s.inGroup = okG and member == true
+		local t0 = os.clock()
+		while not groupPre.done and player.Parent and os.clock() - t0 < 10 do -- before the offline qi
+			task.wait()
+		end
+		s.inGroup = groupPre.member == true
 	end
+	joinMark(marks, "passes")
 	if not player.Parent then
 		return -- onLeave already ran (it found the session) and saved
 	end
@@ -2158,6 +2190,7 @@ local function onJoin(player)
 
 	rebuild(s)
 	refreshPads(player, s)
+	joinMark(marks, "build")
 	RelicHall.show(s.plot, type(data.missions) == "table" and data.missions.rank or 1)
 	publish(player)
 	publishFriends(player)
@@ -2185,12 +2218,18 @@ local function onJoin(player)
 		watchDeath(player, char)
 	end)
 	pcall(player.RequestStreamAroundAsync, player, peakStand(s.plot).Position, 5)
+	joinMark(marks, "stream")
 	if player.Parent and not player.Character then
 		player:LoadCharacter()
 	elseif player.Character then
 		placeOnPeak(player)
 	end
+	joinMark(marks, "avatar")
 	player:SetAttribute("PeakReady", true)
+	if game:GetService("RunService"):IsStudio() then
+		print("[Tycoon][load] server join " .. table.concat(marks, ", "))
+	end
+	Telemetry.loadTime(player, "server", os.clock() - marks.t0, data.sessions == 1)
 end
 
 local function onLeave(player)
