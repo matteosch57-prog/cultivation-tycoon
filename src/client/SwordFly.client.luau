@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local CollectionService = game:GetService("CollectionService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -400,7 +401,19 @@ RunService.PreSimulation:Connect(function(dt)
 	PerfMark.finish("swordFly", t0)
 end)
 
+-- the bridges' invisible side walls (Style.bridge) keep walkers on the deck, not riders: off on
+-- this client while riding (the client owns its character's physics), on again when you step off
+local function wallsFor(on)
+	for _, w in CollectionService:GetTagged("BridgeWall") do
+		w.CanCollide = on
+	end
+end
+CollectionService:GetInstanceAddedSignal("BridgeWall"):Connect(function(w)
+	w.CanCollide = not player:GetAttribute("Riding")
+end)
+
 player:GetAttributeChangedSignal("Riding"):Connect(function()
+	wallsFor(not player:GetAttribute("Riding"))
 	if player:GetAttribute("Riding") then
 		start()
 	else

@@ -2,6 +2,7 @@
 -- front facing +Z. Palette and proportions follow docs/art/ART_BIBLE.md.
 local Style = {}
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
+local CollectionService = game:GetService("CollectionService")
 
 Style.PAL = {
 	vermilion = Color3.fromHex("B8352B"),
@@ -1325,6 +1326,7 @@ local function ghost(p)
 	return p
 end
 -- a rod nothing collides with (ropes, stringers): the planks and posts carry the walking
+local WALL_TOP, WALL_FOOT = 16, 2 -- studs over and under the deck: the bridges' invisible side walls
 local function cord(parent, a, b, dia, color)
 	local len = (b - a).Magnitude
 	if len < 0.01 then
@@ -1412,6 +1414,31 @@ function Style.bridge(parent, a, b, width)
 				light.Shadows = false
 				light.Parent = lantern
 			end
+		end
+	end
+	-- invisible side walls (owner 2026-10-27: "make sides of bridges keep the players, falling may
+	-- make one leave"): the posts stand 8 studs apart and the ropes collide with nothing, so a step
+	-- sideways went over. Like most Roblox obbies and tycoons' sky walks, a clear wall along each
+	-- side, segment by segment along the sag, from under the deck to over a jump plus its cloud step
+	-- (~14 studs, Config.MOVE): you can jump on the bridge but not off it. Sword riders pass through
+	-- (SwordFly turns the BridgeWall tag off locally while riding); previews drop them (Main).
+	for _, sx in { -1, 1 } do
+		local prev
+		for k = 0, posts do
+			local p = at(k * len / posts, sx * (width / 2 + 0.25), (WALL_TOP - WALL_FOOT) / 2).Position
+			if prev then
+				local wall = Instance.new("Part")
+				wall.Name = "BridgeWall"
+				wall.Anchored = true
+				wall.Transparency = 1
+				wall.CastShadow = false
+				wall.CanTouch = false
+				wall.Size = Vector3.new(0.6, WALL_TOP + WALL_FOOT, (p - prev).Magnitude + 0.6)
+				wall.CFrame = CFrame.lookAt((prev + p) / 2, p)
+				CollectionService:AddTag(wall, "BridgeWall")
+				wall.Parent = m
+			end
+			prev = p
 		end
 	end
 	m.Parent = parent

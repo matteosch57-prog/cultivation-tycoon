@@ -1038,6 +1038,11 @@ local function buildPreview(s, pad, parent)
 			disc.Name = "Lobe"
 		end
 	end
+	for _, w in m:GetDescendants() do
+		if w.Name == "BridgeWall" then
+			w:Destroy() -- an invisible side wall would glow as a tall slab in the preview (m is unparented: no GetTagged)
+		end
+	end
 	for _, d in m:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.Transparency = 1
