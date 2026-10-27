@@ -32,6 +32,7 @@ local ISLE = Vector3.new(-37, 0, -110)
 local ISLE_R = 22
 local RIM = Vector3.new(-77.2, 0, -87)
 local N = #Config.MISSION_RELICS
+RelicHall.ISLE, RelicHall.ISLE_R = ISLE, ISLE_R -- RealmLook keeps its floating rocks clear of it
 
 local function P(parent, size, cf, color, mat, shape)
 	local p = Style.P(parent, size, cf, color, mat, shape)
