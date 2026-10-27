@@ -291,8 +291,8 @@ refreshStyles = function()
 			t.chip.BackgroundTransparency = open and 0 or 0.6
 			t.trim.BackgroundTransparency = open and 0 or 0.6
 		else -- a locked style's icon is a dark silhouette (the index's not-found look)
-			t.chip.ImageColor3 = open and Color3.new(1, 1, 1) or Color3.fromHex("2A2238")
-			t.chip.ImageTransparency = open and 0 or 0.25
+			t.chip.ImageColor3 = open and Color3.new(1, 1, 1) or Color3.fromHex("5E5274")
+			t.chip.ImageTransparency = open and 0 or 0.1
 		end
 		if id == worn then
 			t.label.Text = "Wearing"
