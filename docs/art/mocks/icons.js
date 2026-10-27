@@ -152,7 +152,38 @@ NEW.styles = [{ d: rr(14, 32, 36, 22, 2), c: C.cream }, { d: rr(27, 41, 10, 13, 
   { d: "M2 32 C10 30 14 26 16 18 H48 C50 26 54 30 62 32 Z", c: C.red }, { d: "M32 18 H48 C50 26 54 30 62 32 H32 Z", c: "#FF8FC8", k: "flat" },
   { d: rr(24, 12, 16, 7, 3), c: C.gold },
   { d: "M38 62 L54 46", c: C.wood, k: "line", w: 6, ol: true }, { d: rr(49, 42, 8, 6, 1), c: C.gold, tr: "rotate(-45 53 45)" }, { d: "M52 40 C54 32 62 28 63 30 C64 32 62 40 56 44 Z", c: "#FF8FC8" }];
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial", "fortune", "luck", "magnet", "steps", "isles", "styles"];
+// Heavenly Weather (owner 2026-10-27 "Weather in index should use an icon, and the weather event too"):
+// Spirit Rain (a cloud over three drops), Thunder Tribulation (a violet storm cloud, a gold bolt), Blood
+// Moon (a red moon, its dark side and craters), Starfall (a gold star with a cyan trail). Cells 41 to 44
+const CLOUD = "M16 36 C8 36 6 26 13 23 C13 14 24 10 30 16 C33 8 46 8 48 18 C56 18 59 28 53 33 C52 35 50 36 48 36 Z";
+const starPath = (cx, cy, R, r) => { let d = ""; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r : R; d += (i ? "L" : "M") + (cx + Math.cos(a) * q).toFixed(1) + " " + (cy + Math.sin(a) * q).toFixed(1) + " "; } return d + "Z"; };
+NEW.rain = [{ d: CLOUD, c: "#F2F8FF" }, { d: circ(24, 22, 4), c: "#fff", k: "flat" }, { d: drop(20, 52, .3), c: C.tide, sep: true }, { d: drop(32, 57, .3), c: C.tide, sep: true }, { d: drop(44, 52, .3), c: C.tide, sep: true }];
+NEW.thunder = [{ d: CLOUD, c: "#8E7BC9", tr: "translate(0 -4)" }, { d: "M35 26 L24 44 L32 44 L27 61 L43 38 L35 38 L40 26 Z", c: C.gold }];
+NEW.blood = [{ d: circ(32, 32, 25), c: "#E5483F" }, { d: "M32 7 A25 25 0 0 1 32 57 A17 25 0 0 0 32 7Z", c: "#A8262E", k: "flat" }, { d: circ(22, 24, 5), c: "#C2343A", k: "flat" }, { d: circ(26, 42, 3.5), c: "#C2343A", k: "flat" }, { d: circ(18, 18, 3), c: "#FF9A8F", k: "flat" }];
+NEW.star = [{ d: "M6 58 L26 38 M14 60 L30 44 M4 48 L22 32", c: "#9FF3FF", k: "line", w: 4.5, ol: true }, { d: starPath(40, 24, 21, 9), c: C.gold }, { d: circ(34, 18, 3.5), c: "#fff", k: "flat" }];
+// One icon per Sect Style (owner 2026-10-27 "missing icons": the Styles page showed plain swatches): the
+// style's hall (roof and walls in its colours) with its symbol over the corner. Cells 45 to 57
+const star5 = (cx, cy, R, r) => { let d = ""; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r : R; d += (i ? "L" : "M") + (cx + q * Math.cos(a)).toFixed(1) + " " + (cy + q * Math.sin(a)).toFixed(1) + " "; } return d + "Z"; };
+const sHall = (roof, wall, ridge) => [{ d: rr(8, 26, 30, 18, 2), c: wall }, { d: rr(19, 33, 8, 11, 1), c: C.wood },
+  { d: "M0 27 C6 25 9 21 11 14 H35 C37 21 40 25 46 27 Z", c: roof }, { d: rr(16, 9, 14, 6, 3), c: ridge || C.gold }];
+const flake = [0, 60, 120].map(r => ({ d: "M46 31 V61", c: "#E8F7FF", k: "line", w: 4.5, ol: true, tr: `rotate(${r} 46 46)` }));
+const STYLE_ICONS = {
+  classic: [...sHall(C.red, C.cream), { d: circ(46, 46, 11), c: C.jade }, { d: circ(43, 43, 3.5), c: "#fff", k: "flat" }],
+  snow: [...sHall("#CFE3F2", "#7E2A30", "#A8E4FF"), ...flake, { d: circ(46, 46, 4), c: "#A8E4FF" }],
+  volcano: [...sHall("#2F2A2A", "#4A1610", "#FF6A1A"), { d: "M47 28 C56 37 60 46 55 56 C51 61 41 62 38 56 C34 49 38 43 43 40 C42 46 46 48 48 44 C50 39 48 33 47 28 Z", c: "#FF6A1A" }, { d: "M46 46 C51 50 51 55 47 58 C43 58 41 54 44 50 Z", c: C.gold, k: "flat" }],
+  sakura: [...sHall("#E79AB4", C.cream, "#FFFFFF"), ...[0, 72, 144, 216, 288].map(r => ({ d: circ(46, 38, 6.5), c: "#FFB8D2", tr: `rotate(${r} 46 46)` })), { d: circ(46, 46, 4), c: C.gold, k: "flat" }],
+  moon: [...sHall("#2D3E73", "#E8EEF8", "#E8EEF8"), { d: "M50 30 A16 16 0 1 0 60 56 A13 13 0 1 1 50 30 Z", c: "#F4E9B8" }],
+  thunder: [...sHall("#3A3550", "#6E7890", "#B9A8FF"), { d: "M51 28 L37 48 H46 L41 63 L57 41 H48 L55 28 Z", c: "#F5D04A" }],
+  dragon: [...sHall("#E0A82E", "#A3221B", "#FFE27A"), { d: "M34 50 C34 38 46 32 56 38 C50 38 46 42 48 47", c: C.red, k: "line", w: 5, ol: true }, { d: circ(48, 49, 9), c: "#FFE27A" }, { d: circ(45, 46, 3), c: "#fff", k: "flat" }],
+  maple: [...sHall("#C2452D", C.cream, "#FFB347"), { d: star5(46, 45, 16, 7), c: "#FF8A2A" }, { d: "M46 46 L46 62", c: C.wood, k: "line", w: 3.5, ol: true }],
+  abyss: [...sHall("#1F5F5B", "#2F3E3A", "#7FFFE0"), { d: drop(46, 47, .55), c: "#7FFFE0" }, { d: circ(42, 48, 3), c: "#fff", k: "flat" }],
+  phoenix: [...sHall("#B3202A", C.cream, "#FFC24A"), { d: "M58 28 C42 31 34 45 36 61 C47 58 60 46 58 28 Z", c: "#FFC24A" }, { d: "M36 61 C42 50 48 42 56 33", c: C.red, k: "line", w: 3, ol: false }],
+  cloud: [...sHall("#F2F6FA", "#C7D3E6", "#FFD36A"), { d: "M33 54 C28 54 28 45 34 45 C34 38 44 36 47 42 C50 37 60 39 59 46 C64 47 63 54 58 54 Z", c: "#FFFFFF" }, { d: circ(52, 36, 5), c: "#FFD36A" }],
+  starfall: [...sHall("#12142A", "#2A2F55", "#D4DCEE"), { d: star5(47, 45, 16, 7), c: "#F2F4FF" }, { d: "M28 30 L36 38", c: "#B9A8FF", k: "line", w: 3, ol: false }],
+  goldlotus: [...sHall("#FFD24A", "#FFFFFF", "#FFF2B0"), { d: "M33 46 C40 44 45 48 46 56 C39 57 34 53 33 46 Z", c: C.gold }, { d: "M59 46 C52 44 47 48 46 56 C53 57 58 53 59 46 Z", c: C.gold }, { d: "M46 30 C52 38 53 48 46 56 C39 48 40 38 46 30 Z", c: "#FFE680" }],
+};
+for (const k in STYLE_ICONS) { NEW["style_" + k] = STYLE_ICONS[k]; }
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial", "fortune", "luck", "magnet", "steps", "isles", "styles", "rain", "thunder", "blood", "star", "style_classic", "style_snow", "style_volcano", "style_sakura", "style_moon", "style_thunder", "style_dragon", "style_maple", "style_abyss", "style_phoenix", "style_cloud", "style_starfall", "style_goldlotus"];
 const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
@@ -166,6 +197,10 @@ LABEL.magnet = "Magnet";
 LABEL.steps = "Steps";
 LABEL.isles = "Isles";
 LABEL.styles = "Styles";
+LABEL.rain = "Rain";
+LABEL.thunder = "Thunder";
+LABEL.blood = "Blood";
+LABEL.star = "Starfall";
 let uid = 0;
 function shade(c, f) { // f < 1 darker, > 1 lighter
   const n = parseInt(c.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
