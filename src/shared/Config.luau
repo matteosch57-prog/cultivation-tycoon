@@ -1577,7 +1577,7 @@ end
 -- docs/art/mocks/icons.html?view=atlas&style=A (art/ui/icon_atlas.png). `keys` = cell index, row
 -- by row, in the mock's ORDER. Robux is Roblox's own icon (ROBUX_ICON, ships with the client).
 Config.ICON_ATLAS = {
-	image = "rbxassetid://87220134019225", -- 41 icons (Sect Styles added, cell 40), uploaded 2026-10-27
+	image = "rbxassetid://97289085176965", -- 58 icons (weathers 41-44, Sect Style looks 45-57), uploaded 2026-10-27
 	cell = 128,
 	keys = {
 		-- cell 4 (disciple) is unused: Toy draws the disciple atlas figure
