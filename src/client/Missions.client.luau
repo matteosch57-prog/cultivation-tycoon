@@ -194,8 +194,10 @@ local function place()
 		local origin = gui.AbsolutePosition
 		local x = rail.AbsolutePosition.X - origin.X + rail.AbsoluteSize.X + px(10)
 		local y = rail.AbsolutePosition.Y - origin.Y + px(4)
-		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them
-		for _, cls in { "ChatWindowConfiguration", "ChatInputBarConfiguration" } do
+		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them. Not on a
+		-- phone (owner 2026-10-27: the strip pushed under the chat sat mid-screen; phone chat starts folded)
+		local _, phone = computeScale()
+		for _, cls in phone and {} or { "ChatWindowConfiguration", "ChatInputBarConfiguration" } do
 			local c = TextChatService:FindFirstChildOfClass(cls)
 			if c and c.Enabled and c.AbsoluteSize.Y > 0 and c.AbsolutePosition.X - origin.X + c.AbsoluteSize.X > x then
 				y = math.max(y, c.AbsolutePosition.Y - origin.Y + c.AbsoluteSize.Y + px(10))
@@ -319,7 +321,7 @@ end
 
 -- the phone tracker (owner 2026-10-27: "on phone, quests are hiding the view a LOT"): one small glass strip.
 -- MISSION_PHONE "line" = the rank badge, the mission closest to done (icon, words, bar) and the hide tab;
--- "icons" = the badge, one icon per mission with its count and a slim bar, and the tab. Tap = the page.
+-- "icons" = the badge, one icon per mission with a slim bar, and the tab. Tap = the page.
 local function glassStrip()
 	local card = Instance.new("TextButton")
 	card.Text = ""
