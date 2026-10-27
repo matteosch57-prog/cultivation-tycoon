@@ -37,7 +37,7 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85)", "realm (realmBucket)" },
+		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85) | rebirthPad (stood on the gold Rebirth pad, D88) | freeRecruit (a first-minutes free recruit given, D88) | tutorialRepair (a welcome-bug save got its tutorial back, D88)", "realm (realmBucket)" },
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	Mission = {

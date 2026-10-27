@@ -1392,6 +1392,7 @@ local function checkPads()
 						elseif info.rebirth then
 							s.padHold = true
 							notify:FireClient(player, "rebirthAsk")
+							Telemetry.custom(player, "Feature", "rebirthPad", Telemetry.realmBucket(s.data.realm))
 						elseif s.data.qi >= info.cost then
 							s.padHold = true
 							buyPad(s, part, info)
@@ -1936,14 +1937,18 @@ end)
 -- player: its tips start again, and a Disciple Hall it already owns gives the free recruit now
 local function repairTutorial(data)
 	if (data.recruited or 0) > 0 then
-		return
+		return false
 	end
+	local fixed = false
 	if data.tips and data.tips.recruit and not data.chestStarter then
 		data.tips = {}
+		fixed = true
 	end
 	if data.owned.hall and (data.freeRecruits or 0) == 0 then
 		data.freeRecruits = Config.FREE_RECRUITS
+		fixed = true
 	end
+	return fixed
 end
 
 local function onJoin(player)
@@ -2095,7 +2100,9 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
-	repairTutorial(data)
+	if repairTutorial(data) then
+		Telemetry.custom(player, "Feature", "tutorialRepair", Telemetry.realmBucket(data.realm))
+	end
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
 	local hasChest = hasIdleChest(data)
@@ -3020,6 +3027,7 @@ handsFn.OnServerInvoke = function(player, padId)
 	end
 	if info.rebirth then
 		notify:FireClient(player, "rebirthAsk") -- the rebirth still waits for its own screen
+		Telemetry.custom(player, "Feature", "rebirthPad", Telemetry.realmBucket(s.data.realm))
 		return true
 	end
 	buyPad(s, part, info)
@@ -3591,6 +3599,7 @@ while true do
 			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
 			if Config.freeRecruitTick(d) then
 				notify:FireClient(player, "freeRecruit")
+				Telemetry.custom(player, "Feature", "freeRecruit", Telemetry.realmBucket(d.realm))
 			end
 			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
 			if d.seeDisciple then
