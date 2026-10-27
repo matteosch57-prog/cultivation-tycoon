@@ -5,7 +5,7 @@
 -- bar in Edit with "Enable Studio Access to API Services" on. It reads EVERY save (a cohort can only be
 -- found by reading), paced under the GetAsync budget, in the background; result in _G.Cohort.
 --   print(_G.Cohort.status, _G.Cohort.read, _G.Cohort.keys)   -- progress
---   print(_G.Cohort.report)                                     -- when status == "done"
+--   print(_G.Cohort.report)                                     -- final at "done", partial every 100 reads
 -- Only anonymous totals leave Studio. Set _G.CohortCuts before pasting to change the cohorts.
 local STORE = "CultivationTycoon_v1" -- Config.DATASTORE (the live store)
 local SESS_MAX = 30 -- Journal.luau: sess keeps the last 30, so sess[1] is the first session only below it
@@ -33,7 +33,7 @@ local R = { status = "listing", read = 0, keys = 0 }
 _G.Cohort = R
 
 local function waitBudget(kind)
-	while DataStoreService:GetRequestBudgetForRequestType(kind) < 2 do
+	while DataStoreService:GetRequestBudgetForRequestType(kind) < 1 do
 		task.wait(1)
 	end
 end
@@ -75,11 +75,50 @@ task.spawn(function()
 		C[cut[1]] = { n = 0, len = {}, mark = {}, bt = 0, btLeft60 = 0, btSec = {}, rb = 0, rbSec = {}, returned = 0, load = {} }
 	end
 	local noSess, trimmed, older, failed = 0, 0, 0, 0
+	-- the report so far; rebuilt every 100 reads so a stalled read still has numbers
+	local function build()
+		local out = {}
+		local function p(...)
+			table.insert(out, string.format(...))
+		end
+		p("[Cohort] %d saves listed, %d read (%d failed%s), %d no ended session, %d over 30 sessions, %d first joined before the cohorts", R.keys, R.read, failed, R.read < R.keys and ", PARTIAL" or "", noSess, trimmed, older)
+		for _, cut in CUTS do
+			local S = C[cut[1]]
+			local n = math.max(1, S.n)
+			local marks = {}
+			for _, m in MARKS do
+				table.insert(marks, string.format("%dm %.0f%%", m / 60, 100 * (S.mark[m] or 0) / n))
+			end
+			p("== %s: %d players | first session median %ds | reached %s | came back %d (%.0f%%)", cut[1], S.n, median(S.len), table.concat(marks, " "), S.returned, 100 * S.returned / n)
+			p(
+				"   1st breakthrough in session 1: %d (%.0f%%), median at %ds, left within 60 s %d (%.0f%% of them) | rebirth in session 1: %d (%.0f%%), median at %ds",
+				S.bt,
+				100 * S.bt / n,
+				median(S.btSec),
+				S.btLeft60,
+				100 * S.btLeft60 / math.max(1, S.bt),
+				S.rb,
+				100 * S.rb / n,
+				median(S.rbSec)
+			)
+			local ls = {}
+			for stage, t in S.load do
+				table.insert(ls, string.format("%s med %ds n%d", stage, median(t), #t))
+			end
+			table.sort(ls)
+			p("   load: %s", #ls > 0 and table.concat(ls, " | ") or "(no load codes)")
+		end
+		R.report = table.concat(out, "\n")
+	end
+
 
 	for _, key in keys do
 		waitBudget(Enum.DataStoreRequestType.GetAsync)
 		local okR, rec = pcall(store.GetAsync, store, key)
 		R.read += 1
+		if R.read % 100 == 0 then
+			build()
+		end
 		local d = okR and type(rec) == "table" and (rec.data or rec) or nil
 		local j = d and d.journal
 		if not okR then
@@ -147,38 +186,7 @@ task.spawn(function()
 		end
 	end
 
-	local out = {}
-	local function p(...)
-		table.insert(out, string.format(...))
-	end
-	p("[Cohort] %d saves listed, %d read (%d failed), %d no ended session, %d over 30 sessions, %d first joined before the cohorts", R.keys, R.read, failed, noSess, trimmed, older)
-	for _, cut in CUTS do
-		local S = C[cut[1]]
-		local n = math.max(1, S.n)
-		local marks = {}
-		for _, m in MARKS do
-			table.insert(marks, string.format("%dm %.0f%%", m / 60, 100 * (S.mark[m] or 0) / n))
-		end
-		p("== %s: %d players | first session median %ds | reached %s | came back %d (%.0f%%)", cut[1], S.n, median(S.len), table.concat(marks, " "), S.returned, 100 * S.returned / n)
-		p(
-			"   1st breakthrough in session 1: %d (%.0f%%), median at %ds, left within 60 s %d (%.0f%% of them) | rebirth in session 1: %d (%.0f%%), median at %ds",
-			S.bt,
-			100 * S.bt / n,
-			median(S.btSec),
-			S.btLeft60,
-			100 * S.btLeft60 / math.max(1, S.bt),
-			S.rb,
-			100 * S.rb / n,
-			median(S.rbSec)
-		)
-		local ls = {}
-		for stage, t in S.load do
-			table.insert(ls, string.format("%s med %ds n%d", stage, median(t), #t))
-		end
-		table.sort(ls)
-		p("   load: %s", #ls > 0 and table.concat(ls, " | ") or "(no load codes)")
-	end
-	R.report = table.concat(out, "\n")
+	build()
 	R.status = "done"
 end)
 print("[Cohort] started; poll _G.Cohort.status")
