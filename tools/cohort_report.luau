@@ -19,7 +19,8 @@ local CUTS = _G.CohortCuts
 		{ "10-25", utc(2026, 10, 25, 0), utc(2026, 10, 26, 0) },
 		{ "10-26", utc(2026, 10, 26, 0), utc(2026, 10, 27, 0) },
 		{ "10-27 before 19:23", utc(2026, 10, 27, 0), utc(2026, 10, 27, 19, 23) },
-		{ "10-27 after 19:23", utc(2026, 10, 27, 19, 23), math.huge },
+		{ "10-27 19:23-21:38 (update)", utc(2026, 10, 27, 19, 23), utc(2026, 10, 27, 21, 38) },
+		{ "after 21:38 (update + ads)", utc(2026, 10, 27, 21, 38), math.huge },
 	}
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -112,7 +113,12 @@ task.spawn(function()
 	end
 
 
-	for _, key in keys do
+	-- Studio Edit gives ~2,500 reads per opened place (2026-10-27): a bigger store takes two passes,
+	-- reopening the place in between and setting _G.CohortFrom = 2501 for the second (keys are in name order)
+	for i, key in keys do
+		if i < (_G.CohortFrom or 1) then
+			continue
+		end
 		waitBudget(Enum.DataStoreRequestType.GetAsync)
 		local okR, rec = pcall(store.GetAsync, store, key)
 		R.read += 1
