@@ -1873,7 +1873,7 @@ Config.MISSION_RANKS = {
 -- The Relic Hall (owner 2026-10-25: "a building always on showing some relics based on progression of
 -- quests"): finishing rank N earns MISSION_RELICS[N], shown in the hall for good (never reset). Rank 1
 -- shows the ten as dark silhouettes, so the first relic lands with the first rank up (~7-10 min).
-Config.MISSION_RELICS = { "Golden Broom", "Practice Sword", "Incense Burner", "Jade Seal", "Bronze Ding", "Phoenix Fan", "Sect Scroll", "Hall Bell", "Sword in Stone", "Dragon Pearl" }
+Config.MISSION_RELICS = { "Sect Broom", "Practice Sword", "Incense Burner", "Jade Seal", "Bronze Ding", "Phoenix Fan", "Sect Scroll", "Hall Bell", "Sword in Stone", "Dragon Pearl" }
 -- Golden and Rainbow relics (owner pick 2026-10-27, copies Pet Simulator 99's Golden / Rainbow pets): after
 -- Sect Master each rank up upgrades one relic, in MISSION_RELICS order, to Golden (ranks 11-20), then to
 -- Rainbow (21-30). Each upgrade is +1% qi for good, out of the prices like the favorite gift (all 20: +20%).
@@ -1899,7 +1899,7 @@ function Config.relicEarned(rank)
 	return (k - 1) % n + 1, k <= n and "relic" or k <= 2 * n and "golden" or "rainbow"
 end
 
--- a relic's name for its tier ("Golden Broom" stays "Golden Broom" as a Golden relic: no "Golden Golden")
+-- a relic's name for its tier (relic 1 was "Golden Broom" until 2026-10-27: renamed so its Golden upgrade reads as one)
 function Config.relicName(i, tier)
 	local name = Config.MISSION_RELICS[i]
 	if tier == "golden" and not name:find("^Golden ") then
