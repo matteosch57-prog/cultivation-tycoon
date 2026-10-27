@@ -22,11 +22,15 @@ local hex = Color3.fromHex
 local GOLD = hex("FFD24A")
 local LOCKED = hex("1C2030")
 
--- peak frame: the isle's centre and radius, and the free lawn rim its bridge leaves from (clear of the
--- pads, the hub portal at (-27, r - 12) and the incense shrine; checked against Config.ISLETS)
-local ISLE = Vector3.new(-98, 0, 69)
+-- peak frame: the isle's centre and radius, and the islet rim its bridge leaves from. Behind the heart,
+-- bridged from the Fields islet's back rim (owner 2026-10-27: "sometimes blocks the users close to it":
+-- at (-98, 69) the isle stood 11 studs into the straight line between two neighbouring peaks). Here it
+-- clears every peak-to-peak and peak-to-hub line by 90+, the neighbours' islets by 140+, our islets and
+-- lobes by 21+ and their bridges by 45+; the heart rim behind the Main Hall can't be walked to (the level 5
+-- hall's back corners overhang it), so the bridge leaves from the Fields islet
+local ISLE = Vector3.new(-37, 0, -110)
 local ISLE_R = 22
-local RIM = Vector3.new(-56.5, 0, 39.6)
+local RIM = Vector3.new(-77.2, 0, -87)
 local N = #Config.MISSION_RELICS
 
 local function P(parent, size, cf, color, mat, shape)
