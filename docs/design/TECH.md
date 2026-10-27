@@ -132,7 +132,7 @@ printed once a minute.
   (`data.playSec`) at each step.
 - **Custom:** `SessionEnd` (buildings bucket, session minutes, first | return), `Recruit` (rarity, realm,
   kept | benched), `Feature` (pill | orb, realm), `Shop` (open | prompt | bought | closed, source or
-  item key, realm).
+  item key, realm), `AutoBuild` (once per session: value = auto builds, on | off, rebuild | full, realm).
 - **Economy** (currency `Qi`): sinks per pad id, `recruit`, `breakthrough`; sources summed and sent
   with each autosave and on leave (`income`, `orb`) plus `offline` (TimedReward) on join and Qi
   packs (IAP, sku = pack key).

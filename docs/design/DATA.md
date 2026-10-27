@@ -34,9 +34,11 @@ Two layers.
 
 **1. Roblox Analytics (totals across players, ~24 h lag).** Catalogue: `Telemetry.EVENTS`, with the
 question each event answers. Onboarding funnel (`Telemetry.FUNNEL`), economy sources and sinks per
-item, realm progression, and these custom events: FunnelTime, SessionEnd, LeaveState, Build, Recruit,
+item, realm progression, and these custom events: FunnelTime, SessionEnd, LeaveState, Build, AutoBuild, Recruit,
 Feature (pill, orb, gift, hands), IdleChest, Shop, DiscipleBought, KarmaShop, Reincarnate, AltarRound,
 Social, ServerHealth, DataStorePressure, SaveIssue.
+- **Weather** (2026-10-27): `seen` per player when a Heavenly Weather starts (weather key), `mark` on a
+  new weather mark (mutation), `markStep` when marks pay free summons, `markFull` at every mark.
 - **Karma** (2026-10-23): economy sources (`rebirth`) and sinks (the Karma Shop node key) as their own
   currency, beside Qi. **Sword** `snap`: the flight check put a rider back (speed, ceiling, bound,
   islet), at most once per 10 s per rider: a spike means false positives on laggy phones.

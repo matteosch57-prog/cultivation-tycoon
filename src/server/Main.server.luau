@@ -705,6 +705,7 @@ local function startWeather(w)
 	for _, s in sessions do
 		n += 1
 		s.data.weatherSeen = true
+		Telemetry.custom(s.player, "Weather", "seen", w.key, Telemetry.realmBucket(s.data.realm))
 	end
 	print(string.format("[Tycoon] weather %s started, %d players", w.key, n))
 end
@@ -1349,6 +1350,7 @@ local function autoBuildTick(player, s)
 		end
 	end
 	if #can == 0 then
+		s.autoAt = now + 0.5 -- nothing to pay: look again in 0.5 s, not every 0.1 s tick
 		return
 	end
 	local part = Config.guidePick(can)
@@ -1392,6 +1394,7 @@ local function checkPads()
 						elseif info.rebirth then
 							s.padHold = true
 							notify:FireClient(player, "rebirthAsk")
+							Telemetry.custom(player, "Feature", "rebirthPad", Telemetry.realmBucket(s.data.realm))
 						elseif s.data.qi >= info.cost then
 							s.padHold = true
 							buyPad(s, part, info)
@@ -1936,14 +1939,18 @@ end)
 -- player: its tips start again, and a Disciple Hall it already owns gives the free recruit now
 local function repairTutorial(data)
 	if (data.recruited or 0) > 0 then
-		return
+		return false
 	end
+	local fixed = false
 	if data.tips and data.tips.recruit and not data.chestStarter then
 		data.tips = {}
+		fixed = true
 	end
 	if data.owned.hall and (data.freeRecruits or 0) == 0 then
 		data.freeRecruits = Config.FREE_RECRUITS
+		fixed = true
 	end
+	return fixed
 end
 
 local function onJoin(player)
@@ -2098,7 +2105,9 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
-	repairTutorial(data)
+	if repairTutorial(data) then
+		Telemetry.custom(player, "Feature", "tutorialRepair", Telemetry.realmBucket(data.realm))
+	end
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
 	local hasChest = hasIdleChest(data)
@@ -2207,6 +2216,10 @@ local function onLeave(player)
 	end
 	Telemetry.source(player, s.data, s.earned or 0, "income")
 	Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
+	-- Auto Build (D85): how much it built this session, switched on or off, rebuild only or full (Hands)
+	if Config.autoBuildOpen(s.data) then
+		Telemetry.customValue(player, "AutoBuild", s.autoBuilt or 0, s.data.autoOff and "off" or "on", dao(s.data, "hands") > 0 and "full" or "rebuild", Telemetry.realmBucket(s.data.realm))
+	end
 	Telemetry.custom(player, "SessionEnd", Telemetry.builtBucket(built), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())), s.data.sessions == 1 and "first" or "return")
 	-- why they left: stuck waiting for qi, lost with things to buy, or idle (journal closes its line)
 	local sinceBuy, afkShare = Journal.detach(player, built)
@@ -2365,11 +2378,18 @@ local function addDisciple(s, name, force, noBuild, look, shiny, mut)
 		local key = Config.indexKey(name, look) .. "#" .. mut
 		if not d.mutIndex[key] then -- a new weather mark: every MARK_STEP of them pays free summons
 			d.mutIndex[key] = true
-			local steps = Config.markCount(d.mutIndex) // Config.MARK_STEP
+			local marks = Config.markCount(d.mutIndex)
+			local realm = Telemetry.realmBucket(d.realm)
+			Telemetry.custom(s.player, "Weather", "mark", mut, realm)
+			local steps = marks // Config.MARK_STEP
 			if steps > (d.markSteps or 0) then
 				giveSummons(s, (steps - (d.markSteps or 0)) * Config.MARK_STEP_SUMMONS)
 				d.markSteps = steps
 				notify:FireClient(s.player, "markStep", Config.MARK_STEP_SUMMONS)
+				Telemetry.custom(s.player, "Weather", "markStep", tostring(marks), realm)
+			end
+			if marks == Config.markTotal() then
+				Telemetry.custom(s.player, "Weather", "markFull", tostring(marks), realm)
 			end
 		end
 	end
@@ -3028,6 +3048,7 @@ handsFn.OnServerInvoke = function(player, padId)
 	end
 	if info.rebirth then
 		notify:FireClient(player, "rebirthAsk") -- the rebirth still waits for its own screen
+		Telemetry.custom(player, "Feature", "rebirthPad", Telemetry.realmBucket(s.data.realm))
 		return true
 	end
 	buyPad(s, part, info)
@@ -3599,6 +3620,7 @@ while true do
 			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
 			if Config.freeRecruitTick(d) then
 				notify:FireClient(player, "freeRecruit")
+				Telemetry.custom(player, "Feature", "freeRecruit", Telemetry.realmBucket(d.realm))
 			end
 			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
 			if d.seeDisciple then

@@ -37,7 +37,7 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85)", "realm (realmBucket)" },
+		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85) | rebirthPad (stood on the gold Rebirth pad, D88) | freeRecruit (a first-minutes free recruit given, D88) | tutorialRepair (a welcome-bug save got its tutorial back, D88)", "realm (realmBucket)" },
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	Mission = {
@@ -63,6 +63,14 @@ Telemetry.EVENTS = {
 	SaveIssue = {
 		fields = { "locked | error | newer (a load that could not take the save: the player was asked to rejoin)" },
 		question = "How often does a join fail to load a save, and why?",
+	},
+	Weather = {
+		fields = {
+			"seen (a weather started while they played) | mark (a new weather mark) | markStep (MARK_STEP marks paid summons) | markFull (every mark)",
+			"seen: weather key; mark: mutation name; markStep: marks found",
+			"realm (realmBucket)",
+		},
+		question = "Do players see the Heavenly Weather, and do they chase mutations and the weather marks?",
 	},
 	DiscipleBought = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
@@ -99,6 +107,10 @@ Telemetry.EVENTS = {
 			"realm (realmBucket)",
 		},
 		question = "Do sword owners actually ride, which sword do they pick (D76), and how often does the flight check snap riders back (false positives on laggy phones)?",
+	},
+	AutoBuild = {
+		fields = { "on | off (the HUD switch at leave)", "rebuild | full (Heavenly Hands)", "realm (realmBucket)" }, -- value = buildings Auto Build bought this session
+		question = "Do players keep Auto Build on, and how much of their building does it do (D85)?",
 	},
 	Build = {
 		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
@@ -302,7 +314,7 @@ local function send(what, fn, ...)
 end
 
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
-local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, ClientFps = true, ClientLoad = true }
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, AutoBuild = true, ClientFps = true, ClientLoad = true }
 
 -- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
 function Telemetry.customValue(player, name, value, ...)

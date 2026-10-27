@@ -214,6 +214,39 @@ for _, m in CollectionService:GetTagged(TAG) do
 	task.spawn(watch, m)
 end
 
+-- a Thunderborn's lightning: short jagged Neon arcs jumping round the body
+-- (pooled: 3 arcs of 4 segments, the same 12 parts moved and shown each strike, hidden 0.18 s later;
+-- creating and destroying them was 48 parts a second per figure)
+local ARCS, SEGS = 3, 4
+local function arc(a, k)
+	a.arcParts = a.arcParts or {}
+	local hips = a.torso.Position - Vector3.new(0, a.torso.Size.Y / 2 + 0.4, 0)
+	local t1 = math.random() * TAU
+	local t2 = t1 + (math.random() - 0.5) * 1.8
+	local from = hips + Vector3.new(math.cos(t1) * 1.6, math.random() * 2.8, math.sin(t1) * 1.6)
+	local to = hips + Vector3.new(math.cos(t2) * 2.1, math.random() * 3, math.sin(t2) * 2.1)
+	local last = from
+	for i = 1, SEGS do
+		local nextAt = from:Lerp(to, i / SEGS) + (i < SEGS and Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 0.7 or Vector3.zero)
+		local n = (k - 1) * SEGS + i
+		local seg = a.arcParts[n]
+		if not seg then
+			seg = part(a.folder, { Material = Enum.Material.Neon, Color = a.w.tint:Lerp(WHITE, 0.4) })
+			a.arcParts[n] = seg
+		end
+		seg.Size = Vector3.new(0.2, 0.2, (nextAt - last).Magnitude)
+		seg.CFrame = CFrame.lookAt((last + nextAt) / 2, nextAt)
+		seg.Transparency = 0
+		last = nextAt
+	end
+end
+local function hideArcs(a)
+	for _, seg in a.arcParts or {} do
+		seg.Transparency = 1
+	end
+	a.arcHide = nil
+end
+
 local function setOn(a, on)
 	if a.on == on then
 		return
@@ -230,6 +263,9 @@ local function setOn(a, on)
 	end
 	for _, p in a.halo do
 		p.Transparency = on and 0 or 1
+	end
+	if not on then
+		hideArcs(a)
 	end
 	for _, p in a.dimmed do
 		p.LocalTransparencyModifier = on and ORB_DIM or 0
@@ -264,28 +300,6 @@ task.spawn(function()
 	end
 end)
 
--- a Thunderborn's lightning: short jagged Neon arcs jumping round the body
-local function arc(a)
-	local hips = a.torso.Position - Vector3.new(0, a.torso.Size.Y / 2 + 0.4, 0)
-	local t1 = math.random() * TAU
-	local t2 = t1 + (math.random() - 0.5) * 1.8
-	local from = hips + Vector3.new(math.cos(t1) * 1.6, math.random() * 2.8, math.sin(t1) * 1.6)
-	local to = hips + Vector3.new(math.cos(t2) * 2.1, math.random() * 3, math.sin(t2) * 2.1)
-	local color = a.w.tint:Lerp(WHITE, 0.4)
-	local segs = {}
-	local last = from
-	for i = 1, 4 do
-		local nextAt = from:Lerp(to, i / 4) + (i < 4 and Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 0.7 or Vector3.zero)
-		table.insert(segs, part(a.folder, { Material = Enum.Material.Neon, Color = color, Transparency = 0, Size = Vector3.new(0.2, 0.2, (nextAt - last).Magnitude), CFrame = CFrame.lookAt((last + nextAt) / 2, nextAt) }))
-		last = nextAt
-	end
-	task.delay(0.18, function()
-		for _, s in segs do
-			s:Destroy()
-		end
-	end)
-end
-
 -- every frame, the drawn auras follow their posed figure: the rising ring at the hips, the orbiters
 -- round the body or the head, the halo over it; Thunderborn arcs every 0.15-0.35 s
 RunService.RenderStepped:Connect(function(dt)
@@ -308,11 +322,15 @@ RunService.RenderStepped:Connect(function(dt)
 				local t = i / #a.halo * TAU
 				s.CFrame = CFrame.new(a.head.Position.X + math.cos(t), top + 0.5, a.head.Position.Z + math.sin(t)) * CFrame.Angles(0, -t, 0)
 			end
+			if a.arcHide and now >= a.arcHide then
+				hideArcs(a)
+			end
 			if a.w.mut == "Thunderborn" and now >= (a.nextArc or 0) then
 				a.nextArc = now + 0.15 + math.random() * 0.2
-				for _ = 1, 3 do
-					arc(a)
+				for k = 1, ARCS do
+					arc(a, k)
 				end
+				a.arcHide = now + 0.18
 			end
 		end
 	end
