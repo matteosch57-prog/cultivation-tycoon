@@ -1596,6 +1596,9 @@ Config.ICON_ATLAS = {
 		-- the four Heavenly Weathers (owner 2026-10-27: "Weather in index should use an icon, and the
 		-- weather event too"; docs/art/mocks/weather_icons.html), keyed by Config.WEATHERS key
 		rain = 41, thunder = 42, blood = 43, star = 44,
+		-- one icon per Sect Style (owner 2026-10-27: "perfect, use those"), "style_" .. Config.SECT_STYLES id
+		style_classic = 45, style_snow = 46, style_volcano = 47, style_sakura = 48, style_moon = 49, style_thunder = 50, style_dragon = 51,
+		style_maple = 52, style_abyss = 53, style_phoenix = 54, style_cloud = 55, style_starfall = 56, style_goldlotus = 57,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
