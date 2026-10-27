@@ -112,9 +112,11 @@ local function refreshKarma()
 	ui.karma.Text = commas(have)
 	for _, t in ui.tiles do
 		local lv = player:GetAttribute("Dao_" .. t.node.key) or 0
-		local cost = t.node.costs[lv + 1]
+		local cost = Config.daoCost(t.node, lv)
 		if t.node.lines then -- the line names what the NEXT level gives
 			t.line.Text = t.node.lines[math.min(lv + 1, #t.node.lines)]
+		elseif lv > #t.node.costs then -- an endless line past its pips (Config.DAO `more`) shows its level
+			t.line.Text = t.node.line .. "  Lv " .. lv
 		end
 		for i, pip in t.pips do
 			pip.BackgroundColor3 = i <= lv and GOLD or Color3.fromHex("3A2D40")

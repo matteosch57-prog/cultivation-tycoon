@@ -520,14 +520,16 @@ drawPage = function(open)
 		end
 		local words, color = rewardWords(r)
 		text(cell, "★" .. r.at, px(13), GOLD, { LayoutOrder = 2, ZIndex = 2 })
-		local relic = last and Config.MISSION_RELICS and Config.MISSION_RELICS[m.rank]
+		-- what this rank's rank up earns: a relic (ranks 1-10), then each one Golden, then Rainbow
+		local ri, rtier = Config.relicEarned(m.rank + 1)
+		local relic = last and ri and Config.relicName(ri, rtier)
 		if last then
 			-- the last node gets wider lines (Play check: its words wrapped in four), the relic on its own
 			cell.Size = UDim2.fromOffset(node + px(90), 0)
 			cell.Position -= UDim2.fromOffset(px(10), 0)
 			text(cell, words .. " + rank up", px(11), color, { LayoutOrder = 3, ZIndex = 2 })
 			if relic then
-				text(cell, "+ Relic: " .. relic, px(11), GOLD, { LayoutOrder = 4, ZIndex = 2 })
+				text(cell, (rtier == "relic" and "+ Relic: " or "+ ") .. relic, px(11), GOLD, { LayoutOrder = 4, ZIndex = 2 })
 			end
 		else
 			text(cell, words, px(11), color, { LayoutOrder = 3, ZIndex = 2, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.fromOffset(node + px(20), 0) })

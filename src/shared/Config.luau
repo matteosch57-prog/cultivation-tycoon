@@ -203,8 +203,11 @@ end
 -- shit, we should do a better skill menu"; mocks docs/art/mocks/karma_upgrades.html, pick A): ten lines,
 -- each a small step a level, the first levels cheap and the last steep, so every rebirth buys a few
 -- levels and the deep ones stay a long goal. Nothing copies a paid pass (2x qi, auto orbs, VIP).
+-- `more` = the line goes on past its list, each level `more` karma dearer than the one before (owner
+-- 2026-10-26: "can you buy stuff at each reinc at least?": a cheapest-first player buys at least one
+-- level every rebirth up to rebirth 100, checked by tools/sim_game.py's spend_karma).
 Config.DAO = {
-	{ key = "fortune", name = "Sect Fortune", line = "+10% Qi", costs = { 10, 20, 30, 50, 80, 120, 180, 260, 380, 550 } },
+	{ key = "fortune", name = "Sect Fortune", line = "+10% Qi", costs = { 10, 20, 30, 50, 80, 120, 180, 260, 330, 400 }, more = 15 },
 	{ key = "luck", name = "Heaven's Favor", line = "+5% rare recruits", costs = { 20, 40, 80, 150, 250 } },
 	{ key = "seat", name = "Disciple Seat", line = "+1 disciple slot", costs = { 50, 100, 200, 350, 550 } },
 	{ key = "magnet", name = "Spirit Magnet", line = "+25% orb Qi", costs = { 10, 25, 50, 100, 200 } },
@@ -254,6 +257,14 @@ function Config.rarityWeights(luck)
 		w[i] = if i > 1 then r.weight * (1 + Config.DAO_LUCK * (luck or 0)) else r.weight
 	end
 	return w
+end
+-- the price of level `lv + 1` of `node` (`lv` = the level owned), nil when the line is maxed
+function Config.daoCost(node, lv)
+	local n = #node.costs
+	if lv < n then
+		return node.costs[lv + 1]
+	end
+	return if node.more then node.costs[n] + node.more * (lv + 1 - n) else nil
 end
 function Config.daoNode(key)
 	for _, n in Config.DAO do
@@ -555,6 +566,31 @@ Config.GUIDE_PRIORITY = { "platform", "bridge_fields", "bridge_disciples", "hall
 -- comes with FREE_RECRUITS free recruits, then the trail leads to the Meditation Platform to see the
 -- newcomer, done within SEE_DISCIPLE_RANGE studs of its centre (Main income tick, Tips.client)
 Config.FREE_RECRUITS = 1
+-- more free recruits in the first minutes (thread "Keep new players past 10 minutes", 2026-10-26: 26% of
+-- new players left between 30 s and 2 min, buying, with the rarity reveal seen once; Pet Simulator 99 /
+-- Bee Swarm open with several starter gifts): after the tutorial's free recruit is used, another comes
+-- FREE_RECRUIT_MORE[n] s of play later (the same "Free recruit!" tip). Only for the save whose hall gave
+-- the tutorial recruit (data.freeUsedAt), so old saves never get them.
+Config.FREE_RECRUIT_MORE = { 45, 45 }
+-- once a second (Main income tick, qisim world): true when a further free recruit was just given
+function Config.freeRecruitTick(d)
+	if not d.freeUsedAt or (d.freeRecruits or 0) > 0 then
+		return false
+	end
+	local n = (d.freeMore or 0) + 1
+	local gap = Config.FREE_RECRUIT_MORE[n]
+	if not gap then
+		d.freeUsedAt = nil
+		return false
+	end
+	if (d.playSec or 0) - d.freeUsedAt < gap then
+		return false
+	end
+	d.freeMore = n
+	d.freeUsedAt = nil
+	d.freeRecruits = 1
+	return true
+end
 Config.SEE_DISCIPLE_RANGE = 22
 -- `pads`: the player's open pad parts (PadId, Cost attributes). Returns the pad to lead to, and
 -- whether it is the priority one
@@ -698,6 +734,13 @@ end
 -- `qiSec` seconds of income (no tide, no pill), `summons` free summons (into the idle chest's pool)
 -- and/or a disciple of `rarity`; a disciple day pays once per save, a repeat pays `again` instead.
 -- Economy check 2026-10-22 (tools/sim_game.py STREAK): pace unchanged, the streak is 0.2-1.4% of all qi.
+-- a brand-new save's first Daily Blessing (owner pick 2026-10-26, thread "Keep new players past 10
+-- minutes"): it waits for the first breakthrough, then STREAK_NEW_AFTER s, so it lands where 22% of
+-- new players left (within 60 s of the first breakthrough) and realm 1 keeps its buying pace (at
+-- 81 s it paid ~57K against ~9.5K held). STREAK_NEW_LATEST s of play shows it anyway.
+Config.STREAK_NEW_REALM = 2
+Config.STREAK_NEW_AFTER = 45
+Config.STREAK_NEW_LATEST = 420
 Config.STREAK = {
 	{ qiSec = 300, summons = 1 },
 	{ rarity = "Immortal", again = { summons = 3 } },
@@ -1831,6 +1874,47 @@ Config.MISSION_RANKS = {
 -- quests"): finishing rank N earns MISSION_RELICS[N], shown in the hall for good (never reset). Rank 1
 -- shows the ten as dark silhouettes, so the first relic lands with the first rank up (~7-10 min).
 Config.MISSION_RELICS = { "Golden Broom", "Practice Sword", "Incense Burner", "Jade Seal", "Bronze Ding", "Phoenix Fan", "Sect Scroll", "Hall Bell", "Sword in Stone", "Dragon Pearl" }
+-- Golden and Rainbow relics (owner pick 2026-10-27, copies Pet Simulator 99's Golden / Rainbow pets): after
+-- Sect Master each rank up upgrades one relic, in MISSION_RELICS order, to Golden (ranks 11-20), then to
+-- Rainbow (21-30). Each upgrade is +1% qi for good, out of the prices like the favorite gift (all 20: +20%).
+-- RELIC_LOOK picks how they look (mocks A/B/C, RelicHall.tierLook).
+Config.RELIC_GOLD_BONUS = 0.01
+Config.RELIC_RAINBOW_BONUS = 0.01
+Config.RELIC_LOOK = "A"
+
+-- for Sect Missions rank `rank`: relics earned, how many of them are Golden, how many Rainbow
+function Config.relicTiers(rank)
+	local n = #Config.MISSION_RELICS
+	local done = math.max((rank or 1) - 1, 0)
+	return math.min(done, n), math.clamp(done - n, 0, n), math.clamp(done - 2 * n, 0, n)
+end
+
+-- what a rank up to `rank` earned: the relic's index and "relic", "golden" or "rainbow" (nil past them all)
+function Config.relicEarned(rank)
+	local n = #Config.MISSION_RELICS
+	local k = (rank or 1) - 1
+	if k < 1 or k > 3 * n then
+		return nil
+	end
+	return (k - 1) % n + 1, k <= n and "relic" or k <= 2 * n and "golden" or "rainbow"
+end
+
+-- a relic's name for its tier ("Golden Broom" stays "Golden Broom" as a Golden relic: no "Golden Golden")
+function Config.relicName(i, tier)
+	local name = Config.MISSION_RELICS[i]
+	if tier == "golden" and not name:find("^Golden ") then
+		return "Golden " .. name
+	elseif tier == "rainbow" then
+		return "Rainbow " .. name:gsub("^Golden ", "")
+	end
+	return name
+end
+
+-- the qi multiplier of the Golden and Rainbow relics at `rank`
+function Config.relicMult(rank)
+	local _, gold, rainbow = Config.relicTiers(rank)
+	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
+end
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier

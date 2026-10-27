@@ -7,7 +7,7 @@
 --
 -- Every dot leads to a dot one level down (the HUD button, then the tab / the tile / the disciple)
 -- and clears once its menu is opened; a standing condition (karma covers a node) lights again only
--- on a NEW edge (another node becomes affordable), never just because the condition still holds.
+-- on a NEW edge (another node becomes affordable) or in a new session (the Karma Shop, once each).
 local HttpService = game:GetService("HttpService")
 
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
@@ -33,7 +33,7 @@ local function affordable(d)
 	local out = {}
 	for _, node in Config.DAO do
 		local lv = (d.dao or {})[node.key] or 0
-		local cost = node.costs[lv + 1]
+		local cost = Config.daoCost(node, lv)
 		if cost and (d.karma or 0) >= cost then
 			table.insert(out, node.key .. ":" .. (lv + 1))
 		end
@@ -73,6 +73,11 @@ function Dots.compute(s)
 		if not kseen[k] then
 			table.insert(knew, k)
 		end
+	end
+	-- and once a session (owner 2026-10-26: "red dot when it's possible to buy smthing? once per
+	-- session"): everything affordable, until the Karma Shop is opened in this session (s, not saved)
+	if not s.karmaDotSeen then
+		knew = affordable(d)
 	end
 	if #knew > 0 then
 		lit.karma = knew
@@ -121,6 +126,7 @@ function Dots.seen(player, s, key)
 	if key == "disciples" then
 		seen.disc = counts(d.disciples)
 	elseif key == "karma" then
+		s.karmaDotSeen = true
 		local kseen = seen.karma or {}
 		for _, k in affordable(d) do
 			kseen[k] = true

@@ -236,6 +236,9 @@ function Engine.load(root, seed)
 	-- Config, as the game loads it
 	local Config = luau.load(fs.readFile(root .. "/src/shared/Config.luau"), { debugName = "Config", environment = env })()
 	env.Config = Config
+	if require("@lune/process").env.QISIM_RELICS == "0" then
+		Config.RELIC_GOLD_BONUS, Config.RELIC_RAINBOW_BONUS = 0, 0 -- QISIM_RELICS=0: no Golden / Rainbow relic bonus
+	end
 	if require("@lune/process").env.QISIM_MISSIONS == "0" then
 		Config.MISSIONS_ON = false -- QISIM_MISSIONS=0: the game without Sect Missions, to compare
 	end

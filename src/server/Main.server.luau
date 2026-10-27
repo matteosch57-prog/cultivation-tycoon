@@ -744,7 +744,8 @@ local function rate(s, away)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
 	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
 	local fortune = 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune (Karma Shop)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune
+	local relics = Config.relicMult(type(data.missions) == "table" and data.missions.rank or 1) -- Golden / Rainbow relics
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune * relics
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
@@ -778,6 +779,7 @@ local function padRate(s)
 	end
 	r /= Config.rebirthMult(rebirths(data))
 	r /= 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune never raises a price either
+	r /= Config.relicMult(type(data.missions) == "table" and data.missions.rank or 1) -- nor do the Golden / Rainbow relics
 	local dm = discipleMult(s)
 	local paid = 0
 	for name, n in data.boughtDisciples or {} do
@@ -1047,143 +1049,12 @@ end
 -- LightEmission keeps them gold), draw in front (ZOffset), are bigger, and a warm light marks the seat.
 -- Recheck 10:03: the light lit the whole deck (now a short range at the cushion) and the burst hid in
 -- the aura's circle behind the head (now higher, bigger and drawn in front of it)
--- a mutated disciple's seat (Heavenly Weather): the Mutation attribute (DiscipleInspect's card) and a
--- slow rise of motes in its weather's colour from the cushion (no PointLight: owner's no-fake-light rule), under the Shiny glints when it has both
--- a mutation's particle colours: its tint, or the whole rainbow for Starforged
-local function mutColors(w)
-	if w.motion == "rainbow" then
-		local keys = {}
-		for i = 0, 6 do -- green to violet, Config.mutLook's range
-			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(0.3 + 0.48 * i / 6, 0.6, 1)))
-		end
-		return ColorSequence.new(keys)
-	end
-	return ColorSequence.new(w.tint:Lerp(Color3.new(1, 1, 1), 0.3), w.tint)
-end
-
+-- a mutated disciple's seat (Heavenly Weather): the Mutation attribute only. Its aura (owner 2026-10-26
+-- "what about a real aura effect?", Sol's RNG layers: a glowing pool, flames or mist rising round the
+-- body, the mutation's own orbiters) is drawn by MutationAura.client from the posed figure, under its
+-- own budget (the server's figure sits ~1.85 studs lower than the client's pose)
 local function mutationGlow(m, mut)
-	local w = Config.mutation(mut)
 	m:SetAttribute("Mutation", mut)
-	local at = m:FindFirstChild("Cushion") or m.PrimaryPart
-	if not w or not at then
-		return
-	end
-	local ring = Instance.new("Part")
-	ring.Name = "MutationRing"
-	ring.Anchored = true
-	ring.CanCollide = false
-	ring.CanQuery = false
-	ring.CanTouch = false
-	ring.Transparency = 1
-	ring.Size = Vector3.new(4, 0.2, 4)
-	ring.CFrame = CFrame.new(at.Position) * CFrame.new(0, 0.3, 0)
-	ring.Parent = m
-	local e = Instance.new("ParticleEmitter")
-	e.Name = "MutationMotes"
-	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	e.Shape = Enum.ParticleEmitterShape.Cylinder
-	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
-	e.EmissionDirection = Enum.NormalId.Top
-	e.Rate = 10 -- Play check 2026-10-26: ~780 particles round a busy platform, too many for a phone
-	e.Lifetime = NumberRange.new(1.6, 2.2)
-	e.Speed = NumberRange.new(1.5, 2.5)
-	e.SpreadAngle = Vector2.new(0, 0)
-	e.Rotation = NumberRange.new(0, 360)
-	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
-	e.Color = mutColors(w)
-	e.LightEmission = 0.6
-	e.LightInfluence = 0
-	e.Brightness = 2.5
-	e.ZOffset = 1
-	e.Parent = ring
-	-- on the figure itself (owner 2026-10-26 "for the models of disciples too", like Grow a Garden's
-	-- mutated crops): each mutation its own look, emitters on the torso, no light (owner rule: light comes from
-	-- the sky or a visible lamp) and no Highlight (the HL budget is
-	-- the Shiny outline's; Dewy alone is 1 in 5 rain recruits)
-	local LOOKS = {
-		Dewy = { -- water drips running off the body
-			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 8,
-			Lifetime = NumberRange.new(0.8, 1.2),
-			Speed = NumberRange.new(2, 4),
-			Acceleration = Vector3.new(0, -14, 0),
-			EmissionDirection = Enum.NormalId.Bottom,
-			SpreadAngle = Vector2.new(60, 60),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.2) }),
-			Squash = NumberSequence.new(1.2),
-		},
-		Thunderborn = { -- yellow sparks crackling out in every direction
-			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 14,
-			Lifetime = NumberRange.new(0.12, 0.3),
-			Speed = NumberRange.new(8, 14),
-			SpreadAngle = Vector2.new(180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.85), NumberSequenceKeypoint.new(1, 0) }),
-			Rotation = NumberRange.new(0, 360),
-		},
-		Bloodlit = { -- red mist rising slowly off the body
-			Texture = "rbxasset://textures/particles/smoke_main.dds",
-			Rate = 6,
-			Lifetime = NumberRange.new(1.6, 2.2),
-			Speed = NumberRange.new(1, 2),
-			EmissionDirection = Enum.NormalId.Top,
-			SpreadAngle = Vector2.new(30, 30),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 2.6) }),
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 1) }),
-			RotSpeed = NumberRange.new(-30, 30),
-		},
-		Starforged = { -- small stars twinkling all round the figure
-			Texture = "rbxasset://textures/particles/sparkles_main.dds",
-			Rate = 10,
-			Lifetime = NumberRange.new(0.9, 1.4),
-			Speed = NumberRange.new(0.5, 1.5),
-			SpreadAngle = Vector2.new(180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.4, 0.75), NumberSequenceKeypoint.new(1, 0) }),
-			Rotation = NumberRange.new(0, 360),
-			RotSpeed = NumberRange.new(-120, 120),
-		},
-	}
-	local look = LOOKS[mut]
-	if not look then
-		return
-	end
-	task.spawn(function()
-		local avatar = m:WaitForChild("Avatar", 10) -- Cultivators.build adds the figure a moment later
-		local torso = avatar and (avatar:FindFirstChild("UpperTorso") or avatar:FindFirstChild("Torso") or avatar.PrimaryPart)
-		if not torso or not m.Parent then
-			return
-		end
-		local fx = Instance.new("ParticleEmitter")
-		fx.Name = "MutationFx"
-		fx.Color = mutColors(w)
-		fx.LightEmission = 0.7
-		fx.LightInfluence = 0
-		fx.Brightness = 2
-		fx.ZOffset = 1
-		for k, v in look do
-			fx[k] = v
-		end
-		fx.Parent = torso
-		-- the figure washed in its mutation's colour (owner pick 2026-10-26 "B but with a different per
-		-- type", Grow a Garden recolours a mutated crop): a strong fill and outline that CultivatorIdle
-		-- moves each mutation's own way (Config.mutLook) and switches on for the nearest figures only (its
-		-- Highlight budget, shared with the Shiny outline)
-		-- the figure's own rim Highlight goes: Roblox draws one Highlight per adornee and a disabled rim
-		-- still claims it, so the wash never showed (Studio check 2026-10-26)
-		local rim = avatar:FindFirstChild("Rim") or avatar:WaitForChild("Rim", 2)
-		if rim then
-			rim:Destroy()
-		end
-		local h = Instance.new("Highlight")
-		h.Name = "MutationOutline"
-		h.Adornee = avatar
-		h.FillColor = w.tint
-		h.FillTransparency = 0.4
-		h.OutlineColor = w.tint
-		h.OutlineTransparency = 0
-		h.DepthMode = Enum.HighlightDepthMode.Occluded
-		h.Parent = m
-	end)
 end
 
 local SHINY_GOLD = Color3.fromHex("FFD34D")
@@ -2059,6 +1930,21 @@ task.spawn(function()
 	end
 end)
 
+-- repair (owner 2026-10-27: "some account didnt got it"): saves made while the welcome stamp ran
+-- first (2026-10-24 to 10-26) have every tip marked seen. A save that never recruited is still a new
+-- player: its tips start again, and a Disciple Hall it already owns gives the free recruit now
+local function repairTutorial(data)
+	if (data.recruited or 0) > 0 then
+		return
+	end
+	if data.tips and data.tips.recruit and not data.chestStarter then
+		data.tips = {}
+	end
+	if data.owned.hall and (data.freeRecruits or 0) == 0 then
+		data.freeRecruits = Config.FREE_RECRUITS
+	end
+end
+
 local function onJoin(player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
@@ -2208,6 +2094,7 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
+	repairTutorial(data)
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
 	local hasChest = hasIdleChest(data)
@@ -2562,7 +2449,8 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		s.data.freeRecruits -= 1
 		s.data.tips = s.data.tips or {}
 		s.data.tips.recruit = true
-		s.data.seeDisciple = s.data.owned.platform == true -- next: walk to the platform to see it
+		s.data.seeDisciple = s.data.owned.platform == true and not s.data.freeMore -- next: walk to the platform to see it (the first one only)
+		s.data.freeUsedAt = s.data.playSec or 0 -- the next one (Config.FREE_RECRUIT_MORE) counts from here
 	else
 		s.data.qi -= cost
 		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
@@ -3081,7 +2969,7 @@ daoFn.OnServerInvoke = function(player, key)
 	local d = s.data
 	d.dao = d.dao or {}
 	local lv = d.dao[key] or 0
-	local cost = node.costs[lv + 1]
+	local cost = Config.daoCost(node, lv)
 	if not cost or (d.karma or 0) < cost then
 		return false
 	end
@@ -3346,6 +3234,17 @@ if game:GetService("RunService"):IsStudio() then
 				SwordRide.debugRide(player, value) -- DebugSet:Invoke(player, "ride", "swordJade") rides (pass first); false steps off
 				return true
 			end
+			if key == "bugSave" then
+				-- DebugSet:Invoke(player, "bugSave") turns this save into one from the 2026-10-24..26 welcome
+				-- bug (every tip seen, never recruited) and runs the join's repair on it
+				s.data.tips = { orb = true, pill = true, chest = true, recruit = true }
+				s.data.recruited = 0
+				s.data.freeRecruits = 0
+				s.data.chestStarter = nil
+				repairTutorial(s.data)
+				publish(player)
+				return s.data.freeRecruits
+			end
 			if key == "buy" then
 				-- DebugSet:Invoke(player, "buy", "starter") runs a product's prompt checks and grants it
 				-- as its receipt would (no purchase); false = refused
@@ -3376,7 +3275,7 @@ if game:GetService("RunService"):IsStudio() then
 				-- Terrace as a rank up to it would (the newest relic bursts)
 				s.data.missions = s.data.missions or { rank = 1, stars = 0, paid = 0, done = 0, starter = 1, total = 0, slots = {} }
 				s.data.missions.rank = value
-				RelicHall.show(s.plot, value, value - 1)
+				RelicHall.show(s.plot, value, (Config.relicEarned(value)))
 				Missions.push(player, s)
 				return true
 			end
@@ -3509,12 +3408,12 @@ Missions.init({
 -- a rank up earns that rank's relic on the Relic Terrace (RelicHall): it lands with a gold burst
 Missions.onRank(function(player, rank)
 	local s = sessions[player]
-	local name = Config.MISSION_RELICS[rank - 1]
-	if not (s and s.plot and name) then
+	local i, tier = Config.relicEarned(rank)
+	if not (s and s.plot and i) then
 		return
 	end
-	RelicHall.show(s.plot, rank, rank - 1)
-	notify:FireClient(player, "relic", name)
+	RelicHall.show(s.plot, rank, i)
+	notify:FireClient(player, "relic", Config.relicName(i, tier), tier)
 end)
 setupLighting()
 buildPlots()
@@ -3680,6 +3579,10 @@ while true do
 					d.pillReady = true
 					notify:FireClient(player, "pill")
 				end
+			end
+			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
+			if Config.freeRecruitTick(d) then
+				notify:FireClient(player, "freeRecruit")
 			end
 			-- the recruit tutorial's last step: done once the player stands at the Meditation Platform
 			if d.seeDisciple then
