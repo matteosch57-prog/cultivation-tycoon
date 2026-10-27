@@ -37,12 +37,20 @@ Telemetry.EVENTS = {
 		question = "Do the live roll results match the shown odds (R8), and how much do players recruit?",
 	},
 	Feature = {
-		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85)", "realm (realmBucket)" },
+		fields = { "pill | orb | gift | hands | streak | autoOn | autoOff (the Auto Build switch, D85) | rebirthPad (stood on the gold Rebirth pad, D88) | freeRecruit (a first-minutes free recruit given, D88) | tutorialRepair (a welcome-bug save got its tutorial back, D88)", "realm (realmBucket)" },
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	Mission = {
-		fields = { "done | daily | rank", "done/daily: group; rank: the rank reached", "done/daily: stars; rank: minutes played (minuteBucket)" },
+		fields = { "done | daily | rank | hide | show", "done/daily: group; rank: the rank reached (31+ past the Rainbow relics); hide/show: the tracker tab", "done/daily: stars; rank: minutes played (minuteBucket)" },
 		question = "Which Sect Missions get finished, and how fast do players climb the ranks?",
+	},
+	Style = {
+		fields = { "unlock (a rebirth unlocked it) | wear (the Styles page)", "style id (Config.SECT_STYLES; classic)", "rebirths" },
+		question = "Do players switch Sect Styles once unlocked, and which looks do they keep?",
+	},
+	Relic = {
+		fields = { "visit (the first walk onto the Relic Terrace in a session)", "relics earned", "minutes played (minuteBucket)" },
+		question = "Do players find the Relic Terrace, and how far into the relics are they when they do?",
 	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
@@ -73,7 +81,7 @@ Telemetry.EVENTS = {
 		question = "Do players fight for the Heavenly Altar, how many per round, and who wins it?",
 	},
 	KarmaShop = {
-		fields = { "node key (Config.DAO)", "level bought", "life (lifeBucket)" },
+		fields = { "node key (Config.DAO)", "level bought (past an endless line's list: \"11+\")", "life (lifeBucket)" },
 		question = "Which Karma Shop nodes do players buy first, and in which life?",
 	},
 	Reincarnate = {
@@ -99,6 +107,10 @@ Telemetry.EVENTS = {
 			"realm (realmBucket)",
 		},
 		question = "Do sword owners actually ride, which sword do they pick (D76), and how often does the flight check snap riders back (false positives on laggy phones)?",
+	},
+	AutoBuild = {
+		fields = { "on | off (the HUD switch at leave)", "rebuild | full (Heavenly Hands)", "realm (realmBucket)" }, -- value = buildings Auto Build bought this session
+		question = "Do players keep Auto Build on, and how much of their building does it do (D85)?",
 	},
 	Build = {
 		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
@@ -302,7 +314,7 @@ local function send(what, fn, ...)
 end
 
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
-local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, ClientFps = true, ClientLoad = true }
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, AutoBuild = true, ClientFps = true, ClientLoad = true }
 
 -- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
 function Telemetry.customValue(player, name, value, ...)

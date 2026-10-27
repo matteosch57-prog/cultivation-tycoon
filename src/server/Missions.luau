@@ -324,6 +324,7 @@ function Missions.init(deps)
 			end
 			s.data.missionsHidden = v
 			player:SetAttribute("MissionsHidden", v)
+			api.telemetry.custom(player, "Mission", v and "hide" or "show")
 		end)
 		hideEv.Parent = deps.remotes
 	end

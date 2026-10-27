@@ -318,6 +318,22 @@ end
 
 -- the ten plinths for `rank` (Sect Missions rank: relics 1 .. rank - 1 earned); `newest` = the index of
 -- a relic just earned (a gold burst over it)
+-- an unclaimed peak: the isle, terrace and gate only, no plinths (phone budget: the ten relics are ~400
+-- parts, the bell stand alone 134, and nobody's progress to show)
+function RelicHall.clear(plot)
+	RelicHall.build(plot)
+	if plot.relics then
+		plot.relics:Destroy()
+		plot.relics = nil
+	end
+end
+
+-- is `pos` (world) on this peak's relic isle (Relic "visit" telemetry)
+function RelicHall.near(plot, pos)
+	local off = isleFrame(plot):PointToObjectSpace(pos)
+	return Vector2.new(off.X, off.Z).Magnitude < ISLE_R + 2 and math.abs(off.Y) < 20
+end
+
 function RelicHall.show(plot, rank, newest)
 	RelicHall.build(plot)
 	if plot.relics then

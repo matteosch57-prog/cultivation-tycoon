@@ -5,6 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
 local tagged = {} -- inst -> { parts, base Y, spread }
+local FAR = 250 -- studs: a relic farther from the camera is not animated
 
 local function add(inst)
 	local parts = {}
@@ -49,9 +50,13 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	acc = 0
 	local t = os.clock() * 0.12
+	local cam = workspace.CurrentCamera
+	local eye = cam and cam.CFrame.Position
 	for inst, e in tagged do
 		if not inst.Parent then
 			tagged[inst] = nil
+		elseif eye and e.parts[1] and (e.parts[1].Position - eye).Magnitude > FAR then
+			continue -- another peak's terrace, out of sight: no colour writes
 		else
 			for _, p in e.parts do
 				local h = e.spread == 0 and 0 or (p.Position.Y - e.low) * e.spread
