@@ -593,6 +593,15 @@ the log as a D-number.
   Finishing Sect Missions rank N earns `Config.MISSION_RELICS[N]`, shown in colour for good with a gold
   burst and a "New relic!" toast; the rest stand as dark silhouettes (Animal Crossing museum stands).
   Never resets. Why: something that keeps growing across rebirths.
+  Updates 2026-10-27: relics 1-3 and 5-9 are free Creator Store models (owner took the picks on
+  `docs/art/mocks/2026-10-26_relic_candidates.png`), scripts stripped, in `assets/relics/RelicN.rbxm` ->
+  Rojo `ServerStorage.RelicModels` (a missing file falls back to the part build); Jade Seal and Dragon Pearl
+  stay part builds. The isle moved behind the peak (peak frame (-37, -110), bridged from the Fields islet's
+  back rim) because at (-98, 69) it stood on the route between two peaks. Its lawn wears the Sect Style
+  ground (`RelicHall.ground`). Unclaimed peaks build no isle (~685 parts each). Telemetry: `Relic visit`
+  (first walk onto it per session), `Style unlock | wear`. A stray `workspace.Showcase` preview saved in the
+  place is destroyed at boot (Main). Sect Styles got icons (sheet cell 40 + one per style, cells 45-57) and
+  links from the Karma Shop and Settings.
 - **D85b Heavenly Hands = full Auto Build (owner 2026-10-26: "then the karmic shop is useless no?"):**
   with Hands bought (Karma Shop, 5 karma), Auto Build also takes buildings never built before (Mega
   Mansion Tycoon's whole-house Auto Build); the Hands tap button stays. qisim median / engaged 14 days x
