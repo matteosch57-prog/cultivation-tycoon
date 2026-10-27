@@ -422,7 +422,21 @@ local function build()
 	topLayout.Padding = UDim.new(0, px(RAIL_GAP))
 	topLayout.Parent = top
 	ui.top = top
-	local counter = frame(top, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	-- the counter sits in a slot of its own resting size, so its Bump (a UIScale on it when qi lands)
+	-- swells over its neighbours instead of pushing Base / Ranks and the phone row (owner 2026-10-27: "jumping")
+	local slot = frame(top, { LayoutOrder = 2 })
+	local counter = frame(slot, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local function fitSlot()
+		local bump = counter:FindFirstChild("Bump")
+		local rs = root:FindFirstChildOfClass("UIScale") -- (a phone check scales the root)
+		local k = (bump and bump.Scale or 1) * (rs and rs.Scale or 1)
+		local w, h = math.floor(counter.AbsoluteSize.X / k + 0.5), math.floor(counter.AbsoluteSize.Y / k + 0.5)
+		if math.abs(slot.Size.X.Offset - w) > 1 or math.abs(slot.Size.Y.Offset - h) > 1 then
+			slot.Size = UDim2.fromOffset(w, h)
+		end
+	end
+	counter:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitSlot)
+	task.defer(fitSlot)
 	local row = Instance.new("UIListLayout")
 	row.FillDirection = Enum.FillDirection.Horizontal
 	row.VerticalAlignment = Enum.VerticalAlignment.Center
