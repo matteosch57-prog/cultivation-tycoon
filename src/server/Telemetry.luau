@@ -65,7 +65,7 @@ Telemetry.EVENTS = {
 		question = "Do players fight for the Heavenly Altar, how many per round, and who wins it?",
 	},
 	KarmaShop = {
-		fields = { "node key (Config.DAO)", "level bought", "life (lifeBucket)" },
+		fields = { "node key (Config.DAO)", "level bought (past an endless line's list: \"11+\")", "life (lifeBucket)" },
 		question = "Which Karma Shop nodes do players buy first, and in which life?",
 	},
 	Reincarnate = {

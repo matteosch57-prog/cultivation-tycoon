@@ -2016,6 +2016,9 @@ local function onJoin(player)
 	end
 	-- karma went x10 (2026-10-26 Karma Upgrades): a save from before holds the old small amount
 	if not data.karma10 then
+		if (data.karma or 0) > 0 then
+			print(string.format("[Tycoon] %d karma x10: %d -> %d", player.UserId, data.karma, data.karma * 10))
+		end
 		data.karma = (data.karma or 0) * 10
 		data.karma10 = true
 	end
@@ -2990,7 +2993,10 @@ daoFn.OnServerInvoke = function(player, key)
 		refreshPads(player, s) -- the Lotus Isle pads open now
 	end
 	publish(player)
-	Telemetry.custom(player, "KarmaShop", key, lv + 1, Telemetry.lifeBucket(d.lives or 1))
+	-- an endless line (Config.DAO `more`) logs its levels past the list as one bucket ("11+"), so the
+	-- field never grows a new value per level
+	local level = if lv + 1 > #node.costs then (#node.costs + 1) .. "+" else lv + 1
+	Telemetry.custom(player, "KarmaShop", key, level, Telemetry.lifeBucket(d.lives or 1))
 	return true
 end
 
