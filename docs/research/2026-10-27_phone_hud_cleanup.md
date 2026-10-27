@@ -31,3 +31,24 @@ style at the top.
   under that row; the middle-left of the screen is empty.
 - C "Fewer buttons": column of Shop, Disciples, Karma only; Friends and Settings become small round icons in
   the Roblox top bar line; missions line beside the column.
+
+## Built (owner pick B + tweaks, 2026-10-27)
+Owner: "B, but right can go higher. Recruit button 15% smaller, keep teleport badges, add auto on or auto
+off under auto button. keep red dots efficients." Merged into integration (fed3d97, ed4bc9d, ecfb1ca, 12e359a).
+- Phone left rail: one row under the top bar (Config.HUD_PHONE_RAIL "row"; "column" = mock A), 38 px
+  buttons (Config.HUD_PHONE_BTN), counts as Toy.railBadge on the button (Disciples, Friends). The row steps
+  under the qi group if it would reach it. Missions strip sits under the row (rail attribute Row).
+- One red dot at a time on a phone (Hud oneDot, priority DOT_ORDER: Recruit, gift, Rebirth seal, Shop,
+  Karma, Disciples, pill, Friends); muted dots hide their glow/gem, owners keep Visible.
+- Right stack starts in the top-bar band on a phone (20 px down so the Fly swap badge isn't cut).
+- Recruit seal 85% on a phone. Auto caption "Auto On" / "Auto Off" (PC too). Teleport tag kept.
+- Qi counter: width grows only while its length holds, and its Bump pops inside a fixed slot, so Base,
+  Ranks and the row no longer jump each tick (PC too).
+- Rebirth / Karma Shop / Styles pages shrink to fit the screen (phone Karma Shop's Sect Styles was cut).
+Captures: branch mocks/phone-hud docs/art/mocks/2026-10-27_phone_hud_*.png.
+
+## Still open
+- Phone-size run (Studio device emulator, owner picks each device): Samsung Galaxy A16 passed (no
+  movement, badge on screen). iPhone SE, iPhone 14, 14 Pro Max, Pixel 7, iPad not yet checked.
+- The phone missions line cuts long names ("Break through to the next realm").
+- PC-sized check of the fit-to-screen pages (should stay at 100% on screens 900 px+ tall).
