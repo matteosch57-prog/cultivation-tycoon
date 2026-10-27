@@ -618,3 +618,7 @@ the log as a D-number.
   breakthrough and auto Rebirth screens wait for any open card) and a new save's first Daily Blessing
   waits for the first breakthrough + `STREAK_NEW_AFTER` s (`STREAK_NEW_LATEST` s at most). qisim
   onesitslow / median / engaged: realm 2 and rebirth 1 0.1-0.6 min sooner, long game unchanged.
+- **D85c Auto Build checks (owner 2026-10-27 "log everything, perf, wired"):** `AutoBuild` analytics event once
+  per session (value = auto builds; on | off, rebuild | full, realm). The HUD hand count is the server's
+  `AutoWaiting` attribute (a streaming client never sees far pads). The server tick waits 0.5 s when nothing
+  is affordable. Studio-checked at 1397775. Still open: read the live AutoBuild numbers.
