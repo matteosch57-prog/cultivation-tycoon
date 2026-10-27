@@ -4,8 +4,8 @@
 -- ~750k triangles. One uploaded mesh of each (art/meshes, tools/lowpoly_meshes.py) is cloned
 -- for every small one: the same box, so the look stays, and clones of one mesh draw instanced.
 -- Off until Config.LOWPOLY_BALL / LOWPOLY_CYLINDER hold the uploaded mesh ids.
-local AssetService = game:GetService("AssetService")
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
+local MeshCache = require(script.Parent:WaitForChild("MeshCache"))
 
 local Lowpoly = {}
 
@@ -15,10 +15,7 @@ local function load(id: string?, shape: Enum.PartType)
 	if not id or id == "" then
 		return
 	end
-	local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
-		CollisionFidelity = Enum.CollisionFidelity.Box,
-		RenderFidelity = Enum.RenderFidelity.Automatic,
-	})
+	local ok, mp = MeshCache.fetch(id)
 	if ok and mp then
 		mp.Anchored = true
 		templates[shape] = mp
@@ -39,10 +36,7 @@ end
 local rocks: { MeshPart } = {}
 for i, id in Config.ROCK_MESH or {} do
 	if id ~= "" then
-		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
-			CollisionFidelity = Enum.CollisionFidelity.Box,
-			RenderFidelity = Enum.RenderFidelity.Automatic,
-		})
+		local ok, mp = MeshCache.fetch(id)
 		if ok and mp then
 			mp.Anchored = true
 			rocks[i] = mp
@@ -66,10 +60,7 @@ end
 local koi: MeshPart? = nil
 local K = Config.KOI
 if K and K.mesh ~= "" then
-	local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, K.mesh, {
-		CollisionFidelity = Enum.CollisionFidelity.Box,
-		RenderFidelity = Enum.RenderFidelity.Automatic,
-	})
+	local ok, mp = MeshCache.fetch(K.mesh)
 	if ok and mp then
 		mp.Anchored = true
 		mp.TextureID = K.texture
@@ -92,10 +83,7 @@ task.spawn(function() -- off the require: four fetches must not hold up the serv
 		if name ~= "lanternTex" and name ~= "cloud" and id ~= "" then -- (the cloud draws as a SpecialMesh)
 			local ok, mp
 			for try = 1, 3 do -- a fetch can time out once (seen in Studio 2026-10-22): try again
-				ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
-					CollisionFidelity = Enum.CollisionFidelity.Box,
-					RenderFidelity = Enum.RenderFidelity.Automatic,
-				})
+				ok, mp = MeshCache.fetch(id)
 				if ok and mp then
 					break
 				end
