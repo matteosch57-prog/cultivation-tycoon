@@ -1922,6 +1922,20 @@ function Config.relicMult(rank)
 	local _, gold, rainbow = Config.relicTiers(rank)
 	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
 end
+-- What's new (owner pick A 2026-10-27, WhatsNew.client): after an update, a save from before PATCH.id gets
+-- this board once (data.patchSeen); Settings reopens it. Raise `id` and rewrite `items` with each update
+-- that should be announced. `go` = { open = a Player BindableEvent, arg } or { travel = a Teleport place }.
+Config.PATCH = {
+	id = 1,
+	name = "The Heavens Update",
+	items = {
+		{ icon = "goal", title = "Sect Missions", line = "Goals, ranks and daily missions", button = "Open", go = { open = "MissionsOpen" } },
+		{ icon = "trophy", title = "Relic Terrace", line = "A relic for every rank up", button = "Go", go = { travel = "relics" } },
+		{ icon = "star", title = "Heavenly Weather", line = "Mutated disciples up to x10", button = "Odds", go = { open = "OpenOdds" } },
+		{ icon = "styles", title = "Sect Styles", line = "A new look every rebirth", button = "Open", go = { open = "ReincOpen", arg = "styles" } },
+		{ icon = "karma", title = "Karma Shop", line = "10x karma, 10 upgrade lines", button = "Open", go = { open = "ReincOpen", arg = "karma" } },
+	},
+}
 Config.MISSION_PHONE = "line" -- the phone tracker: "line" (badge + the mission just moved, else each in turn every 5 s), "icons" (one icon each) or "list" (the PC panel)
 -- the phone HUD's left buttons (owner 2026-10-27 "isnt UI a bit messy?", mocks docs/art/mocks/2026-10-27_phone_hud_board.png):
 -- "row" (one row under the Roblox top bar, Grow a Garden) or "column" (one column, Pet Simulator 99). Same-size

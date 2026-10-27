@@ -107,8 +107,11 @@ local welcomeFn = Instance.new("RemoteFunction")
 welcomeFn.Name = "ClaimWelcome" -- the intro's GO (D36)
 welcomeFn.Parent = remotes
 local teleportEv = Instance.new("RemoteEvent")
-teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks"), the incense button ("shrine"), the altar "!" ("altar") and the portals ("isle<i>", "hub")
+teleportEv.Name = "Teleport" -- the HUD's Base / Ranks buttons ("home", "ranks"), the What's new board ("relics"), the incense button ("shrine"), the altar "!" ("altar") and the portals ("isle<i>", "hub")
 teleportEv.Parent = remotes
+local patchSeenEv = Instance.new("RemoteEvent")
+patchSeenEv.Name = "PatchSeen" -- the What's new board was closed (WhatsNew.client): shown once per Config.PATCH
+patchSeenEv.Parent = remotes
 local breakthroughFn = Instance.new("RemoteFunction")
 breakthroughFn.Name = "Breakthrough" -- the breakthrough screen's Confirm (the pad only opens the screen)
 breakthroughFn.Parent = remotes
@@ -2151,6 +2154,13 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
+	-- What's new (WhatsNew.client): a returning save sees the board once per Config.PATCH; a new save starts
+	-- with it seen (everything is new to it)
+	if newSave then
+		data.patchSeen = Config.PATCH.id
+	elseif (data.patchSeen or 0) < Config.PATCH.id then
+		player:SetAttribute("PatchNew", Config.PATCH.id)
+	end
 	if repairTutorial(data) then
 		Telemetry.custom(player, "Feature", "tutorialRepair", Telemetry.realmBucket(data.realm))
 	end
@@ -2849,6 +2859,14 @@ end
 -- work sometimes"). The server's own gap is half the client's cooldown, so a client that waited its
 -- full cooldown is never refused by network jitter.
 local TRAVEL_NEAR = 14 -- studs from a portal a request may come from (hub portals stand ~28 apart)
+patchSeenEv.OnServerEvent:Connect(function(player)
+	local s = sessions[player]
+	if s and s.data and Guard.allow(player, "PatchSeen") then
+		s.data.patchSeen = Config.PATCH.id
+		player:SetAttribute("PatchNew", nil)
+	end
+end)
+
 local function travel(player, s, cf, face)
 	s.teleportAt = os.clock()
 	local char = player.Character
@@ -2915,6 +2933,12 @@ teleportEv.OnServerEvent:Connect(function(player, where)
 		if not player:GetAttribute("AltarOut") and Vector2.new(p.X - gate.X, p.Z - gate.Z).Magnitude < 10 and math.abs(p.Y - BASE_Y) < 8 then
 			local at = Vector3.new(top.X + sx * (Config.ALTAR_RADIUS - 3), top.Y + 3, top.Z)
 			travel(player, s, CFrame.lookAt(at, Vector3.new(top.X, top.Y + 3, top.Z)))
+		end
+	elseif where == "relics" then
+		-- the What's new board's Relic Terrace shortcut: in front of your own terrace's gate
+		local at = s.plot and RelicHall.standAt(s.plot)
+		if at then
+			travel(player, s, at, true)
 		end
 	elseif where == "shrine" then
 		-- the HUD's incense button (Incense.client): in front of the nearest shrine this player can
