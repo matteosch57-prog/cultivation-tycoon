@@ -448,7 +448,9 @@ local function build()
 			close()
 			local ev = player:FindFirstChild("WhatsNewOpen")
 			if ev then
-				ev:Fire()
+				task.defer(function()
+					ev:Fire()
+				end)
 			end
 		end)
 	end

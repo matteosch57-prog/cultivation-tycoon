@@ -90,7 +90,13 @@ local function open()
 	dim.Size = UDim2.fromScale(1, 1)
 	dim.Parent = gui
 	board = dim
-	dim.Activated:Connect(close)
+	-- the click that opened it (Settings' Open button) can land on this dim too: ignore taps for a moment
+	local since = os.clock()
+	dim.Activated:Connect(function()
+		if os.clock() - since > 0.4 then
+			close()
+		end
+	end)
 	local card = Instance.new("TextButton") -- eats taps so the dim behind does not close it
 	card.Text = ""
 	card.AutoButtonColor = false
