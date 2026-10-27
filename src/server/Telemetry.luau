@@ -41,7 +41,7 @@ Telemetry.EVENTS = {
 		question = "Are the pill, the qi orbs, the playtime gifts, Heavenly Hands and the Daily Blessing used, or ignored?",
 	},
 	Mission = {
-		fields = { "done | daily | rank", "done/daily: group; rank: the rank reached", "done/daily: stars; rank: minutes played (minuteBucket)" },
+		fields = { "done | daily | rank | hide | show", "done/daily: group; rank: the rank reached (31+ past the Rainbow relics); hide/show: the tracker tab", "done/daily: stars; rank: minutes played (minuteBucket)" },
 		question = "Which Sect Missions get finished, and how fast do players climb the ranks?",
 	},
 	ServerHealth = {
