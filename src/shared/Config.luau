@@ -1874,6 +1874,47 @@ Config.MISSION_RANKS = {
 -- quests"): finishing rank N earns MISSION_RELICS[N], shown in the hall for good (never reset). Rank 1
 -- shows the ten as dark silhouettes, so the first relic lands with the first rank up (~7-10 min).
 Config.MISSION_RELICS = { "Golden Broom", "Practice Sword", "Incense Burner", "Jade Seal", "Bronze Ding", "Phoenix Fan", "Sect Scroll", "Hall Bell", "Sword in Stone", "Dragon Pearl" }
+-- Golden and Rainbow relics (owner pick 2026-10-27, copies Pet Simulator 99's Golden / Rainbow pets): after
+-- Sect Master each rank up upgrades one relic, in MISSION_RELICS order, to Golden (ranks 11-20), then to
+-- Rainbow (21-30). Each upgrade is +1% qi for good, out of the prices like the favorite gift (all 20: +20%).
+-- RELIC_LOOK picks how they look (mocks A/B/C, RelicHall.tierLook).
+Config.RELIC_GOLD_BONUS = 0.01
+Config.RELIC_RAINBOW_BONUS = 0.01
+Config.RELIC_LOOK = "A"
+
+-- for Sect Missions rank `rank`: relics earned, how many of them are Golden, how many Rainbow
+function Config.relicTiers(rank)
+	local n = #Config.MISSION_RELICS
+	local done = math.max((rank or 1) - 1, 0)
+	return math.min(done, n), math.clamp(done - n, 0, n), math.clamp(done - 2 * n, 0, n)
+end
+
+-- what a rank up to `rank` earned: the relic's index and "relic", "golden" or "rainbow" (nil past them all)
+function Config.relicEarned(rank)
+	local n = #Config.MISSION_RELICS
+	local k = (rank or 1) - 1
+	if k < 1 or k > 3 * n then
+		return nil
+	end
+	return (k - 1) % n + 1, k <= n and "relic" or k <= 2 * n and "golden" or "rainbow"
+end
+
+-- a relic's name for its tier ("Golden Broom" stays "Golden Broom" as a Golden relic: no "Golden Golden")
+function Config.relicName(i, tier)
+	local name = Config.MISSION_RELICS[i]
+	if tier == "golden" and not name:find("^Golden ") then
+		return "Golden " .. name
+	elseif tier == "rainbow" then
+		return "Rainbow " .. name:gsub("^Golden ", "")
+	end
+	return name
+end
+
+-- the qi multiplier of the Golden and Rainbow relics at `rank`
+function Config.relicMult(rank)
+	local _, gold, rainbow = Config.relicTiers(rank)
+	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
+end
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier

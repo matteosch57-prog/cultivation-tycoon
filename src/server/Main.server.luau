@@ -744,7 +744,8 @@ local function rate(s, away)
 	local harmony = Config.harmonyMult(data.owned) -- paths and groves (Sky Islets)
 	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
 	local fortune = 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune (Karma Shop)
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune
+	local relics = Config.relicMult(type(data.missions) == "table" and data.missions.rank or 1) -- Golden / Rainbow relics
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune * relics
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
@@ -778,6 +779,7 @@ local function padRate(s)
 	end
 	r /= Config.rebirthMult(rebirths(data))
 	r /= 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune never raises a price either
+	r /= Config.relicMult(type(data.missions) == "table" and data.missions.rank or 1) -- nor do the Golden / Rainbow relics
 	local dm = discipleMult(s)
 	local paid = 0
 	for name, n in data.boughtDisciples or {} do
@@ -3273,7 +3275,7 @@ if game:GetService("RunService"):IsStudio() then
 				-- Terrace as a rank up to it would (the newest relic bursts)
 				s.data.missions = s.data.missions or { rank = 1, stars = 0, paid = 0, done = 0, starter = 1, total = 0, slots = {} }
 				s.data.missions.rank = value
-				RelicHall.show(s.plot, value, value - 1)
+				RelicHall.show(s.plot, value, (Config.relicEarned(value)))
 				Missions.push(player, s)
 				return true
 			end
@@ -3406,12 +3408,12 @@ Missions.init({
 -- a rank up earns that rank's relic on the Relic Terrace (RelicHall): it lands with a gold burst
 Missions.onRank(function(player, rank)
 	local s = sessions[player]
-	local name = Config.MISSION_RELICS[rank - 1]
-	if not (s and s.plot and name) then
+	local i, tier = Config.relicEarned(rank)
+	if not (s and s.plot and i) then
 		return
 	end
-	RelicHall.show(s.plot, rank, rank - 1)
-	notify:FireClient(player, "relic", name)
+	RelicHall.show(s.plot, rank, i)
+	notify:FireClient(player, "relic", Config.relicName(i, tier), tier)
 end)
 setupLighting()
 buildPlots()

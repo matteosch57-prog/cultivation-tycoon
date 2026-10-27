@@ -10,6 +10,7 @@
 -- part build below. The Jade Seal and the Dragon Pearl stay our own builds (no free model fit).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
+local CollectionService = game:GetService("CollectionService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Style = require(script.Parent:WaitForChild("Style"))
 local Kit = require(script.Parent:WaitForChild("Kit"))
@@ -196,6 +197,67 @@ local function silhouette(item)
 	end
 end
 
+-- Golden / Rainbow relics (Config.relicTiers, look Config.RELIC_LOOK; copies Pet Simulator 99's Golden and
+-- Rainbow pets). A "solid": the whole relic turns gold foil, a Rainbow one cycles through the rainbow as one
+-- colour. B "gilded": the relic keeps its own colours, the plinth cap and the sparkles carry the tier. C
+-- "metal": gold metal, a Rainbow one is a rainbow running up the relic. RelicGlow.client animates the parts
+-- tagged "RelicRainbow" (`RainbowSpread` = hue per stud of height, 0 = one colour).
+local RAINBOW_SPARKS = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, hex("FF5A5A")),
+	ColorSequenceKeypoint.new(0.25, hex("FFD24A")),
+	ColorSequenceKeypoint.new(0.5, hex("5AF08C")),
+	ColorSequenceKeypoint.new(0.75, hex("5AB4FF")),
+	ColorSequenceKeypoint.new(1, hex("C77DFF")),
+})
+local function paint(item, color, mat)
+	for _, d in item:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			d.Color = color
+			d.Material = mat
+			if d:IsA("MeshPart") then
+				pcall(function()
+					d.TextureID = ""
+				end)
+			end
+		elseif d:IsA("Decal") then
+			d.Color3 = color
+		elseif d:IsA("SurfaceAppearance") then
+			d:Destroy()
+		end
+	end
+end
+local function rainbow(inst, spread)
+	CollectionService:AddTag(inst, "RelicRainbow")
+	inst:SetAttribute("RainbowSpread", spread)
+end
+local function tierLook(m, item, cap, tier, at)
+	local look = Config.RELIC_LOOK
+	local sparks = glow(m, at, GOLD, tier == "rainbow" and 10 or 7)
+	if tier == "rainbow" then
+		sparks.Color = RAINBOW_SPARKS
+	end
+	if look == "B" then
+		cap.Material = Enum.Material.Foil
+		cap.Color = GOLD
+		if tier == "rainbow" then
+			rainbow(cap, 0)
+		end
+		sparks.Rate = tier == "rainbow" and 16 or 12
+		return
+	end
+	if look == "C" then
+		paint(item, hex("F2B632"), Enum.Material.Metal)
+		if tier == "rainbow" then
+			rainbow(item, 0.12)
+		end
+		return
+	end
+	paint(item, GOLD, Enum.Material.Foil)
+	if tier == "rainbow" then
+		rainbow(item, 0)
+	end
+end
+
 -- the isle's frame in the peak frame: +Z faces the bridge
 local function isleFrame(plot)
 	return plot.frame * CFrame.lookAt(ISLE, RIM) * CFrame.Angles(0, math.pi, 0)
@@ -245,7 +307,7 @@ function RelicHall.show(plot, rank, newest)
 	if plot.relics then
 		plot.relics:Destroy()
 	end
-	local earned = math.clamp((rank or 1) - 1, 0, N)
+	local earned, golden, rainbows = Config.relicTiers(rank)
 	local f = Instance.new("Model")
 	f.Name = "Relics"
 	local at = isleFrame(plot)
@@ -255,8 +317,9 @@ function RelicHall.show(plot, rank, newest)
 		m.Name = "Relic" .. i
 		P(m, Vector3.new(4.4, 0.6, 4.4), t * CFrame.new(0, 0.3, 0), PAL.stone)
 		P(m, Vector3.new(3.4, 2.4, 3.4), t * CFrame.new(0, 1.8, 0), PAL.stoneLight, Enum.Material.Marble)
-		P(m, Vector3.new(3.9, 0.4, 3.9), t * CFrame.new(0, 3.2, 0), i <= earned and PAL.gold or PAL.stone, Enum.Material.Metal)
-		Kit.plaque(m, t * CFrame.new(0, 1.8, 1.85), 3, 0.7, i <= earned and Config.MISSION_RELICS[i] or "Rank " .. (i + 1))
+		local tier = i <= rainbows and "rainbow" or i <= golden and "golden" or nil
+		local cap = P(m, Vector3.new(3.9, 0.4, 3.9), t * CFrame.new(0, 3.2, 0), i <= earned and PAL.gold or PAL.stone, Enum.Material.Metal)
+		Kit.plaque(m, t * CFrame.new(0, 1.8, 1.85), 3, 0.7, i <= earned and Config.relicName(i, tier) or "Rank " .. (i + 1))
 		local item = Instance.new("Model")
 		item.Name = "Item"
 		item.Parent = m
@@ -265,7 +328,10 @@ function RelicHall.show(plot, rank, newest)
 		end
 		if i > earned then
 			silhouette(item)
-		elseif i == newest then
+		elseif tier then
+			tierLook(m, item, cap, tier, (t * CFrame.new(0, 4.5, 0)).Position)
+		end
+		if i <= earned and i == newest then
 			local burst = glow(m, (t * CFrame.new(0, 5, 0)).Position, GOLD, 0)
 			burst.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.2, 0.9), NumberSequenceKeypoint.new(1, 0) })
 			burst.Speed = NumberRange.new(4, 8)
