@@ -410,7 +410,7 @@ local function buildKarma(body)
 	stylesLink(body, 20, -1)
 end
 
-build = function()
+local function buildPage()
 	gui:ClearAllChildren()
 	Toy.S = computeScale()
 	ui = {}
@@ -520,6 +520,34 @@ build = function()
 	refresh()
 end
 
+-- a page taller than the screen shrinks to fit (phone, 2026-10-27: the Karma Shop's "Sect Styles" link sat
+-- under the screen's bottom edge): one UIScale "Fit" on the body, also the one the opening pop tweens
+local fitTween = false
+local function fitBody()
+	local body = ui.body
+	if not body then
+		return
+	end
+	local sc = body:FindFirstChild("Fit")
+	if not sc then
+		sc = Instance.new("UIScale")
+		sc.Name = "Fit"
+		sc.Parent = body
+	end
+	local natural = body.AbsoluteSize.Y / math.max(sc.Scale, 0.01)
+	local avail = gui.AbsoluteSize.Y - px(20)
+	ui.fit = natural > avail and math.max(0.5, avail / natural) or 1
+	if not fitTween then
+		sc.Scale = ui.fit
+	end
+end
+
+build = function()
+	buildPage()
+	fitBody()
+	ui.body:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitBody)
+end
+
 -- `toPage` = "karma" lands on the Karma Shop (the HUD's Karma button); else the road
 local function open(toPage)
 	if gui.Enabled then
@@ -532,10 +560,17 @@ local function open(toPage)
 	gui.Enabled = true
 	remotes.MenuOpened:FireServer(page == "road" and "reinc" or page) -- analytics Menu (DATA.md)
 	Sfx.play("toast")
-	local sc = Instance.new("UIScale")
-	sc.Scale = 0.85
-	sc.Parent = ui.body
-	TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	local sc = ui.body:FindFirstChild("Fit")
+	if sc then
+		fitTween = true
+		sc.Scale = ui.fit * 0.85
+		local pop = TweenService:Create(sc, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = ui.fit })
+		pop.Completed:Connect(function()
+			fitTween = false
+			fitBody()
+		end)
+		pop:Play()
+	end
 end
 
 close = function()
