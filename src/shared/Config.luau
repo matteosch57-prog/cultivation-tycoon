@@ -967,10 +967,11 @@ Config.PRICE_FLOOR_FROM_LIFE = 2
 -- in between bring the next pad sooner. Realms past the table use its last entry.
 -- 2026-10-27 (owner: "it should be faster, how are people gonna rebirth 25 times"): realms 5+ were
 -- 110/220/800/5000+ s x the rebirth boost the realm needs (realm 8: 15,000 s a pad), so rebirths 3-4
--- took 2-2.7 h each and rebirth 5 was out of reach. Now flat late and no gate factor: qisim (one
--- 10 h sitting) rebirth 10 at 2.1 h / 25 at 6.3 h with passes, rebirth 20 at 8.6 h free; sim_check
--- regular (2 x 30 min a day) ~30-40 min a life throughout, 25 rebirths on day ~14.
-Config.PAD_SECONDS = { 5, 30, 30, 40, 50, 60, 70, 80, 90, 100 }
+-- took 2-2.7 h each and rebirth 5 was out of reach. Flat 50-100 s then gave rebirth 25 in 7-15 h
+-- ("but isnt it too fats ... rebirth 25 in 7h???"); owner pick "In between" (2026-10-27): no gate
+-- factor, late realms rising 90 -> 550. qisim regular (2 x 30 min a day) free: True Immortal (realm
+-- 10) 5.5 h, rebirth 10 12 h, 20 28 h, ~17% waiting; with passes True Immortal 2.5 h, rebirth 25 17 h.
+Config.PAD_SECONDS = { 5, 30, 30, 40, 90, 150, 250, 350, 450, 550 }
 -- the open pads spread +-PAD_SPREAD around that by catalogue cost (the cheap ones come sooner)
 Config.PAD_SPREAD = 0.3
 -- the Main Hall is the big step of a realm (owner 2026-10-24: "the main hall price between steps should
