@@ -1349,6 +1349,7 @@ local function autoBuildTick(player, s)
 		end
 	end
 	if #can == 0 then
+		s.autoAt = now + 0.5 -- nothing to pay: look again in 0.5 s, not every 0.1 s tick
 		return
 	end
 	local part = Config.guidePick(can)
@@ -2214,6 +2215,10 @@ local function onLeave(player)
 	end
 	Telemetry.source(player, s.data, s.earned or 0, "income")
 	Telemetry.source(player, s.data, s.orbEarned or 0, "orb")
+	-- Auto Build (D85): how much it built this session, switched on or off, rebuild only or full (Hands)
+	if Config.autoBuildOpen(s.data) then
+		Telemetry.customValue(player, "AutoBuild", s.autoBuilt or 0, s.data.autoOff and "off" or "on", dao(s.data, "hands") > 0 and "full" or "rebuild", Telemetry.realmBucket(s.data.realm))
+	end
 	Telemetry.custom(player, "SessionEnd", Telemetry.builtBucket(built), Telemetry.minuteBucket(os.clock() - (s.joinedAt or os.clock())), s.data.sessions == 1 and "first" or "return")
 	-- why they left: stuck waiting for qi, lost with things to buy, or idle (journal closes its line)
 	local sinceBuy, afkShare = Journal.detach(player, built)

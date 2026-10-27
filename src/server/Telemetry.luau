@@ -100,6 +100,10 @@ Telemetry.EVENTS = {
 		},
 		question = "Do sword owners actually ride, which sword do they pick (D76), and how often does the flight check snap riders back (false positives on laggy phones)?",
 	},
+	AutoBuild = {
+		fields = { "on | off (the HUD switch at leave)", "rebuild | full (Heavenly Hands)", "realm (realmBucket)" }, -- value = buildings Auto Build bought this session
+		question = "Do players keep Auto Build on, and how much of their building does it do (D85)?",
+	},
 	Build = {
 		fields = { "pad id (Config.PADS)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "In what order and how fast do players build, and which buildings do they skip?",
@@ -302,7 +306,7 @@ local function send(what, fn, ...)
 end
 
 -- events the journal skips: server-wide, or already noted another way (Build = its "buy:" sink)
-local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, ClientFps = true, ClientLoad = true }
+local NOT_JOURNAL = { ServerHealth = true, DataStorePressure = true, SessionEnd = true, LeaveState = true, Build = true, AutoBuild = true, ClientFps = true, ClientLoad = true }
 
 -- `value` = how many times it happened (the dashboard sums it): a batch sends one event, not N
 function Telemetry.customValue(player, name, value, ...)
