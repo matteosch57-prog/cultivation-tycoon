@@ -4,7 +4,6 @@
 -- (Config.RANK_LION) and two braziers with real fire (R3: a visible lamp) frame it. Each board lists
 -- the top RANK_TOP with head shots, the top 3 in gold, silver and bronze. Redrawn only when a board's
 -- rows change (Ranks.changed), never per frame (R16).
-local AssetService = game:GetService("AssetService")
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -15,6 +14,7 @@ local Toy = require(Shared:WaitForChild("Toy"))
 local Style = require(script.Parent:WaitForChild("Style"))
 local Ranks = require(script.Parent:WaitForChild("Ranks"))
 local PlayerAura = require(script.Parent:WaitForChild("PlayerAura"))
+local MeshCache = require(script.Parent:WaitForChild("MeshCache"))
 
 local RankBoard = {}
 
@@ -201,10 +201,7 @@ local function mesh(parent, def, cf, height)
 	for _, part in def.parts do
 		local p
 		if part.mesh then
-			local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, part.mesh, {
-				CollisionFidelity = Enum.CollisionFidelity.Box,
-				RenderFidelity = Enum.RenderFidelity.Automatic,
-			})
+			local ok, mp = MeshCache.fetch(part.mesh)
 			if ok and mp then
 				p = mp
 				p.TextureID = part.texture or ""

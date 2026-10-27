@@ -9,12 +9,12 @@
 -- (display name or ""), AltarHold (s held), AltarCrowd (players on it); player attribute AltarOut.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AssetService = game:GetService("AssetService")
 
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
 local Missions = require(script.Parent:WaitForChild("Missions"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local MeshCache = require(script.Parent:WaitForChild("MeshCache"))
 
 local Altar = {}
 
@@ -52,10 +52,7 @@ local CLOUD_NATIVE = Vector3.new(13.76, 9.09, 24.67)
 local function arenaMesh()
 	local A = Config.ALTAR_ARENA
 	for try = 1, 3 do
-		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, A.mesh, {
-			CollisionFidelity = Enum.CollisionFidelity.Box,
-			RenderFidelity = Enum.RenderFidelity.Automatic,
-		})
+		local ok, mp = MeshCache.fetch(A.mesh)
 		if ok and mp then
 			mp.TextureID = A.texture
 			return mp
