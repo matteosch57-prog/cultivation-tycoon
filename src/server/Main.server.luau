@@ -1928,6 +1928,21 @@ task.spawn(function()
 	end
 end)
 
+-- repair (owner 2026-10-27: "some account didnt got it"): saves made while the welcome stamp ran
+-- first (2026-10-24 to 10-26) have every tip marked seen. A save that never recruited is still a new
+-- player: its tips start again, and a Disciple Hall it already owns gives the free recruit now
+local function repairTutorial(data)
+	if (data.recruited or 0) > 0 then
+		return
+	end
+	if data.tips and data.tips.recruit and not data.chestStarter then
+		data.tips = {}
+	end
+	if data.owned.hall and (data.freeRecruits or 0) == 0 then
+		data.freeRecruits = Config.FREE_RECRUITS
+	end
+end
+
 local function onJoin(player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
@@ -2077,6 +2092,7 @@ local function onJoin(player)
 	if data.tips == nil then
 		data.tips = newSave and {} or { orb = true, pill = true, chest = true, recruit = true }
 	end
+	repairTutorial(data)
 	-- the starter idle chest is filled when it arrives (giveIdleChest: the Meditation Platform and the
 	-- first recruits): the chest stands only from then
 	local hasChest = hasIdleChest(data)
@@ -3215,6 +3231,17 @@ if game:GetService("RunService"):IsStudio() then
 			if key == "ride" then
 				SwordRide.debugRide(player, value) -- DebugSet:Invoke(player, "ride", "swordJade") rides (pass first); false steps off
 				return true
+			end
+			if key == "bugSave" then
+				-- DebugSet:Invoke(player, "bugSave") turns this save into one from the 2026-10-24..26 welcome
+				-- bug (every tip seen, never recruited) and runs the join's repair on it
+				s.data.tips = { orb = true, pill = true, chest = true, recruit = true }
+				s.data.recruited = 0
+				s.data.freeRecruits = 0
+				s.data.chestStarter = nil
+				repairTutorial(s.data)
+				publish(player)
+				return s.data.freeRecruits
 			end
 			if key == "buy" then
 				-- DebugSet:Invoke(player, "buy", "starter") runs a product's prompt checks and grants it
