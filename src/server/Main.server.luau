@@ -521,7 +521,7 @@ local function buildPlots()
 		Shop.buildIsland(plot)
 		buildIdleChest(plot)
 		Bless.build(plot) -- the incense shrine visitors bless (Bless.luau)
-		RelicHall.show(plot, 1) -- the Relic Terrace, all silhouettes until an owner comes
+		RelicHall.clear(plot) -- the Relic Terrace, empty until an owner comes
 		folder.Parent = world
 		plots[i] = plot
 		task.wait()
@@ -2232,7 +2232,7 @@ local function onLeave(player)
 	s.plot.styleGround = nil -- the next owner's lawn starts green
 	buildGrounds(s.plot, {}) -- back to a fresh peak for the next owner
 	Bless.refresh(s.plot) -- a cold shrine for the next owner
-	RelicHall.show(s.plot, 1)
+	RelicHall.clear(s.plot)
 end
 
 -- Recruit ----------------------------------------------------------------------------
@@ -2901,6 +2901,7 @@ local function reincarnate(player, s)
 	local newStyle = Config.styleAt(rebirths(d))
 	if newStyle then
 		d.sectStyle = newStyle.id
+		Telemetry.custom(player, "Style", "unlock", newStyle.id, tostring(rebirths(d)))
 	end
 	Ranks.submit(player, d)
 	Ranks.touch()
@@ -2950,6 +2951,7 @@ styleFn.OnServerInvoke = function(player, id)
 	local was = Config.wornStyle(s.data.sectStyle, rebirths(s.data))
 	s.data.sectStyle = id
 	if was ~= Config.wornStyle(id, rebirths(s.data)) then
+		Telemetry.custom(player, "Style", "wear", id, tostring(rebirths(s.data)))
 		rebuild(s)
 		refreshPads(player, s)
 	end
@@ -3598,6 +3600,15 @@ while true do
 				local off = hrp and s.plot.frame:PointToObjectSpace(hrp.Position)
 				if not d.owned.platform or (off and Vector2.new(off.X, off.Z).Magnitude < Config.SEE_DISCIPLE_RANGE) then
 					d.seeDisciple = nil
+				end
+			end
+			-- the first walk onto the Relic Terrace this session (do players find it?)
+			if not s.relicVisit then
+				local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if hrp and RelicHall.near(s.plot, hrp.Position) then
+					s.relicVisit = true
+					local rank = type(d.missions) == "table" and d.missions.rank or 1
+					Telemetry.custom(player, "Relic", "visit", tostring(math.min(rank - 1, #Config.MISSION_RELICS)), Telemetry.minuteBucket(d.playSec or 0))
 				end
 			end
 			-- Qi Gathering Array drops an orb every ORB_INTERVAL

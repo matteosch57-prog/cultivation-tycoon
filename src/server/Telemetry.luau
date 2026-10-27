@@ -44,6 +44,14 @@ Telemetry.EVENTS = {
 		fields = { "done | daily | rank", "done/daily: group; rank: the rank reached", "done/daily: stars; rank: minutes played (minuteBucket)" },
 		question = "Which Sect Missions get finished, and how fast do players climb the ranks?",
 	},
+	Style = {
+		fields = { "unlock (a rebirth unlocked it) | wear (the Styles page)", "style id (Config.SECT_STYLES; classic)", "rebirths" },
+		question = "Do players switch Sect Styles once unlocked, and which looks do they keep?",
+	},
+	Relic = {
+		fields = { "visit (the first walk onto the Relic Terrace in a session)", "relics earned", "minutes played (minuteBucket)" },
+		question = "Do players find the Relic Terrace, and how far into the relics are they when they do?",
+	},
 	ServerHealth = {
 		fields = { "heartbeat fps (hbBucket)", "server memory (memBucket)", "players (playersBucket)" },
 		question = "Are servers healthy: the worst 5 minutes of each server, does it slow down as it fills?",
