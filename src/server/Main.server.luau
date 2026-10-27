@@ -395,6 +395,7 @@ local function buildGrounds(plot, owned)
 	g.Parent = plot.folder
 	plot.grounds = g
 	plot.radius = radius
+	RelicHall.ground(plot) -- the relic isle wears the same ground
 	plot.lookKey = nil -- the realm look follows the island's size
 	RealmLook.apply(plot)
 end

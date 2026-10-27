@@ -263,9 +263,15 @@ function RelicHall.build(plot)
 	local m = Instance.new("Model")
 	m.Name = "RelicTerrace"
 	local at = isleFrame(plot)
-	Style.island(m, at, ISLE_R, 77, function(x, z) -- no boulders against the terrace
+	local isle = Style.island(m, at, ISLE_R, 77, function(x, z) -- no boulders against the terrace
 		return math.abs(x) < 20 and math.abs(z) < 12
 	end, false)
+	-- the lawn parts (green-led colours: top, lip, drips) wear the Sect Style ground (RelicHall.ground)
+	for _, d in isle:GetDescendants() do
+		if d:IsA("BasePart") and d.Color.G > d.Color.R and d.Color.G > d.Color.B then
+			d:SetAttribute("Lawn", true)
+		end
+	end
 	local rim = plot.frame * RIM
 	Style.bridge(m, rim + Vector3.new(0, 0.05, 0), (at * Vector3.new(0, 0.05, ISLE_R - 3)), 6)
 	-- two marble tiers, railing on the sides and back, the gate at the back
@@ -283,6 +289,31 @@ function RelicHall.build(plot)
 	Kit.gate(m, at * CFrame.new(0, 4, -8), 12, 11, "Relics")
 	m.Parent = plot.folder
 	plot.relicIsle = m
+	RelicHall.ground(plot)
+end
+
+-- the isle's lawn in the peak's Sect Style ground (plot.styleGround = { material, colour }), or green
+-- again with none (owner 2026-10-27: "relic place should follow general island style"). Main's
+-- buildGrounds calls it whenever the peak's ground changes.
+local lawnColours = {}
+function RelicHall.ground(plot)
+	if not plot.relicIsle then
+		return
+	end
+	local sg = plot.styleGround
+	for _, d in plot.relicIsle:GetDescendants() do
+		if d:IsA("BasePart") and d:GetAttribute("Lawn") then
+			if not lawnColours[d] then
+				lawnColours[d] = { d.Material, d.Color }
+				d.Destroying:Connect(function()
+					lawnColours[d] = nil
+				end)
+			end
+			local was = lawnColours[d]
+			d.Material = sg and sg[1] or was[1]
+			d.Color = sg and sg[2] or was[2]
+		end
+	end
 end
 
 -- the ten plinths for `rank` (Sect Missions rank: relics 1 .. rank - 1 earned); `newest` = the index of
