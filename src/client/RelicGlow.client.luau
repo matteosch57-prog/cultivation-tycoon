@@ -26,6 +26,7 @@ local function add(inst)
 	inst.DescendantAdded:Connect(function(d)
 		if d:IsA("BasePart") and d.Transparency < 1 and tagged[inst] == e then
 			table.insert(e.parts, d)
+			e.low = math.min(e.low, d.Position.Y) -- (left at huge, a relic whose parts all came late went NaN black)
 		end
 	end)
 end
@@ -53,7 +54,8 @@ RunService.Heartbeat:Connect(function(dt)
 			tagged[inst] = nil
 		else
 			for _, p in e.parts do
-				p.Color = Color3.fromHSV((t + (p.Position.Y - e.low) * e.spread) % 1, 0.65, 1)
+				local h = e.spread == 0 and 0 or (p.Position.Y - e.low) * e.spread
+				p.Color = Color3.fromHSV((t + h) % 1, 0.65, 1)
 			end
 		end
 	end

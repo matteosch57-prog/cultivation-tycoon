@@ -345,11 +345,25 @@ function RelicHall.show(plot, rank, newest)
 		if i > earned then
 			silhouette(item)
 		elseif tier then
-			-- a relic drawn with decals (the Phoenix Fan: decals on an invisible part) can't be painted, its
-			-- texture stays dark under any tint: a Golden / Rainbow one is our own part build instead
-			if item:FindFirstChildWhichIsA("Decal", true) then
+			-- a relic drawn only with decals (the Phoenix Fan: decals on an invisible part) can't be painted,
+			-- its texture stays dark under any tint: a Golden / Rainbow one is our own part build instead.
+			-- Others just lose their decals (Play check: rebuilding the broom too left a 2-part stub)
+			local solid = false
+			for _, d in item:GetDescendants() do
+				if d:IsA("BasePart") and d.Transparency < 1 then
+					solid = true
+					break
+				end
+			end
+			if not solid then
 				item:ClearAllChildren()
 				RELICS[i](item, t * CFrame.new(0, 3.4, 0))
+			else
+				for _, d in item:GetDescendants() do
+					if d:IsA("Decal") then
+						d:Destroy()
+					end
+				end
 			end
 			tierLook(m, item, tier, (t * CFrame.new(0, 4.5, 0)).Position)
 		end
