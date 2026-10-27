@@ -3416,6 +3416,13 @@ Missions.onRank(function(player, rank)
 	RelicHall.show(s.plot, rank, i)
 	notify:FireClient(player, "relic", Config.relicName(i, tier), tier)
 end)
+-- tools/showcase.luau's Edit preview (a solid island with a hall, 1279 parts) was saved into the place: it
+-- hung 30-77 studs over Peak 5's Alchemy islet and Peak 6's Fields islet and blocked players there
+-- (owner 2026-10-27). It is a look preview, never part of the world: a server drops it at boot.
+local showcase = workspace:FindFirstChild("Showcase")
+if showcase then
+	showcase:Destroy()
+end
 setupLighting()
 buildPlots()
 
