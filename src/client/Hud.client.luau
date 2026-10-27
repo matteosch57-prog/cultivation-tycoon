@@ -455,13 +455,26 @@ local function build()
 	-- OPEN (Shop, Disciples, Karma); the right stack under the next goal holds what TICKS (gift, pill,
 	-- and other scripts' rows through Player.HudSlots). layout() fits the left column between
 	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
+	-- On a phone (owner 2026-10-27 "isnt UI a bit messy?") the five buttons are one row under the top bar
+	-- (Config.HUD_PHONE_RAIL "row") or one column, all one size, numbers as badges on them
+	local phoneRail = state.phoneMode and Config.HUD_PHONE_RAIL or nil
+	local LB = phoneRail and Config.HUD_PHONE_BTN or 42 -- the left buttons' size
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
+	left:SetAttribute("Row", phoneRail == "row") -- Missions.client sits its strip under a row, beside a column
+	left:SetAttribute("Btn", px(LB)) -- Friends / Settings size their buttons to match
 	local leftLayout = Instance.new("UIListLayout")
-	leftLayout.Padding = UDim.new(0, px(RAIL_GAP))
+	leftLayout.Padding = UDim.new(0, px(phoneRail and 8 or RAIL_GAP))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	leftLayout.Wraps = true
+	leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	leftLayout.Wraps = phoneRail ~= "row"
+	if phoneRail == "row" then
+		leftLayout.FillDirection = Enum.FillDirection.Horizontal
+		left.AutomaticSize = Enum.AutomaticSize.XY
+		left.Size = UDim2.new()
+	end
 	leftLayout.Parent = left
+	ui.leftLayout = leftLayout
 	-- one button with its caption under it (a count, a timer: no words where a number says it)
 	local function sideButton(parent, order, size, face, round)
 		local col = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
@@ -476,8 +489,8 @@ local function build()
 		return col, btn
 	end
 	-- Shop (mock shop B, D24): always shown, on top, the one gold button; opens Shop.client's screen
-	local _, sBtn = sideButton(left, 0, 42, Color3.fromHex("FFD36B"))
-	Toy.icon(sBtn, "shop", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local _, sBtn = sideButton(left, 0, LB, Color3.fromHex("FFD36B"))
+	Toy.icon(sBtn, "shop", px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	sBtn.Name = "ShopButton"
 	ui.shopDot = Toy.dot(sBtn, px(17), { Visible = false })
 	sBtn.Activated:Connect(function()
@@ -487,15 +500,15 @@ local function build()
 		end
 	end)
 	-- Disciples: the label is the count (less text, mock less_text A)
-	local dCol, dBtn = sideButton(left, 1, 42, FACE)
-	discipleIcon(dBtn, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local dCol, dBtn = sideButton(left, 1, LB, FACE)
+	discipleIcon(dBtn, px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	dBtn.Name = "DisciplesButton"
 	ui.discDot = Toy.dot(dBtn, px(17), { Visible = false })
-	ui.dLabel = text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.dLabel = phoneRail and Toy.railBadge(dBtn.Parent, "0", px(11)) or text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
 	-- Karma: straight to the Karma Shop page of the reincarnation screen (owner: no direct way in before)
-	local kCol, kBtn = sideButton(left, 2, 42, FACE)
-	Toy.icon(kBtn, "karma", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local kCol, kBtn = sideButton(left, 2, LB, FACE)
+	Toy.icon(kBtn, "karma", px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	kBtn.Name = "KarmaButton"
 	ui.karmaDot = Toy.dot(kBtn, px(17), { Visible = false })
 	kBtn.Activated:Connect(function()
@@ -512,7 +525,8 @@ local function build()
 		Toy.icon(b, key, px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		b.Name = caption .. "Button"
 		local cap = text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-		if where ~= "ranks" then -- Ranks opens a screen first; its "Go to the wall" carries the tag
+		if where ~= "ranks" and not phoneRail then -- Ranks opens a screen first; its "Go to the wall" carries the tag
+			-- (phone: no ribbon, so Base and Ranks sit level, owner mocks 2026-10-27)
 			Toy.teleportTag(b, px(13))
 			local pad = Instance.new("UIPadding") -- the caption steps down out from under the tag
 			pad.PaddingTop = UDim.new(0, px(5))
@@ -1233,9 +1247,23 @@ local function layout()
 	local rootH = ui.root.AbsoluteSize.Y / (rootScale and rootScale.Scale or 1)
 	local top = inset.Max.Y + px(8)
 	local bottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
-	ui.left.Position = UDim2.fromOffset(px(12), top)
-	ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
-	ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
+	local unscale0 = rootScale and rootScale.Scale or 1
+	if ui.left:GetAttribute("Row") then
+		-- the phone row (Grow a Garden): under the top bar; if it would reach the qi group, under that instead
+		local rowW = ui.left.AbsoluteSize.X / unscale0
+		local topLeft = (ui.top.AbsolutePosition.X - ui.root.AbsolutePosition.X) / unscale0
+		local y = top
+		if px(12) + rowW > topLeft - px(6) then
+			y = math.max(top, (ui.top.AbsolutePosition.Y - ui.root.AbsolutePosition.Y + ui.top.AbsoluteSize.Y) / unscale0 + px(6))
+		end
+		ui.left.Position = UDim2.fromOffset(px(12), y)
+		ui.cardBox.Position = UDim2.new(0, px(12), 0, y + ui.left.AbsoluteSize.Y / unscale0 + px(60))
+		ui.cardBox.AnchorPoint = Vector2.new(0, 0)
+	else
+		ui.left.Position = UDim2.fromOffset(px(12), top)
+		ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
+		ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / unscale0 + px(12), 0.45, 0)
+	end
 	local hasHall = player:GetAttribute("HasHall") == true
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
 	ui.dCol.Visible = true -- always there (owner 2026-10-23), the Disciple Hall or not: the book and the sect to look at
@@ -1486,6 +1514,67 @@ slotTravel.Event:Connect(function(where) task.spawn(teleportTo, where) end)
 slotTravel.Parent = slots
 slots.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
+-- One red dot at a time on a phone (owner 2026-10-27, mocks docs/art/mocks/2026-10-27_phone_hud_board.png:
+-- five dots at once and none stood out): of the HUD's lit dots only the most useful shows, the others are
+-- muted (its glow and gem hidden, so the scripts that own the dot still switch its Visible as they like)
+local DOT_ORDER = { "RecruitSeal", "GiftButton", "RebirthSeal", "ShopButton", "KarmaButton", "DisciplesButton", "PillButton", "FriendsButton" }
+local function dotRank(dot)
+	local g = dot.Parent
+	while g and g ~= ui.root do
+		local i = table.find(DOT_ORDER, g.Name)
+		if i then
+			return i
+		end
+		g = g.Parent
+	end
+	return #DOT_ORDER + 1
+end
+local function lit(dot)
+	local g = dot
+	while g and g ~= ui.root do
+		if g:IsA("GuiObject") and not g.Visible then
+			return false
+		end
+		g = g.Parent
+	end
+	return g ~= nil
+end
+local function oneDot()
+	if not ui.root then
+		return
+	end
+	local best, bestRank
+	local dots = {}
+	for _, d in ui.root:GetDescendants() do
+		if d.Name == "RedDot" and d:IsA("GuiObject") and not d:IsDescendantOf(ui.cardBox) then
+			table.insert(dots, d)
+			if state.phoneMode and lit(d) then
+				local r = dotRank(d)
+				if not bestRank or r < bestRank then
+					best, bestRank = d, r
+				end
+			end
+		end
+	end
+	for _, d in dots do
+		local off = state.phoneMode and d ~= best
+		if (d:GetAttribute("Muted") == true) ~= off then
+			d:SetAttribute("Muted", off)
+			for _, c in d:GetChildren() do
+				if c:IsA("GuiObject") then
+					c.Visible = not off
+				end
+			end
+		end
+	end
+end
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		oneDot()
+	end
+end)
+
 rebuildAll = function()
 	build()
 	refreshStatic()
@@ -1493,6 +1582,9 @@ rebuildAll = function()
 	slotLeft.Value = ui.left
 	slotRebuilt:Fire(ui.right)
 	task.defer(layout)
+	task.defer(oneDot)
+	-- the phone row steps under the qi group when the counter grows into it
+	ui.top:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
 end
 
 rebuildAll()

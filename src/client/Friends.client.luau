@@ -279,7 +279,16 @@ local function groupDot()
 	return ok and type(t) == "table" and (t.group == true or t.fav == true)
 end
 
+-- the HUD's left rail (Player.HudSlots.Left); on a phone it sets the button size and badges (2026-10-27)
+local function railNow()
+	local slots = player:FindFirstChild("HudSlots")
+	local left = slots and slots:FindFirstChild("Left")
+	return left and left.Value
+end
+
 local function draw()
+	local rail = railNow()
+	local btnSize = rail and rail:GetAttribute("Btn") -- the phone's one size for every left button
 	local ids = {}
 	for id in string.gmatch(player:GetAttribute("FriendIds") or "", "%d+") do
 		table.insert(ids, tonumber(id))
@@ -287,7 +296,7 @@ local function draw()
 	local alone = #ids == 0
 	-- alone: shown once the intro is done (owner: the social card should be there from the start)
 	local show = not alone or (player:GetAttribute("WelcomeQi") or 0) == 0
-	local key = #ids .. "|" .. tostring(show) .. "|" .. tostring(groupDot()) .. "|" .. Toy.S
+	local key = #ids .. "|" .. tostring(show) .. "|" .. tostring(groupDot()) .. "|" .. Toy.S .. "|" .. tostring(btnSize)
 	if key == shown then
 		return
 	end
@@ -302,15 +311,21 @@ local function draw()
 	root = frame(gui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	root.Name = "FriendsRow"
 	Toy.list(root, false, px(1))
-	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), FACE, px(11))
+	local size = btnSize or px(42)
+	local holder, btn = Toy.button(root, UDim2.fromOffset(size, size), FACE, math.floor(size * 0.26))
 	holder.LayoutOrder = 1
 	btn.Name = "FriendsButton"
-	Toy.icon(btn, "invite", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	Toy.icon(btn, "invite", math.floor(size * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	if groupDot() then
 		Toy.dot(btn, px(16))
 	end
 	local pct = math.round(math.max(1, #ids) * Config.FRIEND_STEP * 100)
-	text(root, "+" .. pct .. "%", px(12), alone and Color3.fromHex("CBBFD6") or JADE, { LayoutOrder = 2 })
+	local capColor = alone and Color3.fromHex("CBBFD6") or JADE
+	if btnSize then
+		Toy.railBadge(holder, "+" .. pct .. "%", px(11), capColor) -- phone: a badge on the button, no caption
+	else
+		text(root, "+" .. pct .. "%", px(12), capColor, { LayoutOrder = 2 })
+	end
 	btn.Activated:Connect(function()
 		if groupOpen() or favOpen() then
 			openCard()
@@ -348,7 +363,10 @@ task.spawn(function()
 	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
-			task.defer(placeCard)
+			task.defer(function()
+				draw() -- the rail's button size may have changed (phone / PC)
+				placeCard()
+			end)
 		end)
 	end
 end)

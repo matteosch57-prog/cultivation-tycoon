@@ -194,6 +194,10 @@ local function place()
 		local origin = gui.AbsolutePosition
 		local x = rail.AbsolutePosition.X - origin.X + rail.AbsoluteSize.X + px(10)
 		local y = rail.AbsolutePosition.Y - origin.Y + px(4)
+		if rail:GetAttribute("Row") then -- the phone's row of buttons (2026-10-27): the strip goes under it
+			x = rail.AbsolutePosition.X - origin.X
+			y = rail.AbsolutePosition.Y - origin.Y + rail.AbsoluteSize.Y + px(12)
+		end
 		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them. Not on a
 		-- phone (owner 2026-10-27: the strip pushed under the chat sat mid-screen; phone chat starts folded)
 		local _, phone = computeScale()

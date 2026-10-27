@@ -534,10 +534,12 @@ local function drawButton()
 	end
 	root = frame(holderGui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
 	root.Name = "SettingsRow"
-	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), FACE, px(11))
+	local rail = leftRail()
+	local size = rail and rail:GetAttribute("Btn") or px(42) -- the phone's one size for every left button (2026-10-27)
+	local holder, btn = Toy.button(root, UDim2.fromOffset(size, size), FACE, math.floor(size * 0.26))
 	holder.Name = "SettingsHolder"
 	btn.Name = "SettingsButton"
-	gear(btn, px(28))
+	gear(btn, math.floor(size * 0.67))
 	btn.Activated:Connect(show)
 	place()
 end
@@ -546,9 +548,9 @@ task.spawn(function()
 	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
-			task.defer(place)
+			task.defer(drawButton) -- redraws at the rail's button size, then places
 		end)
-		place()
+		drawButton()
 	end
 end)
 player:GetAttributeChangedSignal("HudDevice"):Connect(drawButton)

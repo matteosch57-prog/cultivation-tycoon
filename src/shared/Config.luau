@@ -1923,6 +1923,11 @@ function Config.relicMult(rank)
 	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
 end
 Config.MISSION_PHONE = "line" -- the phone tracker: "line" (badge + the mission just moved, else each in turn every 5 s), "icons" (one icon each) or "list" (the PC panel)
+-- the phone HUD's left buttons (owner 2026-10-27 "isnt UI a bit messy?", mocks docs/art/mocks/2026-10-27_phone_hud_board.png):
+-- "row" (one row under the Roblox top bar, Grow a Garden) or "column" (one column, Pet Simulator 99). Same-size
+-- buttons, counts as badges on them, one red dot at a time. PC keeps its column.
+Config.HUD_PHONE_RAIL = "row"
+Config.HUD_PHONE_BTN = 38 -- the phone left buttons' size (5 of them fit above the thumbstick in a column)
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier
