@@ -345,9 +345,15 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a, b)
 end)
 
 -- recruits: the Hud tells us the rarity through this local event
-local recruitFx = Instance.new("BindableEvent")
-recruitFx.Name = "RecruitFx"
-recruitFx.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
+-- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs.
+-- Whichever of this and RecruitReveal runs first makes it (RecruitReveal waited on it past 5 s on slow
+-- joins, live 2026-10-27)
+local recruitFx = player:FindFirstChild("RecruitFx")
+if not recruitFx then
+	recruitFx = Instance.new("BindableEvent")
+	recruitFx.Name = "RecruitFx"
+	recruitFx.Parent = player
+end
 recruitFx.Event:Connect(function(rarityName, kept, results)
 	local r = Config.rarity(rarityName)
 	local c = plotCentre()

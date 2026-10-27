@@ -26,7 +26,18 @@ function MeshCache.fetch(id: string): (boolean, any)
 		return true, t:Clone()
 	end
 	pending[id] = true
-	local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, OPTIONS)
+	-- a fetch can fail for a moment (all of Config's meshes are asked at once on boot): two more tries
+	-- before the prop goes without it (live 2026-10-27: prop_mesh_failed 18 a day, koi_load_failed)
+	local ok, mp
+	for try = 1, 3 do
+		ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, OPTIONS)
+		if ok and mp then
+			break
+		end
+		if try < 3 then
+			task.wait(try)
+		end
+	end
 	pending[id] = nil
 	if ok and mp then
 		templates[id] = mp

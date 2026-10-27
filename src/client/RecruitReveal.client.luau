@@ -776,7 +776,12 @@ end
 
 -- Hud fires Player.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit (the
 -- idle chest too, with one result); results (x10 / x50) open every orb, else the single reveal
-local fx = player:WaitForChild("RecruitFx")
+local fx = player:FindFirstChild("RecruitFx")
+if not fx then -- Juice not run yet (slow join): make it here, Juice picks it up
+	fx = Instance.new("BindableEvent")
+	fx.Name = "RecruitFx"
+	fx.Parent = player
+end
 fx.Event:Connect(function(rarityName, kept, results)
 	if results and #results > 1 then
 		startMulti(results)

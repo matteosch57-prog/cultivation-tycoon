@@ -20,6 +20,7 @@ local NEAR = 60 -- beyond this, every other frame
 local BODY_R = 5
 
 local workers = {}
+local watching = {} -- [worker model] = its ChildAdded hook
 
 -- how fast each joint catches up with its target (per second): the chest leads, the hands trail
 local FOLLOW = {
@@ -37,10 +38,10 @@ local FOLLOW_LEGS = 30 -- as fast as the body, so the planted feet stay put
 -- the pose is read this far ahead, so the eased chest lands each blow on time and only the arms trail
 local LEAD = 0.035
 
-local function add(m)
-	local avatar = m:WaitForChild("Avatar", 10)
+local function add(m, avatar)
+	avatar = avatar or m:WaitForChild("Avatar", 10)
 	local root = avatar and avatar:WaitForChild("HumanoidRootPart", 10)
-	if not root or not m.Parent then
+	if not root or not m.Parent or not avatar.Parent then
 		return
 	end
 	local job = m:GetAttribute("Job")
@@ -68,14 +69,31 @@ local function add(m)
 	}
 end
 
-CollectionService:GetInstanceAddedSignal(TAG):Connect(function(m)
+-- The worker's Avatar streams out on its own when the player walks away and comes back as a new
+-- model (the worker model itself stays): the old joints are gone then. Live 2026-10-27: the loop kept
+-- writing to the old joints (13k errors a day in Rig.reach) and the new avatar never moved. So a
+-- worker is dropped when its avatar leaves and picked up again when an Avatar arrives.
+local function watch(m)
+	if watching[m] then
+		return
+	end
+	watching[m] = m.ChildAdded:Connect(function(c)
+		if c.Name == "Avatar" then
+			task.spawn(add, m, c)
+		end
+	end)
 	task.spawn(add, m)
-end)
+end
+CollectionService:GetInstanceAddedSignal(TAG):Connect(watch)
 CollectionService:GetInstanceRemovedSignal(TAG):Connect(function(m)
 	workers[m] = nil
+	if watching[m] then
+		watching[m]:Disconnect()
+		watching[m] = nil
+	end
 end)
 for _, m in CollectionService:GetTagged(TAG) do
-	task.spawn(add, m)
+	watch(m)
 end
 
 -- the off hand on a two-handed tool: the left elbow bends down, out and a little back
@@ -116,7 +134,7 @@ RunService.PreSimulation:Connect(function(dt)
 	local eye = cam.CFrame.Position
 	local now = workspace:GetServerTimeNow() -- one clock for every client, so a pair stays in step
 	for m, w in workers do
-		if not m.Parent then
+		if not m.Parent or not w.rootPart.Parent then
 			workers[m] = nil
 		else
 			local dist = (w.centre - eye).Magnitude

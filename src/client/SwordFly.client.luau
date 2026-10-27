@@ -173,7 +173,22 @@ local function ownAnimation(char, slot)
 	return best
 end
 
+-- One pair of tracks per Animator, reused on every flight: a fresh LoadAnimation on each take-off
+-- was never destroyed, and after enough take-offs (the sword turns off by itself near pads and the
+-- altar) the character hit Roblox's 64-track limit and its own walk and idle stopped playing (live
+-- 2026-10-27, 260 a day). Weak keys: a respawned character's Animator lets go of its pair.
+local trackCache = setmetatable({}, { __mode = "k" })
+
 local function loadTrack(animator, char, hum, slot)
+	local cache = trackCache[animator]
+	if not cache then
+		cache = {}
+		trackCache[animator] = cache
+	end
+	local cached = cache[slot]
+	if cached then
+		return cached
+	end
 	local anim = ownAnimation(char, slot)
 	if not anim then
 		anim = Instance.new("Animation")
@@ -185,6 +200,7 @@ local function loadTrack(animator, char, hum, slot)
 	end
 	track.Priority = Enum.AnimationPriority.Action
 	track.Looped = true
+	cache[slot] = track
 	return track
 end
 

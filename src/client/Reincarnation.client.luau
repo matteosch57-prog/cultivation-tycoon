@@ -536,9 +536,16 @@ local function fitBody()
 	end
 	local natural = body.AbsoluteSize.Y / math.max(sc.Scale, 0.01)
 	local avail = gui.AbsoluteSize.Y - px(20)
-	ui.fit = natural > avail and math.max(0.5, avail / natural) or 1
+	local fit = natural > avail and math.max(0.5, avail / natural) or 1
+	-- writing the scale changes the body's AbsoluteSize, which calls this again: only a real change is
+	-- written, else pixel rounding bounced the scale back and forth until Roblox cut the loop (live
+	-- 2026-10-27, "Maximum event re-entrancy depth exceeded")
+	if ui.fit and math.abs(fit - ui.fit) < 0.01 then
+		return
+	end
+	ui.fit = fit
 	if not fitTween then
-		sc.Scale = ui.fit
+		sc.Scale = fit
 	end
 end
 

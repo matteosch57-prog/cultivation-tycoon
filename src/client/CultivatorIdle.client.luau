@@ -406,7 +406,7 @@ RunService.PreSimulation:Connect(function(frameDt)
 	for m, f in figures do
 		local dist = (f.centre - eye).Magnitude
 		f.acc += frameDt
-		if not m.Parent then
+		if not m.Parent or not f.rootPart.Parent then
 			figures[m] = nil
 		elseif dist < FAR and (f.full or (frame + f.slot) % SLOW == 0) and PerfMark.onScreen(cam, f.centre, BODY_R) then -- nothing moves unseen
 			-- the time since this figure last moved (SLOW frames for one outside the full set)

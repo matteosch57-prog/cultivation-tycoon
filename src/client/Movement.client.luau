@@ -52,8 +52,13 @@ local function setup(char)
 		c:Disconnect()
 	end
 	table.clear(conns)
-	local hum = char:WaitForChild("Humanoid")
-	local root = char:WaitForChild("HumanoidRootPart")
+	-- a character can be replaced before its parts arrive (slow phone joins, live 2026-10-27): give up
+	-- on it then, the next CharacterAdded sets up the new one
+	local hum = char:WaitForChild("Humanoid", 60)
+	local root = hum and char:WaitForChild("HumanoidRootPart", 60)
+	if not root or player.Character ~= char then
+		return
+	end
 	hum.WalkSpeed = Config.walkSpeed(player:GetAttribute("Dao_steps")) -- Swift Steps (Karma Shop)
 	hum.UseJumpPower = false
 	hum.JumpHeight = MOVE.jumpHeight

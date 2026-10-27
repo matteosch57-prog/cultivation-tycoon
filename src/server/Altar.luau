@@ -581,16 +581,18 @@ end
 
 function Altar.init(context, parent)
 	ctx = context
+	-- the remote first: the client's Altar script waits on it, and the arena build takes a while
+	-- (live 2026-10-27: "Infinite yield possible" on early joins)
+	local push = Instance.new("RemoteEvent")
+	push.Name = "AltarPush"
+	push.OnServerEvent:Connect(strike)
+	push.Parent = ctx.remotes
 	build(parent)
 	setSprings(false)
 	workspace:SetAttribute("AltarNext", workspace:GetServerTimeNow() + Config.ALTAR_FIRST)
 	workspace:SetAttribute("AltarUntil", 0)
 	workspace:SetAttribute("AltarCrowd", 0)
 	setHud()
-	local push = Instance.new("RemoteEvent")
-	push.Name = "AltarPush"
-	push.OnServerEvent:Connect(strike)
-	push.Parent = ctx.remotes
 	Players.PlayerRemoving:Connect(function(p)
 		lastPush[p] = nil
 		if crowned == p then

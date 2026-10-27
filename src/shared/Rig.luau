@@ -13,12 +13,18 @@ local function isBodyJoint(j)
 	return (j:IsA("Motor6D") or j:IsA("AnimationConstraint")) and not (j.Parent and j.Parent.Name == "Handle")
 end
 
--- a joint's two frames: on its parent part (C0 / Attachment0) and on its child part (C1 / Attachment1)
+-- a joint's two frames: on its parent part (C0 / Attachment0) and on its child part (C1 / Attachment1);
+-- nil while an AnimationConstraint lacks an attachment (live 2026-10-27: a figure half streamed in, or
+-- one streamed out and back in, threw 13k errors a day here)
 local function frames(j)
 	if j:IsA("Motor6D") then
 		return j.C0, j.C1
 	end
-	return j.Attachment0.CFrame, j.Attachment1.CFrame
+	local a0, a1 = j.Attachment0, j.Attachment1
+	if not (a0 and a1) then
+		return nil, nil
+	end
+	return a0.CFrame, a1.CFrame
 end
 
 -- Server: make a built avatar live. Root anchored, everything else unanchored, massless and
@@ -94,6 +100,9 @@ function Rig.legLengths(joints, side)
 	local _, hip1 = frames(hip)
 	local knee0, knee1 = frames(knee)
 	local ankle0 = frames(ankle)
+	if not (hip1 and knee0 and ankle0) then
+		return nil
+	end
 	return {
 		thigh = (hip1.Position - knee0.Position).Magnitude,
 		shin = (knee1.Position - ankle0.Position).Magnitude,
@@ -124,10 +133,10 @@ function Rig.chain(joints, names, rot)
 	local cf = CFrame.identity
 	for _, name in names do
 		local j = joints[name]
-		if not j or (not j:IsA("Motor6D") and not (j.Attachment0 and j.Attachment1)) then
+		local c0, c1 = if j then frames(j) else nil
+		if not c0 then
 			return CFrame.identity -- a rig missing a joint: no reach, rather than an error every frame
 		end
-		local c0, c1 = frames(j)
 		cf = cf * c0 * (rot[name] or CFrame.identity) * c1:Inverse()
 	end
 	return cf
@@ -151,6 +160,9 @@ function Rig.reach(joints, side, target, pole, rot)
 	local sh0, sh1 = frames(sh)
 	local el0, el1 = frames(el)
 	local wr0, wr1 = frames(wr)
+	if not (sh0 and el0 and wr0) then
+		return
+	end
 	-- the bones at rest, each in its own part's space: shoulder -> elbow, elbow -> palm (the
 	-- forearm and the hand taken as one straight bone)
 	local upperLocal = el0.Position - sh1.Position
@@ -200,7 +212,7 @@ function Rig.rideJoints(char)
 	return root, waist
 end
 
--- a joint's frame on its parent part (Motor6D C0 / AnimationConstraint Attachment0)
+-- a joint's frame on its parent part (Motor6D C0 / AnimationConstraint Attachment0), nil without one
 function Rig.parentFrame(j)
 	return (frames(j))
 end

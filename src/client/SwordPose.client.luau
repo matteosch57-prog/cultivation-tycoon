@@ -54,10 +54,10 @@ local function track(player)
 			table.insert(r.feet, part)
 		end
 	end
-	if root then
+	if root and Rig.parentFrame(root) then
 		table.insert(r.joints, entry(root, CFrame.new(0, RIDE.lift, 0) * LEAN, true))
 	end
-	if waist then
+	if waist and Rig.parentFrame(waist) then
 		table.insert(r.joints, entry(waist, WAIST_POSE))
 	end
 	return r
