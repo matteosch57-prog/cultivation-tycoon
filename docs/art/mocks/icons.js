@@ -146,7 +146,13 @@ NEW.magnet = [{ d: "M12 10 H26 V32 A6 6 0 0 0 38 32 V10 H52 V32 A20 20 0 0 1 12 
 NEW.steps = [{ d: "M24 8 H40 V34 L52 38 C59 40 59 50 52 50 H24 Z", c: C.gold }, { d: rr(22, 48, 36, 8, 3), c: C.wood }, { d: rr(22, 6, 20, 7, 3), c: C.red }, { d: "M4 24 H16 M2 34 H16 M6 44 H16", c: C.white, k: "line", w: 4, ol: true }];
 NEW.isles = [{ d: "M8 42 C8 36 56 36 56 42 C52 54 40 60 32 60 C24 60 12 54 8 42 Z", c: C.wood }, { d: "M8 42 C8 36 56 36 56 42 C48 46 16 46 8 42 Z", c: C.jade },
   { d: "M14 30 C24 28 30 32 32 40 C22 42 16 38 14 30 Z", c: "#FF8FC8" }, { d: "M50 30 C40 28 34 32 32 40 C42 42 48 38 50 30 Z", c: "#FF8FC8" }, { d: "M32 8 C40 18 42 30 32 40 C22 30 24 18 32 8 Z", c: "#FFB8DE" }];
-const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial", "fortune", "luck", "magnet", "steps", "isles"];
+// Sect Styles (D86, owner 2026-10-27: "Sect styles need icon too"): a hall with a curved roof, its roof
+// half repainted pink by a brush that crosses it (a new look for the whole sect). Cell 40
+NEW.styles = [{ d: rr(14, 32, 36, 22, 2), c: C.cream }, { d: rr(27, 41, 10, 13, 1), c: C.wood },
+  { d: "M2 32 C10 30 14 26 16 18 H48 C50 26 54 30 62 32 Z", c: C.red }, { d: "M32 18 H48 C50 26 54 30 62 32 H32 Z", c: "#FF8FC8", k: "flat" },
+  { d: rr(24, 12, 16, 7, 3), c: C.gold },
+  { d: "M38 62 L54 46", c: C.wood, k: "line", w: 6, ol: true }, { d: rr(49, 42, 8, 6, 1), c: C.gold, tr: "rotate(-45 53 45)" }, { d: "M52 40 C54 32 62 28 63 30 C64 32 62 40 56 44 Z", c: "#FF8FC8" }];
+const ORDER = ["qi", "karma", "robux", "shop", "disciple", "pill", "gift", "tide", "hall", "goal", "x2", "auto", "vip", "hands", "rebirth", "like", "invite", "group", "palm", "chest", "altar", "pack1", "pack2", "pack3", "sworn", "seat", "foundation", "elixir", "meditation", "echo", "trophy", "bell", "swordJade", "swordHeavenly", "swordCelestial", "fortune", "luck", "magnet", "steps", "isles", "styles"];
 const LABEL = { qi: "Qi", karma: "Karma", robux: "Robux", shop: "Shop", disciple: "Disciples", pill: "Pill", gift: "Gift", tide: "Tide", hall: "Realm", goal: "Next", x2: "2x Qi", auto: "Auto", vip: "VIP", hands: "Hands", rebirth: "Rebirth", like: "Like", invite: "Invite", group: "Group", palm: "Palm", chest: "Chest", pack1: "Pack 1", pack2: "Pack 3", pack3: "Pack 6", sworn: "Sworn", seat: "Seat", foundation: "Found.", elixir: "Elixir", meditation: "Medit.", echo: "Echo", trophy: "Ranks" };
 
 LABEL.altar = "Altar";
@@ -159,6 +165,7 @@ LABEL.luck = "Luck";
 LABEL.magnet = "Magnet";
 LABEL.steps = "Steps";
 LABEL.isles = "Isles";
+LABEL.styles = "Styles";
 let uid = 0;
 function shade(c, f) { // f < 1 darker, > 1 lighter
   const n = parseInt(c.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
