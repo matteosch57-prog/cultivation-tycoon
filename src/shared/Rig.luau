@@ -133,7 +133,10 @@ function Rig.chain(joints, names, rot)
 	local cf = CFrame.identity
 	for _, name in names do
 		local j = joints[name]
-		local c0, c1 = if j then frames(j) else nil
+		local c0, c1
+		if j then
+			c0, c1 = frames(j)
+		end
 		if not c0 then
 			return CFrame.identity -- a rig missing a joint: no reach, rather than an error every frame
 		end
