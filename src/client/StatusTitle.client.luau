@@ -103,6 +103,9 @@ local function attach(plr, char)
 				for _, c in conns do
 					c:Disconnect()
 				end
+				-- an old character is only unparented, never destroyed, on other clients: destroy the
+				-- title so its shine tween stops (Destroying in vipTitle) and the old title is freed
+				task.defer(gui.Destroy, gui)
 			end
 		end),
 	}
