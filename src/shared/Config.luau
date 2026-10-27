@@ -1593,6 +1593,9 @@ Config.ICON_ATLAS = {
 		fortune = 35, luck = 36, magnet = 37, steps = 38, isles = 39,
 		-- Sect Styles (D86): cell 40 of docs/art/mocks/icons.js (drawn 2026-10-27; blank until the sheet with it is uploaded)
 		styles = 40,
+		-- the four Heavenly Weathers (owner 2026-10-27: "Weather in index should use an icon, and the
+		-- weather event too"; docs/art/mocks/weather_icons.html), keyed by Config.WEATHERS key
+		rain = 41, thunder = 42, blood = 43, star = 44,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"

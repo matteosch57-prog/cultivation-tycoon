@@ -428,15 +428,10 @@ local function build()
 	tideIcon(tideRow, px(15), { LayoutOrder = 1 })
 	ui.tide = text(tideRow, "", px(12), TIDE_LIGHT, { LayoutOrder = 2 })
 	ui.tideRow = tideRow
-	-- Heavenly Weather line: its colour gem, its name and the time left (only while one runs)
+	-- Heavenly Weather line: its icon, its name and the time left (only while one runs)
 	local wRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4, Visible = false })
 	Toy.list(wRow, true, px(4), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
-	local wGem = frame(wRow, { Size = UDim2.fromOffset(px(10), px(10)), BackgroundTransparency = 0, Rotation = 45, LayoutOrder = 1 })
-	Toy.corner(wGem, UDim.new(0, px(2)))
-	local wgs = Instance.new("UIStroke")
-	wgs.Color = INK
-	wgs.Thickness = px(2)
-	wgs.Parent = wGem
+	local wGem = Toy.icon(wRow, "rain", px(18), { LayoutOrder = 1 })
 	ui.weather = text(wRow, "", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.weatherRow, ui.weatherGem = wRow, wGem
 	ui.counter = counter
@@ -1105,7 +1100,7 @@ local function tideBanner(name)
 	end)
 end
 
--- The Heavenly Weather banner: the Tide Bell's plate in the weather's colour, its name and what a
+-- The Heavenly Weather banner: the Tide Bell's plate in the weather's colour, its icon, its name and what a
 -- recruit can become ("20% of recruits come out Dewy x2"), then it shrinks into the HUD weather line
 local function weatherBanner(w)
 	if banner then
@@ -1130,10 +1125,12 @@ local function weatherBanner(w)
 	grad.Color = ColorSequence.new(w.color:Lerp(Color3.new(1, 1, 1), 0.35), w.color:Lerp(Toy.INK, 0.35))
 	grad.Parent = plate
 	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(18)), UDim.new(0, px(18))
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(10)), UDim.new(0, px(18))
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(6)), UDim.new(0, px(7))
 	pad.Parent = plate
-	local words = frame(plate, { AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 22 })
+	Toy.list(plate, true, px(10))
+	Toy.weatherIcon(plate, w, px(48), { LayoutOrder = 1, ZIndex = 22 }) -- its icon (owner 2026-10-27, pick A)
+	local words = frame(plate, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2, ZIndex = 22 })
 	Toy.list(words, false, 0)
 	text(words, w.name .. "!", px(24), Color3.new(1, 1, 1), { LayoutOrder = 1, ZIndex = 22 })
 	local sub = text(words, "", px(14), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 22 })
@@ -1635,7 +1632,8 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.weatherRow, "Visible", wText ~= "")
 		if wx then
 			put(ui.weather, "TextColor3", wx.color:Lerp(Color3.new(1, 1, 1), 0.3))
-			put(ui.weatherGem, "BackgroundColor3", wx.color)
+			local cell, at = Config.ICON_ATLAS.cell, Config.ICON_ATLAS.keys[wx.key] or 0 -- the weather's icon cell
+			put(ui.weatherGem, "ImageRectOffset", Vector2.new(at % 8 * cell, at // 8 * cell))
 		end
 	end
 

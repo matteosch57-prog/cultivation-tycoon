@@ -122,15 +122,7 @@ local function fill(page)
 	for i, w in Config.WEATHERS do
 		local line = frame(wBox, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = i })
 		Toy.list(line, true, px(4))
-		local gem = frame(line, { Size = UDim2.fromOffset(px(9), px(9)), BackgroundTransparency = 0, BackgroundColor3 = w.tint, Rotation = 45, LayoutOrder = 1 })
-		Toy.mutMove(gem, w, function(c) -- the mutation's own colour and motion (Config.mutLook)
-			gem.BackgroundColor3 = c
-		end)
-		Toy.corner(gem, UDim.new(0, px(2)))
-		local gs = Instance.new("UIStroke")
-		gs.Color = INK
-		gs.Thickness = px(2)
-		gs.Parent = gem
+		Toy.weatherIcon(line, w, px(18), { LayoutOrder = 1 })
 		text(line, string.format("%s: %s %s x%s", w.name, pct(w.chance * 100), w.mut, tostring(w.mult)), px(12), w.key == nowKey and w.tint or WHITE, { LayoutOrder = 2 })
 		if w.key == nowKey then
 			text(line, "now", px(12), GOLD, { LayoutOrder = 3 })

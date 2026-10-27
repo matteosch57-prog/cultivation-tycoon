@@ -791,30 +791,21 @@ function Toy.mutMove(inst, w, fn)
 end
 
 -- A weather mutation (Heavenly Weather, Config.WEATHERS): a glow behind `box` in its mutation's colour
--- and a small outlined gem of that colour on its bottom-left corner (Shiny's gold mark sits bottom-right)
+-- and the weather's icon on its bottom-left corner (Shiny's gold mark sits bottom-right)
 function Toy.mutationMark(box, size, mut)
 	local w = Config.mutation(mut)
 	if not w then
 		return
 	end
 	local glow = Toy.atlasPiece(box, "glow", size * 1.25, size * 1.25, w.tint, 0.35, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 1 })
-	local g = math.max(Toy.px(9), math.floor(size * 0.24))
-	local gem = Toy.frame(box, { Name = "Mutation", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.16, 0.84), Size = UDim2.fromOffset(g, g), BackgroundTransparency = 0, BackgroundColor3 = WHITE, Rotation = 45, ZIndex = 9 })
-	Toy.corner(gem, UDim.new(0, math.floor(g * 0.25)))
-	local fill = Instance.new("UIGradient")
-	fill.Rotation = 45
-	fill.Parent = gem
-	Toy.mutMove(gem, w, function(c, level)
-		fill.Color = ColorSequence.new(c:Lerp(WHITE, 0.55), c:Lerp(Toy.INK, 0.2))
-		if glow then
+	local g = math.max(Toy.px(14), math.floor(size * 0.32))
+	Toy.weatherIcon(box, w, g, { Name = "Mutation", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.16, 0.84), ZIndex = 9 })
+	if glow then
+		Toy.mutMove(glow, w, function(c, level)
 			glow.ImageColor3 = c
 			glow.ImageTransparency = 0.6 - 0.35 * level
-		end
-	end)
-	local st = Instance.new("UIStroke")
-	st.Color = Toy.INK
-	st.Thickness = math.max(1.5, g * 0.16)
-	st.Parent = gem
+		end)
+	end
 end
 
 -- A disciple of rarity `rarityName` exactly as the mock draws it: the moving aura and the disciple,
@@ -1030,23 +1021,13 @@ function Toy.discipleTile(parent, w, rarityName, look, opts)
 	end
 	if opts.marks and found then
 		-- weather marks (Bee Swarm Simulator's gifted marks, owner 2026-10-26 "index whatever you
-		-- recommend"): a diamond per weather mutation, lit in its colour once this disciple came in it
-		local d = math.max(px(9), math.floor(w * 0.17)) -- ~8 px read tiny on a phone (Studio check 2026-10-26)
+		-- recommend"): the weather's icon per mutation (owner pick A 2026-10-27), a dark silhouette
+		-- until this disciple came in it
+		local d = math.max(px(12), math.floor(w * 0.22)) -- a mark under ~12 px reads as a dot on a phone
 		local row = frame(cell, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
-		Toy.list(row, true, math.floor(d * 0.55))
+		Toy.list(row, true, math.floor(d * 0.15))
 		for i, mut in Config.WEATHERS do
-			local box = frame(row, { Size = UDim2.fromOffset(d + px(2), d + px(2)), LayoutOrder = i })
-			local gem = frame(box, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(d, d), BackgroundTransparency = 0, BackgroundColor3 = Color3.fromHex("3A3046"), Rotation = 45 })
-			corner(gem, UDim.new(0, math.max(1, math.floor(d * 0.2))))
-			local gs = Instance.new("UIStroke")
-			gs.Color = Toy.INK
-			gs.Thickness = math.max(1, px(1.5))
-			gs.Parent = gem
-			if opts.marks[mut.mut] then
-				Toy.mutMove(gem, mut, function(c)
-					gem.BackgroundColor3 = c
-				end)
-			end
+			Toy.weatherIcon(row, mut, d, { LayoutOrder = i }, not opts.marks[mut.mut])
 		end
 	end
 	if opts.name and look then -- shrunk to the card's width, never cut (R4)
@@ -1117,6 +1098,17 @@ local function atlasIcon(parent, key, size, props)
 		img[k] = v
 	end
 	img.Parent = parent
+	return img
+end
+
+-- A Heavenly Weather's icon (Config.WEATHERS row `w`, cells rain..star): `dark` draws the shape not
+-- found yet as a dark silhouette (Pet Simulator 99's index, owner pick A 2026-10-27)
+function Toy.weatherIcon(parent, w, size, props, dark)
+	local img = atlasIcon(parent, w.key, size, props)
+	if dark then
+		img.ImageColor3 = Color3.new(0, 0, 0)
+		img.ImageTransparency = 0.55
+	end
 	return img
 end
 
