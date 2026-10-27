@@ -284,8 +284,13 @@ remotes.Notify.OnClientEvent:Connect(function(kind, a)
 	if kind == "breakthroughAsk" then
 		-- never over another card (a fresh save had it open on top of the chest card)
 		task.spawn(function()
+			local t0 = os.clock()
 			Screens.waitClear(playerGui, "Breakthrough", 0.3)
-			open(a)
+			-- the server takes the Confirm only within BREAKTHROUGH_ASK_SECONDS of the ask: past that, a
+			-- step back on the pad asks again
+			if os.clock() - t0 < Config.BREAKTHROUGH_ASK_SECONDS - 10 then
+				open(a)
+			end
 		end)
 	end
 end)
