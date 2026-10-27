@@ -9,9 +9,9 @@
 -- Style keeps the old trees.
 -- Leaves fall from every broadleaf (the owner's favourite), a few lie on the grass under it, and
 -- a low emitter slides leaves along the ground with the wind. No Light instances (R3).
-local AssetService = game:GetService("AssetService")
 local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Config"))
 local Lowpoly = require(script.Parent:WaitForChild("Lowpoly"))
+local MeshCache = require(script.Parent:WaitForChild("MeshCache"))
 
 local Nature = {}
 
@@ -21,10 +21,7 @@ local kit = script.Parent:WaitForChild("NatureKit")
 local meshes = {}
 for key, id in Config.NATURE_MESH or {} do
 	if id ~= "" then
-		local ok, mp = pcall(AssetService.CreateMeshPartAsync, AssetService, id, {
-			CollisionFidelity = Enum.CollisionFidelity.Box,
-			RenderFidelity = Enum.RenderFidelity.Automatic,
-		})
+		local ok, mp = MeshCache.fetch(id)
 		if ok and mp then
 			mp.Anchored = true
 			mp.CanCollide = false
