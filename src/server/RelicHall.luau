@@ -201,11 +201,9 @@ local function silhouette(item)
 	end
 end
 
--- Golden / Rainbow relics (Config.relicTiers, look Config.RELIC_LOOK; copies Pet Simulator 99's Golden and
--- Rainbow pets). A "solid": the whole relic turns gold foil, a Rainbow one cycles through the rainbow as one
--- colour. B "gilded": the relic keeps its own colours, the plinth cap and the sparkles carry the tier. C
--- "metal": gold metal, a Rainbow one is a rainbow running up the relic. RelicGlow.client animates the parts
--- tagged "RelicRainbow" (`RainbowSpread` = hue per stud of height, 0 = one colour).
+-- Golden / Rainbow relics (Config.relicTiers; owner pick A 2026-10-27, copies Pet Simulator 99's Golden and
+-- Rainbow pets): the whole relic turns gold foil, a Rainbow one cycles through the rainbow as one colour
+-- (RelicGlow.client animates the parts tagged "RelicRainbow"; `RainbowSpread` = hue per stud of height).
 local RAINBOW_SPARKS = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, hex("FF5A5A")),
 	ColorSequenceKeypoint.new(0.25, hex("FFD24A")),
@@ -234,27 +232,10 @@ local function rainbow(inst, spread)
 	CollectionService:AddTag(inst, "RelicRainbow")
 	inst:SetAttribute("RainbowSpread", spread)
 end
-local function tierLook(m, item, cap, tier, at)
-	local look = Config.RELIC_LOOK
+local function tierLook(m, item, tier, at)
 	local sparks = glow(m, at, GOLD, tier == "rainbow" and 10 or 7)
 	if tier == "rainbow" then
 		sparks.Color = RAINBOW_SPARKS
-	end
-	if look == "B" then
-		cap.Material = Enum.Material.Foil
-		cap.Color = GOLD
-		if tier == "rainbow" then
-			rainbow(cap, 0)
-		end
-		sparks.Rate = tier == "rainbow" and 16 or 12
-		return
-	end
-	if look == "C" then
-		paint(item, hex("F2B632"), Enum.Material.Metal)
-		if tier == "rainbow" then
-			rainbow(item, 0.12)
-		end
-		return
 	end
 	paint(item, GOLD, Enum.Material.Foil)
 	if tier == "rainbow" then
@@ -322,7 +303,7 @@ function RelicHall.show(plot, rank, newest)
 		P(m, Vector3.new(4.4, 0.6, 4.4), t * CFrame.new(0, 0.3, 0), PAL.stone)
 		P(m, Vector3.new(3.4, 2.4, 3.4), t * CFrame.new(0, 1.8, 0), PAL.stoneLight, Enum.Material.Marble)
 		local tier = i <= rainbows and "rainbow" or i <= golden and "golden" or nil
-		local cap = P(m, Vector3.new(3.9, 0.4, 3.9), t * CFrame.new(0, 3.2, 0), i <= earned and PAL.gold or PAL.stone, Enum.Material.Metal)
+		P(m, Vector3.new(3.9, 0.4, 3.9), t * CFrame.new(0, 3.2, 0), i <= earned and PAL.gold or PAL.stone, Enum.Material.Metal)
 		Kit.plaque(m, t * CFrame.new(0, 1.8, 1.85), 3, 0.7, i <= earned and Config.relicName(i, tier) or "Rank " .. (i + 1))
 		local item = Instance.new("Model")
 		item.Name = "Item"
@@ -339,7 +320,7 @@ function RelicHall.show(plot, rank, newest)
 				item:ClearAllChildren()
 				RELICS[i](item, t * CFrame.new(0, 3.4, 0))
 			end
-			tierLook(m, item, cap, tier, (t * CFrame.new(0, 4.5, 0)).Position)
+			tierLook(m, item, tier, (t * CFrame.new(0, 4.5, 0)).Position)
 		end
 		if i <= earned and i == newest then
 			local burst = glow(m, (t * CFrame.new(0, 5, 0)).Position, GOLD, 0)

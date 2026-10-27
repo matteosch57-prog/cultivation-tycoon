@@ -1877,10 +1877,9 @@ Config.MISSION_RELICS = { "Sect Broom", "Practice Sword", "Incense Burner", "Jad
 -- Golden and Rainbow relics (owner pick 2026-10-27, copies Pet Simulator 99's Golden / Rainbow pets): after
 -- Sect Master each rank up upgrades one relic, in MISSION_RELICS order, to Golden (ranks 11-20), then to
 -- Rainbow (21-30). Each upgrade is +1% qi for good, out of the prices like the favorite gift (all 20: +20%).
--- RELIC_LOOK picks how they look (mocks A/B/C, RelicHall.tierLook).
+-- Look: owner pick A 2026-10-27 (all gold foil / one cycling rainbow colour, RelicHall.tierLook).
 Config.RELIC_GOLD_BONUS = 0.01
 Config.RELIC_RAINBOW_BONUS = 0.01
-Config.RELIC_LOOK = "A"
 
 -- for Sect Missions rank `rank`: relics earned, how many of them are Golden, how many Rainbow
 function Config.relicTiers(rank)
