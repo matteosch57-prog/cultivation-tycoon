@@ -525,8 +525,7 @@ local function build()
 		Toy.icon(b, key, px(30), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		b.Name = caption .. "Button"
 		local cap = text(c, caption, px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
-		if where ~= "ranks" and not phoneRail then -- Ranks opens a screen first; its "Go to the wall" carries the tag
-			-- (phone: no ribbon, so Base and Ranks sit level, owner mocks 2026-10-27)
+		if where ~= "ranks" then -- Ranks opens a screen first; its "Go to the wall" carries the tag
 			Toy.teleportTag(b, px(13))
 			local pad = Instance.new("UIPadding") -- the caption steps down out from under the tag
 			pad.PaddingTop = UDim.new(0, px(5))
@@ -742,8 +741,9 @@ local function build()
 	-- a qi orb charging through the rarity colours inside a turning ring, rays and a glow behind; the
 	-- soft pieces are the uploaded aura atlas (Toy.atlasPiece), moved in the frame loop. Still and dim
 	-- when a recruit is out of reach.
-	local SEAL = px(84) -- (owner pick A, phone calm pass: was 104)
-	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44)) })
+	local RK = state.phoneMode and 0.85 or 1 -- phone: 15% smaller (owner 2026-10-27)
+	local SEAL = px(84 * RK) -- (owner pick A, phone calm pass: was 104)
+	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44 * RK)) })
 	local seal = frame(rHolder, { Size = UDim2.fromOffset(SEAL, SEAL) })
 	local sealScale = Instance.new("UIScale")
 	sealScale.Parent = seal
@@ -770,7 +770,7 @@ local function build()
 	Toy.atlasPiece(rBtn, "glow", SEAL * 0.95, SEAL * 0.95, Color3.fromHex("D9B8FF"), 0.35, { Position = UDim2.fromScale(0.5, 0.42) })
 	local ring = Toy.atlasPiece(rBtn, "ring", SEAL - px(12), SEAL - px(12), Color3.new(1, 1, 1), 0.1)
 	-- the orb: a glow, the ball, its highlight, four motes circling
-	local ORB = px(44)
+	local ORB = px(44 * RK)
 	local orbGlow = Toy.atlasPiece(rBtn, "glow", ORB * 1.9, ORB * 1.9, JADE, 0.1)
 	local orb = frame(rBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(ORB, ORB), BackgroundTransparency = 0, BackgroundColor3 = JADE })
 	corner(orb, UDim.new(0.5, 0))
@@ -797,15 +797,15 @@ local function build()
 	rtl.Padding = UDim.new(0, px(1))
 	rtl.SortOrder = Enum.SortOrder.LayoutOrder
 	rtl.Parent = rText
-	ui.recruitLabel = text(rText, "Recruit", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.recruitLabel = text(rText, "Recruit", px(20 * RK), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	local priceRow = frame(rText, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local prl = Instance.new("UIListLayout")
 	prl.FillDirection = Enum.FillDirection.Horizontal
 	prl.VerticalAlignment = Enum.VerticalAlignment.Center
 	prl.Padding = UDim.new(0, px(3))
 	prl.Parent = priceRow
-	qiIcon(priceRow, px(16), { LayoutOrder = 1 })
-	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
+	qiIcon(priceRow, px(16 * RK), { LayoutOrder = 1 })
+	ui.recruitCost = text(priceRow, "", px(14 * RK), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
 	-- how many one press recruits (owner: an x1 / x10 / x50 selector shows above the seal on a press
@@ -1308,13 +1308,23 @@ local function layout()
 	-- does; else (the seal sits high, above the jump button) it moves left of the seal.
 	local stackTop = inset.Max.Y + px(8) -- (the next goal moved to the bottom centre)
 	local floor = state.phoneMode and rootH * 0.72 or rootH - px(24)
-	local need, rowH, n = 0, 0, 0
+	local need, rowH, n, rowW = 0, 0, 0, 0
 	for _, c in ui.right:GetChildren() do
 		if c:IsA("GuiObject") and c.Visible then
 			local h = c.AbsoluteSize.Y / unscale
 			need += h
 			rowH = math.max(rowH, h)
+			rowW += c.AbsoluteSize.X / unscale
 			n += 1
+		end
+	end
+	rowW += math.max(0, n - 1) * px(RAIL_GAP)
+	-- phone (owner 2026-10-27 "right can go higher"): Roblox's top bar has nothing on the right, so the stack
+	-- starts up in its band, as long as it stays clear of the qi group (a row's width past the group's right end)
+	if state.phoneMode and inset.Max.X >= rootW - px(60) then
+		local topRight = (ui.top.AbsolutePosition.X - rootPos.X + ui.top.AbsoluteSize.X) / unscale
+		if rootW - px(14) - rowW > topRight + px(10) then
+			stackTop = inset.Min.Y + px(8)
 		end
 	end
 	need += math.max(0, n - 1) * px(RAIL_GAP)
@@ -1801,8 +1811,7 @@ RunService.RenderStepped:Connect(function(dt)
 
 	if ui.aCol.Visible then
 		local on = not player:GetAttribute("AutoBuildOff")
-		local n = on and (player:GetAttribute("AutoWaiting") or 0) or 0 -- the server counts (far pads stream out)
-		put(ui.autoLabel, "Text", not on and "Off" or n > 0 and tostring(n) or "On")
+		put(ui.autoLabel, "Text", on and "Auto On" or "Auto Off") -- owner 2026-10-27: say what the hand is
 		put(ui.autoLabel, "TextColor3", on and GOLD or Color3.fromHex("C8C0D0"))
 		put(ui.autoBtn, "BackgroundColor3", on and FACE_READY or FACE)
 	end
