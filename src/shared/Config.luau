@@ -1596,6 +1596,9 @@ Config.ICON_ATLAS = {
 		-- the four Heavenly Weathers (owner 2026-10-27: "Weather in index should use an icon, and the
 		-- weather event too"; docs/art/mocks/weather_icons.html), keyed by Config.WEATHERS key
 		rain = 41, thunder = 42, blood = 43, star = 44,
+		-- one icon per Sect Style (owner 2026-10-27: "perfect, use those"), "style_" .. Config.SECT_STYLES id
+		style_classic = 45, style_snow = 46, style_volcano = 47, style_sakura = 48, style_moon = 49, style_thunder = 50, style_dragon = 51,
+		style_maple = 52, style_abyss = 53, style_phoenix = 54, style_cloud = 55, style_starfall = 56, style_goldlotus = 57,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"
@@ -1919,6 +1922,26 @@ function Config.relicMult(rank)
 	local _, gold, rainbow = Config.relicTiers(rank)
 	return 1 + Config.RELIC_GOLD_BONUS * gold + Config.RELIC_RAINBOW_BONUS * rainbow
 end
+-- What's new (owner pick A 2026-10-27, WhatsNew.client): after an update, a save from before PATCH.id gets
+-- this board once (data.patchSeen); Settings reopens it. Raise `id` and rewrite `items` with each update
+-- that should be announced. `go` = { open = a Player BindableEvent, arg } or { travel = a Teleport place }.
+Config.PATCH = {
+	id = 1,
+	name = "The Heavens Update",
+	items = {
+		{ icon = "goal", title = "Sect Missions", line = "Goals, ranks and daily missions", button = "Open", go = { open = "MissionsOpen" } },
+		{ icon = "trophy", title = "Relic Terrace", line = "A relic for every rank up", button = "Go", go = { travel = "relics" } },
+		{ icon = "star", title = "Heavenly Weather", line = "Mutated disciples up to x10", button = "Odds", go = { open = "OpenOdds" } },
+		{ icon = "styles", title = "Sect Styles", line = "A new look every rebirth", button = "Open", go = { open = "ReincOpen", arg = "styles" } },
+		{ icon = "karma", title = "Karma Shop", line = "10x karma, 10 upgrade lines", button = "Open", go = { open = "ReincOpen", arg = "karma" } },
+	},
+}
+Config.MISSION_PHONE = "line" -- the phone tracker: "line" (badge + the mission just moved, else each in turn every 5 s), "icons" (one icon each) or "list" (the PC panel)
+-- the phone HUD's left buttons (owner 2026-10-27 "isnt UI a bit messy?", mocks docs/art/mocks/2026-10-27_phone_hud_board.png):
+-- "row" (one row under the Roblox top bar, Grow a Garden) or "column" (one column, Pet Simulator 99). Same-size
+-- buttons, counts as badges on them, one red dot at a time. PC keeps its column.
+Config.HUD_PHONE_RAIL = "row"
+Config.HUD_PHONE_BTN = 38 -- the phone left buttons' size (5 of them fit above the thumbstick in a column)
 Config.MISSION_STALE = 900 -- s of play: a mission not started by then is swapped for another
 
 -- Groups: one active mission per group. `need[tier]` is the count, `stars[tier]` its stars, a missing tier

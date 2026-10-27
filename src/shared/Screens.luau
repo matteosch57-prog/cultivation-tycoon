@@ -5,7 +5,7 @@
 -- holds its HUD row, so only its card counts.
 local Screens = {}
 
-Screens.COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest", "MissionsPage", "Streak", "RecruitReveal" }
+Screens.COVERS = { "Shop", "WelcomeOffer", "StarterOffer", "Gifts", "Intro", "Breakthrough", "Reincarnation", "Disciples", "Index", "RecruitOdds", "IdleChest", "MissionsPage", "Streak", "RecruitReveal", "WhatsNew" }
 
 -- true while a screen other than `except` (a gui name) is up
 function Screens.covered(playerGui, except)

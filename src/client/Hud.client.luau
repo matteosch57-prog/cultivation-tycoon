@@ -15,6 +15,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 local HttpService = game:GetService("HttpService")
+local TextService = game:GetService("TextService")
 local PerfMark = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("PerfMark"))
 local Toy = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Toy"))
 
@@ -378,6 +379,22 @@ task.spawn(function()
 	end
 end)
 
+-- the qi number's width only grows while its length holds (owner 2026-10-27 on iPhone: the digits are
+-- proportional, so each tick resized the top group and the Base / Ranks chips and the phone row jumped);
+-- a new length (a digit more, a reset at breakthrough) measures it afresh
+local function qiWidth()
+	local t = ui.qi.Text
+	local w = TextService:GetTextSize(t, ui.qi.TextSize, Enum.Font.FredokaOne, Vector2.new(10000, 10000)).X + px(4)
+	if #t ~= state.qiLen then
+		state.qiLen, state.qiW = #t, w
+	else
+		state.qiW = math.max(state.qiW, w)
+	end
+	if ui.qi.Size.X.Offset ~= state.qiW then
+		ui.qi.Size = UDim2.fromOffset(state.qiW, 0)
+	end
+end
+
 local function build()
 	-- rows other scripts put in the right stack (HudSlots) step out before the clear, or it would
 	-- destroy them; they re-parent on Rebuilt
@@ -405,7 +422,21 @@ local function build()
 	topLayout.Padding = UDim.new(0, px(RAIL_GAP))
 	topLayout.Parent = top
 	ui.top = top
-	local counter = frame(top, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
+	-- the counter sits in a slot of its own resting size, so its Bump (a UIScale on it when qi lands)
+	-- swells over its neighbours instead of pushing Base / Ranks and the phone row (owner 2026-10-27: "jumping")
+	local slot = frame(top, { LayoutOrder = 2 })
+	local counter = frame(slot, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local function fitSlot()
+		local bump = counter:FindFirstChild("Bump")
+		local rs = root:FindFirstChildOfClass("UIScale") -- (a phone check scales the root)
+		local k = (bump and bump.Scale or 1) * (rs and rs.Scale or 1)
+		local w, h = math.floor(counter.AbsoluteSize.X / k + 0.5), math.floor(counter.AbsoluteSize.Y / k + 0.5)
+		if math.abs(slot.Size.X.Offset - w) > 1 or math.abs(slot.Size.Y.Offset - h) > 1 then
+			slot.Size = UDim2.fromOffset(w, h)
+		end
+	end
+	counter:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitSlot)
+	task.defer(fitSlot)
 	local row = Instance.new("UIListLayout")
 	row.FillDirection = Enum.FillDirection.Horizontal
 	row.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -416,7 +447,9 @@ local function build()
 	local colLayout = Instance.new("UIListLayout")
 	colLayout.Padding = UDim.new(0, px(1))
 	colLayout.Parent = col
-	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.qi = text(col, short(state.shownQi), px(38), Color3.new(1, 1, 1), { LayoutOrder = 1, AutomaticSize = Enum.AutomaticSize.Y, TextXAlignment = Enum.TextXAlignment.Left })
+	state.qiLen = nil
+	qiWidth()
 	ui.rate = text(col, "+0/s", px(16), Color3.fromHex("9FF5C8"), { LayoutOrder = 2 })
 	-- Spirit Tide line (mock tycoon_ideas idea 3 A): countdown, then the 2x timer
 	local tideRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3, Visible = false })
@@ -455,13 +488,26 @@ local function build()
 	-- OPEN (Shop, Disciples, Karma); the right stack under the next goal holds what TICKS (gift, pill,
 	-- and other scripts' rows through Player.HudSlots). layout() fits the left column between
 	-- Roblox's top bar and the thumbstick (a column too tall for that band wraps into a second one).
+	-- On a phone (owner 2026-10-27 "isnt UI a bit messy?") the five buttons are one row under the top bar
+	-- (Config.HUD_PHONE_RAIL "row") or one column, all one size, numbers as badges on them
+	local phoneRail = state.phoneMode and Config.HUD_PHONE_RAIL or nil
+	local LB = phoneRail and Config.HUD_PHONE_BTN or 42 -- the left buttons' size
 	local left = frame(root, { Position = UDim2.fromOffset(px(12), px(60)), Size = UDim2.fromOffset(0, px(300)), AutomaticSize = Enum.AutomaticSize.X })
+	left:SetAttribute("Row", phoneRail == "row") -- Missions.client sits its strip under a row, beside a column
+	left:SetAttribute("Btn", phoneRail and px(LB) or nil) -- phone only: Friends / Settings size their buttons to match and badge
 	local leftLayout = Instance.new("UIListLayout")
-	leftLayout.Padding = UDim.new(0, px(RAIL_GAP))
+	leftLayout.Padding = UDim.new(0, px(phoneRail and 8 or RAIL_GAP))
 	leftLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	leftLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	leftLayout.Wraps = true
+	leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	leftLayout.Wraps = phoneRail ~= "row"
+	if phoneRail == "row" then
+		leftLayout.FillDirection = Enum.FillDirection.Horizontal
+		left.AutomaticSize = Enum.AutomaticSize.XY
+		left.Size = UDim2.new()
+	end
 	leftLayout.Parent = left
+	ui.leftLayout = leftLayout
 	-- one button with its caption under it (a count, a timer: no words where a number says it)
 	local function sideButton(parent, order, size, face, round)
 		local col = frame(parent, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = order })
@@ -476,8 +522,8 @@ local function build()
 		return col, btn
 	end
 	-- Shop (mock shop B, D24): always shown, on top, the one gold button; opens Shop.client's screen
-	local _, sBtn = sideButton(left, 0, 42, Color3.fromHex("FFD36B"))
-	Toy.icon(sBtn, "shop", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local _, sBtn = sideButton(left, 0, LB, Color3.fromHex("FFD36B"))
+	Toy.icon(sBtn, "shop", px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	sBtn.Name = "ShopButton"
 	ui.shopDot = Toy.dot(sBtn, px(17), { Visible = false })
 	sBtn.Activated:Connect(function()
@@ -487,15 +533,15 @@ local function build()
 		end
 	end)
 	-- Disciples: the label is the count (less text, mock less_text A)
-	local dCol, dBtn = sideButton(left, 1, 42, FACE)
-	discipleIcon(dBtn, px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
+	local dCol, dBtn = sideButton(left, 1, LB, FACE)
+	discipleIcon(dBtn, px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5) })
 	dBtn.Name = "DisciplesButton"
 	ui.discDot = Toy.dot(dBtn, px(17), { Visible = false })
-	ui.dLabel = text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	ui.dLabel = phoneRail and Toy.railBadge(dBtn.Parent, "0", px(11)) or text(dCol, "0", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.dCol = dCol
 	-- Karma: straight to the Karma Shop page of the reincarnation screen (owner: no direct way in before)
-	local kCol, kBtn = sideButton(left, 2, 42, FACE)
-	Toy.icon(kBtn, "karma", px(31), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	local kCol, kBtn = sideButton(left, 2, LB, FACE)
+	Toy.icon(kBtn, "karma", px(LB * 0.74), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 	kBtn.Name = "KarmaButton"
 	ui.karmaDot = Toy.dot(kBtn, px(17), { Visible = false })
 	kBtn.Activated:Connect(function()
@@ -728,8 +774,9 @@ local function build()
 	-- a qi orb charging through the rarity colours inside a turning ring, rays and a glow behind; the
 	-- soft pieces are the uploaded aura atlas (Toy.atlasPiece), moved in the frame loop. Still and dim
 	-- when a recruit is out of reach.
-	local SEAL = px(84) -- (owner pick A, phone calm pass: was 104)
-	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44)) })
+	local RK = state.phoneMode and 0.85 or 1 -- phone: 15% smaller (owner 2026-10-27)
+	local SEAL = px(84 * RK) -- (owner pick A, phone calm pass: was 104)
+	local rHolder = frame(root, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(SEAL, SEAL + px(44 * RK)) })
 	local seal = frame(rHolder, { Size = UDim2.fromOffset(SEAL, SEAL) })
 	local sealScale = Instance.new("UIScale")
 	sealScale.Parent = seal
@@ -756,7 +803,7 @@ local function build()
 	Toy.atlasPiece(rBtn, "glow", SEAL * 0.95, SEAL * 0.95, Color3.fromHex("D9B8FF"), 0.35, { Position = UDim2.fromScale(0.5, 0.42) })
 	local ring = Toy.atlasPiece(rBtn, "ring", SEAL - px(12), SEAL - px(12), Color3.new(1, 1, 1), 0.1)
 	-- the orb: a glow, the ball, its highlight, four motes circling
-	local ORB = px(44)
+	local ORB = px(44 * RK)
 	local orbGlow = Toy.atlasPiece(rBtn, "glow", ORB * 1.9, ORB * 1.9, JADE, 0.1)
 	local orb = frame(rBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(ORB, ORB), BackgroundTransparency = 0, BackgroundColor3 = JADE })
 	corner(orb, UDim.new(0.5, 0))
@@ -783,15 +830,15 @@ local function build()
 	rtl.Padding = UDim.new(0, px(1))
 	rtl.SortOrder = Enum.SortOrder.LayoutOrder
 	rtl.Parent = rText
-	ui.recruitLabel = text(rText, "Recruit", px(20), Color3.new(1, 1, 1), { LayoutOrder = 1 })
+	ui.recruitLabel = text(rText, "Recruit", px(20 * RK), Color3.new(1, 1, 1), { LayoutOrder = 1 })
 	local priceRow = frame(rText, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 2 })
 	local prl = Instance.new("UIListLayout")
 	prl.FillDirection = Enum.FillDirection.Horizontal
 	prl.VerticalAlignment = Enum.VerticalAlignment.Center
 	prl.Padding = UDim.new(0, px(3))
 	prl.Parent = priceRow
-	qiIcon(priceRow, px(16), { LayoutOrder = 1 })
-	ui.recruitCost = text(priceRow, "", px(14), JADE_LIGHT, { LayoutOrder = 2 })
+	qiIcon(priceRow, px(16 * RK), { LayoutOrder = 1 })
+	ui.recruitCost = text(priceRow, "", px(14 * RK), JADE_LIGHT, { LayoutOrder = 2 })
 	ui.recruit = rHolder
 	ui.recruitBtn = rBtn
 	-- how many one press recruits (owner: an x1 / x10 / x50 selector shows above the seal on a press
@@ -1233,9 +1280,23 @@ local function layout()
 	local rootH = ui.root.AbsoluteSize.Y / (rootScale and rootScale.Scale or 1)
 	local top = inset.Max.Y + px(8)
 	local bottom = state.phoneMode and rootH * 0.72 or rootH - px(24)
-	ui.left.Position = UDim2.fromOffset(px(12), top)
-	ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
-	ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / (rootScale and rootScale.Scale or 1) + px(12), 0.45, 0)
+	local unscale0 = rootScale and rootScale.Scale or 1
+	if ui.left:GetAttribute("Row") then
+		-- the phone row (Grow a Garden): under the top bar; if it would reach the qi group, under that instead
+		local rowW = ui.left.AbsoluteSize.X / unscale0
+		local topLeft = (ui.top.AbsolutePosition.X - ui.root.AbsolutePosition.X) / unscale0
+		local y = top
+		if px(12) + rowW > topLeft - px(6) then
+			y = math.max(top, (ui.top.AbsolutePosition.Y - ui.root.AbsolutePosition.Y + ui.top.AbsoluteSize.Y) / unscale0 + px(6))
+		end
+		ui.left.Position = UDim2.fromOffset(px(12), y)
+		ui.cardBox.Position = UDim2.fromOffset(px(12), y + ui.left.AbsoluteSize.Y / unscale0 + px(60))
+		ui.cardBox.AnchorPoint = Vector2.new(0, 0)
+	else
+		ui.left.Position = UDim2.fromOffset(px(12), top)
+		ui.left.Size = UDim2.fromOffset(0, math.max(px(80), bottom - top))
+		ui.cardBox.Position = UDim2.new(0, px(12) + ui.left.AbsoluteSize.X / unscale0 + px(12), 0.45, 0)
+	end
 	local hasHall = player:GetAttribute("HasHall") == true
 	local hasFurnace = player:GetAttribute("HasFurnace") == true
 	ui.dCol.Visible = true -- always there (owner 2026-10-23), the Disciple Hall or not: the book and the sect to look at
@@ -1280,13 +1341,23 @@ local function layout()
 	-- does; else (the seal sits high, above the jump button) it moves left of the seal.
 	local stackTop = inset.Max.Y + px(8) -- (the next goal moved to the bottom centre)
 	local floor = state.phoneMode and rootH * 0.72 or rootH - px(24)
-	local need, rowH, n = 0, 0, 0
+	local need, rowH, n, rowW = 0, 0, 0, 0
 	for _, c in ui.right:GetChildren() do
 		if c:IsA("GuiObject") and c.Visible then
 			local h = c.AbsoluteSize.Y / unscale
 			need += h
 			rowH = math.max(rowH, h)
+			rowW += c.AbsoluteSize.X / unscale
 			n += 1
+		end
+	end
+	rowW += math.max(0, n - 1) * px(RAIL_GAP)
+	-- phone (owner 2026-10-27 "right can go higher"): Roblox's top bar has nothing on the right, so the stack
+	-- starts up in its band, as long as it stays clear of the qi group (a row's width past the group's right end)
+	if state.phoneMode and inset.Max.X >= rootW - px(60) then
+		local topRight = (ui.top.AbsolutePosition.X - rootPos.X + ui.top.AbsoluteSize.X) / unscale
+		if rootW - px(14) - rowW > topRight + px(10) then
+			stackTop = inset.Min.Y + px(20) -- room for the Fly button's swap badge above it (owner: it was cut)
 		end
 	end
 	need += math.max(0, n - 1) * px(RAIL_GAP)
@@ -1486,6 +1557,67 @@ slotTravel.Event:Connect(function(where) task.spawn(teleportTo, where) end)
 slotTravel.Parent = slots
 slots.Parent = player -- not PlayerGui: the first LoadCharacter (Main onJoin) empties it, live joins spawn after this runs
 
+-- One red dot at a time on a phone (owner 2026-10-27, mocks docs/art/mocks/2026-10-27_phone_hud_board.png:
+-- five dots at once and none stood out): of the HUD's lit dots only the most useful shows, the others are
+-- muted (its glow and gem hidden, so the scripts that own the dot still switch its Visible as they like)
+local DOT_ORDER = { "RecruitSeal", "GiftButton", "RebirthSeal", "ShopButton", "KarmaButton", "DisciplesButton", "PillButton", "FriendsButton" }
+local function dotRank(dot)
+	local g = dot.Parent
+	while g and g ~= ui.root do
+		local i = table.find(DOT_ORDER, g.Name)
+		if i then
+			return i
+		end
+		g = g.Parent
+	end
+	return #DOT_ORDER + 1
+end
+local function lit(dot)
+	local g = dot
+	while g and g ~= ui.root do
+		if g:IsA("GuiObject") and not g.Visible then
+			return false
+		end
+		g = g.Parent
+	end
+	return g ~= nil
+end
+local function oneDot()
+	if not ui.root then
+		return
+	end
+	local best, bestRank
+	local dots = {}
+	for _, d in ui.root:GetDescendants() do
+		if d.Name == "RedDot" and d:IsA("GuiObject") and not d:IsDescendantOf(ui.cardBox) then
+			table.insert(dots, d)
+			if state.phoneMode and lit(d) then
+				local r = dotRank(d)
+				if not bestRank or r < bestRank then
+					best, bestRank = d, r
+				end
+			end
+		end
+	end
+	for _, d in dots do
+		local off = state.phoneMode and d ~= best
+		if (d:GetAttribute("Muted") == true) ~= off then
+			d:SetAttribute("Muted", off)
+			for _, c in d:GetChildren() do
+				if c:IsA("GuiObject") then
+					c.Visible = not off
+				end
+			end
+		end
+	end
+end
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		oneDot()
+	end
+end)
+
 rebuildAll = function()
 	build()
 	refreshStatic()
@@ -1493,6 +1625,9 @@ rebuildAll = function()
 	slotLeft.Value = ui.left
 	slotRebuilt:Fire(ui.right)
 	task.defer(layout)
+	task.defer(oneDot)
+	-- the phone row steps under the qi group when the counter grows into it
+	ui.top:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
 end
 
 rebuildAll()
@@ -1581,7 +1716,11 @@ RunService.RenderStepped:Connect(function(dt)
 	else
 		state.shownQi += diff * math.min(1, dt * 8)
 	end
-	put(ui.qi, "Text", short(state.shownQi))
+	local qiText = short(state.shownQi)
+	if qiText ~= ui.qi.Text then
+		ui.qi.Text = qiText
+		qiWidth()
+	end
 
 	goalAcc += dt
 	if goalAcc > 0.5 then
@@ -1709,8 +1848,7 @@ RunService.RenderStepped:Connect(function(dt)
 
 	if ui.aCol.Visible then
 		local on = not player:GetAttribute("AutoBuildOff")
-		local n = on and (player:GetAttribute("AutoWaiting") or 0) or 0 -- the server counts (far pads stream out)
-		put(ui.autoLabel, "Text", not on and "Off" or n > 0 and tostring(n) or "On")
+		put(ui.autoLabel, "Text", on and "Auto On" or "Auto Off") -- owner 2026-10-27: say what the hand is
 		put(ui.autoLabel, "TextColor3", on and GOLD or Color3.fromHex("C8C0D0"))
 		put(ui.autoBtn, "BackgroundColor3", on and FACE_READY or FACE)
 	end

@@ -433,6 +433,28 @@ local function build()
 		end)
 	end
 
+	-- What's new: the last update's board (WhatsNew.client; owner 2026-10-27 "in parameters a patch note")
+	do
+		local row = rowFrame(game_, 7)
+		local left = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0) })
+		Toy.list(left, true, px(6), { VerticalAlignment = Enum.VerticalAlignment.Center })
+		Toy.icon(left, "star", px(30), { LayoutOrder = 1 })
+		text(left, "What's new", px(19), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		local holder, btn = Toy.button(row, UDim2.fromOffset(px(66), px(34)), Color3.fromHex("FFD34D"), px(17))
+		holder.AnchorPoint = Vector2.new(1, 0.5)
+		holder.Position = UDim2.new(1, 0, 0.5, -px(2))
+		text(btn, "Open", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		btn.Activated:Connect(function()
+			close()
+			local ev = player:FindFirstChild("WhatsNewOpen")
+			if ev then
+				task.defer(function()
+					ev:Fire()
+				end)
+			end
+		end)
+	end
+
 	local xHolder, xBtn = Toy.button(veil, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF7A6B"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
 	xHolder.Position = UDim2.new(1, -px(16), 0, GuiService.TopbarInset.Max.Y + px(8))
@@ -534,10 +556,12 @@ local function drawButton()
 	end
 	root = frame(holderGui, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4 })
 	root.Name = "SettingsRow"
-	local holder, btn = Toy.button(root, UDim2.fromOffset(px(42), px(42)), FACE, px(11))
+	local rail = leftRail()
+	local size = rail and rail:GetAttribute("Btn") or px(42) -- the phone's one size for every left button (2026-10-27)
+	local holder, btn = Toy.button(root, UDim2.fromOffset(size, size), FACE, math.floor(size * 0.26))
 	holder.Name = "SettingsHolder"
 	btn.Name = "SettingsButton"
-	gear(btn, px(28))
+	gear(btn, math.floor(size * 0.67))
 	btn.Activated:Connect(show)
 	place()
 end
@@ -546,9 +570,9 @@ task.spawn(function()
 	local slots = player:WaitForChild("HudSlots", 30)
 	if slots then
 		slots:WaitForChild("Rebuilt").Event:Connect(function()
-			task.defer(place)
+			task.defer(drawButton) -- redraws at the rail's button size, then places
 		end)
-		place()
+		drawButton()
 	end
 end)
 player:GetAttributeChangedSignal("HudDevice"):Connect(drawButton)

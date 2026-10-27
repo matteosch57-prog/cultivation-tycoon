@@ -8,9 +8,9 @@
 -- plaque counts every blessing the sect ever had (`blessTotal`, a monotonic record).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local AssetService = game:GetService("AssetService")
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Missions = require(script.Parent:WaitForChild("Missions"))
+local MeshCache = require(script.Parent:WaitForChild("MeshCache"))
 
 local Bless = {}
 local api -- { sessions, rate, publish, notify, telemetry, style, palette, kit }
@@ -188,6 +188,7 @@ end
 -- incense sticks (BLESS_GET_MAX of them light up), two stone lanterns, and a gilt plaque on red posts
 -- with the count, facing the avenue. Called once per plot (Bless.refresh repaints it).
 local POT_MESH = "rbxassetid://4204056065"
+task.spawn(MeshCache.fetch, POT_MESH) -- fetched once while the boot runs (MeshCache)
 local POT = Vector3.new(0.4047, 0.2083, 0.2924) -- the mesh's own size; scaled by POT_SCALE
 local POT_SCALE = 8.5
 local CELADON = Color3.fromHex("B9C4B1")
@@ -207,10 +208,7 @@ function Bless.build(plot)
 	local top = cf * CFrame.new(0, 2.8, 0)
 	-- the pot
 	local size = POT * POT_SCALE
-	local ok, pot = pcall(AssetService.CreateMeshPartAsync, AssetService, POT_MESH, {
-		CollisionFidelity = Enum.CollisionFidelity.Box,
-		RenderFidelity = Enum.RenderFidelity.Automatic,
-	})
+	local ok, pot = MeshCache.fetch(POT_MESH)
 	if not ok or not pot then
 		warn("[Tycoon][bless] event=pot_mesh_failed")
 		pot = P(m, Vector3.new(size.Y, size.X * 0.8, size.X * 0.8), top * CFrame.new(0, size.Y / 2, 0) * CFrame.Angles(0, 0, math.pi / 2), CELADON, Enum.Material.Marble, Enum.PartType.Cylinder)

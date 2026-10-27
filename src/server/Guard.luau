@@ -28,6 +28,7 @@ local LIMITS = {
 	ShopBuy = { 2, 4 },
 	ShopOpened = { 2, 4 },
 	MenuOpened = { 2, 4 },
+	PatchSeen = { 1, 3 },
 	OfferShown = { 1, 3 },
 	AltarPush = { 2, 4 },
 	Teleport = { 1, 3 },

@@ -89,7 +89,7 @@ Telemetry.EVENTS = {
 		question = "Do players reincarnate at the gate or push deeper, and how long is a life?",
 	},
 	Menu = {
-		fields = { "disciples | reinc | karma | styles | group | index | ranks | settings (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
+		fields = { "disciples | reinc | karma | styles | group | index | ranks | settings | whatsnew (the HUD menus and panels; the Shop has its own event)", "realm (realmBucket)" },
 		question = "Which HUD menus do players open, and when in the climb (data audit 2026-10-22)?",
 	},
 	Shop = {
@@ -133,7 +133,7 @@ Telemetry.EVENTS = {
 		question = "Do sessions with a friend last longer than SessionEnd's (all sessions), do players invite, and does the group gift get claimed (D35)?",
 	},
 	LoadTime = {
-		fields = { "server (PlayerAdded to PeakReady) | enter_<step> (client: Play to the launch screen gone; step = the last one it waited for: loaded | hud | peak | body | skip | timeout)", "seconds (secBucket)", "device (phone | tablet | pc | console; server for the server stage) .. |new or |return" },
+		fields = { "boot (a player on a fresh server: seconds from the server start to the boot done) | server (PlayerAdded to PeakReady) | enter_<step> (client: Play to the launch screen gone; step = the last one it waited for: loaded | hud | peak | body | skip | timeout)", "seconds (secBucket)", "device (phone | tablet | pc | console; server for the server stage) .. |new or |return" },
 		question = "How long is the loading screen on real devices, and which step makes it long (owner 2026-10-27: \"make the loading more optimized and less long\")?",
 	},
 	ClientFps = {
@@ -414,7 +414,7 @@ end
 -- PerfReport, once per join). Also a journal code with the whole seconds, for tools/first5_report
 function Telemetry.loadTime(player, stage, sec, isNew, device)
 	sec = math.clamp(sec, 0, 600)
-	local who = (device or "server") .. (if isNew then "|new" else "|return")
+	local who = (device or "server") .. (if isNew == nil then "" elseif isNew then "|new" else "|return")
 	if STUDIO then
 		print(string.format("[Tycoon][load] %s %.1f s (%s)", stage, sec, who))
 	end

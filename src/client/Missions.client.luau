@@ -174,7 +174,7 @@ end
 ---------------------------------------------------------------------------- the tracker
 local tracker -- the frame beside the left rail
 local page -- the open rank page, or nil
-local drawPage, drawTracker
+local drawPage, drawTracker, compactTracker
 
 local function leftRail()
 	local slots = player:FindFirstChild("HudSlots")
@@ -194,8 +194,14 @@ local function place()
 		local origin = gui.AbsolutePosition
 		local x = rail.AbsolutePosition.X - origin.X + rail.AbsoluteSize.X + px(10)
 		local y = rail.AbsolutePosition.Y - origin.Y + px(4)
-		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them
-		for _, cls in { "ChatWindowConfiguration", "ChatInputBarConfiguration" } do
+		if rail:GetAttribute("Row") then -- the phone's row of buttons (2026-10-27): the strip goes under it
+			x = rail.AbsolutePosition.X - origin.X
+			y = rail.AbsolutePosition.Y - origin.Y + rail.AbsoluteSize.Y + px(12)
+		end
+		-- Roblox's chat window (and its input bar) sit top-left over game GUI: start under them. Not on a
+		-- phone (owner 2026-10-27: the strip pushed under the chat sat mid-screen; phone chat starts folded)
+		local _, phone = computeScale()
+		for _, cls in phone and {} or { "ChatWindowConfiguration", "ChatInputBarConfiguration" } do
 			local c = TextChatService:FindFirstChildOfClass(cls)
 			if c and c.Enabled and c.AbsoluteSize.Y > 0 and c.AbsolutePosition.X - origin.X + c.AbsoluteSize.X > x then
 				y = math.max(y, c.AbsolutePosition.Y - origin.Y + c.AbsoluteSize.Y + px(10))
@@ -317,6 +323,99 @@ local function panelRow(parent, x, w, size, order, daily)
 	return row
 end
 
+-- the phone tracker (owner 2026-10-27: "on phone, quests are hiding the view a LOT"): one small glass strip.
+-- MISSION_PHONE "line" = the rank badge, the mission closest to done (icon, words, bar) and the hide tab;
+-- "icons" = the badge, one icon per mission with a slim bar, and the tab. Tap = the page.
+local function glassStrip()
+	local card = Instance.new("TextButton")
+	card.Text = ""
+	card.AutoButtonColor = false
+	card.AutomaticSize = Enum.AutomaticSize.XY
+	card.BackgroundColor3 = Color3.fromHex("2A2036")
+	card.BackgroundTransparency = 0.12
+	card.Selectable = false
+	card.Parent = tracker
+	corner(card, UDim.new(0, px(12)))
+	local cs = Instance.new("UIStroke")
+	cs.Color = Toy.INK
+	cs.Thickness = px(2)
+	cs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	cs.Parent = card
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft, pad.PaddingRight = UDim.new(0, px(5)), UDim.new(0, px(5))
+	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, px(4)), UDim.new(0, px(4))
+	pad.Parent = card
+	Toy.list(card, true, px(6), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	card.Activated:Connect(function()
+		drawPage(true)
+	end)
+	return card
+end
+
+-- the active missions, the next unfinished daily last
+local function activeList(m)
+	local out = {}
+	for _, x in m.slots do
+		table.insert(out, { x = x })
+	end
+	for _, x in m.daily or {} do
+		if x.n < x.need then
+			table.insert(out, { x = x, daily = true })
+			break
+		end
+	end
+	return out
+end
+
+local lastN, focusKey, focusAt, rotation, rotateAt = {}, nil, -math.huge, 0, 0
+local FOCUS_SEC, ROTATE_SEC = 8, 5
+function compactTracker(m)
+	local card = glassStrip()
+	local badge = px(24)
+	rankBadge(card, m.rank, badge, 0).Activated:Connect(function()
+		drawPage(true)
+	end)
+	local list = activeList(m)
+	if Config.MISSION_PHONE == "icons" then
+		for i, e in list do
+			local cell = frame(card, { Size = UDim2.fromOffset(px(28), px(32)), LayoutOrder = i })
+			local well = frame(cell, { Size = UDim2.fromOffset(px(24), px(24)), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.fromScale(0.5, 0), BackgroundTransparency = 0, BackgroundColor3 = e.daily and Color3.fromHex("2B4466") or Color3.fromHex("3A2F48") })
+			corner(well, UDim.new(1, 0))
+			Toy.icon(well, GROUP_ICON[e.x.g] or "goal", px(18), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+			local track = frame(cell, { Size = UDim2.fromOffset(px(24), px(4)), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromScale(0.5, 1), BackgroundTransparency = 0.55, BackgroundColor3 = Color3.new(0, 0, 0) })
+			corner(track, UDim.new(1, 0))
+			local fill = frame(track, { Size = UDim2.fromScale(math.clamp(e.x.n / math.max(1, e.x.need), 0, 1), 1), BackgroundTransparency = 0, BackgroundColor3 = e.daily and JADE or GOLD })
+			corner(fill, UDim.new(1, 0))
+		end
+	else
+		-- which mission: the one that just moved for FOCUS_SEC, then each in turn every ROTATE_SEC
+		-- (owner 2026-10-27: "the last changing? or it swaps at intervals of time?")
+		local now = os.clock()
+		for i, e in list do
+			local key = e.x.g .. (e.daily and "#d" or "")
+			if lastN[key] and e.x.n > lastN[key] then
+				focusKey, focusAt, rotateAt = key, now, now
+			end
+			lastN[key] = e.x.n
+			e.key, e.i = key, i
+		end
+		local shown
+		for _, e in list do
+			if e.key == focusKey and now - focusAt < FOCUS_SEC then
+				shown = e
+			end
+		end
+		shown = shown or list[rotation % math.max(1, #list) + 1]
+		if shown then
+			panelRow(card, shown.x, px(150), px(10), 1, shown.daily)
+		end
+		if #list > 1 then
+			text(card, "+" .. (#list - 1), px(11), MUTED, { LayoutOrder = 2 })
+		end
+	end
+	hideTab(card, px(22), true, 9)
+end
+
 function drawTracker()
 	local S, phone = computeScale()
 	Toy.S = S
@@ -343,6 +442,11 @@ function drawTracker()
 		local holder = frame(tracker, { AutomaticSize = Enum.AutomaticSize.XY, BackgroundTransparency = 0.15, BackgroundColor3 = PANEL, LayoutOrder = 2 })
 		corner(holder, UDim.new(0, px(10)))
 		hideTab(holder, px(30), false)
+		place()
+		return
+	end
+	if phone and Config.MISSION_PHONE ~= "list" then
+		compactTracker(m)
 		place()
 		return
 	end
@@ -684,5 +788,13 @@ task.spawn(function()
 	while true do
 		task.wait(1)
 		place()
+		-- the phone strip's turn: the next mission every ROTATE_SEC once nothing has moved for FOCUS_SEC
+		local now = os.clock()
+		if tracker and not hidden and not page and Config.MISSION_PHONE == "line" and select(2, computeScale())
+			and now - focusAt >= FOCUS_SEC and now - rotateAt >= ROTATE_SEC then
+			rotateAt = now
+			rotation += 1
+			drawTracker()
+		end
 	end
 end)

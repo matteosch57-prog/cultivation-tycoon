@@ -255,6 +255,14 @@ local function spot(at, i)
 	return at * CFrame.new((back and -9.625 or -12.375) + ((i - 1) % 5) * 5.5, back and 4 or 1.6, back and -4.5 or 3.5)
 end
 
+-- where a teleport to the terrace lands (the What's new shortcut): on the step up from the bridge, facing
+-- the plinths
+function RelicHall.standAt(plot)
+	local at = isleFrame(plot)
+	local stand = at * Vector3.new(0, 3.5, 11)
+	return CFrame.lookAt(stand, at * Vector3.new(0, 3.5, 0))
+end
+
 -- the isle, its bridge, the terrace and the gate: built once per peak (they never change)
 function RelicHall.build(plot)
 	if plot.relicIsle then

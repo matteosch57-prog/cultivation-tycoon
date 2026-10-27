@@ -910,6 +910,19 @@ local function darkPill(parent, props)
 end
 Toy.darkPill = darkPill
 
+-- a count on a HUD button (the phone HUD, 2026-10-27): a small dark pill over the button's bottom edge, in
+-- place of a caption under it. `holder` = the button's holder (Toy.button), `size` = its text size in px
+-- (the caller's scale). Returns the TextLabel.
+function Toy.railBadge(holder, str, size, color)
+	local pill = darkPill(holder, {
+		Name = "Badge",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 1, math.floor(size * 0.2)),
+		ZIndex = 7,
+	})
+	return Toy.text(pill, str, size, color or WHITE, { ZIndex = 7 })
+end
+
 -- One disciple as a toy card, the same everywhere a disciple is listed (2026-10-23, owner: "normalize
 -- how we show them"): the Disciples book's My Sect and Index tabs, the recruit reveal. A solid shadow,
 -- a face lit from the top in the rarity's colours, an ink rim, an inner rim in the rarity's colour
