@@ -671,14 +671,18 @@ local function box(cf, size)
 		)
 end
 
+-- A piece whose top is at or under the feet is floor, never "on" you: it stays solid (owner
+-- 2026-10-27: a held plank under the feet dropped you through a new bridge)
+local FLOOR_STEP = 0.6
 local function touching(char, list)
 	local cf, size = char:GetBoundingBox()
 	local c, e = box(cf, size + Vector3.new(1, 0.5, 1))
+	local feet = cf.Position.Y - size.Y / 2
 	local hit = {}
 	for _, p in list do
 		local pc, pe = box(p.CFrame, p.Size)
 		local d = pc - c
-		if math.abs(d.X) < e.X + pe.X and math.abs(d.Y) < e.Y + pe.Y and math.abs(d.Z) < e.Z + pe.Z then
+		if pc.Y + pe.Y > feet + FLOOR_STEP and math.abs(d.X) < e.X + pe.X and math.abs(d.Y) < e.Y + pe.Y and math.abs(d.Z) < e.Z + pe.Z then
 			hit[p] = true
 		end
 	end
@@ -716,6 +720,93 @@ local function passThrough(model, parts, collide)
 end
 
 ---------------------------------------------------------------------------------------------
+-- A bridge is walked onto as it is bought (owner 2026-10-27: "often I build it and fall if I
+-- continue on it"), so it never flies in: no piece moves or stops colliding. The planks lay
+-- themselves out from the end nearest you to the far rim, faster than you can run, a spark at
+-- each quarter, and the bell when the far end lands.
+local BRIDGE_WAVE, BRIDGE_FADE = 0.55, 0.15 -- seconds for the wave to cross, and each piece to show
+local function layBridge(model, parts, effects, mine)
+	-- the span's axis: the main direction of the pieces on the ground plane
+	local c = Vector3.zero
+	for _, p in parts do
+		c += p.Position
+	end
+	c /= #parts
+	local sxx, szz, sxz = 0, 0, 0
+	for _, p in parts do
+		local d = p.Position - c
+		sxx += d.X * d.X
+		szz += d.Z * d.Z
+		sxz += d.X * d.Z
+	end
+	local a = 0.5 * math.atan2(2 * sxz, sxx - szz)
+	local axis = Vector3.new(math.cos(a), 0, math.sin(a))
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if hrp and (hrp.Position - c):Dot(axis) > 0 then
+		axis = -axis -- start at the end you stand by
+	end
+	local lo, hi = math.huge, -math.huge
+	local along = table.create(#parts)
+	for i, p in parts do
+		along[i] = (p.Position - c):Dot(axis)
+		lo, hi = math.min(lo, along[i]), math.max(hi, along[i])
+	end
+	local span = math.max(hi - lo, 1)
+	local starts = table.create(#parts)
+	for i, p in parts do
+		starts[i] = (along[i] - lo) / span * BRIDGE_WAVE
+		p.LocalTransparencyModifier = 1
+	end
+	local y = c.Y
+	local function at(u)
+		return Vector3.new(c.X, y, c.Z) + axis * (lo + span * u)
+	end
+	if mine then
+		Sfx.play("gather")
+	end
+	burst(at(0), JADE, 20, 10)
+	local t0 = os.clock()
+	local sparked = 0
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local t = os.clock() - t0
+		local done = true
+		for i, p in parts do
+			local v = math.clamp((t - starts[i]) / BRIDGE_FADE, 0, 1)
+			if v < 1 then
+				done = false
+			end
+			p.LocalTransparencyModifier = 1 - v
+		end
+		while sparked < 3 and t >= BRIDGE_WAVE * (sparked + 1) / 4 do
+			sparked += 1
+			burst(at(sparked / 4), JADE, 14, 0)
+		end
+		if done or not model.Parent then
+			conn:Disconnect()
+			for _, p in parts do
+				p.LocalTransparencyModifier = 0
+			end
+			if not model.Parent then
+				return
+			end
+			if mine then
+				Sfx.play("padSnap")
+				Sfx.play("smallBell")
+				Sfx.play("land")
+			end
+			burst(at(1), JADE, 30, 16)
+			for _, e in effects do
+				if e.Parent then
+					e.Enabled = true
+				end
+			end
+		end
+	end)
+end
+
+---------------------------------------------------------------------------------------------
 -- Build-in: the bought building's pieces lift out from where the preview ghost stood, swirl in
 -- and lock together bottom first, then a bell, sparks and a warm flash.
 local function animateBuild(model)
@@ -737,6 +828,10 @@ local function animateBuild(model)
 		return
 	end
 	local mine = model.Parent and model.Parent.Parent and model.Parent.Parent.Name == ("Peak" .. tostring(player:GetAttribute("PlotIndex")))
+	if model.Name:match("^bridge_") then
+		layBridge(model, parts, effects, mine)
+		return
+	end
 	local cf, size = model:GetBoundingBox()
 	-- the flying pieces must not collide: they shoved the avatar onto the next pads (5 buys)
 	local homes, collide = table.create(#parts), table.create(#parts)

@@ -209,9 +209,26 @@ local function goTo(p)
 	armedUntil = 0
 	snap = litDots()
 	build()
-	if p == "karma" then
-		remotes.MenuOpened:FireServer("karma") -- analytics Menu (DATA.md)
+	if p == "karma" or p == "styles" then
+		remotes.MenuOpened:FireServer(p) -- analytics Menu (DATA.md)
 	end
+end
+
+-- a link to the Styles page: its icon, then "Sect Styles" (the Rebirth page, the Karma Shop; owner
+-- 2026-10-27: "Sect styles need icon too + a link in karma shop and settings")
+local STYLE_PINK = Color3.fromHex("FF9EC0")
+local function stylesLink(parent, order, rot)
+	local holder, btn = Toy.button(parent, UDim2.fromOffset(px(176), px(38)), STYLE_PINK, px(11))
+	holder.LayoutOrder = order
+	holder.Rotation = rot or 0
+	local row = Toy.frame(btn, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+	Toy.list(row, true, px(6), { VerticalAlignment = Enum.VerticalAlignment.Center })
+	Toy.icon(row, "styles", px(30), { LayoutOrder = 1, ZIndex = 3 })
+	text(row, "Sect Styles", px(16), Color3.new(1, 1, 1), { LayoutOrder = 2, ZIndex = 3 })
+	btn.Activated:Connect(function()
+		goTo("styles")
+	end)
+	return holder
 end
 
 local function head(body, title)
@@ -219,11 +236,14 @@ local function head(body, title)
 	Toy.list(h, true, px(14))
 	if page ~= "road" then
 		local bHolder, bBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), JADE, px(10))
-		bHolder.LayoutOrder = 0
+		bHolder.LayoutOrder = -1
 		text(bBtn, "<", px(20), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
 		bBtn.Activated:Connect(function()
 			goTo("road")
 		end)
+	end
+	if page == "styles" then
+		Toy.icon(h, "styles", px(40), { LayoutOrder = 0 })
 	end
 	local titleLabel = text(h, title, px(32), page == "karma" and KARMA or GOLD, { LayoutOrder = 1 })
 	local xHolder, xBtn = Toy.button(h, UDim2.fromOffset(px(34), px(34)), Color3.fromHex("FF6B5E"), px(10))
@@ -367,6 +387,8 @@ local function buildKarma(body)
 		pBtn.Activated:Connect(buy)
 		table.insert(ui.tiles, { node = node, pips = pips, price = price, priceIcon = priceIcon, button = pBtn, line = lineLabel })
 	end
+	-- the Styles page from the Karma Shop too (owner 2026-10-27)
+	stylesLink(body, 20, -1)
 end
 
 build = function()
@@ -476,13 +498,7 @@ build = function()
 		goTo("karma")
 	end)
 	-- the Styles page, beside the Karma Shop
-	local sHolder, sBtn = Toy.button(body, UDim2.fromOffset(px(160), px(34)), Color3.fromHex("FF9EC0"), px(11))
-	sHolder.LayoutOrder = 17
-	sHolder.Rotation = 1.5
-	text(sBtn, "Sect Styles", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
-	sBtn.Activated:Connect(function()
-		goTo("styles")
-	end)
+	stylesLink(body, 17, 1.5)
 	refresh()
 end
 
@@ -492,11 +508,11 @@ local function open(toPage)
 		return
 	end
 	armedUntil = 0
-	page = toPage == "karma" and "karma" or "road"
+	page = (toPage == "karma" or toPage == "styles") and toPage or "road"
 	snap = litDots()
 	build()
 	gui.Enabled = true
-	remotes.MenuOpened:FireServer(page == "karma" and "karma" or "reinc") -- analytics Menu (DATA.md)
+	remotes.MenuOpened:FireServer(page == "road" and "reinc" or page) -- analytics Menu (DATA.md)
 	Sfx.play("toast")
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.85

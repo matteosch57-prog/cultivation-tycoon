@@ -1591,6 +1591,8 @@ Config.ICON_ATLAS = {
 		swordJade = 32, swordHeavenly = 33, swordCelestial = 34,
 		-- the Karma Upgrades lines (2026-10-26, docs/art/mocks/icons.js)
 		fortune = 35, luck = 36, magnet = 37, steps = 38, isles = 39,
+		-- Sect Styles (D86): cell 40 of docs/art/mocks/icons.js (drawn 2026-10-27; blank until the sheet with it is uploaded)
+		styles = 40,
 	},
 }
 Config.ROBUX_ICON = "rbxasset://textures/ui/common/robux_color.png"

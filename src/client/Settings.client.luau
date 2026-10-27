@@ -413,6 +413,25 @@ local function build()
 	switch(game_, 2, "Others' auras", "auras")
 	switch(game_, 3, "Cloud sea", "clouds")
 	text(game_, "Off = smoother on phones", px(14), MUTED, { LayoutOrder = 5 })
+	-- Sect Styles: the look your sect wears (owner 2026-10-27: "a link in karma shop and settings")
+	do
+		local row = rowFrame(game_, 6)
+		local left = frame(row, { AutomaticSize = Enum.AutomaticSize.XY, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0) })
+		Toy.list(left, true, px(6), { VerticalAlignment = Enum.VerticalAlignment.Center })
+		Toy.icon(left, "styles", px(30), { LayoutOrder = 1 })
+		text(left, "Sect Style", px(19), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+		local holder, btn = Toy.button(row, UDim2.fromOffset(px(66), px(34)), Color3.fromHex("FF9EC0"), px(17))
+		holder.AnchorPoint = Vector2.new(1, 0.5)
+		holder.Position = UDim2.new(1, 0, 0.5, -px(2))
+		text(btn, "Open", px(16), Color3.new(1, 1, 1), { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 3 })
+		btn.Activated:Connect(function()
+			close()
+			local ev = player:FindFirstChild("ReincOpen")
+			if ev then
+				ev:Fire("styles")
+			end
+		end)
+	end
 
 	local xHolder, xBtn = Toy.button(veil, UDim2.fromOffset(px(44), px(44)), Color3.fromHex("FF7A6B"), px(12))
 	xHolder.AnchorPoint = Vector2.new(1, 0)
