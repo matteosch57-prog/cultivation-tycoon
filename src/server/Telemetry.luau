@@ -56,6 +56,14 @@ Telemetry.EVENTS = {
 		fields = { "locked | error | newer (a load that could not take the save: the player was asked to rejoin)" },
 		question = "How often does a join fail to load a save, and why?",
 	},
+	Weather = {
+		fields = {
+			"seen (a weather started while they played) | mark (a new weather mark) | markStep (MARK_STEP marks paid summons) | markFull (every mark)",
+			"seen: weather key; mark: mutation name; markStep: marks found",
+			"realm (realmBucket)",
+		},
+		question = "Do players see the Heavenly Weather, and do they chase mutations and the weather marks?",
+	},
 	DiscipleBought = {
 		fields = { "item key (elder ... primordial)", "realm (realmBucket)", "minutes played over all sessions (minuteBucket)" },
 		question = "When in the climb do players buy a disciple, and which tier (D28 realm gates)?",

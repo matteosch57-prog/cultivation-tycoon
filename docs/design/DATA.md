@@ -37,6 +37,8 @@ question each event answers. Onboarding funnel (`Telemetry.FUNNEL`), economy sou
 item, realm progression, and these custom events: FunnelTime, SessionEnd, LeaveState, Build, Recruit,
 Feature (pill, orb, gift, hands), IdleChest, Shop, DiscipleBought, KarmaShop, Reincarnate, AltarRound,
 Social, ServerHealth, DataStorePressure, SaveIssue.
+- **Weather** (2026-10-27): `seen` per player when a Heavenly Weather starts (weather key), `mark` on a
+  new weather mark (mutation), `markStep` when marks pay free summons, `markFull` at every mark.
 - **Karma** (2026-10-23): economy sources (`rebirth`) and sinks (the Karma Shop node key) as their own
   currency, beside Qi. **Sword** `snap`: the flight check put a rider back (speed, ceiling, bound,
   islet), at most once per 10 s per rider: a spike means false positives on laggy phones.

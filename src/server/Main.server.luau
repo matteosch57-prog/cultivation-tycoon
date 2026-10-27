@@ -705,6 +705,7 @@ local function startWeather(w)
 	for _, s in sessions do
 		n += 1
 		s.data.weatherSeen = true
+		Telemetry.custom(s.player, "Weather", "seen", w.key, Telemetry.realmBucket(s.data.realm))
 	end
 	print(string.format("[Tycoon] weather %s started, %d players", w.key, n))
 end
@@ -2362,11 +2363,18 @@ local function addDisciple(s, name, force, noBuild, look, shiny, mut)
 		local key = Config.indexKey(name, look) .. "#" .. mut
 		if not d.mutIndex[key] then -- a new weather mark: every MARK_STEP of them pays free summons
 			d.mutIndex[key] = true
-			local steps = Config.markCount(d.mutIndex) // Config.MARK_STEP
+			local marks = Config.markCount(d.mutIndex)
+			local realm = Telemetry.realmBucket(d.realm)
+			Telemetry.custom(s.player, "Weather", "mark", mut, realm)
+			local steps = marks // Config.MARK_STEP
 			if steps > (d.markSteps or 0) then
 				giveSummons(s, (steps - (d.markSteps or 0)) * Config.MARK_STEP_SUMMONS)
 				d.markSteps = steps
 				notify:FireClient(s.player, "markStep", Config.MARK_STEP_SUMMONS)
+				Telemetry.custom(s.player, "Weather", "markStep", tostring(marks), realm)
+			end
+			if marks == Config.markTotal() then
+				Telemetry.custom(s.player, "Weather", "markFull", tostring(marks), realm)
 			end
 		end
 	end

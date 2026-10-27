@@ -89,6 +89,17 @@ local function readMut()
 	return out
 end
 
+-- the MutIndex keys as a set, for Config.markCount (every weather mark found: MARK_FULL_BONUS qi)
+local function readMarks()
+	local out = {}
+	for _, pair in string.split(player:GetAttribute("MutIndex") or "", ";") do
+		if pair ~= "" then
+			out[pair] = true
+		end
+	end
+	return out
+end
+
 local seen = {} -- stars per entry at the last close: a tile with more since says NEW
 local close
 local nameLine -- the foot line: the star rule, then the tapped disciple's name (named disciples, 2026-10-23)
@@ -137,7 +148,7 @@ local function fill(body)
 	mutFound = readMut()
 	local total = Config.indexTotalStars(index)
 	local max = #Config.RARITIES * #Config.DISCIPLE_LOOKS * #Config.INDEX_STARS
-	text(body, string.format("%d of %d stars · +%s%% qi forever", total, max, string.format("%.2f", (Config.indexMult(index) - 1) * 100):gsub("%.?0+$", "")), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
+	text(body, string.format("%d of %d stars · +%s%% qi forever", total, max, string.format("%.2f", (Config.indexMult(index, Config.markCount(readMarks())) - 1) * 100):gsub("%.?0+$", "")), px(14), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 
 	local grid = frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 3 })
 	Toy.list(grid, false, px(3))
