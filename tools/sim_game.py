@@ -152,7 +152,7 @@ def load(path):
     env.setdefault("DAILY_QI_S", env.get("SHOP_FREE_SECONDS", 0))
     if "BREAKTHROUGH_SECONDS" in env:
         env["BT_S"] = env["BREAKTHROUGH_SECONDS"]
-    for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2,
+    for k, v in dict(HARMONY_STEP=0, HARMONY_MAX=0, WALK_SCALE=1, DISTRICT_BONUS=0, FRIEND_STEP=0, FRIEND_MAX=0, GROUP_BONUS=0, WELCOME_QI=0, PASS_QI_MULT=2, STARTER_X2_SECONDS=0, STARTER_X2_MULT=1,
                      VIP_SLOTS=1, DAO_PILL_SECONDS=30, DAO_OFFLINE_SECONDS=7200, DAO_ECHO=0.1, DAO_QI=0, DAO_LUCK=0, DAO_ORB=0, DAO_WALK=0,
                      REINC_REALM=10, PAST_LIVES_MULT=3, WORKER_MAX=0, WORKER_BONUS=0, WORKER_COST=[0.5, 1, 2],
                      REALM_COST_LATE=env.get("REALM_COST_MULT", 8), REALM_COST_LATE_FROM=99).items():
@@ -560,6 +560,8 @@ def simulate(C, kind, seed, days, lives=99, trace=False):
                 tp = (s + tide_phase) % C["TIDE_INTERVAL"]
                 tide = C["TIDE_MULT"] if tp < C["TIDE_DURATION"] else 1
                 pill = 2 if S["boost"] > 0 else 1
+                if played <= C["STARTER_X2_SECONDS"]:  # Newcomer x2 (Main rate: playSec < STARTER_X2_SECONDS)
+                    pill *= C["STARTER_X2_MULT"]
                 fr = 1 + C["FRIEND_STEP"] * friends
                 b = base()
                 src("live income", b)

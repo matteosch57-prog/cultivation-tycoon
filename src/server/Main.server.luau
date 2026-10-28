@@ -746,6 +746,7 @@ local function rate(s, away)
 	end
 	local tide = (not away and tideOn()) and Config.TIDE_MULT or 1
 	local pill = (not away and boosted(data)) and 2 or 1
+	local starter = (not away and (data.playSec or 0) < Config.STARTER_X2_SECONDS) and Config.STARTER_X2_MULT or 1 -- Newcomer x2
 	local pass = (s.passes and s.passes.x2) and Config.PASS_QI_MULT or 1
 	local past = Config.rebirthMult(rebirths(data))
 	local friends = away and 1 or 1 + Config.FRIEND_STEP * friendCount(s)
@@ -756,7 +757,7 @@ local function rate(s, away)
 	local index = Config.indexMult(data.index, Config.markCount(data.mutIndex)) -- the disciple index's stars (D60) and weather marks
 	local fortune = 1 + Config.DAO_QI * dao(data, "fortune") -- Sect Fortune (Karma Shop)
 	local relics = Config.relicMult(type(data.missions) == "table" and data.missions.rank or 1) -- Golden / Rainbow relics
-	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune * relics
+	return base * Config.incomeMult(data.realm) * discipleMult(s) * pill * starter * tide * pass * past * friends * group * favorite * welcome * harmony * index * fortune * relics
 end
 
 -- The income prices are measured against (the D44 floor, the D48 breakthrough): the buildings, the
@@ -3678,6 +3679,11 @@ while true do
 			s.earned = (s.earned or 0) + gain
 			s.playTime = (s.playTime or 0) + dt
 			d.playSec = (d.playSec or 0) + dt
+			-- Newcomer x2: whole seconds left, for the HUD line (0 once it is over)
+			local starterLeft = math.max(0, math.ceil(Config.STARTER_X2_SECONDS - d.playSec))
+			if player:GetAttribute("StarterLeft") ~= starterLeft then
+				player:SetAttribute("StarterLeft", starterLeft)
+			end
 			-- daily gifts (D49): play time today; a new UTC day restarts the ladder
 			local today = Config.giftDay()
 			if d.giftDay ~= today then

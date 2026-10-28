@@ -467,6 +467,12 @@ local function build()
 	local wGem = Toy.icon(wRow, "rain", px(18), { LayoutOrder = 1 })
 	ui.weather = text(wRow, "", px(12), Color3.new(1, 1, 1), { LayoutOrder = 2 })
 	ui.weatherRow, ui.weatherGem = wRow, wGem
+	-- Newcomer x2 line (owner 2026-10-28): 2x qi for a save's first Config.STARTER_X2_SECONDS of play
+	local nRow = frame(col, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 5, Visible = false })
+	Toy.list(nRow, true, px(4), { HorizontalAlignment = Enum.HorizontalAlignment.Left })
+	qiIcon(nRow, px(16), { LayoutOrder = 1 })
+	ui.starter = text(nRow, "", px(13), GOLD, { LayoutOrder = 2 })
+	ui.starterRow = nRow
 	ui.counter = counter
 	counter.Name = "Counter" -- Juice flies qi drops into it
 	-- karma beside the qi (every currency shows with its icon), once the player has any or a past life
@@ -1760,6 +1766,14 @@ RunService.RenderStepped:Connect(function(dt)
 		put(ui.tide, "TextColor3", tideLeft > 0 and TIDE or TIDE_LIGHT)
 		put(ui.tide, "TextSize", tideLeft > 0 and px(13) or px(12))
 		put(ui.rate, "TextColor3", tideLeft > 0 and TIDE or Color3.fromHex("9FF5C8"))
+	end
+
+	-- Newcomer x2 line: the time left of the first 10 minutes' 2x qi
+	local sLeft = player:GetAttribute("StarterLeft") or 0
+	local sText = sLeft > 0 and string.format("Newcomer 2x %d:%02d", sLeft // 60, sLeft % 60) or ""
+	if ui.starter.Text ~= sText then
+		put(ui.starter, "Text", sText)
+		put(ui.starterRow, "Visible", sText ~= "")
 	end
 
 	-- Heavenly Weather line under the tide line, in the weather's colour
