@@ -359,6 +359,8 @@ def sim(C, kind="regular", policy="gated", days=30, seed=1, buy=(), bless=1, tra
                     add("incense blessing", cache["away"] * C["BLESS_SECONDS"] * bless)
                 tide = C["TIDE_MULT"] if (s + tide0) % C["TIDE_INTERVAL"] < C["TIDE_DURATION"] else 1
                 pill = 2 if S["boost"] > 0 else 1
+                if clock["play"] <= C.get("STARTER_X2_SECONDS", 0):  # Newcomer x2 (Main rate)
+                    pill *= C.get("STARTER_X2_MULT", 1)
                 live = cache["away"] * pill * tide  # rate(s): friends / group not modelled
                 add("live income", cache["away"])
                 if live > cache["away"]:

@@ -613,6 +613,12 @@ end
 -- Features
 Config.PILL_INTERVAL = 180 -- seconds between pills from the Alchemy Furnace
 Config.PILL_DURATION = 60 -- seconds of 2x qi
+-- Newcomer x2 (owner 2026-10-28, thread "Compare new players after tonight's update": "a free boost for
+-- the first 10m ... so they can just never wait"): every save earns STARTER_X2_MULT x qi while its play
+-- time is under STARTER_X2_SECONDS. Live income only (not offline), on top of a pill, and outside the
+-- price rates (like a pill), so it halves the waits instead of raising the prices. 0 = off.
+Config.STARTER_X2_SECONDS = 600
+Config.STARTER_X2_MULT = 2
 Config.ORB_INTERVAL = 20 -- seconds between qi orbs from the Qi Gathering Array
 Config.ORB_MAX = 3 -- orbs waiting on a peak at most
 Config.ORB_VALUE = 15 -- an orb is worth this many seconds of income
