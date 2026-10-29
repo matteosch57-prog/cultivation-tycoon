@@ -94,7 +94,7 @@ task.spawn(function()
 	local C = {}
 	for _, cut in CUTS do
 		-- reach/tAt: every first session; the rest only for players who left before a breakthrough
-		C[cut[1]] = { n = 0, bt = 0, reach = {}, tAt = {}, pre = 0, leave = {}, last = {}, gapEnd = {}, maxGap = {}, idle = {}, buys = {}, before = {} }
+		C[cut[1]] = { n = 0, mark = {}, len = {}, bt = 0, reach = {}, tAt = {}, pre = 0, leave = {}, last = {}, gapEnd = {}, maxGap = {}, idle = {}, buys = {}, before = {} }
 	end
 	local failed = 0
 
@@ -118,6 +118,14 @@ task.spawn(function()
 				median(S.buys),
 				median(S.idle),
 				median(S.maxGap)
+			)
+			p(
+				"   first session median %ds | still playing at 1m %.0f%% 2m %.0f%% 5m %.0f%% 10m %.0f%%",
+				median(table.clone(S.len)),
+				100 * (S.mark[60] or 0) / math.max(1, S.n),
+				100 * (S.mark[120] or 0) / math.max(1, S.n),
+				100 * (S.mark[300] or 0) / math.max(1, S.n),
+				100 * (S.mark[600] or 0) / math.max(1, S.n)
 			)
 			local bs = {}
 			for b, k in S.leave do
@@ -219,6 +227,12 @@ task.spawn(function()
 			end
 			if S then
 				S.n += 1
+				table.insert(S.len, len)
+				for _, m in { 60, 120, 300, 600 } do
+					if len >= m then
+						S.mark[m] = (S.mark[m] or 0) + 1
+					end
+				end
 				local lines, seen, btT = {}, {}, nil
 				for _, line in j.log or {} do
 					local t, code = line:match("^(%d+)|(.+)$")
