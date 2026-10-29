@@ -229,7 +229,10 @@ function Missions.push(player, s)
 	}
 	player:SetAttribute("Missions", HttpService:JSONEncode(out))
 	player:SetAttribute("MissionRank", m.rank) -- the rank alone, for the Relic Hall and others
-	player:SetAttribute("MissionsHidden", s.data.missionsHidden == true) -- the tracker folded to its badge
+	-- the tracker folded to its badge: the player's choice, else folded for a new save's first minutes
+	-- (Config.MISSIONS_FOLD_SECONDS; Main's income tick opens it)
+	local fold = s.data.missionsHidden == nil and (s.data.playSec or 0) < Config.MISSIONS_FOLD_SECONDS
+	player:SetAttribute("MissionsHidden", s.data.missionsHidden == true or fold)
 end
 
 -- top up the slots and today's dailies, then send them (join, a new day, a change of what can be drawn)

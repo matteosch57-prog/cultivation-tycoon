@@ -158,7 +158,7 @@ function Player:act()
 		W:call("chestFn", "chest", d.chestSummons)
 		return prof.react * 2
 	end
-	if d.owned.hall and (d.freeRecruits or 0) > 0 then -- the recruit tutorial's free recruit (Tips.client)
+	if (d.freeRecruits or 0) > 0 then -- the recruit tutorial's free recruit (Tips.client; the platform's needs no hall)
 		W:call("recruitFn", "recruit", 1)
 		self:note("freeRecruit")
 		return prof.react * 2

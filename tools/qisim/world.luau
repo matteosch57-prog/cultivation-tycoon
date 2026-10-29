@@ -239,9 +239,18 @@ function World:buy(o)
 		s.padPrice = nil
 		if o.id == "platform" then
 			M.giveIdleChest(s) -- the idle chest, once the first recruits are done too (the Recruit handler gives it then)
+			if C.FREE_RECRUIT_AT_PLATFORM and (d.recruited or 0) == 0 and not (d.tips and d.tips.recruit) then
+				d.freeRecruits = math.max(d.freeRecruits or 0, C.FREE_RECRUITS) -- the first disciple with the platform
+			end
 		end
 		if o.id == "hall" and (d.recruited or 0) == 0 and not (d.tips and d.tips.recruit) then
 			d.freeRecruits = math.max(d.freeRecruits or 0, C.FREE_RECRUITS)
+		end
+		if o.id == "hall" and C.FREE_RECRUIT_AT_PLATFORM and d.freeUsedAt then -- the hall brings the next free one at once
+			local gap = C.FREE_RECRUIT_MORE[(d.freeMore or 0) + 1]
+			if gap then
+				d.freeUsedAt = math.min(d.freeUsedAt, (d.playSec or 0) - gap)
+			end
 		end
 		self.E.Missions.bump(self.player, "build", 1)
 	elseif o.kind == "hire" then

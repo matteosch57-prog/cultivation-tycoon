@@ -577,6 +577,9 @@ function Config.freeRecruitTick(d)
 	if not d.freeUsedAt or (d.freeRecruits or 0) > 0 then
 		return false
 	end
+	if Config.FREE_RECRUIT_AT_PLATFORM and not d.owned.hall then
+		return false -- the platform gave the first; the next ones come with the Disciple Hall
+	end
 	local n = (d.freeMore or 0) + 1
 	local gap = Config.FREE_RECRUIT_MORE[n]
 	if not gap then
@@ -592,6 +595,19 @@ function Config.freeRecruitTick(d)
 	return true
 end
 Config.SEE_DISCIPLE_RANGE = 22
+-- the first disciple at the Meditation Platform (owner pick A 2026-10-29, thread "Fix early new-player
+-- drop-offs": 45% of first sessions that never broke through ended in the first 60 s, and the first
+-- disciple came at ~90 s, after two bridges and the Disciple Hall; Pet Simulator 99 hands a pet in the
+-- first seconds): the tutorial's free recruit comes with the platform, recruited right there with no
+-- Disciple Hall. The further free ones (FREE_RECRUIT_MORE) wait for the Disciple Hall.
+Config.FREE_RECRUIT_AT_PLATFORM = true
+-- starter luck (owner pick B 2026-10-29: an Outer Disciple reveal was in the last 20 s of 17% of those
+-- early quitters; gacha starter banners guarantee a good first pull): the n-th free recruit of the
+-- tutorial is at least STARTER_LUCK[n]; past the list, the usual odds
+Config.STARTER_LUCK = { "Inner Disciple", "Core Disciple" }
+-- the Missions tracker starts folded to its badge for a new save's first MISSIONS_FOLD_SECONDS of play,
+-- then opens, unless the player folded or opened it (owner pick D 2026-10-29: 28% folded it at ~30 s)
+Config.MISSIONS_FOLD_SECONDS = 180
 -- `pads`: the player's open pad parts (PadId, Cost attributes). Returns the pad to lead to, and
 -- whether it is the priority one
 function Config.guidePick(pads)

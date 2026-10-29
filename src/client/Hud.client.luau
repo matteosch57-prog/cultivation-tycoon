@@ -1312,7 +1312,9 @@ local function layout()
 	ui.karmaRow.Visible = (player:GetAttribute("Karma") or 0) > 0 or (player:GetAttribute("Lives") or 1) > 1
 	local modal = modalOpen()
 	state.modal = modal
-	ui.recruit.Visible = hasHall and not modal and not player:GetAttribute("AltarPalm") -- Palm Strike takes its spot on the altar
+	-- the tutorial's free recruit comes with the Meditation Platform, before the Disciple Hall (Config.FREE_RECRUIT_AT_PLATFORM)
+	local freeNow = (player:GetAttribute("FreeRecruits") or 0) > 0
+	ui.recruit.Visible = (hasHall or freeNow) and not modal and not player:GetAttribute("AltarPalm") -- Palm Strike takes its spot on the altar
 	ui.prog.Visible = not modal
 	ui.top.Visible = not modal
 	ui.left.Visible = not modal -- the Shop button is always there otherwise
@@ -1644,6 +1646,7 @@ player:GetAttributeChangedSignal("HasHall"):Connect(function()
 	refreshStatic()
 	layout()
 end)
+player:GetAttributeChangedSignal("FreeRecruits"):Connect(layout) -- the platform's free recruit shows the seal before the hall
 player:GetAttributeChangedSignal("HasFurnace"):Connect(layout)
 player:GetAttributeChangedSignal("AutoBuildOpen"):Connect(layout)
 player:GetAttributeChangedSignal("AltarPalm"):Connect(layout) -- Altar.client: Palm Strike takes the Recruit seal's spot

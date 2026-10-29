@@ -208,7 +208,7 @@ local function pick()
 			return "orb", best
 		end
 	end
-	if (player:GetAttribute("FreeRecruits") or 0) > 0 and player:GetAttribute("HasHall") then
+	if (player:GetAttribute("FreeRecruits") or 0) > 0 then -- the hall's, or the platform's (FREE_RECRUIT_AT_PLATFORM)
 		local hud = playerGui:FindFirstChild("Hud")
 		local btn = hud and hud:FindFirstChild("RecruitSeal", true)
 		if btn and shown(btn) then
