@@ -418,7 +418,7 @@ local M = Config.REVEAL_MULTI
 local IS_STUDIO = RunService:IsStudio()
 local TILE_BG = Color3.fromHex("2B2033")
 
-local function startMulti(results)
+local function startMulti(results, tally)
 	finish()
 	Toy.S = computeScale()
 	local px = Toy.px
@@ -527,10 +527,14 @@ local function startMulti(results)
 	-- the count per rarity just above the tray (clear of the HUD's realm bar): "x10: 1 Elder · 2 Inner · 7 Outer"
 	local summary = Toy.frame(layer, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.fromOffset(vp.X / 2, trayTop.Y - px(6)), AutomaticSize = Enum.AutomaticSize.XY, Visible = false, ZIndex = 6 })
 	Toy.list(summary, true, px(5))
-	Toy.text(summary, "x" .. n .. ":", px(17), WHITE, { LayoutOrder = 0 })
-	local counts = {}
-	for _, r in results do
-		counts[r.rarity] = (counts[r.rarity] or 0) + 1
+	-- the leftover recruits (`tally`, Main spendLeftover): the orbs are the best of them, the count is all
+	local counts = tally and tally.counts
+	Toy.text(summary, "x" .. (tally and tally.total or n) .. ":", px(17), WHITE, { LayoutOrder = 0 })
+	if not counts then
+		counts = {}
+		for _, r in results do
+			counts[r.rarity] = (counts[r.rarity] or 0) + 1
+		end
 	end
 	local order = 1
 	for k = #Config.RARITIES, 1, -1 do
@@ -775,16 +779,17 @@ local function startMulti(results)
 end
 
 -- Hud fires Player.RecruitFx (made by Juice) with (rarity name, kept, results) after a recruit (the
--- idle chest too, with one result); results (x10 / x50) open every orb, else the single reveal
+-- idle chest too, with one result); results (x10 / x50) open every orb, else the single reveal. `tally`
+-- ({ total, counts }) comes with the leftover recruits of a breakthrough or a rebirth (Main spendLeftover)
 local fx = player:FindFirstChild("RecruitFx")
 if not fx then -- Juice not run yet (slow join): make it here, Juice picks it up
 	fx = Instance.new("BindableEvent")
 	fx.Name = "RecruitFx"
 	fx.Parent = player
 end
-fx.Event:Connect(function(rarityName, kept, results)
+fx.Event:Connect(function(rarityName, kept, results, tally)
 	if results and #results > 1 then
-		startMulti(results)
+		startMulti(results, tally)
 	else
 		start(rarityName, kept, results and results[1])
 	end

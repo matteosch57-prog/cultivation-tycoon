@@ -2602,6 +2602,35 @@ local function recruitPress(player, s, want, free, cost, quiet)
 	return { ok = true, rarity = best, look = bestLook, shiny = bestShiny, mut = bestMut, kept = bestKept, results = results }
 end
 
+-- the leftover recruits before a reset (Config.leftoverRecruits): qi goes to 0 at a rebirth and at a
+-- breakthrough (owner 2026-10-29: "A but show it like summon them"), so `spare` qi becomes disciples
+-- first (they are kept). Returns how many, and the reveal the client plays as a recruit (RecruitFx):
+-- the best REVEAL_LEFTOVER_MAX of them as orbs, with the count per rarity of all of them.
+local function spendLeftover(player, s, spare)
+	local d = s.data
+	if not d.owned.hall or (d.freeRecruits or 0) > 0 or s.recruiting then
+		return 0, nil
+	end
+	local presses, total = Config.leftoverRecruits(d.realm, d.realmRecruits or 0, spare)
+	if total == 0 then
+		return 0, nil
+	end
+	local all, counts, kept = {}, {}, false
+	for _, n in presses do
+		local res = recruitPress(player, s, n, false, Config.recruitBatchCost(d.realm, d.realmRecruits or 0, n), true)
+		for _, r in res.results do
+			table.insert(all, r)
+			counts[r.rarity] = (counts[r.rarity] or 0) + 1
+			kept = kept or r.kept
+		end
+	end
+	table.sort(all, function(a, b)
+		return Config.discBonus(a.rarity, a.shiny, a.mut) > Config.discBonus(b.rarity, b.shiny, b.mut)
+	end)
+	local shown = table.move(all, 1, math.min(#all, Config.REVEAL_LEFTOVER_MAX), 1, {})
+	return total, { rarity = shown[1].rarity, kept = kept, results = shown, total = total, counts = counts }
+end
+
 -- Recruit `count` disciples (Config.RECRUIT_COUNTS; 1 when missing), all or nothing: the press pays
 -- Config.recruitBatchCost once and moves realmRecruits by Config.recruitStep (both Economy's rules)
 recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
@@ -2999,16 +3028,7 @@ local function reincarnate(player, s)
 	if (d.qi or 0) < price or not Config.rebirthOpen(d.realm, rebirths(d), d.owned) then
 		return nil
 	end
-	-- the leftover recruits (Config.leftoverRecruits): qi resets, so what is over the price becomes
-	-- disciples first (they are kept)
-	local leftover = 0
-	if d.owned.hall and (d.freeRecruits or 0) == 0 and not s.recruiting then
-		local presses, total = Config.leftoverRecruits(d.realm, d.realmRecruits or 0, d.qi - price)
-		for _, n in presses do
-			recruitPress(player, s, n, false, Config.recruitBatchCost(d.realm, d.realmRecruits or 0, n), true)
-		end
-		leftover = total
-	end
+	local leftover, reveal = spendLeftover(player, s, d.qi - price) -- qi resets: the qi over the price recruits first
 	local gained = karmaGain(d)
 	local lifeSec = (d.playSec or 0) - (d.lifeStart or 0)
 	d.qi -= price
@@ -3055,7 +3075,7 @@ local function reincarnate(player, s)
 		notify:FireClient(player, "sectStyle", newStyle.name)
 	end
 	task.defer(Missions.bump, player, "rebirth", 1)
-	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)), recruits = leftover }
+	return { karma = gained, lives = d.lives, mult = Config.rebirthMult(rebirths(d)), recruits = leftover, reveal = reveal }
 end
 
 -- Styles page: wear an unlocked Sect Style or "classic" (the D53 ladder); the sect is rebuilt in it
@@ -3188,8 +3208,9 @@ breakthroughFn.OnServerInvoke = function(player)
 		return false
 	end
 	s.btAskUntil = nil
+	local _, reveal = spendLeftover(player, s, s.data.qi - info.cost) -- qi resets: the qi over the price recruits first
 	buyPad(s, part, info)
-	return true
+	return reveal or true -- the reveal: the client plays it as a recruit once the screen closes
 end
 
 reincFn.OnServerInvoke = function(player)

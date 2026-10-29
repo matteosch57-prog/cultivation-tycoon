@@ -1533,6 +1533,9 @@ Config.REVEAL = { fly = 0.4, step = 0.3, hold = 1.6, holdPer = 0.25 }
 -- or better at x10, Elder or better at x50 (`rareFrom` / `rareFromBig`, else x50 stalls on its Cores),
 -- and `zoom` s after the last one the best grows into the usual card, held `hold` s
 Config.REVEAL_MULTI = { pop = 1.3, wave = 1.2, waveMin = 0.035, waveMax = 0.12, rareFrom = 3, rareFromBig = 4, rarePause = 0.3, zoom = 0.35, hold = 2.2 }
+-- the leftover recruits at a rebirth or a breakthrough (Main spendLeftover) can be hundreds: the reveal
+-- opens the best this many as orbs (the x50 grid) and counts all of them per rarity
+Config.REVEAL_LEFTOVER_MAX = 50
 function Config.revealMultiWave(n)
 	local m = Config.REVEAL_MULTI
 	return math.clamp(m.wave / n, m.waveMin, m.waveMax)
