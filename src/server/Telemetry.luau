@@ -152,6 +152,18 @@ Telemetry.EVENTS = {
 
 -- The onboarding funnel: one-time per player, steps in order. A step counts once it is true now or
 -- the player has broken through (a breakthrough resets the owned pads but every earlier step happened).
+-- The onboarding funnel in the order a new player meets it (owner pick C 2026-10-29, thread "Fix early
+-- new-player drop-offs": the old list had the Main Hall before the Disciple Hall, so its drop was really
+-- the first minute's, and two realm 3-4 pads that only fired at the breakthrough). Saved as d.onb; a
+-- save that logged the old list (d.funnel) logs none of these.
+local function realmOneDone(d)
+	for _, pad in Config.PADS do
+		if Config.neededForBreakthrough(pad) and Config.padOpen(pad, 1) and not d.owned[pad.id] then
+			return false
+		end
+	end
+	return true
+end
 Telemetry.FUNNEL = {
 	{
 		name = "Joined",
@@ -166,21 +178,9 @@ Telemetry.FUNNEL = {
 		end,
 	},
 	{
-		name = "Main Hall",
+		name = "Meditation Platform",
 		done = function(d)
-			return d.owned.mainhall1 == true
-		end,
-	},
-	{
-		name = "Five buildings",
-		done = function(_, built)
-			return built >= 5
-		end,
-	},
-	{
-		name = "Disciple Hall",
-		done = function(d)
-			return d.owned.hall == true
+			return d.owned.platform == true
 		end,
 	},
 	{
@@ -190,15 +190,27 @@ Telemetry.FUNNEL = {
 		end,
 	},
 	{
-		name = "First expansion",
+		name = "Disciple Hall",
 		done = function(d)
-			return d.owned.expand1 == true
+			return d.owned.hall == true
 		end,
 	},
 	{
-		name = "Celestial Palace",
+		name = "Main Hall",
 		done = function(d)
-			return d.owned.mainhall5 == true
+			return d.owned.mainhall1 == true
+		end,
+	},
+	{
+		name = "Sect Hall",
+		done = function(d)
+			return d.owned.mainhall2 == true
+		end,
+	},
+	{
+		name = "Breakthrough ready",
+		done = function(d)
+			return realmOneDone(d)
 		end,
 	},
 	{
@@ -342,7 +354,7 @@ function Telemetry.custom(player, name, ...)
 	Telemetry.customValue(player, name, 1, ...)
 end
 
--- Log every funnel step that has become true, in order, and time it. `d.funnel` = steps logged
+-- Log every funnel step that has become true, in order, and time it. `d.onb` = steps logged
 -- (saved, so a returning player never re-logs); `d.playSec` = seconds played over every session.
 function Telemetry.funnel(player, d)
 	local built = 0
@@ -351,10 +363,13 @@ function Telemetry.funnel(player, d)
 			built += 1
 		end
 	end
-	local nextStep = (d.funnel or 0) + 1
+	if d.onb == nil and d.funnel ~= nil then
+		d.onb = #Telemetry.FUNNEL -- a save from the old funnel: never logged again (it would land at step 1)
+	end
+	local nextStep = (d.onb or 0) + 1
 	local step = Telemetry.FUNNEL[nextStep]
 	while step and (step.done(d, built) or ((d.best or 1) >= 2)) do
-		d.funnel = nextStep
+		d.onb = nextStep
 		if spend(player) then
 			send(
 				"funnel " .. step.name,

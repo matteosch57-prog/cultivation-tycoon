@@ -1629,12 +1629,23 @@ refreshPads = function(player, s)
 					if pad.id == "platform" then
 						buildDisciples(s)
 						giveIdleChest(s)
+						-- the first disciple comes with the platform (Config.FREE_RECRUIT_AT_PLATFORM)
+						if Config.FREE_RECRUIT_AT_PLATFORM and (s.data.recruited or 0) == 0 and not (s.data.tips and s.data.tips.recruit) then
+							s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)
+						end
 					end
 					-- the recruit tutorial (owner 2026-10-24): a new save's first Disciple Hall comes with a
 					-- free recruit (Tips.client points at the Recruit button), then the trail leads to the
 					-- Meditation Platform to see the newcomer (data.seeDisciple, the income tick)
 					if pad.id == "hall" and (s.data.recruited or 0) == 0 and not (s.data.tips and s.data.tips.recruit) then
 						s.data.freeRecruits = math.max(s.data.freeRecruits or 0, Config.FREE_RECRUITS)
+					end
+					-- the platform's free recruit used: the hall brings the next one at once (freeRecruitTick)
+					if pad.id == "hall" and Config.FREE_RECRUIT_AT_PLATFORM and s.data.freeUsedAt then
+						local gap = Config.FREE_RECRUIT_MORE[(s.data.freeMore or 0) + 1]
+						if gap then
+							s.data.freeUsedAt = math.min(s.data.freeUsedAt, (s.data.playSec or 0) - gap)
+						end
 					end
 					refreshPads(player, s)
 					publish(player)
@@ -2327,7 +2338,7 @@ local rng = Random.new()
 -- row without that rarity or better gives it), then Shiny (Config.SHINY_CHANCE), then the weather's
 -- mutation (Config.WEATHERS `chance`, only while one runs). Returns the rarity, whether it is Shiny and
 -- its mutation ("" = none).
-local function roll(d)
+local function roll(d, floor)
 	local weights = Config.rarityWeights(dao(d, "luck")) -- Heaven's Favor (Karma Shop)
 	local total = 0
 	for _, w in weights do
@@ -2342,6 +2353,7 @@ local function roll(d)
 			break
 		end
 	end
+	pick = math.max(pick, floor or 1) -- starter luck (Config.STARTER_LUCK)
 	d.pity = d.pity or {}
 	for _, p in Config.PITY do
 		local tier = Config.rarityIndex(p.rarity)
@@ -2549,12 +2561,16 @@ local function recruitPress(player, s, want, free, cost, quiet)
 		s.data.realmRecruits = (s.data.realmRecruits or 0) + Config.recruitStep(want) -- prices the next press; reset at a breakthrough
 		Telemetry.sink(player, s.data, cost, "recruit")
 	end
+	-- starter luck: the tutorial's n-th free recruit is at least Config.STARTER_LUCK[n] (freeMore = the
+	-- further free ones given so far, so this press is the (freeMore + 1)-th)
+	local luck = free and Config.STARTER_LUCK[(s.data.freeMore or 0) + 1]
+	local floor = luck and Config.rarityIndex(luck) or nil
 	local results, best, bestLook, bestShiny, bestMut, bestKept, bestKeptBonus, bestKeptKey = {}, nil, nil, false, "", false, -1, nil
 	local rolled = {} -- ["rarity|kept"] = count: one Recruit event per outcome, not one per roll (an
 	-- x50 alone was a quarter of the server's minute analytics budget, Telemetry `spend`)
 	s.data.pulled = s.data.pulled or {}
 	for _ = 1, want do
-		local r, shiny, mut = roll(s.data)
+		local r, shiny, mut = roll(s.data, floor)
 		local kept, look, stars, newStar = addDisciple(s, r.name, false, true, nil, shiny, mut)
 		table.insert(results, { rarity = r.name, kept = kept, look = look, stars = stars, newStar = newStar, shiny = shiny, mut = mut })
 		local bonus = Config.discBonus(r.name, shiny, mut)
@@ -2596,7 +2612,8 @@ recruitFn.OnServerInvoke = clearsBusy("recruit", function(player, count)
 	if not s or s.recruiting then
 		return nil
 	end
-	if not s.data.owned.hall then
+	-- the tutorial's free recruit needs no Disciple Hall (it comes with the platform)
+	if not s.data.owned.hall and (s.data.freeRecruits or 0) <= 0 then
 		return { ok = false, reason = "Build the Disciple Hall first" }
 	end
 	local want = 1
@@ -3713,6 +3730,10 @@ while true do
 				end
 			end
 			-- the first minutes' further free recruits (Config.FREE_RECRUIT_MORE): the Recruit seal reads Free again
+			-- the Missions tracker starts folded for a new save (Config.MISSIONS_FOLD_SECONDS), then opens
+			if d.missionsHidden == nil and player:GetAttribute("MissionsHidden") and (d.playSec or 0) >= Config.MISSIONS_FOLD_SECONDS then
+				player:SetAttribute("MissionsHidden", false)
+			end
 			if Config.freeRecruitTick(d) then
 				notify:FireClient(player, "freeRecruit")
 				Telemetry.custom(player, "Feature", "freeRecruit", Telemetry.realmBucket(d.realm))
