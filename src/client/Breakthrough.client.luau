@@ -128,12 +128,28 @@ local function plate(parent, realm, lit, order)
 	return col
 end
 
+-- the leftover recruits' reveal (Main spendLeftover): the same orbs as a Recruit press (RecruitReveal)
+local function playReveal(reveal)
+	local fx = player:FindFirstChild("RecruitFx")
+	if fx and reveal.results and #reveal.results > 0 then
+		fx:Fire(reveal.rarity, reveal.kept, reveal.results, { total = reveal.total, counts = reveal.counts })
+	end
+end
+
 local function refresh()
 	if not ui.btn then
 		return
 	end
-	local ready = (player:GetAttribute("Qi") or 0) >= cost
+	local qi = player:GetAttribute("Qi") or 0
+	local ready = qi >= cost
 	ui.btn.BackgroundColor3 = ready and JADE or LOCKED
+	-- the leftover recruits (Main spendLeftover): the server summons with the qi over the price first
+	local extra = 0
+	if ready and (player:GetAttribute("FreeRecruits") or 0) == 0 then
+		_, extra = Config.leftoverRecruits(player:GetAttribute("Realm") or 1, player:GetAttribute("RealmRecruits") or 0, qi - cost)
+	end
+	ui.leftover.Visible = extra > 0
+	ui.leftoverText.Text = "Summons +" .. extra .. " disciples with leftover qi"
 end
 
 local function build()
@@ -213,10 +229,16 @@ local function build()
 	Toy.list(strip, true, px(18))
 	iconsLine(strip, { "qi", "hall" }, "reset", RESET, 1)
 	iconsLine(strip, { "disciple", "karma", "rebirth" }, "kept", JADE, 2)
+	-- the qi over the price is not lost: it summons first (owner 2026-10-29), shown as a recruit
+	local left = Toy.frame(body, { AutomaticSize = Enum.AutomaticSize.XY, LayoutOrder = 4, Visible = false })
+	Toy.list(left, true, px(6))
+	Toy.icon(left, "disciple", px(22), { LayoutOrder = 1 })
+	ui.leftoverText = text(left, "", px(17), JADE, { LayoutOrder = 2 })
+	ui.leftover = left
 
-	Toy.frame(body, { Size = UDim2.fromOffset(1, px(2)), LayoutOrder = 4 })
+	Toy.frame(body, { Size = UDim2.fromOffset(1, px(2)), LayoutOrder = 5 })
 	local bHolder, bBtn = Toy.button(body, UDim2.fromOffset(px(290), px(52)), JADE, px(15))
-	bHolder.LayoutOrder = 5
+	bHolder.LayoutOrder = 6
 	ui.btn = bBtn
 	local label = Toy.frame(bBtn, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), AutomaticSize = Enum.AutomaticSize.XY, ZIndex = 3 })
 	Toy.list(label, true, px(10))
@@ -239,6 +261,9 @@ local function build()
 		if ok and done then
 			Toy.reward(bBtn) -- busy stays on: the Realm change must not cut the burst short
 			task.delay(0.45, close)
+			if type(done) == "table" then -- the leftover recruits: their reveal, as a recruit press
+				task.delay(0.5, playReveal, done)
+			end
 		else
 			busy = false
 			Sfx.play("deny")

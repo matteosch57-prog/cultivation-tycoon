@@ -158,7 +158,7 @@ local function refresh()
 	-- the leftover recruits (Config.leftoverRecruits): the server spends the qi over the price first
 	local _, extra = Config.leftoverRecruits(player:GetAttribute("Realm") or 1, player:GetAttribute("RealmRecruits") or 0, qi - price)
 	ui.leftover.Visible = ready and extra > 0
-	ui.leftover.Text = "+" .. commas(extra) .. " recruits from leftover qi"
+	ui.leftover.Text = "Summons +" .. commas(extra) .. " disciples with leftover qi"
 
 	-- the next realm waits for rebirths (Config.REBIRTH_REALMS): say which one this opens
 	local need = player:GetAttribute("RealmNeedsRebirths") or 0
@@ -500,6 +500,14 @@ local function buildPage()
 		busy = false
 		if ok and res then
 			close()
+			-- the leftover recruits (Main spendLeftover): their reveal, as a recruit press
+			local fx = player:FindFirstChild("RecruitFx")
+			local reveal = res.reveal
+			if fx and reveal and reveal.results and #reveal.results > 0 then
+				task.delay(0.5, function()
+					fx:Fire(reveal.rarity, reveal.kept, reveal.results, { total = reveal.total, counts = reveal.counts })
+				end)
+			end
 		else
 			refresh()
 		end

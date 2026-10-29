@@ -34,6 +34,7 @@ local MIRRORS = {
 		"local cost = s.padPrice[pad.id]",
 		"s.padPrice = nil -- every open pad is priced again from the new income",
 		"s.data.owned = Config.keptAtBreakthrough(s.data.owned) -- the disciple core stays (PAD_KEEP)",
+		"local _, reveal = spendLeftover(player, s, s.data.qi - info.cost) -- qi resets: the qi over the price recruits first",
 		"if all and not s.pads.breakthrough and rebirths(s.data) >= Config.rebirthsFor(s.data.realm + 1) then",
 		"local cost = math.floor(priceRate(s) * Config.BREAKTHROUGH_SECONDS) -- D48",
 		"local startQi = math.floor(padRate(s) * Config.BREAKTHROUGH_START_SECONDS) -- the new realm's first pads at once",
@@ -67,7 +68,7 @@ local MIRRORS = {
 local FUNCTIONS = {
 	"hasIdleChest", "deepCopy", "defaultData", "discLooks", "discShiny", "discMut", "dao", "maxDisciples", "rebirths", "karmaGain",
 	"discipleMult", "boosted", "startTide", "tideOn", "weatherNow", "startWeather", "friendCount", "rate", "priceRate", "padRate", "pricePads", "giveIdleChest", "roll", "byBonus",
-	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "recruitPress", "reincarnate", "rollWeather",
+	"giveSummons", "indexAdd", "addDisciple", "clearsBusy", "recruitPress", "spendLeftover", "reincarnate", "rollWeather",
 }
 local HANDLERS = { "chestFn", "recruitFn", "pillFn", "giftFn", "streakFn", "welcomeFn", "daoFn" }
 

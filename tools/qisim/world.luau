@@ -231,6 +231,14 @@ function World:buy(o)
 	if d.qi < o.cost then
 		return false
 	end
+	if o.kind == "breakthrough" then
+		-- Main breakthroughFn: the leftover recruits (spendLeftover) before the pad is paid
+		local realm0, recruits0 = d.realm, d.realmRecruits or 0
+		local n = M.spendLeftover(self.player, s, d.qi - o.cost)
+		if n > 0 then
+			self.sink.recruit = (self.sink.recruit or 0) + C.recruitBatchCost(realm0, recruits0, n)
+		end
+	end
 	d.qi -= o.cost
 	if o.kind == "build" then
 		self.sink.build = (self.sink.build or 0) + o.cost
