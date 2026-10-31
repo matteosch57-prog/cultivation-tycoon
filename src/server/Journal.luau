@@ -62,7 +62,11 @@ function Journal.attach(player, d)
 	Journal.note(player, "join")
 end
 
-function Journal.note(player, code)
+-- `n` = how many times at once (a batch such as an x50 recruit): the lifetime count gets all n, the
+-- log gets ONE line, so a batch can't fill the LOG_MAX lines on its own (return study 2026-10-31:
+-- 1,411 of 1,744 first sessions over 10 min ran out of lines, mostly from x10/x50 recruits)
+function Journal.note(player, code, n)
+	n = n or 1
 	local e = live[player]
 	if not e then
 		return
@@ -75,7 +79,7 @@ function Journal.note(player, code)
 		e.codes += 1
 		j.first[code] = math.floor(e.d.playSec or 0)
 	end
-	j.count[code] = (j.count[code] or 0) + 1
+	j.count[code] = (j.count[code] or 0) + n
 	logLine(e, code)
 end
 

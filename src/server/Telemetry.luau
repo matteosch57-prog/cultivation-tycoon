@@ -341,8 +341,8 @@ function Telemetry.customValue(player, name, value, ...)
 		if name == "Shop" then
 			code ..= ":" .. tostring(second) -- which item, or where it was opened
 		end
-		for _ = 1, value do
-			Journal.note(player, code)
+		if value > 0 then
+			Journal.note(player, code, value) -- one log line per batch, the count gets all of them
 		end
 	end
 	if spend(player) then
